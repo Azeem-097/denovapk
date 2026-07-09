@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const heroSlides = [
   {
     id: 1,
-    subtitle: "Summer 2025 Collection",
+    subtitle: "Summer 2026 Collection",
     title: "Crafted for\nthe Modern You",
     description: "Discover our latest collection of premium clothing. Every piece designed with intention, made with quality.",
     cta: { label: "Shop Collection", href: "/collections/summer-essentials" },
