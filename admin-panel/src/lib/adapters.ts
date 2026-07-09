@@ -29,7 +29,12 @@ export function adaptProduct(p: ProductWithRelations): AdminProduct {
 }
 
 // ─── Order ───────────────────────────────────────────────
-export function adaptOrder(o: DbOrder & { items: DbOrderItem[]; address?: unknown }, customerName = "", customerEmail = "", customerPhone = ""): AdminOrder {
+export function adaptOrder(
+  o: DbOrder & { items: DbOrderItem[]; address?: unknown },
+  customerName  = "",
+  customerEmail = "",
+  customerPhone = ""
+): AdminOrder {
   return {
     id:            o.id,
     orderNumber:   o.orderNumber,
@@ -68,7 +73,15 @@ function adaptOrderItem(item: DbOrderItem): AdminOrderItem {
 }
 
 // ─── Customer ────────────────────────────────────────────
-export function adaptCustomer(u: DbUser & { totalOrders?: number; totalSpent?: number; lastOrder?: string; city?: string }): AdminCustomer {
+// FIX: Accept null OR undefined for optional fields (DB returns null, TS interfaces use undefined)
+export function adaptCustomer(
+  u: DbUser & {
+    totalOrders?: number;
+    totalSpent?:  number;
+    lastOrder?:   string | null;
+    city?:        string | null;
+  }
+): AdminCustomer {
   return {
     id:          u.id,
     name:        u.name,
@@ -96,3 +109,6 @@ export function adaptCollection(c: DbCollection & { productCount?: number }): Ad
     createdAt:    new Date(c.createdAt * 1000).toISOString(),
   };
 }
+
+// Silence unused
+void tagsToArray;

@@ -1,5 +1,10 @@
-﻿import type { NextConfig } from "next";
+import type { NextConfig } from "next";
+import path from "path";
+
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.join(__dirname),
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -8,4 +13,5 @@ const nextConfig: NextConfig = {
     ],
   },
 };
+
 export default nextConfig;
