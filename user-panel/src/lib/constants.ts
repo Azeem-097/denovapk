@@ -1,6 +1,10 @@
-﻿export const SITE_NAME = "Denova PK";
-export const SITE_DESCRIPTION = "Premium Clothing - Crafted for the Modern You";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+export const SITE_NAME = "Denova PK";
+export const SITE_DESCRIPTION = "Premium Denim Clothing - Crafted for the Modern You. Pakistan's finest selvedge jeans and denim apparel.";
+
+// Site URL - uses env var in production, falls back to production URL
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://denovapk.com";
 
 export const BRAND_COLORS = {
   primary:    "#1a1a1a",
