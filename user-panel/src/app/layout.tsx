@@ -10,13 +10,16 @@ import { SessionProvider } from "@/components/providers/SessionProvider";
 import "./globals.css";
 
 // ══════════════════════════════════════════════════════════
-// CRITICAL: Hardcoded to avoid env var issues in production
+// HARDCODED constants - guaranteed to work in production
 // ══════════════════════════════════════════════════════════
 const SITE_URL         = "https://denovapk.com";
 const SITE_NAME        = "Denova PK";
 const SITE_TITLE       = "Denova PK - Premium Denim Clothing";
 const SITE_DESCRIPTION = "Premium Denim Clothing - Crafted for the Modern You. Pakistan's finest selvedge jeans and denim apparel. Summer 2026 Collection.";
-const OG_IMAGE_URL     = "https://denovapk.com/og-image.png";
+
+// ── OG Image (using JPG for maximum compatibility) ─────
+// Add cache-buster query string to force platforms to re-fetch
+const OG_IMAGE_URL     = "https://denovapk.com/og-image.jpg?v=2";
 const OG_IMAGE_ALT     = "Summer 2026 Collection - Crafted for the Modern You";
 
 export const metadata: Metadata = {
@@ -50,7 +53,7 @@ export const metadata: Metadata = {
         width:     1200,
         height:    630,
         alt:       OG_IMAGE_ALT,
-        type:      "image/png",
+        type:      "image/jpeg",
       },
     ],
   },
@@ -113,23 +116,25 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${cormorant.variable}`}>
       <head>
         {/* ═══════════════════════════════════════════════════════════
-            FORCED OG META TAGS - These override any auto-detection
-            HARDCODED to guarantee they never fall back to localhost
+            EXPLICIT META TAGS for maximum platform compatibility
+            (WhatsApp, iMessage, Slack, Discord, older platforms)
             ═══════════════════════════════════════════════════════════ */}
 
-        {/* Open Graph */}
+        {/* Open Graph - Core */}
         <meta property="og:site_name"       content="Denova PK" />
         <meta property="og:type"            content="website" />
         <meta property="og:url"             content="https://denovapk.com" />
         <meta property="og:title"           content="Denova PK - Premium Denim Clothing" />
         <meta property="og:description"     content="Premium Denim Clothing - Crafted for the Modern You. Pakistan's finest selvedge jeans and denim apparel. Summer 2026 Collection." />
-        <meta property="og:image"           content="https://denovapk.com/og-image.png" />
-        <meta property="og:image:secure_url" content="https://denovapk.com/og-image.png" />
-        <meta property="og:image:type"      content="image/png" />
+        <meta property="og:locale"          content="en_PK" />
+
+        {/* Open Graph - Image (JPG for WhatsApp compatibility) */}
+        <meta property="og:image"           content="https://denovapk.com/og-image.jpg" />
+        <meta property="og:image:secure_url" content="https://denovapk.com/og-image.jpg" />
+        <meta property="og:image:type"      content="image/jpeg" />
         <meta property="og:image:width"     content="1200" />
         <meta property="og:image:height"    content="630" />
         <meta property="og:image:alt"       content="Summer 2026 Collection - Crafted for the Modern You" />
-        <meta property="og:locale"          content="en_PK" />
 
         {/* Twitter Card */}
         <meta name="twitter:card"           content="summary_large_image" />
@@ -137,8 +142,12 @@ export default function RootLayout({
         <meta name="twitter:creator"        content="@denovapk" />
         <meta name="twitter:title"          content="Denova PK - Premium Denim Clothing" />
         <meta name="twitter:description"    content="Premium Denim Clothing - Crafted for the Modern You. Pakistan's finest selvedge jeans and denim apparel. Summer 2026 Collection." />
-        <meta name="twitter:image"          content="https://denovapk.com/og-image.png" />
+        <meta name="twitter:image"          content="https://denovapk.com/og-image.jpg" />
         <meta name="twitter:image:alt"      content="Summer 2026 Collection - Crafted for the Modern You" />
+
+        {/* WhatsApp requires this exact combo */}
+        <meta name="thumbnail"              content="https://denovapk.com/og-image.jpg" />
+        <link rel="image_src"               href="https://denovapk.com/og-image.jpg" />
       </head>
       <body className="antialiased bg-white text-[#111111]">
         <SessionProvider>
