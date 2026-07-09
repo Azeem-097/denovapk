@@ -1,0 +1,207 @@
+﻿"use client";
+import { useEffect } from "react";
+import Link from "next/link";
+import { X, ShoppingBag, ArrowRight } from "lucide-react";
+import { useCartStore } from "@/store/cartStore";
+import { CartItem } from "./CartItem";
+import { formatPrice, cn } from "@/lib/utils";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
+
+export function CartDrawer() {
+  const {
+    items, isOpen, closeCart,
+    getSubtotal, getShipping, getTotal, getItemCount
+  } = useCartStore();
+
+  const itemCount = getItemCount();
+  const subtotal  = getSubtotal();
+  const shipping  = getShipping();
+  const total     = getTotal();
+  const remainingForFreeShip = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const progressPercent = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeCart();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [closeCart]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={closeCart}
+        className={cn(
+          "fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm transition-opacity duration-300",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        aria-hidden="true"
+      />
+
+      {/* Panel */}
+      <aside
+        className={cn(
+          "fixed top-0 right-0 bottom-0 z-[70] w-full sm:w-[420px] bg-white flex flex-col shadow-2xl",
+          "transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0" : "translate-x-full"
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping cart"
+      >
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <div className="flex items-center gap-2">
+            <ShoppingBag size={18} className="text-[#1a1a1a]" />
+            <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
+              Cart
+            </h2>
+            {itemCount > 0 && (
+              <span className="text-xs text-[#6b7280]">
+                ({itemCount} {itemCount === 1 ? "item" : "items"})
+              </span>
+            )}
+          </div>
+          <button
+            onClick={closeCart}
+            className="p-1 text-[#6b7280] hover:text-[#1a1a1a] transition-colors"
+            aria-label="Close cart"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Free shipping progress */}
+        {items.length > 0 && (
+          <div className="px-5 py-3 bg-[#fafaf9] border-b border-[#e5e7eb]">
+            {remainingForFreeShip > 0 ? (
+              <p className="text-xs text-[#6b7280]">
+                Add <span className="font-semibold text-[#1a1a1a]">{formatPrice(remainingForFreeShip)}</span> more for FREE shipping
+              </p>
+            ) : (
+              <p className="text-xs text-[#c9a96e] font-semibold">
+                🎉 You qualify for FREE shipping!
+              </p>
+            )}
+            <div className="mt-2 h-1 bg-[#e5e7eb] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#c9a96e] transition-all duration-500 rounded-full"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto px-5">
+          {items.length === 0 ? (
+            <EmptyCart onClose={closeCart} />
+          ) : (
+            <div>
+              {items.map((item) => (
+                <CartItem
+                  key={item.id}
+                  item={item}
+                  onLinkClick={closeCart}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer / Summary */}
+        {items.length > 0 && (
+          <div className="border-t border-[#e5e7eb] px-5 py-4 space-y-3 bg-white">
+
+            {/* Summary rows */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#6b7280]">Subtotal</span>
+                <span className="text-[#1a1a1a] font-medium">{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#6b7280]">Shipping</span>
+                <span className="text-[#1a1a1a] font-medium">
+                  {shipping === 0 ? "FREE" : formatPrice(shipping)}
+                </span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-[#e5e7eb]" />
+
+            {/* Total */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold tracking-wide text-[#1a1a1a] uppercase">
+                Total
+              </span>
+              <span className="text-lg font-bold text-[#1a1a1a]">
+                {formatPrice(total)}
+              </span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-2 pt-1">
+              <Link
+                href="/checkout"
+                onClick={closeCart}
+                className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors duration-300"
+              >
+                Proceed to Checkout
+                <ArrowRight
+                  size={16}
+                  className="transition-transform duration-200 group-hover:translate-x-1"
+                />
+              </Link>
+              <Link
+                href="/cart"
+                onClick={closeCart}
+                className="inline-flex items-center justify-center text-sm text-[#6b7280] hover:text-[#1a1a1a] transition-colors py-1"
+              >
+                View Cart Details
+              </Link>
+            </div>
+
+            <p className="text-[10px] text-center text-[#6b7280] pt-1">
+              Taxes calculated at checkout
+            </p>
+          </div>
+        )}
+      </aside>
+    </>
+  );
+}
+
+function EmptyCart({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-16 h-16 bg-[#f5f0e8] rounded-full flex items-center justify-center mb-4">
+        <ShoppingBag size={28} className="text-[#c9a96e]" />
+      </div>
+      <h3 className="text-base font-semibold text-[#1a1a1a] mb-1">
+        Your cart is empty
+      </h3>
+      <p className="text-sm text-[#6b7280] mb-6 max-w-xs">
+        Discover our latest collections and add your favorites.
+      </p>
+      <Link
+        href="/shop"
+        onClick={onClose}
+        className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors duration-300"
+      >
+        Start Shopping
+        <ArrowRight size={14} />
+      </Link>
+    </div>
+  );
+}

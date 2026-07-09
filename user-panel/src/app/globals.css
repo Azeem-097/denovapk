@@ -1,0 +1,82 @@
+﻿@import "tailwindcss";
+
+@theme {
+  --color-brand-primary:    #1a1a1a;
+  --color-brand-secondary:  #c9a96e;
+  --color-brand-accent:     #f5f0e8;
+  --color-brand-surface:    #fafaf9;
+  --color-brand-muted:      #6b7280;
+  --color-brand-border:     #e5e7eb;
+
+  --font-sans:      var(--font-inter);
+  --font-serif:     var(--font-playfair);
+  --font-cormorant: var(--font-cormorant);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  background-color: #c9a96e;
+  color: #ffffff;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #fafaf9;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9a96e;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b8955a;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Utility: hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

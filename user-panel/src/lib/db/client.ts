@@ -1,0 +1,29 @@
+import { createClient } from "@libsql/client";
+
+/**
+ * Turso database client.
+ * Uses TURSO_DATABASE_URL and TURSO_AUTH_TOKEN from .env
+ */
+
+const url       = process.env.TURSO_DATABASE_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
+
+if (!url) {
+  throw new Error("Missing TURSO_DATABASE_URL in environment variables");
+}
+
+// Singleton pattern for Next.js hot reload
+const globalForDb = globalThis as unknown as {
+  db: ReturnType<typeof createClient> | undefined;
+};
+
+export const db =
+  globalForDb.db ??
+  createClient({
+    url,
+    authToken,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.db = db;
+}
