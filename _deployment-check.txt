@@ -1,0 +1,405 @@
+================================================================================
+PRODUCTION IMAGE ISSUE — DIAGNOSTIC
+================================================================================
+
+================================================================================
+LOCAL FILES: user-panel/public/uploads/
+================================================================================
+
+
+  === banners ===
+    banner_0551f785edf73528.avif  (115.1 KB)
+    banner_0a84ed0fc212e3b1.avif  (246.1 KB)
+    banner_0f77d92f0c8f21ac.avif  (121 KB)
+    banner_28f000a742382a21.avif  (114.8 KB)
+    banner_463be8eb767a9af6.avif  (124.8 KB)
+    banner_917b0e0cbf2d4ead.avif  (208.3 KB)
+    banner_99786520ba9895f8.avif  (248.7 KB)
+    banner_b50c2527ed86d7f5.avif  (99.5 KB)
+    banner_b7cdacbeb0b01a63.avif  (208.3 KB)
+    banner_bc38dde21d1f93f2.avif  (105.7 KB)
+    banner_be4428306e07efa6.avif  (121 KB)
+    banner_de4582c6be475e3e.avif  (97.5 KB)
+    banner_e3b83cba3568dae0.avif  (97.5 KB)
+    banner_e5884a1813ec6658.avif  (106.7 KB)
+    banner_e60d7d4756bf4954.avif  (123.9 KB)
+    banner_ee95a444d1ad98f3.avif  (172.9 KB)
+    banner_ff0995d1cf947f32.avif  (263.2 KB)
+
+  === general ===
+    AboutUs.png  (2706.9 KB)
+
+  === products ===
+    prod_0061dfb17ff05552.avif  (264.5 KB)
+    prod_0150a640fdbff417.avif  (84.4 KB)
+    prod_021663b36fb8af00.avif  (166 KB)
+    prod_03f9124de24f348f.avif  (386.3 KB)
+    prod_05d9f784d0883a77.avif  (44.4 KB)
+    prod_0a4f5cd0e86c92cb.avif  (397 KB)
+    prod_0a97b7de865919ef.avif  (361.3 KB)
+    prod_0c15d0b788bbb35e.avif  (41.4 KB)
+    prod_0c9e393974a4c326.avif  (82.4 KB)
+    prod_0d1a15b51caa6187.avif  (91.3 KB)
+    prod_0f221c2052afd6de.avif  (155.9 KB)
+    prod_1006499f4c089eac.avif  (34.3 KB)
+    prod_1b8fc60697592318.avif  (171.4 KB)
+    prod_1fb02f689518fa81.avif  (386.3 KB)
+    prod_220dc8aa2976a8dc.avif  (232.5 KB)
+    prod_230023e2220378a3.avif  (78.7 KB)
+    prod_2613ad2c26e6e68f.avif  (166.1 KB)
+    prod_265921c87bf8bb87.avif  (166.1 KB)
+    prod_268fa183649b7b3e.avif  (477.5 KB)
+    prod_26e989d1f832520f.avif  (214.6 KB)
+    prod_284778fbb2e01f34.avif  (166.1 KB)
+    prod_2afa67bb7bb3ed11.avif  (55.4 KB)
+    prod_2b0413d8e1432e8d.avif  (98.1 KB)
+    prod_2b9c8912867168b3.avif  (252.8 KB)
+    prod_2c56740d5a39262d.avif  (166.1 KB)
+    prod_2c79f684fc0f93db.avif  (211 KB)
+    prod_2cd357c27a19727f.avif  (447.9 KB)
+    prod_2d8e2b81b31233ea.avif  (262.5 KB)
+    prod_2e1a28529e02cea0.avif  (171.4 KB)
+    prod_312ff5d09b0fcf05.avif  (57.7 KB)
+    prod_323286d89b6ca7f9.avif  (194.6 KB)
+    prod_3283eb9f5f9e06dd.avif  (386.3 KB)
+    prod_337f7b22fbab10c4.avif  (31 KB)
+    prod_34c4ea3af61946be.avif  (131.2 KB)
+    prod_36a161049c2d3fb5.avif  (410.3 KB)
+    prod_3a3d36ceeb3e5a7a.avif  (161.6 KB)
+    prod_3b29faa21f1af43a.avif  (459.6 KB)
+    prod_3c0bad913702c628.avif  (164.7 KB)
+    prod_3c6f01b40aedf3dd.avif  (517.1 KB)
+    prod_3c90b5c599084e62.avif  (27.5 KB)
+    prod_42b400f7aa589509.avif  (216.4 KB)
+    prod_457482ef73270f5b.avif  (330.7 KB)
+    prod_45cdaafe8dfc5921.avif  (262.5 KB)
+    prod_4783ed0ad1d9bc64.avif  (400.4 KB)
+    prod_4c2a08f88cdec1b9.avif  (131 KB)
+    prod_4c89355f56a126b7.avif  (82.4 KB)
+    prod_4d804fdf021663d4.avif  (127.5 KB)
+    prod_4fcf6ac4ee4d70b1.avif  (428.5 KB)
+    prod_5283c65bb6f9f591.avif  (166.1 KB)
+    prod_52ea5aa52507b3b6.avif  (28.5 KB)
+    prod_5584133795ce6bee.avif  (180.8 KB)
+    prod_567219878605519d.avif  (191.1 KB)
+    prod_5696359833c2fd43.avif  (187.1 KB)
+    prod_56c0e5a0cd4913cf.avif  (268.8 KB)
+    prod_56cba179f87eecd9.avif  (245.1 KB)
+    prod_5d86e06015735726.avif  (187.1 KB)
+    prod_5e99b87c5732adf3.avif  (149.1 KB)
+    prod_61d4fac98a9d99c4.avif  (180.8 KB)
+    prod_6453836f2ebda835.avif  (189.9 KB)
+    prod_667e6c6b8719de9f.avif  (210.4 KB)
+    prod_67d458614d38d3b2.avif  (66.7 KB)
+    prod_6882bc0af0d48be3.avif  (180 KB)
+    prod_6cab37201ef34af2.avif  (82.4 KB)
+    prod_6d75c61902a46155.avif  (180.8 KB)
+    prod_74125fd6c28d0f42.avif  (26.4 KB)
+    prod_74318d1cb1ad36e2.avif  (318.4 KB)
+    prod_75dac51ac7ddc71f.avif  (90 KB)
+    prod_76e579bbaae28187.avif  (194 KB)
+    prod_76e712f66890045b.avif  (386.3 KB)
+    prod_76ef68e9c6a38382.avif  (187.1 KB)
+    prod_777c05ddc0c74252.avif  (108.7 KB)
+    prod_7911fff430c638ce.avif  (242.3 KB)
+    prod_798a6aaed5e12087.avif  (265.3 KB)
+    prod_79c67e963445fadf.avif  (140.5 KB)
+    prod_7ace60a553bf009c.avif  (179.9 KB)
+    prod_7b1fbddc70d4f4fa.avif  (262.5 KB)
+    prod_7c0b9ec437e394a5.avif  (225.1 KB)
+    prod_7c5841e1e667dc68.avif  (21.6 KB)
+    prod_7dee251bccf1c473.avif  (82.4 KB)
+    prod_7ea672a3ff239d0b.avif  (82.4 KB)
+    prod_7ecc4595839132f6.avif  (180.8 KB)
+    prod_7efcdddc446cfa4a.avif  (178.3 KB)
+    prod_7f5680f1d58e0ce5.avif  (178.3 KB)
+    prod_803f0730ee0e07e2.avif  (487.6 KB)
+    prod_8264624c7f59e346.avif  (385.6 KB)
+    prod_834f788aad8826e4.avif  (82.4 KB)
+    prod_84427483556ca6d7.avif  (171.4 KB)
+    prod_861082aba3ea2f46.avif  (34 KB)
+    prod_8646c0c400351fbd.avif  (218.1 KB)
+    prod_86e36c00d9e73b1b.avif  (171.4 KB)
+    prod_8768dc5451861b34.avif  (92.1 KB)
+    prod_8bb7235f48a06f9a.avif  (178.4 KB)
+    prod_8d5185a73ba1ccd7.avif  (82.4 KB)
+    prod_8df055e8a281a09b.avif  (82.4 KB)
+    prod_90eaf05435b1aa98.avif  (340 KB)
+    prod_917813a46a94620c.avif  (166.1 KB)
+    prod_93ee2d5b536454f9.avif  (187.1 KB)
+    prod_9405fa7b6ca8cc03.avif  (122.4 KB)
+    prod_942e9db4e6263c7d.avif  (84.6 KB)
+    prod_9459943ab9fe55d6.avif  (60.7 KB)
+    prod_96eba75942cb2cd4.avif  (82.4 KB)
+    prod_971521e6a30c64f2.avif  (171.4 KB)
+    prod_988279d6c390c1d1.avif  (171.7 KB)
+    prod_99efdfc5c24e1599.avif  (171.4 KB)
+    prod_9af3f51749265ae9.avif  (227.7 KB)
+    prod_9bdf0ced199d2127.avif  (12.3 KB)
+    prod_9d1c6a7f930f06fd.avif  (180.8 KB)
+    prod_9e872c1fc88992a6.avif  (140.5 KB)
+    prod_a01fb737f2cf4b71.avif  (166.1 KB)
+    prod_a1a7bf13f7908cb9.avif  (183.6 KB)
+    prod_a2ca6f6d3b67ec41.avif  (233.8 KB)
+    prod_a32475cc36fbedb0.avif  (233 KB)
+    prod_a53ec4e76a8df364.avif  (187.1 KB)
+    prod_a54bd0992b1ec0c6.avif  (386.3 KB)
+    prod_a68ca32415be4e97.avif  (386.3 KB)
+    prod_a6d110cb6d3d532f.avif  (78.7 KB)
+    prod_a95d337eedf10a3e.avif  (179.4 KB)
+    prod_ab34f8a1fdb2e5cb.avif  (34.1 KB)
+    prod_ab84045497d86833.avif  (180.8 KB)
+    prod_abfa8573e3464a38.avif  (171.4 KB)
+    prod_ac01d579065d4bcc.avif  (195 KB)
+    prod_ace5884449907fb3.avif  (134.2 KB)
+    prod_ad2ca3a72c8bc710.avif  (166.1 KB)
+    prod_b157502b188b3ff6.avif  (239 KB)
+    prod_b1e36d697bd6430d.avif  (49.7 KB)
+    prod_b388fa9149015afb.avif  (217.8 KB)
+    prod_b83a35f6f76307ed.avif  (386.3 KB)
+    prod_b86506d06132e790.avif  (187.1 KB)
+    prod_b8e1968cc288be59.avif  (370.8 KB)
+    prod_ba3cf4f381c313f8.avif  (166.1 KB)
+    prod_bc8a671edaff790f.avif  (180.8 KB)
+    prod_bcfa7e0fdfc39d64.avif  (166.1 KB)
+    prod_c03ecad5fcf6b734.avif  (443.4 KB)
+    prod_c1390cbdcf6071a3.avif  (386.3 KB)
+    prod_c2be73ec3618137a.avif  (268.3 KB)
+    prod_c345b41e8bb98cc8.avif  (449 KB)
+    prod_c440f0953dd43839.avif  (183.3 KB)
+    prod_c5b3725c9e3e2d86.avif  (21.6 KB)
+    prod_c7547ddd344048f1.avif  (187.1 KB)
+    prod_c8324670fa1fa085.avif  (187.1 KB)
+    prod_cbc597f2c202c8a6.avif  (180.8 KB)
+    prod_cd2e38919c61930b.avif  (218.1 KB)
+    prod_cdaea807226846fc.avif  (385.6 KB)
+    prod_d2befae6227c783e.avif  (93.9 KB)
+    prod_d37f5a1536f988b2.avif  (410.1 KB)
+    prod_d55181cc777dc84d.avif  (443.4 KB)
+    prod_d557db93cc0eb22d.avif  (434.6 KB)
+    prod_d7284fc0b99f8d48.avif  (390.5 KB)
+    prod_d7701001440e5343.avif  (386.3 KB)
+    prod_d8d0b7276d92a99f.avif  (171.4 KB)
+    prod_da0a5c245fdb931c.avif  (464.5 KB)
+    prod_db1aa9f5adf85af9.avif  (232.9 KB)
+    prod_dccb88576b60eab1.avif  (228.5 KB)
+    prod_de8ff38d9c511177.avif  (400.7 KB)
+    prod_df0c121e86423e21.avif  (386.3 KB)
+    prod_dfb432e3888dd6c5.avif  (390.1 KB)
+    prod_e0fd427f0df37efc.avif  (459.6 KB)
+    prod_e12d902fac91ed27.avif  (49.2 KB)
+    prod_e47473741e4b25af.avif  (171.4 KB)
+    prod_e4e93f2392829f45.avif  (180.8 KB)
+    prod_e54c41a709d959b8.avif  (19.2 KB)
+    prod_eb058cb8570a1b28.avif  (82.4 KB)
+    prod_ec2ccf34e2d0f931.avif  (417.9 KB)
+    prod_ecbdfe7f06f19075.avif  (64.7 KB)
+    prod_ee3a067fef248e03.avif  (175.5 KB)
+    prod_f03814832be61574.avif  (220.2 KB)
+    prod_f06753f6dc1e9aa3.avif  (143.1 KB)
+    prod_f1c7fec613267c4e.avif  (264.5 KB)
+    prod_f359d195b7b3a41b.avif  (207.2 KB)
+    prod_f5779de23f0b6bbd.avif  (187.1 KB)
+    prod_f7e6698b6697a21e.avif  (18.7 KB)
+    prod_f9d3831e3a6af2de.avif  (228.8 KB)
+    prod_fa1a8e452027e99f.avif  (62.3 KB)
+    prod_fb3ff3e82fdca6f9.avif  (180.8 KB)
+
+================================================================================
+DEPLOYMENT CONFIG FILES
+================================================================================
+
+
+--- user-panel\next.config.ts ---
+import type { NextConfig } from "next";
+import path from "path";
+
+const nextConfig: NextConfig = {
+  // Explicit turbopack root to silence multi-lockfile warning
+  turbopack: {
+    root: path.join(__dirname),
+  },
+
+  // Optimized images with modern formats
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "plus.unsplash.com" },
+    ],
+  },
+
+  // Note: Removed experimental.optimizeCss because it requires the
+  // 'critters' package which is broken/deprecated in Next.js 16
+};
+
+export default nextConfig;
+
+--- user-panel\.gitignore ---
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# SQLite / Turso local DB
+prisma/dev.db
+prisma/dev.db-journal
+*.db
+*.db-journal
+
+
+# Uploaded images (auto-optimized)
+public/uploads/
+
+
+
+--- .gitignore ---
+# DENOVA PK - Git Ignore
+
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Next.js build outputs
+.next/
+**/.next/
+out/
+build/
+dist/
+
+# Environment files (NEVER commit secrets!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.local
+**/.env*.local
+
+# Turso / SQLite local DB
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+prisma/dev.db*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+
+# Testing
+coverage/
+.nyc_output
+
+# Vercel
+.vercel
+
+# Snapshot folder
+_project_snapshot/
+
+# Temp files
+*.tmp
+*.temp
+.tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+================================================================================
+NEXT.CONFIG (image + output config)
+================================================================================
+
+import type { NextConfig } from "next";
+import path from "path";
+
+const nextConfig: NextConfig = {
+  // Explicit turbopack root to silence multi-lockfile warning
+  turbopack: {
+    root: path.join(__dirname),
+  },
+
+  // Optimized images with modern formats
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "plus.unsplash.com" },
+    ],
+  },
+
+  // Note: Removed experimental.optimizeCss because it requires the
+  // 'critters' package which is broken/deprecated in Next.js 16
+};
+
+export default nextConfig;
+
+================================================================================
+SAMPLE IMAGE URL FROM ONE OF YOUR COLLECTIONS (from DB)
+Run this in Turso to check what URLs are stored:
+================================================================================
+
+  SELECT id, name, image FROM collections;
+

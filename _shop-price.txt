@@ -1,0 +1,496 @@
+================================================================================
+SHOP PRICE RANGE — MAKE DYNAMIC
+================================================================================
+
+================================================================================
+FILE: user-panel\src\app\shop\page.tsx
+================================================================================
+
+import { Suspense } from "react";
+import { getProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ShopPageClient } from "./ShopPageClient";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+export default async function ShopPage() {
+  const dbProducts = await getProducts({ status: "PUBLISHED", limit: 100 });
+  const products   = dbProducts.map(adaptProduct);
+
+  return (
+    <Suspense fallback={<div className="pt-32 text-center text-sm text-[#6b7280]">Loading...</div>}>
+      <ShopPageClient products={products} />
+    </Suspense>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\shop\ShopPageClient.tsx
+================================================================================
+
+"use client";
+import { useState, useMemo, useEffect } from "react";
+import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { ProductFilters, type FilterState, type ColorOption } from "@/components/product/ProductFilters";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { TextReveal } from "@/components/animations/TextReveal";
+import { cn } from "@/lib/utils";
+import { useSearchParams } from "next/navigation";
+import type { Product } from "@/types";
+
+const DEFAULT_FILTERS: FilterState = {
+  collections: [], sizes: [], colors: [],
+  priceMin: 0, priceMax: 20000, sortBy: "newest",
+};
+
+interface Props {
+  products: Product[];
+}
+
+export function ShopPageClient({ products }: Props) {
+  const searchParams = useSearchParams();
+  const filterParam  = searchParams.get("filter");
+
+  const [filters,       setFilters]       = useState<FilterState>(DEFAULT_FILTERS);
+  const [mobileFilters, setMobileFilters] = useState(false);
+  const [columns,       setColumns]       = useState<2 | 3 | 4>(4);
+  const [isLoading,     setIsLoading]     = useState(false);
+
+  useEffect(() => {
+    if (filterParam === "new")         setFilters((f) => ({ ...f, sortBy: "newest" }));
+    else if (filterParam === "sale")   setFilters((f) => ({ ...f, sortBy: "price-asc" }));
+    else if (filterParam === "bestsellers") setFilters((f) => ({ ...f, sortBy: "bestselling" }));
+  }, [filterParam]);
+
+  // ─── Dynamic filter options — derived from actual catalog ──────
+  // Only waist sizes that at least one product has
+  const availableSizes = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.waist !== null && p.waist !== undefined) set.add(String(p.waist));
+    });
+    return Array.from(set).sort((a, b) => Number(a) - Number(b));
+  }, [products]);
+
+  // Only colors that at least one product variant has
+  const availableColors = useMemo(() => {
+    const map = new Map<string, string>(); // name -> hex
+    products.forEach((p) => {
+      p.variants.forEach((v) => {
+        if (v.color && !map.has(v.color)) map.set(v.color, v.colorHex || "#000000");
+      });
+    });
+    return Array.from(map.entries())
+      .map(([name, hex]): ColorOption => ({ name, hex }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
+
+  const handleFilterChange = (newFilters: FilterState) => {
+    setIsLoading(true);
+    setFilters(newFilters);
+    setTimeout(() => setIsLoading(false), 300);
+  };
+
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    if (filters.collections.length > 0) {
+      result = result.filter((p) => filters.collections.includes(p.collection));
+    }
+
+    // Waist filter — matches product.waist (not variant.size)
+    if (filters.sizes.length > 0) {
+      result = result.filter((p) =>
+        p.waist !== null &&
+        p.waist !== undefined &&
+        filters.sizes.includes(String(p.waist))
+      );
+    }
+
+    if (filters.colors.length > 0) {
+      result = result.filter((p) => p.variants.some((v) => filters.colors.includes(v.color)));
+    }
+    result = result.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax);
+
+    if (filterParam === "new")         result = result.filter((p) => p.isNew);
+    if (filterParam === "bestsellers") result = result.filter((p) => p.isBestSeller);
+    if (filterParam === "sale")        result = result.filter((p) => !!p.compareAtPrice);
+
+    switch (filters.sortBy) {
+      case "price-asc":   result.sort((a, b) => a.price - b.price); break;
+      case "price-desc":  result.sort((a, b) => b.price - a.price); break;
+      case "bestselling": result.sort((a, b) => b.reviewCount - a.reviewCount); break;
+      case "rating":      result.sort((a, b) => b.rating - a.rating); break;
+      default:            result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return result;
+  }, [filters, filterParam, products]);
+
+  const activeCount = filters.collections.length + filters.sizes.length + filters.colors.length +
+    (filters.priceMin > 0 || filters.priceMax < 20000 ? 1 : 0);
+
+  const pageTitle = filterParam === "new" ? "New Arrivals" :
+                    filterParam === "bestsellers" ? "Best Sellers" :
+                    filterParam === "sale" ? "Sale" : "All Products";
+
+  return (
+    <>
+      <div className="pt-28 pb-8 sm:pt-32 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <Breadcrumb items={[{ label: "Home", href: "/" }, { label: pageTitle }]} className="mb-4" />
+          </FadeIn>
+          <TextReveal as="h1">
+            <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a]">{pageTitle}</span>
+          </TextReveal>
+          <FadeIn delay={100}>
+            <p className="text-[#6b7280] text-sm mt-2">{filteredProducts.length} products</p>
+          </FadeIn>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+        <div className="flex gap-8 lg:gap-10">
+          <aside className="hidden lg:block w-56 flex-shrink-0">
+            <div className="sticky top-24">
+              <ProductFilters
+                filters={filters}
+                onChange={handleFilterChange}
+                availableSizes={availableSizes}
+                availableColors={availableColors}
+              />
+            </div>
+          </aside>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
+              <button onClick={() => setMobileFilters(true)}
+                className="lg:hidden flex items-center gap-2 text-sm font-medium text-[#1a1a1a] border border-[#e5e7eb] px-4 py-2 hover:border-[#1a1a1a] transition-colors">
+                <SlidersHorizontal size={15} /> Filters
+                {activeCount > 0 && (
+                  <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">{activeCount}</span>
+                )}
+              </button>
+
+              <div className="hidden sm:flex flex-1 flex-wrap gap-2">
+                {filters.collections.map((c) => (
+                  <FilterTag key={c} label={c} onRemove={() => handleFilterChange({ ...filters, collections: filters.collections.filter((x) => x !== c) })} />
+                ))}
+                {filters.sizes.map((s) => (
+                  <FilterTag key={s} label={`Waist: ${s}"`} onRemove={() => handleFilterChange({ ...filters, sizes: filters.sizes.filter((x) => x !== s) })} />
+                ))}
+                {filters.colors.map((c) => (
+                  <FilterTag key={c} label={c} onRemove={() => handleFilterChange({ ...filters, colors: filters.colors.filter((x) => x !== c) })} />
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1 ml-auto">
+                <button onClick={() => setColumns(2)} className={cn("p-1.5 transition-colors", columns === 2 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")} aria-label="2 columns">
+                  <Grid2x2 size={18} />
+                </button>
+                <button onClick={() => setColumns(4)} className={cn("p-1.5 transition-colors", columns === 4 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")} aria-label="4 columns">
+                  <Grid3x3 size={18} />
+                </button>
+              </div>
+            </div>
+
+            <ProductGrid products={filteredProducts} isLoading={isLoading} columns={columns} />
+          </div>
+        </div>
+      </div>
+
+      {mobileFilters && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setMobileFilters(false)} />
+          <div className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-sm shadow-2xl">
+            <ProductFilters
+              filters={filters}
+              onChange={handleFilterChange}
+              availableSizes={availableSizes}
+              availableColors={availableColors}
+              isMobile
+              onClose={() => setMobileFilters(false)}
+            />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function FilterTag({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium bg-[#f5f0e8] text-[#1a1a1a] px-2.5 py-1">
+      {label}
+      <button onClick={onRemove} className="text-[#6b7280] hover:text-[#1a1a1a] transition-colors">
+        <X size={11} />
+      </button>
+    </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductFilters.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface FilterState {
+  collections: string[];
+  sizes:       string[];       // stores waist values as strings, e.g. ["30","32"]
+  colors:      string[];
+  priceMin:    number;
+  priceMax:    number;
+  sortBy:      string;
+}
+
+export interface ColorOption {
+  name: string;
+  hex:  string;
+}
+
+interface ProductFiltersProps {
+  filters:          FilterState;
+  onChange:         (filters: FilterState) => void;
+  availableSizes:   string[];       // waist values present in current catalog
+  availableColors:  ColorOption[];  // colors present in current catalog
+  isMobile?:        boolean;
+  onClose?:         () => void;
+}
+
+const SORT_OPTIONS = [
+  { value: "newest",       label: "Newest First" },
+  { value: "price-asc",    label: "Price: Low to High" },
+  { value: "price-desc",   label: "Price: High to Low" },
+  { value: "bestselling",  label: "Best Selling" },
+  { value: "rating",       label: "Top Rated" },
+];
+
+function Accordion({ title, children, defaultOpen = true }: {
+  title: string; children: React.ReactNode; defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-[#e5e7eb] py-4">
+      <button onClick={() => setOpen(!open)} className="flex items-center justify-between w-full text-left">
+        <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">{title}</span>
+        {open ? <ChevronUp size={14} className="text-[#6b7280]" /> : <ChevronDown size={14} className="text-[#6b7280]" />}
+      </button>
+      {open && <div className="mt-3">{children}</div>}
+    </div>
+  );
+}
+
+export function ProductFilters({
+  filters, onChange, availableSizes, availableColors, isMobile = false, onClose,
+}: ProductFiltersProps) {
+  const [collections, setCollections] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/shop/collections")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data && Array.isArray(data.collections)) {
+          setCollections(data.collections.map((c: { name: string }) => c.name));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggle = <K extends "collections" | "sizes" | "colors">(key: K, value: string) => {
+    const arr = filters[key] as string[];
+    onChange({
+      ...filters,
+      [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
+    });
+  };
+
+  const clearAll = () => {
+    onChange({
+      collections: [], sizes: [], colors: [],
+      priceMin: 0, priceMax: 20000, sortBy: "newest",
+    });
+  };
+
+  const activeCount =
+    filters.collections.length +
+    filters.sizes.length +
+    filters.colors.length +
+    (filters.priceMin > 0 || filters.priceMax < 20000 ? 1 : 0);
+
+  return (
+    <div className={cn("bg-white", isMobile && "h-full flex flex-col")}>
+
+      {isMobile && (
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-[#1a1a1a]">Filters</span>
+            {activeCount > 0 && (
+              <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
+                {activeCount}
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
+            <X size={20} />
+          </button>
+        </div>
+      )}
+
+      <div className={cn("flex-1 overflow-y-auto", isMobile ? "px-5" : "")}>
+
+        {!isMobile && (
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">Filters</span>
+              {activeCount > 0 && (
+                <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
+                  {activeCount}
+                </span>
+              )}
+            </div>
+            {activeCount > 0 && (
+              <button onClick={clearAll} className="text-[10px] text-[#6b7280] hover:text-[#c9a96e] transition-colors underline">
+                Clear all
+              </button>
+            )}
+          </div>
+        )}
+
+        <Accordion title="Sort By">
+          <div className="flex flex-col gap-2">
+            {SORT_OPTIONS.map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2.5 cursor-pointer group">
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full border-2 transition-all duration-150 flex-shrink-0",
+                    filters.sortBy === opt.value
+                      ? "border-[#c9a96e] bg-[#c9a96e]"
+                      : "border-[#e5e7eb] group-hover:border-[#c9a96e]"
+                  )}
+                  onClick={() => onChange({ ...filters, sortBy: opt.value })}
+                />
+                <span className="text-sm text-[#6b7280] group-hover:text-[#1a1a1a] transition-colors cursor-pointer"
+                  onClick={() => onChange({ ...filters, sortBy: opt.value })}>
+                  {opt.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        </Accordion>
+
+        <Accordion title="Collections">
+          <div className="flex flex-col gap-2">
+            {collections.length === 0 ? (
+              <p className="text-xs text-[#6b7280] italic">Loading...</p>
+            ) : (
+              collections.map((col) => (
+                <label key={col} className="flex items-center gap-2.5 cursor-pointer group">
+                  <div
+                    className={cn(
+                      "w-4 h-4 border-2 transition-all duration-150 flex-shrink-0 flex items-center justify-center",
+                      filters.collections.includes(col)
+                        ? "border-[#c9a96e] bg-[#c9a96e]"
+                        : "border-[#e5e7eb] group-hover:border-[#c9a96e]"
+                    )}
+                    onClick={() => toggle("collections", col)}
+                  >
+                    {filters.collections.includes(col) && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-sm text-[#6b7280] group-hover:text-[#1a1a1a] transition-colors cursor-pointer"
+                    onClick={() => toggle("collections", col)}>
+                    {col}
+                  </span>
+                </label>
+              ))
+            )}
+          </div>
+        </Accordion>
+
+        {/* Waist filter — only shows waist values that exist in the catalog */}
+        {availableSizes.length > 0 && (
+          <Accordion title="Waist Size">
+            <div className="flex flex-wrap gap-2">
+              {availableSizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => toggle("sizes", size)}
+                  className={cn(
+                    "w-10 h-10 text-xs font-medium border transition-all duration-150",
+                    filters.sizes.includes(size)
+                      ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                  )}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </Accordion>
+        )}
+
+        {/* Color filter — only shows colors that exist in the catalog */}
+        {availableColors.length > 0 && (
+          <Accordion title="Color">
+            <div className="flex flex-wrap gap-2.5">
+              {availableColors.map((color) => (
+                <button
+                  key={color.name}
+                  onClick={() => toggle("colors", color.name)}
+                  title={color.name}
+                  className={cn(
+                    "w-7 h-7 rounded-full border-2 transition-all duration-150",
+                    filters.colors.includes(color.name)
+                      ? "border-[#c9a96e] scale-110"
+                      : "border-[#e5e7eb] hover:border-[#c9a96e]"
+                  )}
+                  style={{ backgroundColor: color.hex }}
+                />
+              ))}
+            </div>
+          </Accordion>
+        )}
+
+        <Accordion title="Price Range">
+          <div className="px-1">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-[#6b7280]">PKR {filters.priceMin.toLocaleString()}</span>
+              <span className="text-xs text-[#6b7280]">PKR {filters.priceMax.toLocaleString()}</span>
+            </div>
+            <input
+              type="range" min={0} max={20000} step={500}
+              value={filters.priceMax}
+              onChange={(e) => onChange({ ...filters, priceMax: Number(e.target.value) })}
+              className="w-full accent-[#c9a96e]"
+            />
+          </div>
+        </Accordion>
+
+      </div>
+
+      {isMobile && (
+        <div className="px-5 py-4 border-t border-[#e5e7eb] flex gap-3">
+          <button onClick={clearAll}
+            className="flex-1 py-3 text-sm font-medium border border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors">
+            Clear All
+          </button>
+          <button onClick={onClose}
+            className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors">
+            Apply Filters
+          </button>
+        </div>
+      )}
+
+    </div>
+  );
+}

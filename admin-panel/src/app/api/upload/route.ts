@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { processImage, processImageFromUrl, formatFileSize } from "@/lib/imageProcessor";
 import type { ImageOptions } from "@/lib/imageProcessor";
@@ -6,11 +6,13 @@ import type { ImageOptions } from "@/lib/imageProcessor";
 /**
  * POST /api/upload
  *
+ * Uploads images to Cloudinary CDN.
+ *
  * Accepts either:
  *   - FormData with file (multipart upload)
- *   - JSON with { url, type } (download + optimize external image)
+ *   - JSON with { url, type } (Cloudinary downloads + optimizes external image)
  *
- * Returns optimized image URL + stats.
+ * Returns optimized Cloudinary URL + stats.
  */
 export async function POST(req: Request) {
   const authError = await requireAdmin();
@@ -18,7 +20,6 @@ export async function POST(req: Request) {
 
   try {
     const contentType = req.headers.get("content-type") ?? "";
-
     let result;
 
     if (contentType.includes("multipart/form-data")) {
@@ -31,15 +32,17 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "No file provided" }, { status: 400 });
       }
 
-      // Validate file type
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif", "image/bmp", "image/tiff"];
+      const allowedTypes = [
+        "image/jpeg", "image/png", "image/webp",
+        "image/avif", "image/gif", "image/bmp", "image/tiff",
+      ];
       if (!allowedTypes.includes(file.type)) {
         return NextResponse.json({
           error: `Unsupported file type: ${file.type}. Allowed: JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF`,
         }, { status: 400 });
       }
 
-      // Validate file size (max 10MB)
+      // Max 10 MB
       if (file.size > 10 * 1024 * 1024) {
         return NextResponse.json({
           error: "File too large. Maximum size is 10MB.",

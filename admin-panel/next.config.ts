@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "plus.unsplash.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "http",  hostname: "localhost" },
       { protocol: "https", hostname: "denovapk.com" },
       { protocol: "https", hostname: "*.hostonme.dev" },

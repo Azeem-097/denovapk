@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -10,11 +10,6 @@ import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import type { Product } from "@/types";
 
-const DEFAULT_FILTERS: FilterState = {
-  collections: [], sizes: [], colors: [],
-  priceMin: 0, priceMax: 20000, sortBy: "newest",
-};
-
 interface Props {
   products: Product[];
 }
@@ -23,19 +18,60 @@ export function ShopPageClient({ products }: Props) {
   const searchParams = useSearchParams();
   const filterParam  = searchParams.get("filter");
 
+  // ─── Compute REAL price bounds from actual catalog ────
+  const { catalogMin, catalogMax } = useMemo(() => {
+    if (products.length === 0) return { catalogMin: 0, catalogMax: 0 };
+
+    let min = Infinity;
+    let max = 0;
+    for (const p of products) {
+      if (p.price < min) min = p.price;
+      if (p.price > max) max = p.price;
+    }
+
+    // Floor min to nearest 100 down, ceil max to nearest 100 up (nicer slider stops)
+    return {
+      catalogMin: Math.max(0, Math.floor(min / 100) * 100),
+      catalogMax: Math.ceil(max / 100) * 100,
+    };
+  }, [products]);
+
+  const DEFAULT_FILTERS: FilterState = useMemo(() => ({
+    collections: [], sizes: [], colors: [],
+    priceMin: catalogMin, priceMax: catalogMax, sortBy: "newest",
+  }), [catalogMin, catalogMax]);
+
   const [filters,       setFilters]       = useState<FilterState>(DEFAULT_FILTERS);
   const [mobileFilters, setMobileFilters] = useState(false);
   const [columns,       setColumns]       = useState<2 | 3 | 4>(4);
   const [isLoading,     setIsLoading]     = useState(false);
 
+  // Sync price filter to catalog bounds whenever catalog changes
+  // (only if user hasn't touched them yet — keep current if they've been modified)
   useEffect(() => {
-    if (filterParam === "new")         setFilters((f) => ({ ...f, sortBy: "newest" }));
-    else if (filterParam === "sale")   setFilters((f) => ({ ...f, sortBy: "price-asc" }));
+    setFilters((prev) => {
+      // If price filter still at defaults (untouched), sync to new catalog bounds
+      const untouched = prev.priceMin === 0 || prev.priceMax === 20000 ||
+                        prev.priceMin === catalogMin || prev.priceMax === catalogMax;
+      if (untouched) {
+        return { ...prev, priceMin: catalogMin, priceMax: catalogMax };
+      }
+      // Otherwise clamp existing values to new bounds
+      return {
+        ...prev,
+        priceMin: Math.max(catalogMin, Math.min(prev.priceMin, catalogMax)),
+        priceMax: Math.min(catalogMax, Math.max(prev.priceMax, catalogMin)),
+      };
+    });
+  }, [catalogMin, catalogMax]);
+
+  useEffect(() => {
+    if (filterParam === "new")              setFilters((f) => ({ ...f, sortBy: "newest" }));
+    else if (filterParam === "sale")        setFilters((f) => ({ ...f, sortBy: "price-asc" }));
     else if (filterParam === "bestsellers") setFilters((f) => ({ ...f, sortBy: "bestselling" }));
   }, [filterParam]);
 
-  // ─── Dynamic filter options — derived from actual catalog ──────
-  // Only waist sizes that at least one product has
+  // ─── Dynamic filter options ──────────────────────────
   const availableSizes = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => {
@@ -44,9 +80,8 @@ export function ShopPageClient({ products }: Props) {
     return Array.from(set).sort((a, b) => Number(a) - Number(b));
   }, [products]);
 
-  // Only colors that at least one product variant has
   const availableColors = useMemo(() => {
-    const map = new Map<string, string>(); // name -> hex
+    const map = new Map<string, string>();
     products.forEach((p) => {
       p.variants.forEach((v) => {
         if (v.color && !map.has(v.color)) map.set(v.color, v.colorHex || "#000000");
@@ -70,19 +105,22 @@ export function ShopPageClient({ products }: Props) {
       result = result.filter((p) => filters.collections.includes(p.collection));
     }
 
-    // Waist filter — matches product.waist (not variant.size)
     if (filters.sizes.length > 0) {
       result = result.filter((p) =>
-        p.waist !== null &&
-        p.waist !== undefined &&
+        p.waist !== null && p.waist !== undefined &&
         filters.sizes.includes(String(p.waist))
       );
     }
 
     if (filters.colors.length > 0) {
-      result = result.filter((p) => p.variants.some((v) => filters.colors.includes(v.color)));
+      result = result.filter((p) =>
+        p.variants.some((v) => filters.colors.includes(v.color))
+      );
     }
-    result = result.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax);
+
+    result = result.filter((p) =>
+      p.price >= filters.priceMin && p.price <= filters.priceMax
+    );
 
     if (filterParam === "new")         result = result.filter((p) => p.isNew);
     if (filterParam === "bestsellers") result = result.filter((p) => p.isBestSeller);
@@ -93,17 +131,27 @@ export function ShopPageClient({ products }: Props) {
       case "price-desc":  result.sort((a, b) => b.price - a.price); break;
       case "bestselling": result.sort((a, b) => b.reviewCount - a.reviewCount); break;
       case "rating":      result.sort((a, b) => b.rating - a.rating); break;
-      default:            result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      default:            result.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     }
     return result;
   }, [filters, filterParam, products]);
 
-  const activeCount = filters.collections.length + filters.sizes.length + filters.colors.length +
-    (filters.priceMin > 0 || filters.priceMax < 20000 ? 1 : 0);
+  // Active price filter = user narrowed the range from the catalog bounds
+  const priceFilterActive =
+    filters.priceMin > catalogMin || filters.priceMax < catalogMax;
 
-  const pageTitle = filterParam === "new" ? "New Arrivals" :
+  const activeCount =
+    filters.collections.length +
+    filters.sizes.length +
+    filters.colors.length +
+    (priceFilterActive ? 1 : 0);
+
+  const pageTitle = filterParam === "new"         ? "New Arrivals" :
                     filterParam === "bestsellers" ? "Best Sellers" :
-                    filterParam === "sale" ? "Sale" : "All Products";
+                    filterParam === "sale"        ? "Sale" :
+                    "All Products";
 
   return (
     <>
@@ -113,7 +161,9 @@ export function ShopPageClient({ products }: Props) {
             <Breadcrumb items={[{ label: "Home", href: "/" }, { label: pageTitle }]} className="mb-4" />
           </FadeIn>
           <TextReveal as="h1">
-            <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a]">{pageTitle}</span>
+            <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a]">
+              {pageTitle}
+            </span>
           </TextReveal>
           <FadeIn delay={100}>
             <p className="text-[#6b7280] text-sm mt-2">{filteredProducts.length} products</p>
@@ -130,37 +180,82 @@ export function ShopPageClient({ products }: Props) {
                 onChange={handleFilterChange}
                 availableSizes={availableSizes}
                 availableColors={availableColors}
+                catalogMin={catalogMin}
+                catalogMax={catalogMax}
               />
             </div>
           </aside>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
-              <button onClick={() => setMobileFilters(true)}
-                className="lg:hidden flex items-center gap-2 text-sm font-medium text-[#1a1a1a] border border-[#e5e7eb] px-4 py-2 hover:border-[#1a1a1a] transition-colors">
+              <button
+                onClick={() => setMobileFilters(true)}
+                className="lg:hidden flex items-center gap-2 text-sm font-medium text-[#1a1a1a] border border-[#e5e7eb] px-4 py-2 hover:border-[#1a1a1a] transition-colors"
+              >
                 <SlidersHorizontal size={15} /> Filters
                 {activeCount > 0 && (
-                  <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">{activeCount}</span>
+                  <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
+                    {activeCount}
+                  </span>
                 )}
               </button>
 
               <div className="hidden sm:flex flex-1 flex-wrap gap-2">
                 {filters.collections.map((c) => (
-                  <FilterTag key={c} label={c} onRemove={() => handleFilterChange({ ...filters, collections: filters.collections.filter((x) => x !== c) })} />
+                  <FilterTag
+                    key={c}
+                    label={c}
+                    onRemove={() => handleFilterChange({
+                      ...filters,
+                      collections: filters.collections.filter((x) => x !== c),
+                    })}
+                  />
                 ))}
                 {filters.sizes.map((s) => (
-                  <FilterTag key={s} label={`Waist: ${s}"`} onRemove={() => handleFilterChange({ ...filters, sizes: filters.sizes.filter((x) => x !== s) })} />
+                  <FilterTag
+                    key={s}
+                    label={`Waist: ${s}"`}
+                    onRemove={() => handleFilterChange({
+                      ...filters,
+                      sizes: filters.sizes.filter((x) => x !== s),
+                    })}
+                  />
                 ))}
                 {filters.colors.map((c) => (
-                  <FilterTag key={c} label={c} onRemove={() => handleFilterChange({ ...filters, colors: filters.colors.filter((x) => x !== c) })} />
+                  <FilterTag
+                    key={c}
+                    label={c}
+                    onRemove={() => handleFilterChange({
+                      ...filters,
+                      colors: filters.colors.filter((x) => x !== c),
+                    })}
+                  />
                 ))}
+                {priceFilterActive && (
+                  <FilterTag
+                    label={`PKR ${filters.priceMin.toLocaleString()} - ${filters.priceMax.toLocaleString()}`}
+                    onRemove={() => handleFilterChange({
+                      ...filters,
+                      priceMin: catalogMin,
+                      priceMax: catalogMax,
+                    })}
+                  />
+                )}
               </div>
 
               <div className="flex items-center gap-1 ml-auto">
-                <button onClick={() => setColumns(2)} className={cn("p-1.5 transition-colors", columns === 2 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")} aria-label="2 columns">
+                <button
+                  onClick={() => setColumns(2)}
+                  className={cn("p-1.5 transition-colors", columns === 2 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")}
+                  aria-label="2 columns"
+                >
                   <Grid2x2 size={18} />
                 </button>
-                <button onClick={() => setColumns(4)} className={cn("p-1.5 transition-colors", columns === 4 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")} aria-label="4 columns">
+                <button
+                  onClick={() => setColumns(4)}
+                  className={cn("p-1.5 transition-colors", columns === 4 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")}
+                  aria-label="4 columns"
+                >
                   <Grid3x3 size={18} />
                 </button>
               </div>
@@ -173,13 +268,18 @@ export function ShopPageClient({ products }: Props) {
 
       {mobileFilters && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setMobileFilters(false)} />
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setMobileFilters(false)}
+          />
           <div className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-sm shadow-2xl">
             <ProductFilters
               filters={filters}
               onChange={handleFilterChange}
               availableSizes={availableSizes}
               availableColors={availableColors}
+              catalogMin={catalogMin}
+              catalogMax={catalogMax}
               isMobile
               onClose={() => setMobileFilters(false)}
             />
