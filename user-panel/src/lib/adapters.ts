@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Adapters to convert database types (paisa, unix timestamps, 0/1 booleans)
  * to frontend types (rupees, dates, true/false).
  */
@@ -74,13 +74,56 @@ export function adaptCollection(
   };
 }
 
-// ─── Testimonials (still hard-coded for now) ─────────────
+// ─── Testimonials (denim-focused, brand-relevant) ────────
 export function getMockTestimonials(): Testimonial[] {
   return [
-    { id: "t-1", name: "Ayesha Mahmood",  location: "Lahore",     rating: 5, comment: "Denova PK has completely transformed my wardrobe. The quality is outstanding - every piece feels premium and the stitching is immaculate. Will never shop anywhere else.", date: "2024-05-15" },
-    { id: "t-2", name: "Usman Tariq",     location: "Karachi",    rating: 5, comment: "Finally a Pakistani brand that truly delivers on its promise of quality. The Formal Edit collection is exceptional. Got so many compliments at the office.", date: "2024-06-02" },
-    { id: "t-3", name: "Sana Rizvi",      location: "Islamabad",  rating: 5, comment: "The embroidered lawn suit is absolutely gorgeous. The fabric quality, the embroidery detail, the fit - everything is perfect. Packaging was also very elegant.", date: "2024-06-18" },
-    { id: "t-4", name: "Bilal Ahmed",     location: "Rawalpindi", rating: 4, comment: "Very impressed with the cashmere roll-neck. It is exactly as described - incredibly soft and warm. Fast delivery too. Highly recommend.", date: "2024-04-30" },
-    { id: "t-5", name: "Fatima Khan",     location: "Lahore",     rating: 5, comment: "I bought three pieces from the Summer Essentials collection and I love them all. The linen quality is top-notch. This is genuine luxury at a fair price.", date: "2024-05-28" },
+    {
+      id:       "t-1",
+      name:     "Ahmed Raza",
+      location: "Lahore",
+      rating:   5,
+      comment:  "Best denim I've owned. The fit is spot on, the fabric feels heavy and premium — you can tell it's export quality. Wore them for weeks straight and the colour hasn't faded a bit.",
+      date:     "2024-06-12",
+    },
+    {
+      id:       "t-2",
+      name:     "Usman Tariq",
+      location: "Karachi",
+      rating:   5,
+      comment:  "Finally jeans that fit Pakistani body types properly. Bought the mid-blue enzyme wash — the wash is beautiful and the stitching is on another level. Worth every rupee.",
+      date:     "2024-06-02",
+    },
+    {
+      id:       "t-3",
+      name:     "Bilal Ahmed",
+      location: "Islamabad",
+      rating:   5,
+      comment:  "I've been buying imported jeans for years. Denova PK matches that quality at half the price. The Super Premium range especially — feels like a proper Japanese denim experience.",
+      date:     "2024-06-18",
+    },
+    {
+      id:       "t-4",
+      name:     "Hamza Sheikh",
+      location: "Rawalpindi",
+      rating:   5,
+      comment:  "Ordered the black tapered fit and grey cargo pants. Delivery was fast, packaging was premium, and both pieces fit exactly as described. Denim quality is top-tier.",
+      date:     "2024-05-28",
+    },
+    {
+      id:       "t-5",
+      name:     "Zain Ali",
+      location: "Faisalabad",
+      rating:   5,
+      comment:  "Was skeptical about buying jeans online but Denova PK nailed it. Size guide is accurate, fabric is comfortable, and the loose-fit denim is exactly what I was looking for. Ordering another pair.",
+      date:     "2024-05-15",
+    },
+    {
+      id:       "t-6",
+      name:     "Faisal Khan",
+      location: "Lahore",
+      rating:   5,
+      comment:  "The garment-dyed cargo is unreal. Fits perfectly, colour is rich, and the pockets are actually functional. Denova is doing what no other Pakistani denim brand is doing right now.",
+      date:     "2024-04-30",
+    },
   ];
 }

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getSetting } from "@/lib/db/repositories/settings";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,8 @@ export async function GET() {
 
 interface HeroBanner {
   id:                   string;
-  image:                string;
+  image:                string;   // Desktop / default
+  imageMobile?:         string;   // Optional mobile-optimized image (4:5 or 9:16)
   title:                string;
   subtitle:             string;
   description:          string;

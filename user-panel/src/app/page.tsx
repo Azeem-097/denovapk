@@ -1,4 +1,4 @@
-﻿import { HeroSection }          from "@/components/sections/HeroSection";
+import { HeroSection }          from "@/components/sections/HeroSection";
 import { FeaturedCollections }  from "@/components/sections/FeaturedCollections";
 import { NewArrivals }          from "@/components/sections/NewArrivals";
 import { BrandStory }           from "@/components/sections/BrandStory";
@@ -14,7 +14,6 @@ export const dynamic   = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  // Fetch all data in parallel
   const [dbCollections, dbNewArrivals, dbBestSellers, heroBannersRaw] = await Promise.all([
     getCollectionsWithCounts(),
     getProducts({ isNew:        true, limit: 8, sortBy: "newest" }),
@@ -27,7 +26,6 @@ export default async function HomePage() {
   const bestSellers  = dbBestSellers.map(adaptProduct);
   const testimonials = getMockTestimonials();
 
-  // Parse and filter banners (active only, sorted)
   let heroBanners: HeroBanner[] = [];
   if (heroBannersRaw) {
     try {
@@ -56,6 +54,7 @@ export default async function HomePage() {
 interface HeroBanner {
   id:                   string;
   image:                string;
+  imageMobile?:         string;
   title:                string;
   subtitle:             string;
   description:          string;

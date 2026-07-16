@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import {
   Image as ImageIcon, Plus, GripVertical, Trash2,
   Eye, EyeOff, Edit, X, Loader, ExternalLink, Link as LinkIcon,
-  Upload, Info,
+  Upload, Info, Monitor, Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToastStore }   from "@/store/toastStore";
@@ -13,12 +13,13 @@ import { useConfirmStore } from "@/store/confirmStore";
 // ─── Types ───────────────────────────────────────────────
 export interface HeroBanner {
   id:                   string;
-  image:                string;
-  title:                string;   // acts as alt text + card title
+  image:                string;   // Desktop
+  imageMobile?:         string;   // Mobile (optional but recommended)
+  title:                string;
   subtitle:             string;
   description:          string;
   buttonLabel:          string;
-  buttonHref:           string;   // main link — "Link URL" in UI
+  buttonHref:           string;
   buttonSecondaryLabel: string;
   buttonSecondaryHref:  string;
   isActive:             boolean;
@@ -33,6 +34,7 @@ function emptyBanner(): HeroBanner {
   return {
     id:                   genId(),
     image:                "",
+    imageMobile:          "",
     title:                "",
     subtitle:             "",
     description:          "",
@@ -45,7 +47,7 @@ function emptyBanner(): HeroBanner {
   };
 }
 
-// ─── Image upload helper ─────────────────────────────────
+// ─── Upload helpers ──────────────────────────────────────
 async function uploadImage(file: File): Promise<string | null> {
   const fd = new FormData();
   fd.append("file", file);
@@ -65,7 +67,6 @@ async function uploadImageFromUrl(url: string): Promise<string | null> {
   return res.ok ? data.image.url : url;
 }
 
-// ─── Auto-save helper ────────────────────────────────────
 async function saveBanners(banners: HeroBanner[]): Promise<boolean> {
   try {
     const ordered = banners.map((b, i) => ({ ...b, sortOrder: i }));
@@ -86,7 +87,7 @@ interface Props {
 }
 
 // ══════════════════════════════════════════════════════════
-//  MAIN COMPONENT
+//  MAIN
 // ══════════════════════════════════════════════════════════
 export function HeroBannersClient({ initialBanners }: Props) {
   const [banners,     setBanners]     = useState<HeroBanner[]>(initialBanners);
@@ -97,7 +98,6 @@ export function HeroBannersClient({ initialBanners }: Props) {
   const toast   = useToastStore();
   const confirm = useConfirmStore();
 
-  // ── Persist to server ──────────────────────────────────
   const persist = async (next: HeroBanner[], successMsg?: string) => {
     setBanners(next);
     const ok = await saveBanners(next);
@@ -105,19 +105,16 @@ export function HeroBannersClient({ initialBanners }: Props) {
     if (!ok) toast.error("Failed to save. Check your connection.");
   };
 
-  // ── Add banner (open empty modal) ──────────────────────
   const handleAdd = () => {
     setEditingId(null);
     setModalOpen(true);
   };
 
-  // ── Edit banner ────────────────────────────────────────
   const handleEdit = (id: string) => {
     setEditingId(id);
     setModalOpen(true);
   };
 
-  // ── Save from modal (add or update) ────────────────────
   const handleModalSave = async (banner: HeroBanner) => {
     let next: HeroBanner[];
     let msg: string;
@@ -133,7 +130,6 @@ export function HeroBannersClient({ initialBanners }: Props) {
     await persist(next, msg);
   };
 
-  // ── Delete banner ──────────────────────────────────────
   const handleDelete = async (id: string) => {
     const ok = await confirm.confirm({
       title:       "Delete Banner",
@@ -146,7 +142,6 @@ export function HeroBannersClient({ initialBanners }: Props) {
     await persist(next, "Banner deleted");
   };
 
-  // ── Toggle active ──────────────────────────────────────
   const handleToggleActive = async (id: string) => {
     const banner = banners.find((b) => b.id === id);
     if (!banner) return;
@@ -156,11 +151,8 @@ export function HeroBannersClient({ initialBanners }: Props) {
     await persist(next, banner.isActive ? "Banner hidden from website" : "Banner shown on website");
   };
 
-  // ── Drag-and-drop reorder ──────────────────────────────
   const dragIndex = useRef<number | null>(null);
-
   const onDragStart = (i: number) => { dragIndex.current = i; };
-
   const onDragOver = (e: React.DragEvent, i: number) => {
     e.preventDefault();
     const from = dragIndex.current;
@@ -171,7 +163,6 @@ export function HeroBannersClient({ initialBanners }: Props) {
     setBanners(next);
     dragIndex.current = i;
   };
-
   const onDragEnd = async () => {
     dragIndex.current = null;
     await persist(banners, "Order updated");
@@ -181,11 +172,10 @@ export function HeroBannersClient({ initialBanners }: Props) {
     ? banners.find((b) => b.id === editingId) ?? null
     : null;
 
-  // ══════════════════════════════════════════════════════
   return (
     <div className="space-y-5">
 
-      {/* ── Header ────────────────────────────────────── */}
+      {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
@@ -204,22 +194,20 @@ export function HeroBannersClient({ initialBanners }: Props) {
         </button>
       </div>
 
-      {/* ── Info banner ───────────────────────────────── */}
+      {/* Info banner */}
       <div className="bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
         <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
         <div className="text-xs text-blue-900 leading-relaxed">
-          <p className="font-semibold mb-1">How it works</p>
+          <p className="font-semibold mb-1">Two images per banner (recommended)</p>
           <p>
-            <strong>Drag &amp; drop</strong> any card to reorder banners — the first one appears first on the homepage.
-            Click the thumbnail or <Eye size={11} className="inline" /> <strong>View</strong> to preview full-size.
-            Toggle <EyeOff size={11} className="inline" /> to hide a banner from the site without deleting it.
-            <br />
-            Recommended image size: <strong>1920 &times; 800 px</strong>.
+            Upload separate images for <Monitor size={11} className="inline" /> <strong>desktop</strong> (16:9 wide, 1920&times;1080)
+            and <Smartphone size={11} className="inline" /> <strong>mobile</strong> (4:5 portrait, 1080&times;1350). If mobile is not provided,
+            desktop image will be used but may appear small on phones. <strong>Drag &amp; drop</strong> cards to reorder.
           </p>
         </div>
       </div>
 
-      {/* ── Empty state ───────────────────────────────── */}
+      {/* Empty state */}
       {banners.length === 0 && (
         <div className="bg-white border border-dashed border-[#e5e7eb] p-16 text-center">
           <ImageIcon size={40} className="text-[#e5e7eb] mx-auto mb-4" />
@@ -234,7 +222,7 @@ export function HeroBannersClient({ initialBanners }: Props) {
         </div>
       )}
 
-      {/* ── Card Grid ─────────────────────────────────── */}
+      {/* Card Grid */}
       {banners.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {banners.map((banner, i) => (
@@ -254,7 +242,7 @@ export function HeroBannersClient({ initialBanners }: Props) {
         </div>
       )}
 
-      {/* ── Modal ─────────────────────────────────────── */}
+      {/* Modal */}
       {modalOpen && (
         <BannerModal
           banner={editingBanner}
@@ -263,7 +251,7 @@ export function HeroBannersClient({ initialBanners }: Props) {
         />
       )}
 
-      {/* ── Full-size preview ─────────────────────────── */}
+      {/* Full-size preview */}
       {previewUrl && (
         <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
       )}
@@ -272,7 +260,7 @@ export function HeroBannersClient({ initialBanners }: Props) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  BANNER CARD
+//  BANNER CARD (shows both desktop + mobile thumbnails)
 // ══════════════════════════════════════════════════════════
 interface BannerCardProps {
   banner:         HeroBanner;
@@ -291,6 +279,8 @@ function BannerCard({
   onEdit, onDelete, onToggleActive, onView,
   onDragStart, onDragOver, onDragEnd,
 }: BannerCardProps) {
+  const hasMobile = !!banner.imageMobile;
+
   return (
     <div
       draggable
@@ -302,7 +292,7 @@ function BannerCard({
         !banner.isActive && "opacity-60"
       )}
     >
-      {/* ── Image thumbnail ──────────────────────────── */}
+      {/* Desktop image (big) */}
       <div
         className="relative aspect-[16/9] bg-[#111] overflow-hidden group"
         onClick={onView}
@@ -322,13 +312,44 @@ function BannerCard({
           </div>
         )}
 
-        {/* Index badge + drag handle */}
+        {/* Index badge */}
         <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-2 py-1">
           <GripVertical size={12} className="opacity-60" />
           #{index + 1}
         </div>
 
-        {/* Inactive overlay */}
+        {/* Desktop label */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
+          <Monitor size={10} />Desktop
+        </div>
+
+        {/* Mobile thumbnail overlay (bottom-right) */}
+        {hasMobile && (
+          <div
+            className="absolute bottom-2 right-2 w-14 h-16 border-2 border-white shadow-lg overflow-hidden bg-black"
+            title="Mobile version"
+          >
+            <Image
+              src={banner.imageMobile!}
+              alt="Mobile version"
+              fill
+              className="object-cover"
+              sizes="56px"
+              unoptimized={banner.imageMobile!.startsWith("/uploads")}
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] font-bold py-0.5 text-center flex items-center justify-center gap-0.5">
+              <Smartphone size={7} />MOBILE
+            </div>
+          </div>
+        )}
+
+        {/* Missing mobile warning */}
+        {!hasMobile && (
+          <div className="absolute bottom-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 flex items-center gap-1">
+            <Smartphone size={10} />No mobile image
+          </div>
+        )}
+
         {!banner.isActive && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <span className="bg-white/90 text-[#1a1a1a] text-xs font-bold uppercase tracking-wider px-3 py-1">
@@ -338,7 +359,7 @@ function BannerCard({
         )}
       </div>
 
-      {/* ── Card body ────────────────────────────────── */}
+      {/* Body */}
       <div className="p-4">
         <p className="text-sm font-bold text-[#1a1a1a] truncate mb-1">
           {banner.title || <span className="text-[#6b7280] font-normal italic">Untitled banner</span>}
@@ -355,7 +376,7 @@ function BannerCard({
         </p>
       </div>
 
-      {/* ── Action bar ────────────────────────────────── */}
+      {/* Action bar */}
       <div className="grid grid-cols-3 border-t border-[#e5e7eb]">
         <button
           onClick={onView}
@@ -378,7 +399,7 @@ function BannerCard({
         </button>
       </div>
 
-      {/* ── Toggle bar ────────────────────────────────── */}
+      {/* Toggle bar */}
       <button
         onClick={onToggleActive}
         className={cn(
@@ -399,25 +420,19 @@ function BannerCard({
 }
 
 // ══════════════════════════════════════════════════════════
-//  BANNER MODAL (Add / Edit)
+//  BANNER MODAL (Add / Edit) — with dual image upload
 // ══════════════════════════════════════════════════════════
 interface BannerModalProps {
-  banner:  HeroBanner | null;   // null = adding new
+  banner:  HeroBanner | null;
   onSave:  (banner: HeroBanner) => void;
   onClose: () => void;
 }
 
 function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
   const [form, setForm] = useState<HeroBanner>(banner ?? emptyBanner());
-  const [tab,  setTab]  = useState<"upload" | "url">("upload");
-  const [uploading, setUploading] = useState(false);
-  const [urlInput,  setUrlInput]  = useState("");
-  const [saving,    setSaving]    = useState(false);
-  const [dragOver,  setDragOver]  = useState(false);
-  const fileRef  = useRef<HTMLInputElement>(null);
-  const toast    = useToastStore();
+  const [saving,   setSaving]   = useState(false);
+  const toast = useToastStore();
 
-  // ESC to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -426,7 +441,6 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Lock body scroll
   useEffect(() => {
     const orig = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -437,48 +451,18 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
-      return;
-    }
-    setUploading(true);
-    const url = await uploadImage(file);
-    if (url) {
-      update("image", url);
-      toast.success("Image uploaded");
-    } else {
-      toast.error("Upload failed");
-    }
-    setUploading(false);
-  };
-
-  const handleUrlAdd = async () => {
-    const url = urlInput.trim();
-    if (!url.startsWith("http")) return;
-    setUploading(true);
-    const optimized = await uploadImageFromUrl(url);
-    if (optimized) {
-      update("image", optimized);
-      setUrlInput("");
-      toast.success("Image loaded from URL");
-    } else {
-      toast.error("Could not load image from URL");
-    }
-    setUploading(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  };
-
   const handleSubmit = async () => {
     if (!form.image) {
-      toast.error("Please add a banner image");
+      toast.error("Please add a desktop banner image");
       return;
+    }
+    if (!form.imageMobile) {
+      const proceed = confirm(
+        "You haven't uploaded a mobile-optimized image. " +
+        "The desktop image will be used on phones, which may look too small. " +
+        "Continue anyway?"
+      );
+      if (!proceed) return;
     }
     setSaving(true);
     onSave(form);
@@ -496,7 +480,7 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
 
       {/* Dialog */}
       <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white shadow-2xl pointer-events-auto animate-in zoom-in-95 fade-in duration-200 overflow-hidden">
+        <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white shadow-2xl pointer-events-auto animate-in zoom-in-95 fade-in duration-200 overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 bg-[#1a1a1a] text-white flex-shrink-0">
@@ -515,138 +499,28 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
           {/* Body — scrollable */}
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
-            {/* ── Banner Image ────────────────────────── */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
-                Banner Image *
-              </label>
-
-              {/* Tabs */}
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => setTab("upload")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-colors",
-                    tab === "upload"
-                      ? "bg-[#fafaf9] border-[#1a1a1a] text-[#1a1a1a]"
-                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a]"
-                  )}
-                >
-                  <Upload size={12} />Upload
-                </button>
-                <button
-                  onClick={() => setTab("url")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-colors",
-                    tab === "url"
-                      ? "bg-[#fafaf9] border-[#1a1a1a] text-[#1a1a1a]"
-                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a]"
-                  )}
-                >
-                  <LinkIcon size={12} />URL
-                </button>
-              </div>
-
-              {/* Existing image preview */}
-              {form.image && (
-                <div className="relative mb-3 border border-[#e5e7eb] overflow-hidden aspect-[21/9] bg-[#111]">
-                  <Image
-                    src={form.image}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
-                    sizes="600px"
-                    unoptimized={form.image.startsWith("/uploads")}
-                  />
-                  <button
-                    onClick={() => update("image", "")}
-                    className="absolute top-2 right-2 bg-white/90 hover:bg-red-500 hover:text-white text-[#1a1a1a] p-1.5 transition-colors"
-                    title="Remove image"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
-
-              {/* Upload zone */}
-              {tab === "upload" && !form.image && (
-                <div
-                  className={cn(
-                    "border-2 border-dashed aspect-[21/9] flex flex-col items-center justify-center cursor-pointer transition-colors",
-                    dragOver
-                      ? "border-[#c9a96e] bg-[#f5f0e8]/50"
-                      : "border-[#e5e7eb] hover:border-[#c9a96e] bg-[#fafaf9]"
-                  )}
-                  onClick={() => fileRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                >
-                  {uploading ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader size={24} className="text-[#c9a96e] animate-spin" />
-                      <span className="text-xs text-[#6b7280]">Uploading & optimizing...</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 p-4 text-center">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                        <ImageIcon size={18} className="text-[#c9a96e]" />
-                      </div>
-                      <span className="text-sm font-semibold text-[#1a1a1a]">
-                        Click or drag image here
-                      </span>
-                      <span className="text-[10px] text-[#6b7280]">
-                        JPG, PNG, WebP, AVIF &middot; Max 10 MB
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* URL input */}
-              {tab === "url" && !form.image && (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="https://images.unsplash.com/..."
-                      className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
-                    />
-                    <button
-                      onClick={handleUrlAdd}
-                      disabled={!urlInput.trim() || uploading}
-                      className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-40"
-                    >
-                      {uploading ? <Loader size={12} className="animate-spin" /> : "Load"}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-[#6b7280]">
-                    External URLs are auto-downloaded and optimized.
-                  </p>
-                </div>
-              )}
-
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFile(f);
-                  e.target.value = "";
-                }}
+            {/* ── TWO IMAGE SLOTS ─────────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ImageSlot
+                label="Desktop Image *"
+                icon={Monitor}
+                helpText="1920 x 1080 (16:9). Shown on tablets & desktops."
+                aspectClass="aspect-[16/9]"
+                value={form.image}
+                required
+                onChange={(url) => update("image", url)}
               />
-
-              <p className="mt-2 text-[10px] text-[#6b7280] flex items-center gap-1">
-                <Info size={10} />
-                Recommended: 1920 &times; 800 px &middot; Auto-optimized to AVIF/WebP
-              </p>
+              <ImageSlot
+                label="Mobile Image (recommended)"
+                icon={Smartphone}
+                helpText="1080 x 1350 (4:5) or 1080 x 1920 (9:16). Shown on phones."
+                aspectClass="aspect-[4/5]"
+                value={form.imageMobile ?? ""}
+                onChange={(url) => update("imageMobile", url)}
+              />
             </div>
 
-            {/* ── Title / Alt Text ────────────────────── */}
+            {/* Title / Alt Text */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
                 Banner Title / Alt Text
@@ -663,7 +537,7 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
               </p>
             </div>
 
-            {/* ── Link URL ────────────────────────────── */}
+            {/* Link URL */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
                 Link URL (Optional)
@@ -680,7 +554,7 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
               </p>
             </div>
 
-            {/* ── Active toggle ───────────────────────── */}
+            {/* Active toggle */}
             <label className={cn(
               "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
               form.isActive
@@ -729,6 +603,203 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
         </div>
       </div>
     </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  IMAGE SLOT — reusable component for desktop OR mobile
+// ══════════════════════════════════════════════════════════
+interface ImageSlotProps {
+  label:       string;
+  icon:        typeof Monitor;
+  helpText:    string;
+  aspectClass: string;
+  value:       string;
+  required?:   boolean;
+  onChange:    (url: string) => void;
+}
+
+function ImageSlot({
+  label, icon: Icon, helpText, aspectClass, value, required, onChange,
+}: ImageSlotProps) {
+  const [uploading, setUploading] = useState(false);
+  const [dragOver,  setDragOver]  = useState(false);
+  const [showUrl,   setShowUrl]   = useState(false);
+  const [urlInput,  setUrlInput]  = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const toast   = useToastStore();
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    setUploading(true);
+    const url = await uploadImage(file);
+    if (url) {
+      onChange(url);
+      toast.success("Image uploaded");
+    } else {
+      toast.error("Upload failed");
+    }
+    setUploading(false);
+  };
+
+  const handleUrlAdd = async () => {
+    const url = urlInput.trim();
+    if (!url.startsWith("http")) return;
+    setUploading(true);
+    const optimized = await uploadImageFromUrl(url);
+    if (optimized) {
+      onChange(optimized);
+      setUrlInput("");
+      setShowUrl(false);
+      toast.success("Image loaded from URL");
+    } else {
+      toast.error("Could not load image from URL");
+    }
+    setUploading(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  return (
+    <div>
+      <label className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2 flex items-center gap-1.5">
+        <Icon size={13} className={required ? "text-[#c9a96e]" : "text-[#6b7280]"} />
+        {label}
+      </label>
+
+      {/* Preview or Upload zone */}
+      {value ? (
+        <div className={cn("relative border border-[#e5e7eb] overflow-hidden bg-[#111]", aspectClass)}>
+          <Image
+            src={value}
+            alt="Preview"
+            fill
+            className="object-cover"
+            sizes="400px"
+            unoptimized={value.startsWith("/uploads")}
+          />
+          <div className="absolute top-1 right-1 flex gap-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileRef.current?.click();
+              }}
+              className="bg-white/90 hover:bg-white text-[#1a1a1a] p-1.5 transition-colors"
+              title="Replace"
+            >
+              <Upload size={12} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange("");
+              }}
+              className="bg-white/90 hover:bg-red-500 hover:text-white text-[#1a1a1a] p-1.5 transition-colors"
+              title="Remove"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
+            aspectClass,
+            dragOver
+              ? "border-[#c9a96e] bg-[#f5f0e8]/50"
+              : "border-[#e5e7eb] hover:border-[#c9a96e] bg-[#fafaf9]"
+          )}
+          onClick={() => fileRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader size={20} className="text-[#c9a96e] animate-spin" />
+              <span className="text-[10px] text-[#6b7280]">Uploading...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 p-3 text-center">
+              <div className="w-8 h-8 rounded-full bg-[#f5f0e8] flex items-center justify-center">
+                <ImageIcon size={14} className="text-[#c9a96e]" />
+              </div>
+              <span className="text-xs font-semibold text-[#1a1a1a]">
+                Click to upload
+              </span>
+              <span className="text-[9px] text-[#6b7280]">or drag &amp; drop</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* URL toggle + input */}
+      <div className="mt-2">
+        {!showUrl ? (
+          <button
+            type="button"
+            onClick={() => setShowUrl(true)}
+            className="text-[10px] text-[#6b7280] hover:text-[#c9a96e] underline"
+          >
+            Or paste image URL
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="https://..."
+              className="flex-1 px-2 py-1.5 text-[11px] border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleUrlAdd}
+              disabled={!urlInput.trim() || uploading}
+              className="px-2 py-1.5 text-[10px] font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-40"
+            >
+              Load
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowUrl(false); setUrlInput(""); }}
+              className="px-1.5 py-1.5 text-[#6b7280] hover:text-[#1a1a1a]"
+            >
+              <X size={10} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <p className="mt-1.5 text-[9px] text-[#6b7280] leading-snug">
+        {helpText}
+      </p>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = "";
+        }}
+      />
+    </div>
   );
 }
 

@@ -8,6 +8,7 @@ import { SearchModal }     from "@/components/layout/SearchModal";
 import { ToastContainer }  from "@/components/ui/Toast";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { CartAbandonmentTracker } from "@/components/providers/CartAbandonmentTracker";
+import { WhatsAppWidget }  from "@/components/layout/WhatsAppWidget";
 import "./globals.css";
 
 const SITE_URL         = "https://denovapk.com";
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CartDrawer />
           <SearchModal />
           <ToastContainer />
+          <WhatsAppWidget />
         </SessionProvider>
       </body>
     </html>

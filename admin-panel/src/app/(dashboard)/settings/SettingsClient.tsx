@@ -4,7 +4,7 @@ import { FooterTab } from "./FooterTab";
 import { FirstOrderTab } from "./FirstOrderTab";
 import {
   Store, Phone, ShoppingBag, Cake, Award,
-  DollarSign, Globe, Save, CheckCircle,
+  DollarSign, Globe, Save, CheckCircle, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -13,14 +13,18 @@ interface Props {
   initialSettings: Record<string, Record<string, string>>;
 }
 
-type TabId = "restaurant" | "contact" | "abandoned_cart" | "birthday" | "loyalty" | "pricing" | "social" | "first_order" | "footer";
+type TabId =
+  | "restaurant" | "contact" | "abandoned_cart" | "birthday"
+  | "loyalty" | "pricing" | "social" | "first_order" | "footer"
+  | "whatsapp";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
   { id: "restaurant",     label: "Brand Information",   icon: Store       },
   { id: "contact",        label: "Contact Information", icon: Phone       },
+  { id: "whatsapp",       label: "WhatsApp Widget",     icon: MessageCircle },
   { id: "abandoned_cart", label: "Abandoned Cart",      icon: ShoppingBag },
   { id: "birthday",       label: "Birthday Rewards",    icon: Cake        },
-  { id: "first_order",   label: "First Order Discount", icon: Award       },
+  { id: "first_order",    label: "First Order Discount", icon: Award      },
   { id: "loyalty",        label: "Loyalty Program",     icon: Award       },
   { id: "pricing",        label: "Pricing & Tax",       icon: DollarSign  },
   { id: "social",         label: "Social Media",        icon: Globe       },
@@ -43,6 +47,41 @@ export function SettingsClient({ initialSettings }: Props) {
   const saveCurrentTab = async () => {
     setSaving(true);
     const tabSettings = settings[activeTab] ?? {};
+
+    // WhatsApp tab uses a different storage strategy (single JSON blob)
+    if (activeTab === "whatsapp") {
+      // Convert flat form fields to JSON structure
+      const config = {
+        enabled:          (tabSettings.enabled ?? "true") === "true",
+        phone:            tabSettings.phone ?? "",
+        communityLink:    tabSettings.communityLink ?? "",
+        greeting:         tabSettings.greeting ?? "Hi! I'm interested in Denova PK.",
+        directLabel:      tabSettings.directLabel ?? "Direct Message",
+        communityLabel:   tabSettings.communityLabel ?? "Join Community",
+        directSubtext:    tabSettings.directSubtext ?? "Chat with our support team",
+        communitySubtext: tabSettings.communitySubtext ?? "Join our WhatsApp community",
+      };
+
+      try {
+        const res = await fetch("/api/settings", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            settings: [
+              { key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }
+            ]
+          }),
+        });
+        if (res.ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2500);
+        }
+      } catch {}
+      setSaving(false);
+      return;
+    }
+
+    // Other tabs use standard flat key/value structure
     const payload = Object.entries(tabSettings).map(([key, value]) => ({
       key, value, category: activeTab,
     }));
@@ -60,6 +99,33 @@ export function SettingsClient({ initialSettings }: Props) {
     } catch {}
     setSaving(false);
   };
+
+  // For WhatsApp tab, hydrate form from JSON blob
+  const whatsappSettings = (() => {
+    if (settings.whatsapp && Object.keys(settings.whatsapp).length > 0) {
+      return settings.whatsapp;
+    }
+    // Try to load from whatsapp_widget key (JSON blob)
+    const raw = settings.whatsapp?.whatsapp_widget;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        return {
+          enabled:          String(parsed.enabled ?? true),
+          phone:            parsed.phone ?? "",
+          communityLink:    parsed.communityLink ?? "",
+          greeting:         parsed.greeting ?? "Hi! I'm interested in Denova PK.",
+          directLabel:      parsed.directLabel ?? "Direct Message",
+          communityLabel:   parsed.communityLabel ?? "Join Community",
+          directSubtext:    parsed.directSubtext ?? "Chat with our support team",
+          communitySubtext: parsed.communitySubtext ?? "Join our WhatsApp community",
+        };
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  })();
 
   return (
     <div className="max-w-6xl space-y-5">
@@ -104,9 +170,10 @@ export function SettingsClient({ initialSettings }: Props) {
           <div className="bg-white border border-[#e5e7eb] p-6">
             {activeTab === "restaurant"     && <RestaurantTab     settings={settings.restaurant     ?? {}} onChange={(k, v) => updateSetting("restaurant", k, v)} />}
             {activeTab === "contact"        && <ContactTab        settings={settings.contact        ?? {}} onChange={(k, v) => updateSetting("contact", k, v)} />}
+            {activeTab === "whatsapp"       && <WhatsAppTab       settings={whatsappSettings              } onChange={(k, v) => updateSetting("whatsapp", k, v)} />}
             {activeTab === "abandoned_cart" && <AbandonedCartTab  settings={settings.abandoned_cart ?? {}} onChange={(k, v) => updateSetting("abandoned_cart", k, v)} />}
             {activeTab === "birthday"       && <BirthdayTab       settings={settings.birthday       ?? {}} onChange={(k, v) => updateSetting("birthday", k, v)} />}
-            {activeTab === "first_order"  && <FirstOrderTab   settings={settings.first_order  ?? {}} onChange={(k, v) => updateSetting("first_order", k, v)} />}
+            {activeTab === "first_order"    && <FirstOrderTab     settings={settings.first_order    ?? {}} onChange={(k, v) => updateSetting("first_order", k, v)} />}
             {activeTab === "loyalty"        && <LoyaltyTab        settings={settings.loyalty        ?? {}} onChange={(k, v) => updateSetting("loyalty", k, v)} />}
             {activeTab === "pricing"        && <PricingTab        settings={settings.pricing        ?? {}} onChange={(k, v) => updateSetting("pricing", k, v)} />}
             {activeTab === "social"         && <SocialTab         settings={settings.social         ?? {}} onChange={(k, v) => updateSetting("social", k, v)} />}
@@ -147,7 +214,7 @@ function Field({
       </label>
       {rows ? (
         <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none resize-y font-mono" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none resize-y" />
       ) : (
         <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
@@ -188,6 +255,109 @@ function ContactTab({ settings, onChange }: TabProps) {
         <Field label="Secondary Phone" id="contact_phone_secondary" value={settings.contact_phone_secondary ?? ""} onChange={(v) => onChange("contact_phone_secondary", v)} type="tel" />
         <Field label="Email" id="contact_email" value={settings.contact_email ?? ""} onChange={(v) => onChange("contact_email", v)} type="email" />
         <Field label="WhatsApp Number" id="contact_whatsapp" value={settings.contact_whatsapp ?? ""} onChange={(v) => onChange("contact_whatsapp", v)} type="tel" hint="Include country code, no spaces. e.g. +923001234567" />
+      </div>
+    </div>
+  );
+}
+
+function WhatsAppTab({ settings, onChange }: TabProps) {
+  const enabled = (settings.enabled ?? "true") === "true";
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <MessageCircle size={16} className="text-[#c9a96e]" />
+        WhatsApp Floating Widget
+      </h2>
+
+      <div className="space-y-4">
+        {/* Enable toggle */}
+        <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
+          <input type="checkbox" checked={enabled}
+            onChange={(e) => onChange("enabled", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#c9a96e]" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Show floating WhatsApp button on website</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Appears in bottom-right corner of every page</p>
+          </div>
+        </label>
+
+        {/* Preview */}
+        <div className="bg-[#f5f0e8]/30 border border-[#c9a96e]/30 p-4 flex items-start gap-3">
+          <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center flex-shrink-0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.14 1.545 5.873L.057 23.997l6.306-1.654A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.017-1.376l-.36-.214-3.733.979 1-3.646-.234-.374A9.818 9.818 0 0 1 12 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/>
+            </svg>
+          </div>
+          <div className="flex-1 text-xs text-[#1a1a1a] leading-relaxed">
+            <p className="font-semibold mb-1">How it works</p>
+            <p>Customers click the floating WhatsApp icon in the bottom-right corner. A menu pops up with two options: <strong>Direct Message</strong> (opens chat with your number) and <strong>Join Community</strong> (opens your WhatsApp group/community link).</p>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Direct Message Option</h3>
+          <div className="space-y-4">
+            <Field
+              label="WhatsApp Phone Number"
+              id="phone"
+              value={settings.phone ?? ""}
+              onChange={(v) => onChange("phone", v)}
+              type="tel"
+              hint="Include country code, e.g. +923001234567 (spaces/dashes are OK - will be cleaned)"
+            />
+            <Field
+              label="Greeting Message (pre-filled in chat)"
+              id="greeting"
+              value={settings.greeting ?? "Hi! I'm interested in Denova PK."}
+              onChange={(v) => onChange("greeting", v)}
+              hint="This text appears when customer clicks Direct Message"
+              rows={2}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Button Label"
+                id="directLabel"
+                value={settings.directLabel ?? "Direct Message"}
+                onChange={(v) => onChange("directLabel", v)}
+              />
+              <Field
+                label="Button Subtext"
+                id="directSubtext"
+                value={settings.directSubtext ?? "Chat with our support team"}
+                onChange={(v) => onChange("directSubtext", v)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Community Option</h3>
+          <div className="space-y-4">
+            <Field
+              label="Community / Group Invite Link"
+              id="communityLink"
+              value={settings.communityLink ?? ""}
+              onChange={(v) => onChange("communityLink", v)}
+              type="url"
+              hint="Full WhatsApp community/group invite URL, e.g. https://chat.whatsapp.com/xxx"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field
+                label="Button Label"
+                id="communityLabel"
+                value={settings.communityLabel ?? "Join Community"}
+                onChange={(v) => onChange("communityLabel", v)}
+              />
+              <Field
+                label="Button Subtext"
+                id="communitySubtext"
+                value={settings.communitySubtext ?? "Join our WhatsApp community"}
+                onChange={(v) => onChange("communitySubtext", v)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

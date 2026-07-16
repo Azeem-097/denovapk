@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 // ─── Types ───────────────────────────────────────────────
 interface HeroBanner {
   id:                   string;
-  image:                string;
+  image:                string;   // Desktop (16:9)
+  imageMobile?:         string;   // Mobile (4:5 or 9:16)
   title:                string;
   subtitle:             string;
   description:          string;
@@ -23,6 +24,7 @@ const FALLBACK_SLIDES: HeroBanner[] = [
   {
     id:                   "fallback-1",
     image:                "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80",
+    imageMobile:          "",
     title:                "Denova PK",
     subtitle:             "",
     description:          "",
@@ -77,28 +79,40 @@ export function HeroSection({ banners: initialBanners }: HeroSectionProps) {
     <section className="relative w-full bg-white overflow-hidden">
 
       {/*
-        Each slide has its OWN sizer to determine its OWN aspect ratio.
-        The ACTIVE slide is in normal flow (its sizer sets container height).
-        Inactive slides are absolutely positioned & invisible (no layout impact).
+        Each slide uses <picture> with two <source>s:
+          - Mobile source (max-width: 767px)  ->  imageMobile if available, else desktop
+          - Default (desktop, 768px+)         ->  desktop image
 
-        This means:
-        - Each banner shows at its natural aspect ratio
-        - Full image visible, no cropping
-        - Container height smoothly animates between slides
+        The <img> element is in normal flow (width: 100%, height: auto),
+        which lets each slide define its own container height based on
+        the aspect ratio of the currently-shown image.
+
+        Active slide  = relative (sets container height)
+        Inactive      = absolute (invisible, no layout impact)
       */}
       {slides.map((s, i) => {
         const isActive = i === current;
         const hasLink  = !!s.buttonHref;
+        const mobileSrc = s.imageMobile || s.image;   // fall back to desktop
 
-        /* eslint-disable-next-line @next/next/no-img-element */
-        const sizerImg = (
-          <img
-            src={s.image}
-            alt=""
-            aria-hidden="true"
-            className="block w-full h-auto"
-            draggable={false}
-          />
+        const imgElement = (
+          <picture>
+            {/* Mobile image (portrait 4:5 or 9:16) */}
+            <source
+              media="(max-width: 767px)"
+              srcSet={mobileSrc}
+            />
+            {/* Desktop image (default) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={s.image}
+              alt={s.title || `Banner ${i + 1}`}
+              className="block w-full h-auto"
+              draggable={false}
+              loading={i === 0 ? "eager" : "lazy"}
+              fetchPriority={i === 0 ? "high" : "auto"}
+            />
+          </picture>
         );
 
         const baseClass = cn(
@@ -117,14 +131,14 @@ export function HeroSection({ banners: initialBanners }: HeroSectionProps) {
               aria-label={s.title || `Banner ${i + 1}`}
               className={cn(baseClass, "block cursor-pointer")}
             >
-              {sizerImg}
+              {imgElement}
             </Link>
           );
         }
 
         return (
           <div key={s.id} className={baseClass}>
-            {sizerImg}
+            {imgElement}
           </div>
         );
       })}
