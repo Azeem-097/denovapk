@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -33,7 +33,7 @@ export function BrandStory() {
           <FadeIn className="relative">
             <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[4/5]">
               <Image
-                src="/uploads/general/AboutUs.png"
+                src="https://res.cloudinary.com/djy5qqco7/image/upload/v1784232629/denovapk/general/txvavizawdhvvo7y2oln.jpg"
                 alt="Denova PK craftsmanship"
                 fill
                 className="object-cover"

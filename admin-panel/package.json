@@ -9,13 +9,14 @@
     "lint": "eslint",
     "db:init": "tsx src/lib/db/migrate.ts",
     "db:seed": "tsx src/lib/db/seed.ts",
-    "db:reset": "tsx src/lib/db/reset.ts"
+    "db:reset": "tsx src/lib/db/reset.ts",
+    "db:migrate-images": "tsx src/lib/db/migrate-images-to-cloudinary.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@libsql/client": "^0.17.4",
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^2.10.0",
+    "cloudinary": "^2.5.1",
     "clsx": "^2.1.1",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.23.0",
