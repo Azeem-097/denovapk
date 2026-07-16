@@ -1,10 +1,11 @@
 "use client";
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Download, Search, ChevronRight, ShoppingCart } from "lucide-react";
+import { Download, Search, ChevronRight, ShoppingCart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatPrice, formatDate, cn } from "@/lib/utils";
 import { ORDER_STATUS_COLORS, PAYMENT_STATUS_COLORS } from "@/lib/constants";
+import { openWhatsApp, buildOrderConfirmationMessage } from "@/lib/whatsapp";
 import type { AdminOrder, OrderStatus } from "@/types";
 
 const STATUS_TABS: (OrderStatus | "all")[] = ["all", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
@@ -87,7 +88,7 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
-                  {["Order", "Customer", "Items", "Total", "Payment", "Status", "Date", ""].map((h) => (
+                  {["Order", "Customer", "Items", "Total", "Payment", "Status", "Date", "WA", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -118,6 +119,27 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-[#6b7280]">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const msg = buildOrderConfirmationMessage({
+                            orderNumber: order.orderNumber,
+                            items: order.items,
+                            total: order.total,
+                            paymentMethod: order.paymentMethod,
+                            customer: order.customer,
+                          });
+                          openWhatsApp(order.customerPhone, msg);
+                        }}
+                        disabled={!order.customerPhone}
+                        className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-full transition-colors disabled:opacity-30"
+                        title="Confirm via WhatsApp"
+                      >
+                        <MessageCircle size={14} />
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <Link href={`/orders/${order.id}`} className="text-[#6b7280] hover:text-[#c9a96e]"><ChevronRight size={16} /></Link>
                     </td>

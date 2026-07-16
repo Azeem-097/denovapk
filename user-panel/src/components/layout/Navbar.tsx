@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
@@ -10,10 +10,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useSearchStore } from "@/store/searchStore";
 
 const collectionsDropdown = [
-  { label: "Summer Essentials", href: "/collections/summer-essentials" },
-  { label: "Formal Edit",       href: "/collections/formal-edit" },
-  { label: "Casual Comfort",    href: "/collections/casual-comfort" },
-  { label: "Winter Luxe",       href: "/collections/winter-luxe" },
+  { label: "Premium",       href: "/collections/premium" },
+  { label: "Super Premium", href: "/collections/super-premium" },
 ];
 
 export function Navbar() {

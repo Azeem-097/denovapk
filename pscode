@@ -1,0 +1,75 @@
+cd "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk"
+
+# Set execution policy for current process (safe, temporary)
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
+Write-Host ""
+Write-Host "Running extraction script..." -ForegroundColor Cyan
+Write-Host ""
+
+# Run with default 'ai' mode + open folder
+.\extract-project.ps1 -Mode ai -OpenAfter
+
+
+
+__________________________________________________________________________
+
+.\extract-project.ps1 -Mode ai -OpenAfter
+
+# Recommended default (AI-optimized bundle)
+.\extract-project.ps1
+
+# Auto-open the output folder
+.\extract-project.ps1 -OpenAfter
+
+# Extract everything
+.\extract-project.ps1 -Mode all -OpenAfter
+
+# Quick share (smallest file, best for pasting in chat)
+.\extract-project.ps1 -Mode quick -OpenAfter
+
+
+__________________________________________________________________________
+
+Specific modules
+
+# Only user panel
+.\extract-project.ps1 -Mode user -OpenAfter
+
+# Only admin panel
+.\extract-project.ps1 -Mode admin -OpenAfter
+
+# Only API routes
+.\extract-project.ps1 -Mode api -OpenAfter
+
+# Only database files
+.\extract-project.ps1 -Mode database -OpenAfter
+
+# Only configs
+.\extract-project.ps1 -Mode config -OpenAfter
+
+
+__________________________________________________________________________
+
+Debug a specific issue
+
+
+# Backend/API bug
+.\extract-project.ps1 -Mode api -OpenAfter
+
+# Database issue
+.\extract-project.ps1 -Mode database -OpenAfter
+
+# Deploy/config issue
+.\extract-project.ps1 -Mode config -OpenAfter
+
+__________________________________________________________________________
+
+Backup before major changes
+
+.\extract-project.ps1 -Mode all -OpenAfter
+
+
+__________________________________________________________________________
+
+.\extract-project.ps1 -Mode quick -OpenAfter

@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, MapPin, Heart, Settings, LogOut, User } from "lucide-react";
+import { LayoutDashboard, Package, MapPin, Heart, Settings, LogOut, User, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
@@ -9,6 +9,7 @@ import { useToastStore } from "@/store/toastStore";
 const NAV = [
   { href: "/account/dashboard", label: "Dashboard",  icon: LayoutDashboard },
   { href: "/account/orders",    label: "Orders",     icon: Package },
+  { href: "/account/rewards",   label: "My Rewards", icon: Award },
   { href: "/account/addresses", label: "Addresses",  icon: MapPin },
   { href: "/wishlist",          label: "Wishlist",   icon: Heart },
   { href: "/account/settings",  label: "Settings",   icon: Settings },
@@ -29,17 +30,10 @@ export function AccountSidebar() {
     }
   };
 
-  const initials = user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() ?? "U";
+  const initials = user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "U";
 
   return (
     <aside className="lg:sticky lg:top-24 lg:self-start bg-white border border-[#e5e7eb]">
-
-      {/* Profile summary */}
       <div className="p-5 border-b border-[#e5e7eb]">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
@@ -51,32 +45,22 @@ export function AccountSidebar() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[#1a1a1a] truncate">
-              {user?.name || "Guest"}
-            </p>
-            <p className="text-xs text-[#6b7280] truncate">
-              {user?.email || ""}
-            </p>
+            <p className="text-sm font-semibold text-[#1a1a1a] truncate">{user?.name || "Guest"}</p>
+            <p className="text-xs text-[#6b7280] truncate">{user?.email || ""}</p>
           </div>
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="p-2">
         {NAV.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
+            <Link key={item.href} href={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 text-sm transition-colors rounded",
-                active
-                  ? "bg-[#f5f0e8] text-[#c9a96e] font-semibold"
-                  : "text-[#1a1a1a] hover:bg-[#fafaf9]"
-              )}
-            >
+                active ? "bg-[#f5f0e8] text-[#c9a96e] font-semibold" : "text-[#1a1a1a] hover:bg-[#fafaf9]"
+              )}>
               <Icon size={16} className={active ? "text-[#c9a96e]" : "text-[#6b7280]"} />
               <span>{item.label}</span>
             </Link>
@@ -84,12 +68,9 @@ export function AccountSidebar() {
         })}
       </nav>
 
-      {/* Logout */}
       <div className="p-2 border-t border-[#e5e7eb]">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded transition-colors"
-        >
+        <button onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded transition-colors">
           <LogOut size={16} />
           <span>Sign Out</span>
         </button>
@@ -98,7 +79,6 @@ export function AccountSidebar() {
   );
 }
 
-// Empty state when user not logged in
 export function NotLoggedInState() {
   return (
     <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
@@ -113,16 +93,10 @@ export function NotLoggedInState() {
           Access your orders, wishlist, addresses, and personalized experience.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/account/login"
-            className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors"
-          >
+          <Link href="/account/login" className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors">
             Sign In
           </Link>
-          <Link
-            href="/account/register"
-            className="inline-flex items-center justify-center border border-[#1a1a1a] text-[#1a1a1a] px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#1a1a1a] hover:text-white transition-colors"
-          >
+          <Link href="/account/register" className="inline-flex items-center justify-center border border-[#1a1a1a] text-[#1a1a1a] px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#1a1a1a] hover:text-white transition-colors">
             Create Account
           </Link>
         </div>

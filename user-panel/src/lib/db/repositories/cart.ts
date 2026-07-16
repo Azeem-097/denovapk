@@ -30,7 +30,7 @@ export async function getOrCreateCart(userId: string): Promise<DbCart> {
     args: [cartId, userId, t, t],
   });
 
-  return { id: cartId, userId, createdAt: t, updatedAt: t };
+  return { id: cartId, userId, lastActivity: t, createdAt: t, updatedAt: t };
 }
 
 // ─── Get cart with all items + product details ───────────

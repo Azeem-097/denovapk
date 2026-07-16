@@ -1,4 +1,4 @@
--- Denova PK - Complete Database Schema
+﻿-- Denova PK - Complete Database Schema
 -- Run this in Turso SQL editor to create all tables
 
 -- ============================================================
@@ -14,10 +14,14 @@ CREATE TABLE IF NOT EXISTS users (
   password       TEXT,
   avatar         TEXT,
   isActive       INTEGER NOT NULL DEFAULT 1,
+  birthday       TEXT,
+  loyaltyPoints  INTEGER NOT NULL DEFAULT 0,
   createdAt      INTEGER NOT NULL DEFAULT (unixepoch()),
   updatedAt      INTEGER NOT NULL DEFAULT (unixepoch())
 );
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_email    ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_phone    ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_birthday ON users(birthday);
 
 CREATE TABLE IF NOT EXISTS admins (
   id         TEXT PRIMARY KEY,
@@ -105,6 +109,9 @@ CREATE TABLE IF NOT EXISTS products (
   rating            REAL NOT NULL DEFAULT 0,
   reviewCount       INTEGER NOT NULL DEFAULT 0,
   soldCount         INTEGER NOT NULL DEFAULT 0,
+  waist             REAL,
+  length            REAL,
+  bottom            REAL,
   createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
   updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
 );
@@ -145,11 +152,13 @@ CREATE INDEX IF NOT EXISTS idx_variants_sku       ON product_variants(sku);
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS carts (
-  id         TEXT PRIMARY KEY,
-  userId     TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
-  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
+  id            TEXT PRIMARY KEY,
+  userId        TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lastActivity  INTEGER NOT NULL DEFAULT (unixepoch()),
+  createdAt     INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt     INTEGER NOT NULL DEFAULT (unixepoch())
 );
+CREATE INDEX IF NOT EXISTS idx_carts_lastActivity ON carts(lastActivity);
 
 CREATE TABLE IF NOT EXISTS cart_items (
   id         TEXT PRIMARY KEY,
@@ -173,6 +182,37 @@ CREATE TABLE IF NOT EXISTS wishlists (
 CREATE INDEX IF NOT EXISTS idx_wishlists_userId ON wishlists(userId);
 
 -- ============================================================
+-- ABANDONED CARTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS abandoned_carts (
+  id                TEXT PRIMARY KEY,
+  userId            TEXT REFERENCES users(id) ON DELETE SET NULL,
+  email             TEXT,
+  phone             TEXT,
+  fullName          TEXT,
+  city              TEXT,
+  itemsJson         TEXT NOT NULL DEFAULT '[]',
+  itemCount         INTEGER NOT NULL DEFAULT 0,
+  subtotal          INTEGER NOT NULL DEFAULT 0,
+  totalValue        INTEGER NOT NULL DEFAULT 0,
+  reachedCheckout   INTEGER NOT NULL DEFAULT 0,
+  isContacted       INTEGER NOT NULL DEFAULT 0,
+  isRecovered       INTEGER NOT NULL DEFAULT 0,
+  recoveredOrderId  TEXT REFERENCES orders(id) ON DELETE SET NULL,
+  adminNote         TEXT,
+  lastActivity      INTEGER NOT NULL DEFAULT (unixepoch()),
+  abandonedAt       INTEGER NOT NULL DEFAULT (unixepoch()),
+  createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_userId       ON abandoned_carts(userId);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_phone        ON abandoned_carts(phone);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_email        ON abandoned_carts(email);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_abandonedAt  ON abandoned_carts(abandonedAt);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_isRecovered  ON abandoned_carts(isRecovered);
+
+-- ============================================================
 -- ORDERS
 -- ============================================================
 
@@ -194,37 +234,42 @@ CREATE INDEX IF NOT EXISTS idx_discounts_code   ON discounts(code);
 CREATE INDEX IF NOT EXISTS idx_discounts_status ON discounts(status);
 
 CREATE TABLE IF NOT EXISTS orders (
-  id               TEXT PRIMARY KEY,
-  orderNumber      TEXT UNIQUE NOT NULL,
-  userId           TEXT REFERENCES users(id),
-  guestEmail       TEXT,
-  guestName        TEXT,
-  guestPhone       TEXT,
-  subtotal         INTEGER NOT NULL,
-  discount         INTEGER NOT NULL DEFAULT 0,
-  shipping         INTEGER NOT NULL DEFAULT 0,
-  tax              INTEGER NOT NULL DEFAULT 0,
-  total            INTEGER NOT NULL,
-  status           TEXT NOT NULL DEFAULT 'PENDING',
-  paymentStatus    TEXT NOT NULL DEFAULT 'PENDING',
-  paymentMethod    TEXT NOT NULL,
-  discountCode     TEXT,
-  discountId       TEXT REFERENCES discounts(id),
-  addressId        TEXT REFERENCES addresses(id),
-  shippingAddress  TEXT,
-  shippingMethod   TEXT NOT NULL,
-  trackingNumber   TEXT,
-  courierName      TEXT,
-  customerNote     TEXT,
-  adminNote        TEXT,
-  confirmedAt      INTEGER,
-  shippedAt        INTEGER,
-  deliveredAt      INTEGER,
-  cancelledAt      INTEGER,
-  createdById      TEXT REFERENCES admins(id),
-  updatedById      TEXT REFERENCES admins(id),
-  createdAt        INTEGER NOT NULL DEFAULT (unixepoch()),
-  updatedAt        INTEGER NOT NULL DEFAULT (unixepoch())
+  id                    TEXT PRIMARY KEY,
+  orderNumber           TEXT UNIQUE NOT NULL,
+  userId                TEXT REFERENCES users(id),
+  guestEmail            TEXT,
+  guestName             TEXT,
+  guestPhone            TEXT,
+  subtotal              INTEGER NOT NULL,
+  discount              INTEGER NOT NULL DEFAULT 0,
+  loyaltyDiscount       INTEGER NOT NULL DEFAULT 0,
+  loyaltyPointsUsed     INTEGER NOT NULL DEFAULT 0,
+  loyaltyPointsEarned   INTEGER NOT NULL DEFAULT 0,
+  birthdayDiscount      INTEGER NOT NULL DEFAULT 0,
+  isBirthdayOrder       INTEGER NOT NULL DEFAULT 0,
+  shipping              INTEGER NOT NULL DEFAULT 0,
+  tax                   INTEGER NOT NULL DEFAULT 0,
+  total                 INTEGER NOT NULL,
+  status                TEXT NOT NULL DEFAULT 'PENDING',
+  paymentStatus         TEXT NOT NULL DEFAULT 'PENDING',
+  paymentMethod         TEXT NOT NULL,
+  discountCode          TEXT,
+  discountId            TEXT REFERENCES discounts(id),
+  addressId             TEXT REFERENCES addresses(id),
+  shippingAddress       TEXT,
+  shippingMethod        TEXT NOT NULL,
+  trackingNumber        TEXT,
+  courierName           TEXT,
+  customerNote          TEXT,
+  adminNote             TEXT,
+  confirmedAt           INTEGER,
+  shippedAt             INTEGER,
+  deliveredAt           INTEGER,
+  cancelledAt           INTEGER,
+  createdById           TEXT REFERENCES admins(id),
+  updatedById           TEXT REFERENCES admins(id),
+  createdAt             INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt             INTEGER NOT NULL DEFAULT (unixepoch())
 );
 CREATE INDEX IF NOT EXISTS idx_orders_orderNumber   ON orders(orderNumber);
 CREATE INDEX IF NOT EXISTS idx_orders_userId        ON orders(userId);
@@ -247,6 +292,24 @@ CREATE TABLE IF NOT EXISTS order_items (
 );
 CREATE INDEX IF NOT EXISTS idx_order_items_orderId   ON order_items(orderId);
 CREATE INDEX IF NOT EXISTS idx_order_items_productId ON order_items(productId);
+
+-- ============================================================
+-- LOYALTY POINTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS loyalty_transactions (
+  id          TEXT PRIMARY KEY,
+  userId      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  orderId     TEXT REFERENCES orders(id) ON DELETE SET NULL,
+  type        TEXT NOT NULL,
+  points      INTEGER NOT NULL,
+  balance     INTEGER NOT NULL,
+  description TEXT,
+  createdAt   INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_userId  ON loyalty_transactions(userId);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_orderId ON loyalty_transactions(orderId);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_type    ON loyalty_transactions(type);
 
 -- ============================================================
 -- REVIEWS
@@ -297,15 +360,22 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 CREATE INDEX IF NOT EXISTS idx_contact_isRead ON contact_messages(isRead);
 
 -- ============================================================
--- STORE SETTINGS
+-- SETTINGS
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS settings (
   id         TEXT PRIMARY KEY,
   key        TEXT UNIQUE NOT NULL,
   value      TEXT NOT NULL,
+  category   TEXT NOT NULL DEFAULT 'general',
   updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
 );
+CREATE INDEX IF NOT EXISTS idx_settings_key      ON settings(key);
+CREATE INDEX IF NOT EXISTS idx_settings_category ON settings(category);
+
+-- ============================================================
+-- SHIPPING
+-- ============================================================
 
 CREATE TABLE IF NOT EXISTS shipping_zones (
   id         TEXT PRIMARY KEY,

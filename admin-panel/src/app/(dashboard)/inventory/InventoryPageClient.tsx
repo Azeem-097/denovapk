@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, Check } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useToastStore } from "@/store/toastStore";
 import type { AdminProduct } from "@/types";
 
 export function InventoryPageClient({ products }: { products: AdminProduct[] }) {
@@ -11,6 +12,7 @@ export function InventoryPageClient({ products }: { products: AdminProduct[] }) 
   const [stockChanges, setStockChanges] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const toast = useToastStore();
 
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -27,8 +29,6 @@ export function InventoryPageClient({ products }: { products: AdminProduct[] }) 
 
     setSaving((prev) => ({ ...prev, [productId]: true }));
     try {
-      // Note: This updates the FIRST variant. For real multi-variant, would iterate.
-      // For now, we use this simple pattern.
       const res = await fetch(`/api/inventory/${productId}`, {
         method:  "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -36,14 +36,15 @@ export function InventoryPageClient({ products }: { products: AdminProduct[] }) 
       });
       if (res.ok) {
         setSaved((prev) => ({ ...prev, [productId]: true }));
+        toast.success("Stock level updated.", "Inventory Updated");
         setTimeout(() => {
           setSaved((prev) => { const p = { ...prev }; delete p[productId]; return p; });
         }, 2000);
       } else {
-        alert("Failed to update");
+        toast.error("Failed to update stock. Please try again.", "Update Failed");
       }
     } catch {
-      alert("Network error");
+      toast.error("Unable to connect to the server.", "Network Error");
     }
     setSaving((prev) => ({ ...prev, [productId]: false }));
   };

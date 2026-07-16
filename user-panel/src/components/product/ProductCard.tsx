@@ -15,9 +15,11 @@ interface ProductCardProps {
   className?: string;
 }
 
+const PLACEHOLDER_URL = "/uploads/placeholder.svg";
+
 export function ProductCard({ product, className }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted]     = useState(false);
 
   const addToCart      = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -26,7 +28,17 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   useEffect(() => setMounted(true), []);
 
-  const primaryImage = product.images.find((img) => img.isPrimary) || product.images[0];
+  // ── Defensive image selection ────────────────────────
+  const sortedImages = [...(product.images ?? [])].sort(
+    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+  );
+
+  const primaryImage = sortedImages[0] ?? {
+    id: "placeholder", url: PLACEHOLDER_URL, alt: product.name, isPrimary: true,
+  };
+  const secondaryImage = sortedImages[1];      // may be undefined
+  const hasSecondary   = Boolean(secondaryImage);
+
   const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
   const discountPercent = hasDiscount
     ? getDiscountPercent(product.compareAtPrice!, product.price)
@@ -83,18 +95,40 @@ export function ProductCard({ product, className }: ProductCardProps) {
         href={`/products/${product.slug}`}
         className="relative block aspect-[3/4] overflow-hidden bg-[#fafaf9] mb-3"
       >
+        {/* Primary image */}
         <Image
           src={primaryImage.url}
           alt={primaryImage.alt}
           fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          className={cn(
+            "object-cover transition-all duration-700 ease-out",
+            hasSecondary && isHovered
+              ? "opacity-0 scale-105"
+              : "opacity-100 group-hover:scale-105"
+          )}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           loading="lazy"
+          unoptimized={primaryImage.url === PLACEHOLDER_URL}
         />
 
+        {/* Secondary image on hover */}
+        {hasSecondary && (
+          <Image
+            src={secondaryImage.url}
+            alt={secondaryImage.alt || product.name}
+            fill
+            className={cn(
+              "object-cover transition-all duration-700 ease-out",
+              isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
+            )}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            loading="lazy"
+          />
+        )}
+
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-          {product.isNew                    && <Badge variant="new">New</Badge>}
-          {hasDiscount                       && <Badge variant="sale">-{discountPercent}%</Badge>}
+          {product.isNew                          && <Badge variant="new">New</Badge>}
+          {hasDiscount                            && <Badge variant="sale">-{discountPercent}%</Badge>}
           {product.isBestSeller && !product.isNew && <Badge variant="bestseller">Best Seller</Badge>}
         </div>
 
@@ -141,7 +175,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <div className="flex items-center gap-1.5 mb-2">
           <div className="flex items-center gap-0.5">
             {Array.from({ length: 5 }, (_, i) => (
-              <svg key={i} className={cn("w-3 h-3", i < Math.round(product.rating) ? "text-[#c9a96e]" : "text-[#e5e7eb]")} fill="currentColor" viewBox="0 0 20 20">
+              <svg
+                key={i}
+                className={cn("w-3 h-3", i < Math.round(product.rating) ? "text-[#c9a96e]" : "text-[#e5e7eb]")}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
               </svg>
             ))}

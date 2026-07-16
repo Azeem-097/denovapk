@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,11 +17,18 @@ export default function AddressesPage() {
   const [mounted, setMounted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Address | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const { isLoggedIn, addresses, addAddress, updateAddress, removeAddress, setDefaultAddress } = useAuthStore();
+  const { isLoggedIn, addresses, loadAddresses, removeAddress, setDefaultAddress } = useAuthStore();
   const showToast = useToastStore((s) => s.addToast);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => { setMounted(true); }, []);
+
+  // Reload addresses when page mounts
+  useEffect(() => {
+    if (isLoggedIn) loadAddresses();
+  }, [isLoggedIn, loadAddresses]);
+
   if (!mounted) return null;
   if (!isLoggedIn) return <NotLoggedInState />;
 
@@ -35,27 +42,88 @@ export default function AddressesPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("Delete this address?")) {
-      removeAddress(id);
+      await removeAddress(id);
       showToast({ type: "info", message: "Address deleted" });
     }
   };
 
-  const handleSetDefault = (id: string) => {
-    setDefaultAddress(id);
+  const handleSetDefault = async (id: string) => {
+    await setDefaultAddress(id);
     showToast({ type: "success", message: "Default address updated" });
   };
 
-  const handleSave = (data: AddressFormData) => {
-    if (editing) {
-      updateAddress(editing.id, data);
-      showToast({ type: "success", message: "Address updated" });
-    } else {
-      addAddress(data);
-      showToast({ type: "success", message: "Address added" });
+  const handleSave = async (data: AddressFormData) => {
+    setSaving(true);
+
+    try {
+      if (editing) {
+        // UPDATE existing address
+        const res = await fetch(`/api/addresses/${editing.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label:      data.label,
+            fullName:   data.fullName,
+            phone:      data.phone,
+            street:     data.street,
+            city:       data.city,
+            province:   data.province,
+            postalCode: data.postalCode,
+            isDefault:  data.isDefault ? 1 : 0,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast({ type: "error", message: err.error || "Failed to update" });
+          setSaving(false);
+          return;
+        }
+
+        // If set as default, also update default flag
+        if (data.isDefault) {
+          await fetch(`/api/addresses/${editing.id}/default`, { method: "POST" });
+        }
+
+        showToast({ type: "success", message: "Address updated!" });
+      } else {
+        // CREATE new address
+        const res = await fetch("/api/addresses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label:      data.label,
+            fullName:   data.fullName,
+            phone:      data.phone,
+            street:     data.street,
+            city:       data.city,
+            province:   data.province,
+            postalCode: data.postalCode,
+            isDefault:  data.isDefault || false,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast({ type: "error", message: err.error || "Failed to add" });
+          setSaving(false);
+          return;
+        }
+
+        showToast({ type: "success", message: "Address added!" });
+      }
+
+      // Reload addresses from server
+      await loadAddresses();
+      setModalOpen(false);
+      setEditing(null);
+    } catch (err) {
+      showToast({ type: "error", message: "Network error" });
     }
-    setModalOpen(false);
+
+    setSaving(false);
   };
 
   return (
@@ -63,14 +131,11 @@ export default function AddressesPage() {
       <div className="pt-28 pb-8 sm:pt-32 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn>
-            <Breadcrumb
-              items={[
-                { label: "Home",    href: "/" },
-                { label: "Account", href: "/account/dashboard" },
-                { label: "Addresses" },
-              ]}
-              className="mb-4"
-            />
+            <Breadcrumb items={[
+              { label: "Home", href: "/" },
+              { label: "Account", href: "/account/dashboard" },
+              { label: "Addresses" },
+            ]} className="mb-4" />
           </FadeIn>
           <div className="flex items-end justify-between flex-wrap gap-3">
             <div>
@@ -142,7 +207,7 @@ export default function AddressesPage() {
                       <p className="text-sm font-medium text-[#1a1a1a]">{addr.fullName}</p>
                       <p className="text-sm text-[#6b7280] mt-1 leading-relaxed">
                         {addr.street}<br />
-                        {addr.city}, {addr.province.toUpperCase()} {addr.postalCode}
+                        {addr.city}, {addr.province?.toUpperCase()} {addr.postalCode}
                       </p>
                       <p className="text-sm text-[#6b7280] mt-2">{addr.phone}</p>
 
@@ -182,8 +247,9 @@ export default function AddressesPage() {
       {modalOpen && (
         <AddressModal
           address={editing}
-          onClose={() => setModalOpen(false)}
+          onClose={() => { setModalOpen(false); setEditing(null); }}
           onSave={handleSave}
+          saving={saving}
         />
       )}
     </>
@@ -191,25 +257,39 @@ export default function AddressesPage() {
 }
 
 function AddressModal({
-  address, onClose, onSave,
+  address, onClose, onSave, saving,
 }: {
   address: Address | null;
   onClose: () => void;
   onSave: (data: AddressFormData) => void;
+  saving: boolean;
 }) {
   const {
     register, handleSubmit, setValue,
     formState: { errors },
   } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
-    defaultValues: address || {
+    defaultValues: address ? {
+      label:      address.label ?? "",
+      fullName:   address.fullName ?? "",
+      phone:      address.phone ?? "",
+      street:     address.street ?? "",
+      city:       address.city ?? "",
+      province:   address.province?.toLowerCase() ?? "",
+      postalCode: address.postalCode ?? "",
+      isDefault:  !!address.isDefault,
+    } : {
       label: "", fullName: "", phone: "",
       street: "", city: "", province: "", postalCode: "",
       isDefault: false,
     },
   });
 
-  const [isDefault, setIsDefault] = useState<boolean>(address?.isDefault ?? false);
+  const [isDefault, setIsDefault] = useState<boolean>(!!address?.isDefault);
+
+  const handleFormSubmit = (data: AddressFormData) => {
+    onSave({ ...data, isDefault });
+  };
 
   return (
     <>
@@ -222,73 +302,42 @@ function AddressModal({
             <h2 className="font-[family-name:var(--font-playfair)] text-xl font-bold text-[#1a1a1a]">
               {address ? "Edit Address" : "New Address"}
             </h2>
-            <button
-              onClick={onClose}
-              className="p-1 text-[#6b7280] hover:text-[#1a1a1a]"
-            >
+            <button onClick={onClose} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
               <X size={20} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit(onSave)} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-4">
 
-            <Input
-              label="Label"
-              required
-              placeholder="e.g., Home, Office"
+            <Input label="Label" required placeholder="e.g., Home, Office"
               {...register("label")}
-              error={errors.label?.message}
-            />
+              error={errors.label?.message} />
 
-            <Input
-              label="Full Name"
-              required
-              placeholder="John Doe"
+            <Input label="Full Name" required placeholder="John Doe"
               {...register("fullName")}
-              error={errors.fullName?.message}
-            />
+              error={errors.fullName?.message} />
 
-            <Input
-              label="Phone"
-              required
-              type="tel"
-              placeholder="+92 300 1234567"
+            <Input label="Phone" required type="tel" placeholder="+92 300 1234567"
               {...register("phone")}
-              error={errors.phone?.message}
-            />
+              error={errors.phone?.message} />
 
-            <Input
-              label="Street Address"
-              required
-              placeholder="House #, Street name, Area"
+            <Input label="Street Address" required placeholder="House #, Street name, Area"
               {...register("street")}
-              error={errors.street?.message}
-            />
+              error={errors.street?.message} />
 
             <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="City"
-                required
-                placeholder="Lahore"
+              <Input label="City" required placeholder="Lahore"
                 {...register("city")}
-                error={errors.city?.message}
-              />
-              <Input
-                label="Postal Code"
-                required
-                placeholder="54000"
+                error={errors.city?.message} />
+              <Input label="Postal Code" required placeholder="54000"
                 {...register("postalCode")}
-                error={errors.postalCode?.message}
-              />
+                error={errors.postalCode?.message} />
             </div>
 
-            <Select
-              label="Province"
-              required
+            <Select label="Province" required
               options={[...PAKISTAN_PROVINCES]}
               {...register("province")}
-              error={errors.province?.message}
-            />
+              error={errors.province?.message} />
 
             <label className="flex items-center gap-2 cursor-pointer group pt-2">
               <div
@@ -303,18 +352,15 @@ function AddressModal({
             </label>
 
             <div className="flex gap-3 pt-4 border-t border-[#e5e7eb]">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-3 text-sm font-medium border border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors"
-              >
+              <button type="button" onClick={onClose} disabled={saving}
+                className="flex-1 py-3 text-sm font-medium border border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors disabled:opacity-50">
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors"
-              >
-                {address ? "Update" : "Save"} Address
+              <button type="submit" disabled={saving}
+                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-50">
+                {saving
+                  ? "Saving..."
+                  : (address ? "Update Address" : "Save Address")}
               </button>
             </div>
           </form>

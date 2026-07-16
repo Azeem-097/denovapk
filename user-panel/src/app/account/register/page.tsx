@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Gift } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { registerSchema, type RegisterFormData } from "@/lib/validations";
@@ -18,21 +18,24 @@ export default function RegisterPage() {
   const [showConfirm,  setShowConfirm]  = useState(false);
   const [agree,        setAgree]        = useState(false);
 
-  const register_   = useAuthStore((s) => s.register);
-  const showToast   = useToastStore((s) => s.addToast);
+  const registerFn = useAuthStore((s) => s.register);
+  const showToast  = useToastStore((s) => s.addToast);
 
   const {
     register, handleSubmit, setValue,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterFormData & { birthday?: string }>({
+    resolver: zodResolver(registerSchema)
+  });
 
-  const onSubmit = async (data: RegisterFormData) => {
-    const result = await register_({
+  const onSubmit = async (data: RegisterFormData & { birthday?: string }) => {
+    const result = await registerFn({
       firstName: data.firstName,
       lastName:  data.lastName,
       email:     data.email,
       phone:     data.phone,
       password:  data.password,
+      birthday:  data.birthday || undefined,
     });
     if (result.success) {
       showToast({ type: "success", message: "Account created!" });
@@ -88,10 +91,30 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <Input label="First Name" required placeholder="John" {...register("firstName")} error={errors.firstName?.message} />
-                <Input label="Last Name"  required placeholder="Doe"  {...register("lastName")}  error={errors.lastName?.message} />
+                <Input label="Last Name" required placeholder="Doe" {...register("lastName")} error={errors.lastName?.message} />
               </div>
               <Input label="Email" required type="email" placeholder="you@example.com" autoComplete="email" {...register("email")} error={errors.email?.message} />
               <Input label="Phone" required type="tel" placeholder="+92 300 1234567" {...register("phone")} error={errors.phone?.message} />
+
+              {/* Birthday field with gift icon */}
+              <div>
+                <label className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Gift size={12} className="text-[#c9a96e]" />
+                    Birthday
+                    <span className="text-[#6b7280] font-normal normal-case tracking-normal ml-1">(optional)</span>
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  {...register("birthday")}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="w-full px-3.5 py-3 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none transition-colors"
+                />
+                <p className="mt-1 text-[10px] text-[#c9a96e]">
+                  🎁 Add your birthday to receive exclusive gifts and special discounts!
+                </p>
+              </div>
 
               <div className="relative">
                 <Input label="Password" required type={showPassword ? "text" : "password"} placeholder="At least 8 characters" {...register("password")} error={errors.password?.message} />
@@ -111,7 +134,11 @@ export default function RegisterPage() {
                   className={`mt-0.5 w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                     agree ? "border-[#c9a96e] bg-[#c9a96e]" : "border-[#e5e7eb] group-hover:border-[#c9a96e]"
                   }`}>
-                  {agree && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {agree && (
+                    <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                      <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </div>
                 <span className="text-xs text-[#6b7280] leading-relaxed">
                   I agree to the <Link href="/terms" className="text-[#c9a96e] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#c9a96e] hover:underline">Privacy Policy</Link>

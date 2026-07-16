@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Adapters to convert database types (paisa, unix timestamps, 0/1 booleans)
  * to frontend types (rupees, dates, true/false).
  */
@@ -13,23 +13,26 @@ import { tagsToArray } from "@/lib/db/helpers";
 // ─── Product ─────────────────────────────────────────────
 export function adaptProduct(p: ProductWithRelations): Product {
   return {
-    id:           p.id,
-    name:         p.name,
-    slug:         p.slug,
-    description:  p.description,
-    price:        p.price / 100, // paisa → rupees
+    id:             p.id,
+    name:           p.name,
+    slug:           p.slug,
+    description:    p.description,
+    price:          p.price / 100,
     compareAtPrice: p.comparePrice ? p.comparePrice / 100 : undefined,
-    images:       p.images.map(adaptImage),
-    variants:     p.variants.map(adaptVariant),
-    collectionId: p.collectionId ?? "",
-    collection:   p.collection?.name ?? "",
-    tags:         tagsToArray(p.tags),
-    isNew:        p.isNew === 1,
-    isFeatured:   p.isFeatured === 1,
-    isBestSeller: p.isBestSeller === 1,
-    rating:       p.rating,
-    reviewCount:  p.reviewCount,
-    createdAt:    new Date(p.createdAt * 1000).toISOString(),
+    images:         p.images.map(adaptImage),
+    variants:       p.variants.map(adaptVariant),
+    collectionId:   p.collectionId ?? "",
+    collection:     p.collection?.name ?? "",
+    tags:           tagsToArray(p.tags),
+    isNew:          p.isNew === 1,
+    isFeatured:     p.isFeatured === 1,
+    isBestSeller:   p.isBestSeller === 1,
+    rating:         p.rating,
+    reviewCount:    p.reviewCount,
+    waist:          p.waist  ?? null,
+    length:         p.length ?? null,
+    bottom:         p.bottom ?? null,
+    createdAt:      new Date(p.createdAt * 1000).toISOString(),
   };
 }
 

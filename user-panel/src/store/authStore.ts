@@ -8,7 +8,6 @@ interface AuthState {
   isLoggedIn:   boolean;
   isLoading:    boolean;
 
-  // Actions
   loadSession:  () => Promise<void>;
   login:        (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register:     (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
@@ -27,6 +26,7 @@ interface RegisterData {
   email:     string;
   phone:     string;
   password:  string;
+  birthday?: string;
 }
 
 interface AddressInput {
@@ -47,14 +47,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoggedIn: false,
   isLoading:  true,
 
-  // Load session on app start
   loadSession: async () => {
     try {
       const res  = await fetch("/api/auth/me");
       const data = await res.json();
       if (data.user) {
         set({ user: data.user, isLoggedIn: true, isLoading: false });
-        // Load addresses too
         get().loadAddresses();
       } else {
         set({ user: null, isLoggedIn: false, isLoading: false });
@@ -67,16 +65,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     try {
       const res = await fetch("/api/auth/login", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ email, password }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.error || "Login failed" };
-      }
-
+      if (!res.ok) return { success: false, error: data.error || "Login failed" };
       set({ user: data.user, isLoggedIn: true });
       get().loadAddresses();
       return { success: true };
@@ -88,16 +81,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (registerData) => {
     try {
       const res = await fetch("/api/auth/register", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(registerData),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registerData),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.error || "Registration failed" };
-      }
-
+      if (!res.ok) return { success: false, error: data.error || "Registration failed" };
       set({ user: data.user, isLoggedIn: true });
       return { success: true };
     } catch {
@@ -106,9 +94,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
+    try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
     set({ user: null, isLoggedIn: false, addresses: [] });
   },
 
@@ -123,9 +109,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   addAddress: async (address) => {
     try {
       const res = await fetch("/api/addresses", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(address),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(address),
       });
       const data = await res.json();
       if (!res.ok) return { success: false, error: data.error };
@@ -139,9 +124,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateAddress: async (id, updates) => {
     try {
       const res = await fetch(`/api/addresses/${id}`, {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(updates),
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
       });
       const data = await res.json();
       if (!res.ok) return { success: false, error: data.error };

@@ -46,3 +46,7 @@ prisma/dev.db-journal
 *.db
 *.db-journal
 
+
+# Uploaded images (auto-optimized)
+public/uploads/
+

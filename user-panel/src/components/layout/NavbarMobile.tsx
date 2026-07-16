@@ -1,15 +1,13 @@
-﻿"use client";
-import { useEffect, useRef } from "react";
+"use client";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { X, ShoppingBag, Heart, User, ChevronRight, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navLinks } from "@/lib/data";
 
 const collectionsDropdown = [
-  { label: "Summer Essentials", href: "/collections/summer-essentials" },
-  { label: "Formal Edit",       href: "/collections/formal-edit" },
-  { label: "Casual Comfort",    href: "/collections/casual-comfort" },
-  { label: "Winter Luxe",       href: "/collections/winter-luxe" },
+  { label: "Premium",       href: "/collections/premium" },
+  { label: "Super Premium", href: "/collections/super-premium" },
 ];
 
 interface NavbarMobileProps {
@@ -20,6 +18,10 @@ interface NavbarMobileProps {
 
 export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Fix hydration: only render dynamic values (like cart count) after mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // Close on Escape key
   useEffect(() => {
@@ -99,7 +101,8 @@ export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) 
           >
             <ShoppingBag size={18} />
             <span className="text-[10px] tracking-wide">Cart</span>
-            {cartCount > 0 && (
+            {/* CRITICAL: Only render badge after client mount to avoid hydration mismatch */}
+            {mounted && cartCount > 0 && (
               <span className="absolute top-2 right-6 w-4 h-4 flex items-center justify-center bg-[#c9a96e] text-white text-[9px] font-bold rounded-full">
                 {cartCount}
               </span>

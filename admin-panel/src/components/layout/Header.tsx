@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, Bell, Search, ExternalLink } from "lucide-react";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
 import { getInitials } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -67,9 +67,13 @@ export function Header({ onMenuClick, title }: HeaderProps) {
                     <p className="text-sm font-semibold text-[#1a1a1a]">{admin?.name}</p>
                     <p className="text-xs text-[#6b7280]">{admin?.email}</p>
                   </div>
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#fafaf9]" onClick={() => setShowProfile(false)}>
+                  <Link
+                    href="/settings/profile"
+                    onClick={() => setShowProfile(false)}
+                    className="block w-full text-left px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#fafaf9]"
+                  >
                     Profile Settings
-                  </button>
+                  </Link>
                   <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50">
                     Sign Out
                   </button>

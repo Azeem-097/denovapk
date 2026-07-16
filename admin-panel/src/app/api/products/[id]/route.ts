@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { updateProduct, deleteProduct } from "@/lib/db/repositories/products";
+import {
+  updateProduct, deleteProduct,
+  replaceProductImages, syncProductVariants,
+  getProductById,
+} from "@/lib/db/repositories/products";
 import { rupeesToPaisa } from "@/lib/priceUtils";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,12 +28,45 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.isFeatured   !== undefined) updates.isFeatured   = body.isFeatured;
     if (body.isBestSeller !== undefined) updates.isBestSeller = body.isBestSeller;
     if (body.tags         !== undefined) updates.tags         = Array.isArray(body.tags) ? body.tags : body.tags.split(",");
+    if (body.waist        !== undefined) updates.waist        = body.waist  !== "" && body.waist  !== null ? Number(body.waist)  : null;
+    if (body.length       !== undefined) updates.length       = body.length !== "" && body.length !== null ? Number(body.length) : null;
+    if (body.bottom       !== undefined) updates.bottom       = body.bottom !== "" && body.bottom !== null ? Number(body.bottom) : null;
 
-    await updateProduct(id, updates);
+    if (Object.keys(updates).length > 0) {
+      await updateProduct(id, updates);
+    }
+
+    if (Array.isArray(body.images)) {
+      const productForAlt = await getProductById(id);
+      const alt = body.name ?? productForAlt?.name ?? "Product";
+      await replaceProductImages(id, body.images, alt);
+    }
+
+    if (Array.isArray(body.variants)) {
+      const waistNumber = body.waist !== undefined && body.waist !== "" && body.waist !== null
+        ? Number(body.waist)
+        : null;
+      const sizeLabel = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+
+      const variantsForSync = body.variants.map((v: {
+        id?: string; color: string; colorHex?: string; sku: string; stock: number; price: number; size?: string;
+      }) => ({
+        id:       v.id,
+        size:     v.size ?? sizeLabel,
+        color:    v.color,
+        colorHex: v.colorHex ?? "#000000",
+        sku:      v.sku,
+        stock:    Number(v.stock),
+        price:    rupeesToPaisa(v.price),
+      }));
+
+      await syncProductVariants(id, variantsForSync);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    console.error("Update product error:", err);
+    return NextResponse.json({ error: "Update failed: " + (err as Error).message }, { status: 500 });
   }
 }
 
@@ -42,7 +79,10 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     await deleteProduct(id);
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    console.error("Delete product error:", err);
+    return NextResponse.json(
+      { error: "Delete failed: " + (err as Error).message },
+      { status: 500 }
+    );
   }
 }

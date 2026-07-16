@@ -1,5 +1,5 @@
-﻿"use client";
-import { useEffect } from "react";
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
@@ -13,12 +13,19 @@ export function CartDrawer() {
     getSubtotal, getShipping, getTotal, getItemCount
   } = useCartStore();
 
-  const itemCount = getItemCount();
-  const subtotal  = getSubtotal();
-  const shipping  = getShipping();
-  const total     = getTotal();
+  // Fix hydration: only render dynamic values after client mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const itemCount = mounted ? getItemCount() : 0;
+  const subtotal  = mounted ? getSubtotal()  : 0;
+  const shipping  = mounted ? getShipping()  : 0;
+  const total     = mounted ? getTotal()     : 0;
   const remainingForFreeShip = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
   const progressPercent = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+
+  // Only show items after mount to avoid hydration mismatch
+  const displayItems = mounted ? items : [];
 
   // Lock body scroll
   useEffect(() => {
@@ -66,7 +73,8 @@ export function CartDrawer() {
             <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
               Cart
             </h2>
-            {itemCount > 0 && (
+            {/* CRITICAL: Only show count after mount */}
+            {mounted && itemCount > 0 && (
               <span className="text-xs text-[#6b7280]">
                 ({itemCount} {itemCount === 1 ? "item" : "items"})
               </span>
@@ -81,8 +89,8 @@ export function CartDrawer() {
           </button>
         </div>
 
-        {/* Free shipping progress */}
-        {items.length > 0 && (
+        {/* Free shipping progress - only show after mount when there are items */}
+        {mounted && displayItems.length > 0 && (
           <div className="px-5 py-3 bg-[#fafaf9] border-b border-[#e5e7eb]">
             {remainingForFreeShip > 0 ? (
               <p className="text-xs text-[#6b7280]">
@@ -104,11 +112,15 @@ export function CartDrawer() {
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-5">
-          {items.length === 0 ? (
+          {!mounted ? (
+            <div className="py-16 text-center">
+              <div className="w-6 h-6 border-2 border-[#c9a96e] border-t-transparent rounded-full animate-spin mx-auto" />
+            </div>
+          ) : displayItems.length === 0 ? (
             <EmptyCart onClose={closeCart} />
           ) : (
             <div>
-              {items.map((item) => (
+              {displayItems.map((item) => (
                 <CartItem
                   key={item.id}
                   item={item}
@@ -119,11 +131,10 @@ export function CartDrawer() {
           )}
         </div>
 
-        {/* Footer / Summary */}
-        {items.length > 0 && (
+        {/* Footer / Summary - only show after mount when there are items */}
+        {mounted && displayItems.length > 0 && (
           <div className="border-t border-[#e5e7eb] px-5 py-4 space-y-3 bg-white">
 
-            {/* Summary rows */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#6b7280]">Subtotal</span>
@@ -137,10 +148,8 @@ export function CartDrawer() {
               </div>
             </div>
 
-            {/* Divider */}
             <div className="h-px bg-[#e5e7eb]" />
 
-            {/* Total */}
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold tracking-wide text-[#1a1a1a] uppercase">
                 Total
@@ -150,7 +159,6 @@ export function CartDrawer() {
               </span>
             </div>
 
-            {/* Buttons */}
             <div className="flex flex-col gap-2 pt-1">
               <Link
                 href="/checkout"

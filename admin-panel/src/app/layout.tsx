@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { inter } from "@/lib/fonts";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({
         <SessionProvider>
           {children}
         </SessionProvider>
+        <NotificationProvider />
       </body>
     </html>
   );

@@ -1,10 +1,11 @@
 "use client";
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Download, Search, Mail, Phone, ChevronRight, Users } from "lucide-react";
+import { Download, Search, Mail, Phone, ChevronRight, Users, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, formatDate, getInitials, cn } from "@/lib/utils";
+import { openWhatsApp, buildCustomerContactMessage } from "@/lib/whatsapp";
 import type { AdminCustomer } from "@/types";
 
 export function CustomersPageClient({ initialCustomers }: { initialCustomers: AdminCustomer[] }) {
@@ -84,7 +85,7 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
-                  {["Customer", "Contact", "Location", "Orders", "Total Spent", "Last Order", "Status", ""].map((h) => (
+                  {["Customer", "Contact", "Location", "Orders", "Total Spent", "Last Order", "Status", "WA", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -120,6 +121,21 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
                         c.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600")}>
                         {c.isActive ? "Active" : "Inactive"}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {c.phone && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openWhatsApp(c.phone, buildCustomerContactMessage(c.name));
+                          }}
+                          className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                          title="Contact via WhatsApp"
+                        >
+                          <MessageCircle size={14} />
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <Link href={`/customers/${c.id}`} className="text-[#6b7280] hover:text-[#c9a96e]"><ChevronRight size={16} /></Link>

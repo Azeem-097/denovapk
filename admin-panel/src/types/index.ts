@@ -1,4 +1,4 @@
-﻿// ─── Admin User ───────────────────────────────────────────
+// ─── Admin User ───────────────────────────────────────────
 export interface AdminUser {
   id:        string;
   name:      string;
@@ -27,6 +27,7 @@ export interface AdminProduct {
   stock:        number;
   sold:         number;
   image:        string;
+  images?:       string[];  // Multiple image URLs
   isNew:        boolean;
   isFeatured:   boolean;
   createdAt:    string;

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, FolderOpen, BarChart3,
-  ShoppingCart, Users, Tag, Settings, LogOut, ChevronRight, Layers, Star,
+  ShoppingCart, Users, Tag, Settings, LogOut, ChevronRight,
+  Layers, Star, ShoppingBag, Cake, Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
@@ -20,9 +21,14 @@ const NAV_SECTIONS = [
     { href: "/inventory",   label: "Inventory",   icon: Layers },
   ]},
   { label: "Sales", items: [
-    { href: "/orders",    label: "Orders",    icon: ShoppingCart },
-    { href: "/customers", label: "Customers", icon: Users },
-    { href: "/discounts", label: "Discounts", icon: Tag },
+    { href: "/orders",           label: "Orders",           icon: ShoppingCart },
+    { href: "/abandoned-carts",  label: "Abandoned Carts",  icon: ShoppingBag },
+    { href: "/customers",        label: "Customers",        icon: Users },
+    { href: "/discounts",        label: "Discounts",        icon: Tag },
+  ]},
+  { label: "Marketing", items: [
+    { href: "/birthdays",         label: "Birthdays",       icon: Cake },
+    { href: "/loyalty",           label: "Loyalty Program", icon: Award },
   ]},
   { label: "Store", items: [
     { href: "/settings", label: "Settings", icon: Settings },

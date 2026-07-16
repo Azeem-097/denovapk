@@ -1,0 +1,51 @@
+# List of root folders
+$folders = @(
+    "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\admin-panel\src",
+    "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\user-panel\src",
+    "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\shared"
+)
+
+# Output file
+$outputFile = "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\FolderStructure.txt"
+
+# Clear output file if it exists
+if (Test-Path $outputFile) {
+    Remove-Item $outputFile
+}
+
+foreach ($folder in $folders) {
+    if (Test-Path $folder) {
+        Add-Content $outputFile ""
+        Add-Content $outputFile ("=" * 80)
+        Add-Content $outputFile "ROOT: $folder"
+        Add-Content $outputFile ("=" * 80)
+
+        # Write subfolders
+        Add-Content $outputFile ""
+        Add-Content $outputFile "SUBFOLDERS:"
+        Get-ChildItem -Path $folder -Directory -Recurse |
+            Sort-Object FullName |
+            ForEach-Object {
+                $_.FullName.Replace($folder, ".")
+            } | Add-Content $outputFile
+
+        # Write files at the end
+        Add-Content $outputFile ""
+        Add-Content $outputFile "FILES:"
+        Get-ChildItem -Path $folder -File -Recurse |
+            Sort-Object FullName |
+            ForEach-Object {
+                $_.FullName.Replace($folder, ".")
+            } | Add-Content $outputFile
+    }
+    else {
+        Add-Content $outputFile ""
+        Add-Content $outputFile ("=" * 80)
+        Add-Content $outputFile "ROOT: $folder"
+        Add-Content $outputFile ("=" * 80)
+        Add-Content $outputFile "Folder not found."
+    }
+}
+
+Write-Host "Folder structure exported to:"
+Write-Host $outputFile

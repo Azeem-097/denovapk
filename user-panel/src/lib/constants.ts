@@ -26,7 +26,7 @@ export const NAV_LINKS = [
   { label: "About",        href: "/about" },
 ] as const;
 
-export const SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+export const SIZES = ["28", "30", "32", "34", "36", "38", "40"] as const;
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   pending:    "Pending",

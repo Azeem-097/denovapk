@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createUser, getUserByEmail } from "@/lib/db/repositories/users";
+import { updateUserBirthday } from "@/lib/db/repositories/birthday";
 import { generateUserToken, setUserCookie } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const { firstName, lastName, email, phone, password } = await req.json();
+    const { firstName, lastName, email, phone, password, birthday } = await req.json();
 
     if (!firstName || !lastName || !email || !password || !phone) {
       return NextResponse.json({ error: "All fields required" }, { status: 400 });
@@ -14,7 +15,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
     }
 
-    // Check if user exists
     const existing = await getUserByEmail(email);
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
@@ -26,6 +26,11 @@ export async function POST(req: Request) {
       password,
       phone,
     });
+
+    // Save birthday if provided
+    if (birthday && /^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+      await updateUserBirthday(user.id, birthday);
+    }
 
     const token = generateUserToken({ id: user.id, email: user.email });
     await setUserCookie(token);

@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { formatPrice, formatDateTime, cn } from "@/lib/utils";
 import { ORDER_STATUS_COLORS, PAYMENT_STATUS_COLORS } from "@/lib/constants";
+import { openWhatsApp, buildOrderConfirmationMessage } from "@/lib/whatsapp";
 import type { AdminOrder, OrderStatus } from "@/types";
 
 const STATUS_OPTIONS: OrderStatus[] = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
@@ -41,6 +42,17 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
     setSaving(false);
   };
 
+  const handleWhatsAppConfirm = () => {
+    const msg = buildOrderConfirmationMessage({
+      orderNumber:   order.orderNumber,
+      items:         order.items,
+      total:         order.total,
+      paymentMethod: order.paymentMethod,
+      customer:      order.customer,
+    });
+    openWhatsApp(order.customerPhone, msg);
+  };
+
   return (
     <div className="max-w-6xl space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -62,6 +74,15 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="primary" size="sm"
+            onClick={handleWhatsAppConfirm}
+            disabled={!order.customerPhone}
+            className="!bg-green-600 hover:!bg-green-700"
+          >
+            <MessageCircle size={13} />
+            Confirm via WhatsApp
+          </Button>
           <Button variant="outline" size="sm"><Printer size={13} />Print Invoice</Button>
           <Button variant="outline" size="sm"><Send size={13} />Email Customer</Button>
         </div>

@@ -1,29 +1,57 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts } from "@/lib/db/repositories/products";
 import { adaptProduct } from "@/lib/adapters";
 import { ProductDetailClient } from "./ProductDetailClient";
 
-export const dynamic   = "force-dynamic";
+export const dynamic    = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Placeholder image shown when a product has no images uploaded yet
+const PLACEHOLDER_IMAGE = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const dbProduct = await getProductBySlug(slug);
+
+  let dbProduct;
+  try {
+    dbProduct = await getProductBySlug(slug);
+  } catch (err) {
+    console.error("Failed to load product:", err);
+    notFound();
+  }
+
   if (!dbProduct) notFound();
 
   const product = adaptProduct(dbProduct);
 
-  const dbRelated = dbProduct.collectionId
-    ? await getRelatedProducts(dbProduct.id, dbProduct.collectionId, 4)
-    : [];
+  // Ensure we always have at least one image so the UI never crashes
+  if (product.images.length === 0) {
+    product.images = [PLACEHOLDER_IMAGE];
+  }
 
-  const relatedProducts = dbRelated.map((p) =>
-    adaptProduct({ ...p, collection: dbProduct.collection })
-  );
+  let relatedProducts: ReturnType<typeof adaptProduct>[] = [];
+  try {
+    if (dbProduct.collectionId) {
+      const dbRelated = await getRelatedProducts(dbProduct.id, dbProduct.collectionId, 4);
+      relatedProducts = dbRelated.map((p) => {
+        const adapted = adaptProduct({ ...p, collection: dbProduct.collection });
+        if (adapted.images.length === 0) adapted.images = [PLACEHOLDER_IMAGE];
+        return adapted;
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load related products:", err);
+    // Silently fall back to empty related — page still renders
+  }
 
   return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;
 }

@@ -54,7 +54,7 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
           </button>
         </div>
 
-        {/* Variant info */}
+        {/* Variant info — color + waist (from item.size which stores the waist value) */}
         <div className="flex items-center gap-3 text-xs text-[#6b7280] mb-2">
           <span className="flex items-center gap-1.5">
             <span
@@ -63,8 +63,12 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
             />
             {item.color}
           </span>
-          <span className="text-[#e5e7eb]">|</span>
-          <span>Size: <span className="text-[#1a1a1a] font-medium">{item.size}</span></span>
+          {item.size && item.size !== "ONE-SIZE" && (
+            <>
+              <span className="text-[#e5e7eb]">|</span>
+              <span>Waist: <span className="text-[#1a1a1a] font-medium">{item.size}&quot;</span></span>
+            </>
+          )}
         </div>
 
         {/* Bottom row: quantity + price */}

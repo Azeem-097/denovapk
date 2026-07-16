@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Mail, Phone, MapPin, ShoppingBag, TrendingUp, Calendar, Star, Ban, Send,
+  ArrowLeft, Mail, Phone, MapPin, ShoppingBag, TrendingUp,
+  Calendar, Star, Ban, Send, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +11,7 @@ import { getUserOrders } from "@/lib/db/repositories/orders";
 import { adaptCustomer, adaptOrder } from "@/lib/adapters";
 import { formatPrice, formatDate, getInitials, cn } from "@/lib/utils";
 import { ORDER_STATUS_COLORS } from "@/lib/constants";
+import { CustomerWhatsAppButton } from "./CustomerWhatsAppButton";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,7 @@ export default async function CustomerDetailPage({ params }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <CustomerWhatsAppButton name={customer.name} phone={customer.phone} />
           <Button variant="outline" size="sm"><Send size={13} />Send Email</Button>
           <Button variant="ghost" size="sm"><Ban size={13} />Disable</Button>
         </div>
@@ -76,7 +79,7 @@ export default async function CustomerDetailPage({ params }: Props) {
                 <p className="text-xs font-bold text-[#c9a96e] uppercase tracking-wider">VIP Status</p>
               </div>
               <p className="text-xs text-[#1a1a1a] leading-relaxed">
-                This customer has spent over PKR 100,000. Consider offering exclusive perks and personalized service.
+                This customer has spent over PKR 100,000.
               </p>
             </div>
           )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -46,9 +46,16 @@ export function ShopPageClient({ products }: Props) {
     if (filters.collections.length > 0) {
       result = result.filter((p) => filters.collections.includes(p.collection));
     }
+
+    // Waist filter — matches product.waist (not variant.size)
     if (filters.sizes.length > 0) {
-      result = result.filter((p) => p.variants.some((v) => filters.sizes.includes(v.size)));
+      result = result.filter((p) =>
+        p.waist !== null &&
+        p.waist !== undefined &&
+        filters.sizes.includes(String(p.waist))
+      );
     }
+
     if (filters.colors.length > 0) {
       result = result.filter((p) => p.variants.some((v) => filters.colors.includes(v.color)));
     }
@@ -114,7 +121,7 @@ export function ShopPageClient({ products }: Props) {
                   <FilterTag key={c} label={c} onRemove={() => handleFilterChange({ ...filters, collections: filters.collections.filter((x) => x !== c) })} />
                 ))}
                 {filters.sizes.map((s) => (
-                  <FilterTag key={s} label={`Size: ${s}`} onRemove={() => handleFilterChange({ ...filters, sizes: filters.sizes.filter((x) => x !== s) })} />
+                  <FilterTag key={s} label={`Waist: ${s}"`} onRemove={() => handleFilterChange({ ...filters, sizes: filters.sizes.filter((x) => x !== s) })} />
                 ))}
                 {filters.colors.map((c) => (
                   <FilterTag key={c} label={c} onRemove={() => handleFilterChange({ ...filters, colors: filters.colors.filter((x) => x !== c) })} />

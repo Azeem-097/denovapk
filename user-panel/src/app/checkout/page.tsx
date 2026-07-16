@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useCheckoutStore } from "@/store/checkoutStore";
+import { useAuthStore } from "@/store/authStore";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { ShippingForm } from "@/components/checkout/ShippingForm";
 import { ShippingMethodStep } from "@/components/checkout/ShippingMethodStep";
@@ -18,6 +19,15 @@ export default function CheckoutPage() {
   const items         = useCartStore((s) => s.items);
   const currentStep   = useCheckoutStore((s) => s.currentStep);
   const setStep       = useCheckoutStore((s) => s.setStep);
+  const isLoggedIn    = useAuthStore((s) => s.isLoggedIn);
+  const loadAddresses = useAuthStore((s) => s.loadAddresses);
+
+  // Load addresses when checkout mounts (ensure fresh data)
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadAddresses();
+    }
+  }, [isLoggedIn, loadAddresses]);
 
   // Redirect if cart is empty (after hydration)
   useEffect(() => {
@@ -94,7 +104,7 @@ export default function CheckoutPage() {
             </div>
           </FadeIn>
 
-          {/* Right: order summary (sticky on desktop) */}
+          {/* Right: order summary */}
           <FadeIn delay={100}>
             <div className="lg:sticky lg:top-24 lg:self-start">
               <OrderSummary editable={currentStep === 1} />

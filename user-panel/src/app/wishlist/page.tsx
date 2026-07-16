@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, X, ShoppingBag, ArrowRight } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -10,6 +11,7 @@ import { SlideUp } from "@/components/animations/SlideUp";
 import { formatPrice } from "@/lib/utils";
 
 export default function WishlistPage() {
+  const router = useRouter();
   const { items, removeItem, clearAll } = useWishlistStore();
 
   if (items.length === 0) {
@@ -59,10 +61,10 @@ export default function WishlistPage() {
             <SlideUp key={item.id} stagger={60} index={i % 8}>
               <div className="group relative">
 
-                {/* Image */}
-                <Link
-                  href={`/products/${item.slug}`}
-                  className="relative block aspect-[3/4] overflow-hidden bg-[#fafaf9] mb-3"
+                {/* Image — clicking navigates to product */}
+                <div
+                  onClick={() => router.push(`/products/${item.slug}`)}
+                  className="relative block aspect-[3/4] overflow-hidden bg-[#fafaf9] mb-3 cursor-pointer"
                 >
                   <Image
                     src={item.image}
@@ -76,26 +78,29 @@ export default function WishlistPage() {
                   {/* Remove button */}
                   <button
                     onClick={(e) => {
-                      e.preventDefault();
+                      e.stopPropagation();
                       removeItem(item.productId);
                     }}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white shadow-md text-[#6b7280] hover:bg-red-500 hover:text-white transition-all duration-200"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white shadow-md text-[#6b7280] hover:bg-red-500 hover:text-white transition-all duration-200 z-10"
                     aria-label="Remove from wishlist"
                   >
                     <X size={14} />
                   </button>
 
-                  {/* Add to cart overlay */}
+                  {/* View product overlay — uses button, not Link (avoids nested <a>) */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Link
-                      href={`/products/${item.slug}`}
-                      className="block w-full bg-[#1a1a1a] text-white text-xs font-semibold tracking-wider uppercase py-3 hover:bg-[#c9a96e] transition-colors duration-200 text-center inline-flex items-center justify-center gap-1.5"
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/products/${item.slug}`);
+                      }}
+                      className="w-full bg-[#1a1a1a] text-white text-xs font-semibold tracking-wider uppercase py-3 hover:bg-[#c9a96e] transition-colors duration-200 inline-flex items-center justify-center gap-1.5"
                     >
                       <ShoppingBag size={13} />
                       View Product
-                    </Link>
+                    </button>
                   </div>
-                </Link>
+                </div>
 
                 {/* Info */}
                 <div className="px-0.5">

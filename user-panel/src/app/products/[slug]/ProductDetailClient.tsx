@@ -1,11 +1,10 @@
-"use client";
+﻿"use client";
 import { useState, useMemo } from "react";
-import { Heart, Share2, ShoppingBag, CheckCircle, Package, RotateCcw, Shield } from "lucide-react";
+import { Heart, Share2, ShoppingBag, CheckCircle, Package, RotateCcw, Shield, Ruler } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ProductImages } from "@/components/product/ProductImages";
-import { SizeSelector } from "@/components/product/SizeSelector";
 import { ColorSelector } from "@/components/product/ColorSelector";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { FadeIn } from "@/components/animations/FadeIn";
@@ -28,16 +27,21 @@ interface Props {
 }
 
 export function ProductDetailClient({ product, relatedProducts }: Props) {
-  const uniqueSizes  = Array.from(new Set(product.variants.map((v) => v.size)));
-  const uniqueColors = Array.from(
-    new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
+  const uniqueColors = useMemo(() =>
+    Array.from(
+      new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
+    ),
+    [product.variants]
   );
 
-  const [selectedSize,  setSelectedSize]  = useState("");
-  const [selectedColor, setSelectedColor] = useState(uniqueColors[0]?.name ?? "");
+  const firstInStockColor = useMemo(() => {
+    const inStock = product.variants.find((v) => v.stock > 0);
+    return inStock?.color ?? uniqueColors[0]?.name ?? "";
+  }, [product.variants, uniqueColors]);
+
+  const [selectedColor, setSelectedColor] = useState(firstInStockColor);
   const [quantity,      setQuantity]      = useState(1);
   const [addedToCart,   setAddedToCart]   = useState(false);
-  const [sizeError,     setSizeError]     = useState(false);
 
   const addToCart      = useCartStore((s) => s.addItem);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -45,27 +49,34 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const showToast      = useToastStore((s) => s.addToast);
 
   const selectedVariant = useMemo(() =>
-    product.variants.find((v) => v.size === selectedSize && v.color === selectedColor),
-    [product.variants, selectedSize, selectedColor]
+    product.variants.find((v) => v.color === selectedColor),
+    [product.variants, selectedColor]
   );
 
-  const outOfStockSizes = useMemo(() =>
-    uniqueSizes.filter((size) =>
-      !product.variants.some((v) => v.size === size && v.color === selectedColor && v.stock > 0)
-    ),
-    [uniqueSizes, product.variants, selectedColor]
-  );
+  const isOutOfStock = !selectedVariant || selectedVariant.stock === 0;
 
-  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
-  const discountPct = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
+  const hasDiscount  = product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPct  = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
+  const fitLabel = useMemo(() => {
+    if (product.waist === null || product.waist === undefined) return null;
+    const w = `${product.waist}W`;
+    const l = product.length !== null && product.length !== undefined ? ` × ${product.length}L` : "";
+    return `${w}${l}`;
+  }, [product.waist, product.length]);
+
+  const measurements = [
+    { label: "Waist",  value: product.waist,  unit: '"' },
+    { label: "Length", value: product.length, unit: '"' },
+    { label: "Bottom", value: product.bottom, unit: '"' },
+  ].filter((m) => m.value != null);
+
   const handleAddToCart = () => {
-    if (!selectedSize) { setSizeError(true); setTimeout(() => setSizeError(false), 3000); return; }
     if (!selectedVariant) return;
     addToCart({
       productId: product.id, variantId: selectedVariant.id, name: product.name,
-      image: primaryImage.url, size: selectedSize, color: selectedColor,
+      image: primaryImage.url, size: selectedVariant.size, color: selectedColor,
       colorHex: selectedVariant.colorHex, price: product.price, quantity, slug: product.slug,
     });
     setAddedToCart(true);
@@ -127,6 +138,15 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 </span>
               </TextReveal>
 
+              {fitLabel && (
+                <FadeIn delay={100}>
+                  <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[#c9a96e]">
+                    <Ruler size={13} />
+                    Fit: {fitLabel}
+                  </div>
+                </FadeIn>
+              )}
+
               <FadeIn delay={150}>
                 <div className="flex items-center gap-2 mt-3">
                   <div className="flex items-center gap-0.5">
@@ -153,20 +173,14 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
               {uniqueColors.length > 0 && (
                 <FadeIn delay={250}>
                   <div className="mb-5">
-                    <ColorSelector colors={uniqueColors} selectedColor={selectedColor}
-                      onSelect={(c) => { setSelectedColor(c); setSelectedSize(""); }} />
+                    <ColorSelector
+                      colors={uniqueColors}
+                      selectedColor={selectedColor}
+                      onSelect={setSelectedColor}
+                    />
                   </div>
                 </FadeIn>
               )}
-
-              <FadeIn delay={300}>
-                <div className="mb-5">
-                  <SizeSelector sizes={uniqueSizes} selectedSize={selectedSize}
-                    onSelect={(s) => { setSelectedSize(s); setSizeError(false); }}
-                    outOfStock={outOfStockSizes} />
-                  {sizeError && <p className="mt-2 text-xs text-red-500 font-medium">Please select a size to continue.</p>}
-                </div>
-              </FadeIn>
 
               <FadeIn delay={350}>
                 <div className="mb-6">
@@ -176,14 +190,34 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     <span className="w-12 text-center text-sm font-medium text-[#1a1a1a]">{quantity}</span>
                     <button onClick={() => setQuantity((q) => Math.min(10, q + 1))} className="w-10 h-10 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] text-lg">+</button>
                   </div>
-                  {selectedVariant && <p className="mt-2 text-xs text-[#6b7280]">{selectedVariant.stock} in stock</p>}
+                  {selectedVariant && (
+                    <p className={`mt-2 text-xs ${selectedVariant.stock === 0 ? "text-red-500 font-semibold" : selectedVariant.stock < 5 ? "text-orange-500 font-medium" : "text-[#6b7280]"}`}>
+                      {selectedVariant.stock === 0
+                        ? "Out of stock"
+                        : selectedVariant.stock < 5
+                          ? `Only ${selectedVariant.stock} left in stock`
+                          : `${selectedVariant.stock} in stock`}
+                    </p>
+                  )}
                 </div>
               </FadeIn>
 
               <FadeIn delay={400}>
                 <div className="flex gap-3 mb-6">
-                  <Button variant="primary" size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
-                    {addedToCart ? <><CheckCircle size={18} /> Added to Cart!</> : <><ShoppingBag size={18} /> Add to Cart</>}
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="flex-1 gap-2"
+                    onClick={handleAddToCart}
+                    disabled={isOutOfStock}
+                  >
+                    {addedToCart ? (
+                      <><CheckCircle size={18} /> Added to Cart!</>
+                    ) : isOutOfStock ? (
+                      <>Out of Stock</>
+                    ) : (
+                      <><ShoppingBag size={18} /> Add to Cart</>
+                    )}
                   </Button>
                   <button onClick={handleWishlist}
                     className={`w-14 h-14 flex items-center justify-center border transition-all ${
@@ -197,8 +231,51 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 </div>
               </FadeIn>
 
+              {/* ── Description ── */}
               <FadeIn delay={450}>
-                <div className="grid grid-cols-3 gap-3 py-5 border-t border-b border-[#e5e7eb]">
+                <div className="mt-1 pt-5 border-t border-[#e5e7eb]">
+                  <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">Description</h3>
+                  <p className="text-sm text-[#6b7280] leading-relaxed">{product.description}</p>
+                </div>
+              </FadeIn>
+
+              {product.tags.length > 0 && (
+                <FadeIn delay={475}>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {product.tags.map((tag) => (
+                      <span key={tag} className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]">{tag}</span>
+                    ))}
+                  </div>
+                </FadeIn>
+              )}
+
+              {/* ── Fit & Measurements ── */}
+              {measurements.length > 0 && (
+                <FadeIn delay={500}>
+                  <div className="mt-5 border border-[#e5e7eb]">
+                    <div className="px-4 py-2.5 border-b border-[#e5e7eb] bg-[#fafaf9] flex items-center gap-2">
+                      <Ruler size={13} className="text-[#c9a96e]" />
+                      <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                        Fit &amp; Measurements
+                      </h3>
+                    </div>
+                    <div className="divide-y divide-[#e5e7eb]">
+                      {measurements.map((m) => (
+                        <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
+                          <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">{m.label}</span>
+                          <span className="text-sm font-semibold text-[#1a1a1a]">
+                            {m.value}{m.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </FadeIn>
+              )}
+
+              {/* ── Trust badges ── */}
+              <FadeIn delay={550}>
+                <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-[#e5e7eb]">
                   {TRUST_BADGES.map(({ icon: Icon, label, sublabel }) => (
                     <div key={label} className="flex flex-col items-center text-center gap-1.5">
                       <Icon size={18} className="text-[#c9a96e]" />
@@ -208,23 +285,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   ))}
                 </div>
               </FadeIn>
-
-              <FadeIn delay={500}>
-                <div className="mt-5">
-                  <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">Description</h3>
-                  <p className="text-sm text-[#6b7280] leading-relaxed">{product.description}</p>
-                </div>
-              </FadeIn>
-
-              {product.tags.length > 0 && (
-                <FadeIn delay={550}>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {product.tags.map((tag) => (
-                      <span key={tag} className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]">{tag}</span>
-                    ))}
-                  </div>
-                </FadeIn>
-              )}
             </div>
           </div>
         </div>

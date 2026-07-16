@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { cn } from "@/lib/utils";
 
 interface SizeSelectorProps {
@@ -26,7 +26,7 @@ export function SizeSelector({
           )}
         </span>
         <button className="text-xs text-[#c9a96e] underline hover:text-[#b8955a] transition-colors">
-          Size Guide
+          Waist Guide
         </button>
       </div>
       <div className="flex flex-wrap gap-2">

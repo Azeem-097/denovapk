@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { getProducts, createProduct } from "@/lib/db/repositories/products";
 import { rupeesToPaisa } from "@/lib/priceUtils";
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       name, description, sku, price, comparePrice, collectionId,
-      status, isNew, isFeatured, isBestSeller, tags, imageUrl, variants,
+      status, isNew, isFeatured, isBestSeller, tags, variants,
+      waist, length, bottom,
     } = body;
 
     if (!name || !description || !sku || price === undefined) {
@@ -28,6 +29,16 @@ export async function POST(req: Request) {
     }
 
     const slug = body.slug || slugify(name);
+
+    const imageUrls: string[] = [];
+    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
+      imageUrls.push(...body.images);
+    } else if (body.imageUrl) {
+      imageUrls.push(body.imageUrl);
+    }
+
+    const waistNumber = waist !== undefined && waist !== "" ? Number(waist) : null;
+    const sizeLabel   = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
 
     const productId = await createProduct({
       name,
@@ -42,11 +53,15 @@ export async function POST(req: Request) {
       isFeatured:   !!isFeatured,
       isBestSeller: !!isBestSeller,
       tags:         Array.isArray(tags) ? tags : (typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()) : []),
-      imageUrl:     imageUrl || undefined,
+      imageUrl:     imageUrls[0] || undefined,
+      imageUrls:    imageUrls,
+      waist:        waistNumber,
+      length:       length !== undefined && length !== "" ? Number(length) : null,
+      bottom:       bottom !== undefined && bottom !== "" ? Number(bottom) : null,
       variants:     variants?.map((v: {
-        size: string; color: string; colorHex?: string; sku: string; stock: number; price: number;
+        color: string; colorHex?: string; sku: string; stock: number; price: number;
       }) => ({
-        size:     v.size,
+        size:     sizeLabel,
         color:    v.color,
         colorHex: v.colorHex ?? "#000000",
         sku:      v.sku,

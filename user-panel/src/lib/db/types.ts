@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Database table types.
  * These match the SQL schema exactly.
  *
- * Timestamps are Unix epochs (integers) in the DB, but we
- * convert them to Date on the way out via helper functions.
+ * Timestamps are Unix epochs (integers) in the DB.
+ * SQLite booleans stored as 0 | 1.
  */
 
 // ─── Users ───────────────────────────────────────────────
@@ -15,7 +15,9 @@ export interface DbUser {
   phone:         string | null;
   password:      string | null;
   avatar:        string | null;
-  isActive:      number; // 0 | 1
+  isActive:      number;
+  birthday:      string | null;
+  loyaltyPoints: number;
   createdAt:     number;
   updatedAt:     number;
 }
@@ -75,7 +77,7 @@ export interface DbProduct {
   sku:              string;
   description:      string;
   shortDescription: string | null;
-  price:            number; // in paisa
+  price:            number;
   comparePrice:     number | null;
   costPerItem:      number | null;
   taxRate:          number;
@@ -86,10 +88,13 @@ export interface DbProduct {
   isBestSeller:     number;
   metaTitle:        string | null;
   metaDescription:  string | null;
-  tags:             string; // Comma-separated
+  tags:             string;
   rating:           number;
   reviewCount:      number;
   soldCount:        number;
+  waist:            number | null;   // inches
+  length:           number | null;   // inches
+  bottom:           number | null;   // inches
   createdAt:        number;
   updatedAt:        number;
 }
@@ -120,10 +125,11 @@ export interface DbProductVariant {
 
 // ─── Cart & Wishlist ─────────────────────────────────────
 export interface DbCart {
-  id:        string;
-  userId:    string;
-  createdAt: number;
-  updatedAt: number;
+  id:           string;
+  userId:       string;
+  lastActivity: number;
+  createdAt:    number;
+  updatedAt:    number;
 }
 
 export interface DbCartItem {
@@ -143,6 +149,41 @@ export interface DbWishlist {
   createdAt: number;
 }
 
+// ─── Abandoned Cart ──────────────────────────────────────
+export interface DbAbandonedCart {
+  id:               string;
+  userId:           string | null;
+  email:            string | null;
+  phone:            string | null;
+  fullName:         string | null;
+  city:             string | null;
+  itemsJson:        string;
+  itemCount:        number;
+  subtotal:         number;
+  totalValue:       number;
+  reachedCheckout:  number;
+  isContacted:      number;
+  isRecovered:      number;
+  recoveredOrderId: string | null;
+  adminNote:        string | null;
+  lastActivity:     number;
+  abandonedAt:      number;
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface AbandonedCartItem {
+  productId:  string;
+  variantId:  string;
+  name:       string;
+  image:      string;
+  size:       string;
+  color:      string;
+  price:      number;
+  quantity:   number;
+  slug:       string;
+}
+
 // ─── Orders ──────────────────────────────────────────────
 export type OrderStatus =
   | "PENDING" | "CONFIRMED" | "PROCESSING"
@@ -156,37 +197,42 @@ export type PaymentMethod =
   | "COD" | "CARD" | "JAZZCASH" | "EASYPAISA" | "BANK_TRANSFER";
 
 export interface DbOrder {
-  id:               string;
-  orderNumber:      string;
-  userId:           string | null;
-  guestEmail:       string | null;
-  guestName:        string | null;
-  guestPhone:       string | null;
-  subtotal:         number;
-  discount:         number;
-  shipping:         number;
-  tax:              number;
-  total:            number;
-  status:           OrderStatus;
-  paymentStatus:    PaymentStatus;
-  paymentMethod:    PaymentMethod;
-  discountCode:     string | null;
-  discountId:       string | null;
-  addressId:        string | null;
-  shippingAddress:  string | null; // JSON
-  shippingMethod:   string;
-  trackingNumber:   string | null;
-  courierName:      string | null;
-  customerNote:     string | null;
-  adminNote:        string | null;
-  confirmedAt:      number | null;
-  shippedAt:        number | null;
-  deliveredAt:      number | null;
-  cancelledAt:      number | null;
-  createdById:      string | null;
-  updatedById:      string | null;
-  createdAt:        number;
-  updatedAt:        number;
+  id:                   string;
+  orderNumber:          string;
+  userId:               string | null;
+  guestEmail:           string | null;
+  guestName:            string | null;
+  guestPhone:           string | null;
+  subtotal:             number;
+  discount:             number;
+  loyaltyDiscount:      number;
+  loyaltyPointsUsed:    number;
+  loyaltyPointsEarned:  number;
+  birthdayDiscount:     number;
+  isBirthdayOrder:      number;
+  shipping:             number;
+  tax:                  number;
+  total:                number;
+  status:               OrderStatus;
+  paymentStatus:        PaymentStatus;
+  paymentMethod:        PaymentMethod;
+  discountCode:         string | null;
+  discountId:           string | null;
+  addressId:            string | null;
+  shippingAddress:      string | null;
+  shippingMethod:       string;
+  trackingNumber:       string | null;
+  courierName:          string | null;
+  customerNote:         string | null;
+  adminNote:            string | null;
+  confirmedAt:          number | null;
+  shippedAt:            number | null;
+  deliveredAt:          number | null;
+  cancelledAt:          number | null;
+  createdById:          string | null;
+  updatedById:          string | null;
+  createdAt:            number;
+  updatedAt:            number;
 }
 
 export interface DbOrderItem {
@@ -202,6 +248,20 @@ export interface DbOrderItem {
   price:     number;
   quantity:  number;
   subtotal:  number;
+}
+
+// ─── Loyalty ─────────────────────────────────────────────
+export type LoyaltyTransactionType = "EARNED" | "REDEEMED" | "EXPIRED" | "ADJUSTED";
+
+export interface DbLoyaltyTransaction {
+  id:          string;
+  userId:      string;
+  orderId:     string | null;
+  type:        LoyaltyTransactionType;
+  points:      number;
+  balance:     number;
+  description: string | null;
+  createdAt:   number;
 }
 
 // ─── Discounts ───────────────────────────────────────────
@@ -221,6 +281,15 @@ export interface DbDiscount {
   expiresAt:   number;
   createdAt:   number;
   updatedAt:   number;
+}
+
+// ─── Settings ────────────────────────────────────────────
+export interface DbSetting {
+  id:        string;
+  key:       string;
+  value:     string;
+  category:  string;
+  updatedAt: number;
 }
 
 // ─── Others ──────────────────────────────────────────────

@@ -1,4 +1,4 @@
-﻿// ─── Product Types ───────────────────────────────────────────────
+// ─── Product Types ───────────────────────────────────────────────
 export interface ProductImage {
   id: string;
   url: string;
@@ -34,6 +34,9 @@ export interface Product {
   isBestSeller: boolean;
   rating: number;
   reviewCount: number;
+  waist:  number | null;   // inches
+  length: number | null;   // inches
+  bottom: number | null;   // inches
   createdAt: string;
 }
 
@@ -97,6 +100,7 @@ export interface Address {
   fullName: string;
   phone: string;
   street: string;
+  apartment?: string;
   city: string;
   province: string;
   postalCode: string;
