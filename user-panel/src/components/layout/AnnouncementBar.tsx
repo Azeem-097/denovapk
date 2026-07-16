@@ -1,54 +1,106 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 
-const announcements = [
-  "Free shipping on orders above PKR 5,000",
-  "New Summer Collection is now live — Shop Now",
-  "Use code DENOVA10 for 10% off your first order",
-];
+interface AnnouncementMessage {
+  id:        string;
+  text:      string;
+  link:      string;
+  isActive:  boolean;
+  sortOrder: number;
+}
+
+interface AnnouncementConfig {
+  enabled:           boolean;
+  autoRotateSeconds: number;
+  dismissible:       boolean;
+  bgColor:           string;
+  textColor:         string;
+  accentColor:       string;
+  messages:          AnnouncementMessage[];
+}
+
+const FALLBACK_CONFIG: AnnouncementConfig = {
+  enabled:           true,
+  autoRotateSeconds: 5,
+  dismissible:       true,
+  bgColor:           "#1a1a1a",
+  textColor:         "#ffffff",
+  accentColor:       "#c9a96e",
+  messages: [
+    { id: "m1", text: "Free shipping on orders above PKR 5,000", link: "", isActive: true, sortOrder: 0 },
+  ],
+};
 
 export function AnnouncementBar() {
-  const [current, setCurrent] = useState(0);
+  const [config,    setConfig]    = useState<AnnouncementConfig | null>(null);
+  const [current,   setCurrent]   = useState(0);
   const [dismissed, setDismissed] = useState(false);
 
+  // Fetch config from API
+  useEffect(() => {
+    fetch("/api/announcement-bar")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.config) setConfig(data.config);
+        else setConfig(FALLBACK_CONFIG);
+      })
+      .catch(() => setConfig(FALLBACK_CONFIG));
+  }, []);
+
+  // Auto-rotate messages
+  useEffect(() => {
+    if (!config || config.messages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrent((c) => (c + 1) % config.messages.length);
+    }, Math.max(1, config.autoRotateSeconds) * 1000);
+    return () => clearInterval(interval);
+  }, [config]);
+
+  // Don't render if disabled, dismissed, or no messages
+  if (!config) return null;
+  if (!config.enabled) return null;
   if (dismissed) return null;
+  if (config.messages.length === 0) return null;
+
+  const message = config.messages[current] ?? config.messages[0];
+  if (!message) return null;
+
+  const content = (
+    <p className="text-center leading-none font-medium tracking-[0.12em]">
+      {message.text}
+    </p>
+  );
 
   return (
-    <div className="bg-[#1a1a1a] text-white text-xs tracking-widest uppercase">
-      <div className="max-w-7xl mx-auto px-4 h-9 flex items-center justify-between gap-4">
+    <div
+      className="w-full text-xs tracking-widest uppercase"
+      style={{ backgroundColor: config.bgColor, color: config.textColor }}
+    >
+      <div className="max-w-7xl mx-auto px-4 h-9 flex items-center justify-center gap-4 relative">
+        {message.link ? (
+          <Link
+            href={message.link}
+            className="transition-opacity hover:opacity-80"
+            style={{ color: config.textColor }}
+          >
+            {content}
+          </Link>
+        ) : (
+          content
+        )}
 
-        {/* Left spacer */}
-        <div className="w-6 hidden sm:block" />
-
-        {/* Message + dots */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-1">
-          <p className="text-center leading-none font-medium tracking-[0.12em]">
-            {announcements[current]}
-          </p>
-          {/* Dot indicators */}
-          <div className="flex gap-1 mt-0.5">
-            {announcements.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className={`w-1 h-1 rounded-full transition-all duration-300 ${
-                  i === current ? "bg-[#c9a96e] w-3" : "bg-white/40"
-                }`}
-                aria-label={`Announcement ${i + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Dismiss */}
-        <button
-          onClick={() => setDismissed(true)}
-          className="text-white/60 hover:text-white transition-colors flex-shrink-0"
-          aria-label="Dismiss announcement"
-        >
-          <X size={14} />
-        </button>
+        {config.dismissible && (
+          <button
+            onClick={() => setDismissed(true)}
+            className="absolute right-4 opacity-60 hover:opacity-100 transition-opacity"
+            style={{ color: config.textColor }}
+            aria-label="Dismiss announcement"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

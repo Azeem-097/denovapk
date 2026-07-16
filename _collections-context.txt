@@ -1,0 +1,2987 @@
+================================================================================
+COLLECTIONS PAGE — MAKE FULLY FUNCTIONAL (CRUD)
+Generated: 2026-07-16 23:39:09
+================================================================================
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\collections\page.tsx
+================================================================================
+
+import Image from "next/image";
+import { Plus, Edit, MoreVertical } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
+import { adaptCollection } from "@/lib/adapters";
+import { formatDate } from "@/lib/utils";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+export default async function CollectionsPage() {
+  const dbCollections = await getCollectionsWithCounts();
+  const collections   = dbCollections.map(adaptCollection);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Collections</h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">Organize your products into collections.</p>
+        </div>
+        <Button variant="primary"><Plus size={14} />Add Collection</Button>
+      </div>
+
+      {collections.length === 0 ? (
+        <div className="bg-white border border-[#e5e7eb] p-12 text-center">
+          <p className="text-sm text-[#6b7280]">No collections yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {collections.map((c) => (
+            <div key={c.id} className="bg-white border border-[#e5e7eb] overflow-hidden group hover:border-[#c9a96e] transition-colors">
+              <div className="relative aspect-[16/10] bg-[#fafaf9]">
+                {c.image && <Image src={c.image} alt={c.name} fill className="object-cover" sizes="400px" />}
+                <button className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white flex items-center justify-center text-[#1a1a1a]">
+                  <MoreVertical size={14} />
+                </button>
+                {!c.isActive && <Badge variant="default" className="absolute top-2 left-2">Inactive</Badge>}
+              </div>
+              <div className="p-4">
+                <h3 className="text-sm font-bold text-[#1a1a1a] mb-1">{c.name}</h3>
+                <p className="text-xs text-[#6b7280] line-clamp-2 mb-3">{c.description}</p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#c9a96e] font-semibold">{c.productCount} products</span>
+                  <span className="text-[#6b7280]">Created {formatDate(c.createdAt)}</span>
+                </div>
+                <button className="mt-3 w-full py-2 text-xs font-semibold border border-[#e5e7eb] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                  <Edit size={11} />Manage Collection
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\lib\db\repositories\collections.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import type { DbCollection } from "@/lib/db/types";
+
+export async function getAllCollections(activeOnly = true): Promise<DbCollection[]> {
+  const sql = activeOnly
+    ? "SELECT * FROM collections WHERE isActive = 1 ORDER BY sortOrder ASC, name ASC"
+    : "SELECT * FROM collections ORDER BY sortOrder ASC, name ASC";
+  const result = await db.execute(sql);
+  return result.rows as unknown as DbCollection[];
+}
+
+export async function getCollectionBySlug(slug: string): Promise<DbCollection | null> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM collections WHERE slug = ? LIMIT 1",
+    args: [slug],
+  });
+  return (result.rows[0] as unknown as DbCollection) ?? null;
+}
+
+export async function getCollectionById(id: string): Promise<DbCollection | null> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM collections WHERE id = ? LIMIT 1",
+    args: [id],
+  });
+  return (result.rows[0] as unknown as DbCollection) ?? null;
+}
+
+/**
+ * Get collections with product counts
+ */
+export async function getCollectionsWithCounts(): Promise<Array<DbCollection & { productCount: number }>> {
+  const result = await db.execute(`
+    SELECT c.*, COUNT(p.id) as productCount
+    FROM collections c
+    LEFT JOIN products p ON p.collectionId = c.id AND p.status = 'PUBLISHED'
+    WHERE c.isActive = 1
+    GROUP BY c.id
+    ORDER BY c.sortOrder ASC, c.name ASC
+  `);
+  return result.rows as unknown as Array<DbCollection & { productCount: number }>;
+}
+
+================================================================================
+FILE: user-panel\src\lib\db\repositories\collections.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import type { DbCollection } from "@/lib/db/types";
+
+export async function getAllCollections(activeOnly = true): Promise<DbCollection[]> {
+  const sql = activeOnly
+    ? "SELECT * FROM collections WHERE isActive = 1 ORDER BY sortOrder ASC, name ASC"
+    : "SELECT * FROM collections ORDER BY sortOrder ASC, name ASC";
+  const result = await db.execute(sql);
+  return result.rows as unknown as DbCollection[];
+}
+
+export async function getCollectionBySlug(slug: string): Promise<DbCollection | null> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM collections WHERE slug = ? LIMIT 1",
+    args: [slug],
+  });
+  return (result.rows[0] as unknown as DbCollection) ?? null;
+}
+
+export async function getCollectionById(id: string): Promise<DbCollection | null> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM collections WHERE id = ? LIMIT 1",
+    args: [id],
+  });
+  return (result.rows[0] as unknown as DbCollection) ?? null;
+}
+
+/**
+ * Get collections with product counts
+ */
+export async function getCollectionsWithCounts(): Promise<Array<DbCollection & { productCount: number }>> {
+  const result = await db.execute(`
+    SELECT c.*, COUNT(p.id) as productCount
+    FROM collections c
+    LEFT JOIN products p ON p.collectionId = c.id AND p.status = 'PUBLISHED'
+    WHERE c.isActive = 1
+    GROUP BY c.id
+    ORDER BY c.sortOrder ASC, c.name ASC
+  `);
+  return result.rows as unknown as Array<DbCollection & { productCount: number }>;
+}
+
+================================================================================
+FILE: admin-panel\src\lib\adapters.ts
+================================================================================
+
+import type { DbProduct, DbProductImage, DbProductVariant, DbCollection, DbOrder, DbOrderItem, DbUser } from "@/lib/db/types";
+import type { ProductWithRelations } from "@/lib/db/repositories/products";
+import type { AdminProduct, AdminOrder, AdminCustomer, AdminCollection, AdminOrderItem } from "@/types";
+import { tagsToArray } from "@/lib/db/helpers";
+
+// ─── Product ─────────────────────────────────────────────
+export function adaptProduct(p: ProductWithRelations): AdminProduct {
+  const primaryImg = p.images.find((i) => i.isPrimary === 1) || p.images[0];
+  const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+
+  return {
+    id:           p.id,
+    name:         p.name,
+    slug:         p.slug,
+    sku:          p.sku,
+    status:       p.status.toLowerCase() as "published" | "draft" | "archived",
+    price:        p.price / 100,
+    comparePrice: p.comparePrice ? p.comparePrice / 100 : null,
+    collection:   p.collection?.name ?? "",
+    collectionId: p.collectionId ?? "",
+    stock:        totalStock,
+    sold:         p.soldCount,
+    image:        primaryImg?.url ?? "",
+    isNew:        p.isNew === 1,
+    isFeatured:   p.isFeatured === 1,
+    createdAt:    new Date(p.createdAt * 1000).toISOString(),
+    updatedAt:    new Date(p.updatedAt * 1000).toISOString(),
+  };
+}
+
+// ─── Order ───────────────────────────────────────────────
+export function adaptOrder(
+  o: DbOrder & { items: DbOrderItem[]; address?: unknown },
+  customerName  = "",
+  customerEmail = "",
+  customerPhone = ""
+): AdminOrder {
+  return {
+    id:            o.id,
+    orderNumber:   o.orderNumber,
+    customer:      customerName || o.guestName || "Guest",
+    customerEmail: customerEmail || o.guestEmail || "",
+    customerPhone: customerPhone || o.guestPhone || "",
+    items:         o.items.map(adaptOrderItem),
+    status:        o.status.toLowerCase() as AdminOrder["status"],
+    paymentStatus: o.paymentStatus.toLowerCase() as AdminOrder["paymentStatus"],
+    paymentMethod: o.paymentMethod,
+    subtotal:      o.subtotal / 100,
+    discount:      o.discount / 100,
+    shipping:      o.shipping / 100,
+    total:         o.total / 100,
+    city:          "",
+    address:       "",
+    notes:         o.customerNote ?? undefined,
+    trackingNum:   o.trackingNumber ?? undefined,
+    createdAt:     new Date(o.createdAt * 1000).toISOString(),
+    updatedAt:     new Date(o.updatedAt * 1000).toISOString(),
+  };
+}
+
+function adaptOrderItem(item: DbOrderItem): AdminOrderItem {
+  return {
+    id:        item.id,
+    productId: item.productId,
+    name:      item.name,
+    image:     item.image,
+    size:      item.size,
+    color:     item.color,
+    price:     item.price / 100,
+    quantity:  item.quantity,
+    sku:       item.sku,
+  };
+}
+
+// ─── Customer ────────────────────────────────────────────
+// FIX: Accept null OR undefined for optional fields (DB returns null, TS interfaces use undefined)
+export function adaptCustomer(
+  u: DbUser & {
+    totalOrders?: number;
+    totalSpent?:  number;
+    lastOrder?:   string | null;
+    city?:        string | null;
+  }
+): AdminCustomer {
+  return {
+    id:          u.id,
+    name:        u.name,
+    email:       u.email,
+    phone:       u.phone ?? "",
+    city:        u.city ?? "",
+    totalOrders: u.totalOrders ?? 0,
+    totalSpent:  (u.totalSpent ?? 0) / 100,
+    lastOrder:   u.lastOrder ?? new Date(u.createdAt * 1000).toISOString(),
+    isActive:    u.isActive === 1,
+    joinedAt:    new Date(u.createdAt * 1000).toISOString(),
+  };
+}
+
+// ─── Collection ──────────────────────────────────────────
+export function adaptCollection(c: DbCollection & { productCount?: number }): AdminCollection {
+  return {
+    id:           c.id,
+    name:         c.name,
+    slug:         c.slug,
+    description:  c.description,
+    image:        c.image ?? "",
+    productCount: c.productCount ?? 0,
+    isActive:     c.isActive === 1,
+    createdAt:    new Date(c.createdAt * 1000).toISOString(),
+  };
+}
+
+// Silence unused
+void tagsToArray;
+
+================================================================================
+FILE: admin-panel\src\lib\db\repositories\products.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now, tagsToArray } from "@/lib/db/helpers";
+import type {
+  DbProduct, DbProductImage, DbProductVariant, ProductStatus,
+} from "@/lib/db/types";
+
+export interface ProductWithRelations extends DbProduct {
+  images:      DbProductImage[];
+  variants:    DbProductVariant[];
+  collection?: { id: string; name: string; slug: string } | null;
+}
+
+// Turso/SQLite strips result columns named "length" (reserved word).
+// Workaround: alias to a different name in SQL, then remap in code.
+const PRODUCT_COLS = `
+  p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
+  p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
+  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
+  p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
+  p.waist, p."length" as lengthInches, p.bottom,
+  p.createdAt, p.updatedAt
+`;
+
+function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
+  const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
+  return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
+}
+
+export interface GetProductsOptions {
+  status?:       ProductStatus | "ALL";
+  collectionId?: string;
+  featured?:     boolean;
+  isNew?:        boolean;
+  isBestSeller?: boolean;
+  search?:       string;
+  sortBy?:       "newest" | "price-asc" | "price-desc" | "bestselling" | "rating";
+  limit?:        number;
+  offset?:       number;
+}
+
+export async function getProducts(opts: GetProductsOptions = {}): Promise<ProductWithRelations[]> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") {
+    conditions.push("p.status = ?");
+    args.push(opts.status);
+  } else if (!opts.status) {
+    conditions.push("p.status = ?");
+    args.push("PUBLISHED");
+  }
+
+  if (opts.collectionId) { conditions.push("p.collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("p.isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("p.isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("p.isBestSeller = 1"); }
+  if (opts.search) {
+    conditions.push("(p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)");
+    const term = `%${opts.search}%`;
+    args.push(term, term, term);
+  }
+
+  const where   = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  let   orderBy = "p.createdAt DESC";
+  switch (opts.sortBy) {
+    case "price-asc":   orderBy = "p.price ASC";      break;
+    case "price-desc":  orderBy = "p.price DESC";     break;
+    case "bestselling": orderBy = "p.soldCount DESC"; break;
+    case "rating":      orderBy = "p.rating DESC";    break;
+  }
+
+  const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
+  const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
+
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p
+          LEFT JOIN collections c ON c.id = p.collectionId
+          ${where} ORDER BY ${orderBy} ${limit} ${offset}`,
+    args,
+  });
+
+  const rawProducts = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as (DbProduct & {
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  })[];
+
+  if (rawProducts.length === 0) return [];
+
+  const productIds   = rawProducts.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`, args: productIds }),
+    db.execute({ sql: `SELECT * FROM product_variants WHERE productId IN (${placeholders})`, args: productIds }),
+  ]);
+
+  const images   = imgResult.rows as unknown as DbProductImage[];
+  const variants = varResult.rows as unknown as DbProductVariant[];
+
+  return rawProducts.map((p) => ({
+    ...p,
+    images:     images.filter((i) => i.productId === p.id),
+    variants:   variants.filter((v) => v.productId === p.id),
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  }));
+}
+
+export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.slug = ? LIMIT 1`,
+    args: [slug],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductById(id: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.id = ? LIMIT 1`,
+    args: [id],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductCount(opts: GetProductsOptions = {}): Promise<number> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") { conditions.push("status = ?"); args.push(opts.status); }
+  else if (!opts.status) { conditions.push("status = ?"); args.push("PUBLISHED"); }
+  if (opts.collectionId) { conditions.push("collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("isBestSeller = 1"); }
+
+  const where  = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const result = await db.execute({ sql: `SELECT COUNT(*) as count FROM products ${where}`, args });
+  return Number(result.rows[0].count);
+}
+
+export async function getRelatedProducts(
+  productId: string, collectionId: string, limit = 4
+): Promise<ProductWithRelations[]> {
+  const result = await db.execute({
+    sql:  `SELECT ${PRODUCT_COLS} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
+    args: [collectionId, productId, limit],
+  });
+  const products = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as DbProduct[];
+  if (products.length === 0) return [];
+
+  const productIds   = products.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+  const imgResult    = await db.execute({
+    sql:  `SELECT * FROM product_images WHERE productId IN (${placeholders}) AND isPrimary = 1`,
+    args: productIds,
+  });
+  const images = imgResult.rows as unknown as DbProductImage[];
+  return products.map((p) => ({ ...p, images: images.filter((i) => i.productId === p.id), variants: [] }));
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN CRUD
+// ═══════════════════════════════════════════════════════
+
+import { now as nowTs, tagsToArray as tagsToArr } from "@/lib/db/helpers";
+
+export interface CreateProductInput {
+  name:             string;
+  slug:             string;
+  sku:              string;
+  description:      string;
+  price:            number;
+  comparePrice?:    number | null;
+  costPerItem?:     number;
+  collectionId?:    string | null;
+  status?:          ProductStatus;
+  isNew?:           boolean;
+  isFeatured?:      boolean;
+  isBestSeller?:    boolean;
+  tags?:            string[];
+  metaTitle?:       string;
+  metaDescription?: string;
+  imageUrl?:        string;
+  imageUrls?:       string[];
+  waist?:           number | null;
+  length?:          number | null;
+  bottom?:          number | null;
+  variants?: Array<{
+    size:     string;
+    color:    string;
+    colorHex: string;
+    sku:      string;
+    stock:    number;
+    price:    number;
+  }>;
+}
+
+export async function createProduct(input: CreateProductInput): Promise<string> {
+  const id = generateId();
+  const t  = nowTs();
+
+  await db.execute({
+    sql: `INSERT INTO products (
+      id, name, slug, sku, description, price, comparePrice, costPerItem,
+      collectionId, status, isNew, isFeatured, isBestSeller, tags,
+      metaTitle, metaDescription, waist, "length", bottom, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id, input.name, input.slug, input.sku, input.description,
+      input.price, input.comparePrice ?? null, input.costPerItem ?? null,
+      input.collectionId ?? null, input.status ?? "DRAFT",
+      input.isNew ? 1 : 0, input.isFeatured ? 1 : 0, input.isBestSeller ? 1 : 0,
+      (input.tags ?? []).join(","),
+      input.metaTitle ?? null, input.metaDescription ?? null,
+      input.waist  ?? null,
+      input.length ?? null,
+      input.bottom ?? null,
+      t, t,
+    ],
+  });
+
+  const allImages = input.imageUrls && input.imageUrls.length > 0
+    ? input.imageUrls
+    : (input.imageUrl ? [input.imageUrl] : []);
+
+  for (let i = 0; i < allImages.length; i++) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), id, allImages[i], input.name, i === 0 ? 1 : 0, i],
+    });
+  }
+
+  if (input.variants && input.variants.length > 0) {
+    for (const v of input.variants) {
+      await db.execute({
+        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [generateId(), id, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+      });
+    }
+  }
+
+  return id;
+}
+
+export async function updateProduct(
+  id: string,
+  updates: Partial<Omit<CreateProductInput, "variants" | "imageUrl" | "imageUrls">>
+): Promise<void> {
+  const sets: string[] = [];
+  const args: (string | number | null)[] = [];
+
+  const map: Record<string, unknown> = {
+    name:            updates.name,
+    slug:            updates.slug,
+    sku:             updates.sku,
+    description:     updates.description,
+    price:           updates.price,
+    comparePrice:    updates.comparePrice,
+    costPerItem:     updates.costPerItem,
+    collectionId:    updates.collectionId,
+    status:          updates.status,
+    isNew:           updates.isNew        === undefined ? undefined : (updates.isNew        ? 1 : 0),
+    isFeatured:      updates.isFeatured   === undefined ? undefined : (updates.isFeatured   ? 1 : 0),
+    isBestSeller:    updates.isBestSeller === undefined ? undefined : (updates.isBestSeller ? 1 : 0),
+    tags:            updates.tags ? updates.tags.join(",") : undefined,
+    metaTitle:       updates.metaTitle,
+    metaDescription: updates.metaDescription,
+    waist:           updates.waist,
+    bottom:          updates.bottom,
+  };
+
+  Object.entries(map).forEach(([k, v]) => {
+    if (v !== undefined) { sets.push(`${k} = ?`); args.push(v as string | number | null); }
+  });
+
+  if (updates.length !== undefined) {
+    sets.push(`"length" = ?`);
+    args.push(updates.length as number | null);
+  }
+
+  if (sets.length === 0) return;
+  sets.push("updatedAt = ?");
+  args.push(nowTs());
+  args.push(id);
+
+  await db.execute({ sql: `UPDATE products SET ${sets.join(", ")} WHERE id = ?`, args });
+}
+
+/**
+ * Hard-delete a product and ALL references to it.
+ * Manually cascades because SQLite/Turso schema uses REFERENCES without ON DELETE CASCADE
+ * on cart_items and order_items. Order of deletion matters (FK constraints).
+ *
+ * WARNING: This is destructive. Removes order_items rows too, which erases the
+ * product line from historical orders. Use with care — good for dev/demo data,
+ * but consider soft-delete (archive) for production.
+ */
+export async function deleteProduct(id: string): Promise<void> {
+  // 1) Marketing / user references
+  await db.execute({ sql: "DELETE FROM reviews    WHERE productId = ?", args: [id] });
+  await db.execute({ sql: "DELETE FROM wishlists  WHERE productId = ?", args: [id] });
+
+  // 2) Cart references (both by productId AND by any variantId of this product)
+  await db.execute({ sql: "DELETE FROM cart_items WHERE productId = ?", args: [id] });
+  await db.execute({
+    sql: "DELETE FROM cart_items WHERE variantId IN (SELECT id FROM product_variants WHERE productId = ?)",
+    args: [id],
+  });
+
+  // 3) Order line-items (removes product from order history)
+  await db.execute({ sql: "DELETE FROM order_items WHERE productId = ?", args: [id] });
+  await db.execute({
+    sql: "DELETE FROM order_items WHERE variantId IN (SELECT id FROM product_variants WHERE productId = ?)",
+    args: [id],
+  });
+
+  // 4) Product's own children
+  await db.execute({ sql: "DELETE FROM product_variants WHERE productId = ?", args: [id] });
+  await db.execute({ sql: "DELETE FROM product_images   WHERE productId = ?", args: [id] });
+
+  // 5) Finally, the product itself
+  await db.execute({ sql: "DELETE FROM products WHERE id = ?", args: [id] });
+}
+
+export async function updateVariantStock(variantId: string, stock: number): Promise<void> {
+  await db.execute({
+    sql:  "UPDATE product_variants SET stock = ?, updatedAt = ? WHERE id = ?",
+    args: [Math.max(0, stock), nowTs(), variantId],
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  IMAGE + VARIANT SYNC (for edit flow)
+// ═══════════════════════════════════════════════════════
+
+export async function replaceProductImages(
+  productId: string,
+  imageUrls: string[],
+  altText:   string
+): Promise<void> {
+  await db.execute({
+    sql:  "DELETE FROM product_images WHERE productId = ?",
+    args: [productId],
+  });
+
+  for (let i = 0; i < imageUrls.length; i++) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), productId, imageUrls[i], altText, i === 0 ? 1 : 0, i],
+    });
+  }
+}
+
+export interface VariantSyncInput {
+  id?:       string;
+  size:      string;
+  color:     string;
+  colorHex:  string;
+  sku:       string;
+  stock:     number;
+  price:     number;
+}
+
+/**
+ * Sync product variants (add / update / delete).
+ * Also cleans up cart_items / order_items references before deleting variants
+ * to satisfy foreign key constraints.
+ */
+export async function syncProductVariants(
+  productId: string,
+  variants:  VariantSyncInput[]
+): Promise<void> {
+  const t = nowTs();
+
+  const existingResult = await db.execute({
+    sql:  "SELECT id FROM product_variants WHERE productId = ?",
+    args: [productId],
+  });
+  const existingIds = existingResult.rows.map((r) => r.id as string);
+
+  const keptIds = variants.map((v) => v.id).filter(Boolean) as string[];
+
+  const toDelete = existingIds.filter((id) => !keptIds.includes(id));
+  for (const id of toDelete) {
+    // Clean references first
+    await db.execute({ sql: "DELETE FROM cart_items  WHERE variantId = ?", args: [id] });
+    await db.execute({ sql: "DELETE FROM order_items WHERE variantId = ?", args: [id] });
+    await db.execute({ sql: "DELETE FROM product_variants WHERE id = ?", args: [id] });
+  }
+
+  for (const v of variants) {
+    if (v.id && existingIds.includes(v.id)) {
+      await db.execute({
+        sql: `UPDATE product_variants
+              SET size = ?, color = ?, colorHex = ?, sku = ?, stock = ?, price = ?, updatedAt = ?
+              WHERE id = ?`,
+        args: [v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, v.id],
+      });
+    } else {
+      await db.execute({
+        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [generateId(), productId, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+      });
+    }
+  }
+}
+
+export async function duplicateProduct(sourceId: string): Promise<string> {
+  const source = await getProductById(sourceId);
+  if (!source) throw new Error("Product not found");
+
+  const newId = generateId();
+  const t     = nowTs();
+
+  const newName = `${source.name} (Copy)`;
+  const newSlug = `${source.slug}-copy-${newId.slice(1, 7)}`;
+  const newSku  = `${source.sku}-COPY-${newId.slice(1, 5).toUpperCase()}`;
+
+  await db.execute({
+    sql: `INSERT INTO products (
+      id, name, slug, sku, description, price, comparePrice, costPerItem,
+      collectionId, status, isNew, isFeatured, isBestSeller, tags,
+      metaTitle, metaDescription, waist, "length", bottom, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      newId, newName, newSlug, newSku, source.description,
+      source.price, source.comparePrice, source.costPerItem,
+      source.collectionId, "DRAFT",
+      source.isNew, source.isFeatured, source.isBestSeller,
+      source.tags,
+      source.metaTitle, source.metaDescription,
+      source.waist, source.length, source.bottom,
+      t, t,
+    ],
+  });
+
+  for (const img of source.images) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), newId, img.url, img.alt, img.isPrimary, img.sortOrder],
+    });
+  }
+
+  for (const v of source.variants) {
+    await db.execute({
+      sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        generateId(), newId, v.size, v.color, v.colorHex,
+        `${v.sku}-C${newId.slice(1, 4).toUpperCase()}`,
+        v.stock, v.price, t, t,
+      ],
+    });
+  }
+
+  return newId;
+}
+
+void tagsToArr;
+void now;
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\page.tsx
+================================================================================
+
+import { getProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ProductsPageClient } from "./ProductsPageClient";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function ProductsPage() {
+  const dbProducts = await getProducts({ status: "ALL", limit: 200 });
+  const products   = dbProducts.map(adaptProduct);
+
+  return <ProductsPageClient initialProducts={products} />;
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\ProductsPageClient.tsx
+================================================================================
+
+"use client";
+import { useState, useMemo } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Plus, Search, Download, Trash, Edit,
+  MoreVertical, Package, Grid3x3, List,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { formatPrice, formatDate, cn } from "@/lib/utils";
+import { PRODUCT_STATUS_COLORS } from "@/lib/constants";
+import { confirmAction } from "@/store/confirmStore";
+import { useToastStore } from "@/store/toastStore";
+import type { AdminProduct, ProductStatus } from "@/types";
+
+const STATUS_FILTERS: (ProductStatus | "all")[] = ["all", "published", "draft", "archived"];
+
+export function ProductsPageClient({ initialProducts }: { initialProducts: AdminProduct[] }) {
+  const [search,   setSearch]   = useState("");
+  const [status,   setStatus]   = useState<ProductStatus | "all">("all");
+  const [view,     setView]     = useState<"table" | "grid">("table");
+  const [collectionFilter, setCollectionFilter] = useState("all");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const toast = useToastStore();
+
+  const filtered = useMemo(() => {
+    return initialProducts.filter((p) => {
+      const matchStatus = status === "all" || p.status === status;
+      const matchSearch = search.trim() === "" ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.sku.toLowerCase().includes(search.toLowerCase());
+      const matchCollection = collectionFilter === "all" || p.collection === collectionFilter;
+      return matchStatus && matchSearch && matchCollection;
+    });
+  }, [search, status, initialProducts, collectionFilter]);
+
+  const statusCounts = useMemo(() => ({
+    all:       initialProducts.length,
+    published: initialProducts.filter((p) => p.status === "published").length,
+    draft:     initialProducts.filter((p) => p.status === "draft").length,
+    archived:  initialProducts.filter((p) => p.status === "archived").length,
+  }), [initialProducts]);
+
+  const toggleAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map((p) => p.id));
+  const toggleOne = (id: string) => setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+
+  const handleBulkDelete = async () => {
+    const ok = await confirmAction({
+      title:       "Delete Products",
+      message:     `Permanently delete ${selected.length} product${selected.length === 1 ? "" : "s"}? This will also remove them from any order history. This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText:  "Keep them",
+      variant:     "danger",
+    });
+    if (!ok) return;
+
+    setDeleting(true);
+
+    let success = 0;
+    const failures: Array<{ id: string; name: string; error: string }> = [];
+
+    for (const id of selected) {
+      const product = initialProducts.find((p) => p.id === id);
+      const name    = product?.name ?? id;
+      try {
+        const res  = await fetch(`/api/products/${id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          success++;
+        } else {
+          failures.push({ id, name, error: data.error ?? `HTTP ${res.status}` });
+        }
+      } catch (err) {
+        failures.push({ id, name, error: (err as Error).message });
+      }
+    }
+
+    setSelected([]);
+    setDeleting(false);
+
+    if (success > 0) {
+      toast.success(
+        `${success} product${success === 1 ? "" : "s"} deleted successfully.`,
+        "Deleted"
+      );
+    }
+    if (failures.length > 0) {
+      const first = failures[0];
+      toast.error(
+        `Failed to delete ${failures.length} product${failures.length === 1 ? "" : "s"}. Example: "${first.name}" — ${first.error}`,
+        "Some Deletes Failed"
+      );
+      console.error("Delete failures:", failures);
+    }
+
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Products</h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">Manage your product catalog, inventory, and variants.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+              const csv = initialProducts.map((p) =>
+                [p.name, p.sku, p.collection, p.price, p.stock, p.sold, p.status].map((v) => `"${v}"`).join(",")
+              );
+              csv.unshift('"Name","SKU","Collection","Price","Stock","Sold","Status"');
+              const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `denova-products-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Product catalog exported to CSV.", "Export Complete");
+            }}>
+              <Download size={14} />
+              Export
+            </Button>
+          <Link href="/products/new"><Button variant="primary"><Plus size={14} />Add Product</Button></Link>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 border-b border-[#e5e7eb]">
+        {STATUS_FILTERS.map((s) => (
+          <button key={s} onClick={() => setStatus(s)}
+            className={cn("px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px",
+              status === s ? "border-[#c9a96e] text-[#c9a96e]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
+            {s}
+            <span className={cn("ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
+              status === s ? "bg-[#c9a96e]/20 text-[#c9a96e]" : "bg-[#e5e7eb] text-[#6b7280]")}>
+              {statusCounts[s]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white border border-[#e5e7eb] p-3 flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, SKU, collection..."
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none placeholder:text-[#6b7280]/60" />
+        </div>
+
+        {selected.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#6b7280]">{selected.length} selected</span>
+            <Button variant="ghost" size="sm" onClick={handleBulkDelete} disabled={deleting}>
+              <Trash size={13} />
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1 border border-[#e5e7eb] p-0.5 ml-auto">
+          <button onClick={() => setView("table")} className={cn("p-1.5", view === "table" ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><List size={14} /></button>
+          <button onClick={() => setView("grid")}  className={cn("p-1.5", view === "grid"  ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><Grid3x3 size={14} /></button>
+        </div>
+        <select value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}
+          className="text-xs border border-[#e5e7eb] px-3 py-2 focus:border-[#c9a96e] focus:outline-none bg-white">
+          <option value="all">All Collections</option>
+          <option value="Premium">Premium</option>
+          <option value="Super Premium">Super Premium</option>
+        </select>
+      </div>
+
+      {view === "table" ? (
+        <div className="bg-white border border-[#e5e7eb] overflow-hidden">
+          {filtered.length === 0 ? (
+            <div className="p-12 text-center">
+              <Package size={40} className="text-[#c9a96e] mx-auto mb-3" />
+              <p className="text-sm font-medium text-[#1a1a1a]">No products found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
+                    <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#c9a96e]" /></th>
+                    {["Product","SKU","Collection","Price","Stock","Sold","Status","Updated"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
+                    ))}
+                    <th className="w-16 px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e5e7eb]">
+                  {filtered.map((p) => (
+                    <ProductRow key={p.id} product={p} isSelected={selected.includes(p.id)} onToggle={() => toggleOne(p.id)} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
+        </div>
+      )}
+
+      <p className="text-xs text-[#6b7280] text-center">Showing {filtered.length} of {initialProducts.length} products</p>
+    </div>
+  );
+}
+
+function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; isSelected: boolean; onToggle: () => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const stockStatus = product.stock === 0 ? "out" : product.stock < 10 ? "low" : "ok";
+
+  return (
+    <tr className={cn("hover:bg-[#fafaf9] transition-colors", isSelected && "bg-[#f5f0e8]/30")}>
+      <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#c9a96e]" /></td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="relative w-11 h-14 flex-shrink-0 bg-[#fafaf9]">
+            {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="45px" />}
+          </div>
+          <div className="min-w-0">
+            <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#c9a96e] transition-colors line-clamp-1">
+              {product.name}
+            </Link>
+            {product.isNew      && <Badge variant="gold" className="mr-1 mt-1">New</Badge>}
+            {product.isFeatured && <Badge variant="info" className="mt-1">Featured</Badge>}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-xs font-mono text-[#6b7280]">{product.sku}</td>
+      <td className="px-4 py-3 text-xs text-[#1a1a1a]">{product.collection}</td>
+      <td className="px-4 py-3">
+        <p className="text-xs font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
+        {product.comparePrice && <p className="text-[10px] text-[#6b7280] line-through">{formatPrice(product.comparePrice)}</p>}
+      </td>
+      <td className="px-4 py-3">
+        <span className={cn("text-xs font-bold",
+          stockStatus === "out" ? "text-red-500" : stockStatus === "low" ? "text-orange-500" : "text-[#1a1a1a]")}>
+          {product.stock}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-xs text-[#6b7280]">{product.sold}</td>
+      <td className="px-4 py-3">
+        <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide capitalize", PRODUCT_STATUS_COLORS[product.status])}>
+          {product.status}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-xs text-[#6b7280]">{formatDate(product.updatedAt)}</td>
+      <td className="px-4 py-3 relative">
+        <button onClick={() => setMenuOpen(!menuOpen)} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
+          <MoreVertical size={16} />
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+            <div className="absolute right-4 top-full mt-1 w-40 bg-white border border-[#e5e7eb] shadow-lg z-20 py-1">
+              <Link href={`/products/${product.id}`} className="flex items-center gap-2 px-3 py-2 text-xs text-[#1a1a1a] hover:bg-[#fafaf9]">
+                <Edit size={12} />Edit
+              </Link>
+            </div>
+          </>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function ProductCard({ product }: { product: AdminProduct }) {
+  return (
+    <Link href={`/products/${product.id}`} className="group bg-white border border-[#e5e7eb] hover:border-[#c9a96e] transition-colors overflow-hidden">
+      <div className="relative aspect-[3/4] bg-[#fafaf9]">
+        {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="250px" />}
+        <div className="absolute top-2 right-2">
+          <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide capitalize", PRODUCT_STATUS_COLORS[product.status])}>
+            {product.status}
+          </span>
+        </div>
+      </div>
+      <div className="p-3">
+        <p className="text-[10px] text-[#c9a96e] uppercase tracking-wider mb-1">{product.collection}</p>
+        <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#c9a96e]">{product.name}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
+          <span className={cn("text-xs font-bold", product.stock === 0 ? "text-red-500" : product.stock < 10 ? "text-orange-500" : "text-green-600")}>
+            {product.stock} in stock
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\products\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { getProducts, createProduct } from "@/lib/db/repositories/products";
+import { rupeesToPaisa } from "@/lib/priceUtils";
+import { slugify } from "@/lib/utils";
+
+export async function GET() {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  const products = await getProducts({ status: "ALL", limit: 500 });
+  return NextResponse.json({ products });
+}
+
+export async function POST(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const body = await req.json();
+    const {
+      name, description, sku, price, comparePrice, collectionId,
+      status, isNew, isFeatured, isBestSeller, tags, variants,
+      waist, length, bottom,
+    } = body;
+
+    if (!name || !description || !sku || price === undefined) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const slug = body.slug || slugify(name);
+
+    const imageUrls: string[] = [];
+    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
+      imageUrls.push(...body.images);
+    } else if (body.imageUrl) {
+      imageUrls.push(body.imageUrl);
+    }
+
+    const waistNumber = waist !== undefined && waist !== "" ? Number(waist) : null;
+    const sizeLabel   = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+
+    const productId = await createProduct({
+      name,
+      slug,
+      sku,
+      description,
+      price:        rupeesToPaisa(price),
+      comparePrice: comparePrice ? rupeesToPaisa(comparePrice) : null,
+      collectionId: collectionId || null,
+      status:       (status ?? "draft").toUpperCase() as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+      isNew:        !!isNew,
+      isFeatured:   !!isFeatured,
+      isBestSeller: !!isBestSeller,
+      tags:         Array.isArray(tags) ? tags : (typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()) : []),
+      imageUrl:     imageUrls[0] || undefined,
+      imageUrls:    imageUrls,
+      waist:        waistNumber,
+      length:       length !== undefined && length !== "" ? Number(length) : null,
+      bottom:       bottom !== undefined && bottom !== "" ? Number(bottom) : null,
+      variants:     variants?.map((v: {
+        color: string; colorHex?: string; sku: string; stock: number; price: number;
+      }) => ({
+        size:     sizeLabel,
+        color:    v.color,
+        colorHex: v.colorHex ?? "#000000",
+        sku:      v.sku,
+        stock:    Number(v.stock),
+        price:    rupeesToPaisa(v.price),
+      })),
+    });
+
+    return NextResponse.json({ success: true, productId }, { status: 201 });
+  } catch (err) {
+    console.error("Create product error:", err);
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\products\[id]\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import {
+  updateProduct, deleteProduct,
+  replaceProductImages, syncProductVariants,
+  getProductById,
+} from "@/lib/db/repositories/products";
+import { rupeesToPaisa } from "@/lib/priceUtils";
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    const updates: Record<string, unknown> = {};
+    if (body.name         !== undefined) updates.name         = body.name;
+    if (body.slug         !== undefined) updates.slug         = body.slug;
+    if (body.sku          !== undefined) updates.sku          = body.sku;
+    if (body.description  !== undefined) updates.description  = body.description;
+    if (body.price        !== undefined) updates.price        = rupeesToPaisa(body.price);
+    if (body.comparePrice !== undefined) updates.comparePrice = body.comparePrice ? rupeesToPaisa(body.comparePrice) : null;
+    if (body.collectionId !== undefined) updates.collectionId = body.collectionId;
+    if (body.status       !== undefined) updates.status       = body.status.toUpperCase();
+    if (body.isNew        !== undefined) updates.isNew        = body.isNew;
+    if (body.isFeatured   !== undefined) updates.isFeatured   = body.isFeatured;
+    if (body.isBestSeller !== undefined) updates.isBestSeller = body.isBestSeller;
+    if (body.tags         !== undefined) updates.tags         = Array.isArray(body.tags) ? body.tags : body.tags.split(",");
+    if (body.waist        !== undefined) updates.waist        = body.waist  !== "" && body.waist  !== null ? Number(body.waist)  : null;
+    if (body.length       !== undefined) updates.length       = body.length !== "" && body.length !== null ? Number(body.length) : null;
+    if (body.bottom       !== undefined) updates.bottom       = body.bottom !== "" && body.bottom !== null ? Number(body.bottom) : null;
+
+    if (Object.keys(updates).length > 0) {
+      await updateProduct(id, updates);
+    }
+
+    if (Array.isArray(body.images)) {
+      const productForAlt = await getProductById(id);
+      const alt = body.name ?? productForAlt?.name ?? "Product";
+      await replaceProductImages(id, body.images, alt);
+    }
+
+    if (Array.isArray(body.variants)) {
+      const waistNumber = body.waist !== undefined && body.waist !== "" && body.waist !== null
+        ? Number(body.waist)
+        : null;
+      const sizeLabel = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+
+      const variantsForSync = body.variants.map((v: {
+        id?: string; color: string; colorHex?: string; sku: string; stock: number; price: number; size?: string;
+      }) => ({
+        id:       v.id,
+        size:     v.size ?? sizeLabel,
+        color:    v.color,
+        colorHex: v.colorHex ?? "#000000",
+        sku:      v.sku,
+        stock:    Number(v.stock),
+        price:    rupeesToPaisa(v.price),
+      }));
+
+      await syncProductVariants(id, variantsForSync);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Update product error:", err);
+    return NextResponse.json({ error: "Update failed: " + (err as Error).message }, { status: 500 });
+  }
+}
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    await deleteProduct(id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Delete product error:", err);
+    return NextResponse.json(
+      { error: "Delete failed: " + (err as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\discounts\DiscountsClient.tsx
+================================================================================
+
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Copy, MoreVertical, Trash, Edit, X, Save, Tag } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { formatDate, cn } from "@/lib/utils";
+import { formatPaisa } from "@/lib/priceUtils";
+import { useToastStore } from "@/store/toastStore";
+import { confirmAction } from "@/store/confirmStore";
+import type { DbDiscount } from "@/lib/db/types";
+
+const STATUS_COLORS: Record<string, string> = {
+  ACTIVE:   "bg-green-100 text-green-700",
+  EXPIRED:  "bg-gray-100 text-gray-700",
+  DISABLED: "bg-red-100 text-red-700",
+};
+
+export function DiscountsClient({ initialDiscounts }: { initialDiscounts: DbDiscount[] }) {
+  const router = useRouter();
+  const toast  = useToastStore();
+  const [discounts, setDiscounts] = useState(initialDiscounts);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing]     = useState<DbDiscount | null>(null);
+  const [menuOpen, setMenuOpen]   = useState<string | null>(null);
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success(`Code "${code}" copied to clipboard.`, "Copied");
+  };
+
+  const handleDelete = async (disc: DbDiscount) => {
+    const ok = await confirmAction({
+      title:       "Delete Discount Code",
+      message:     `Delete "${disc.code}"? This code will no longer work at checkout. This action cannot be undone.`,
+      confirmText: "Delete",
+      variant:     "danger",
+    });
+    if (!ok) return;
+
+    const res = await fetch(`/api/discounts/${disc.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setDiscounts((d) => d.filter((x) => x.id !== disc.id));
+      setMenuOpen(null);
+      toast.success(`Discount code "${disc.code}" removed.`, "Deleted");
+    } else {
+      toast.error("Failed to delete discount code.", "Delete Failed");
+    }
+  };
+
+  const handleToggleStatus = async (disc: DbDiscount) => {
+    const newStatus = disc.status === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const res = await fetch(`/api/discounts/${disc.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      setDiscounts((d) => d.map((x) => x.id === disc.id ? { ...x, status: newStatus } : x));
+      setMenuOpen(null);
+      toast.success(
+        `"${disc.code}" is now ${newStatus.toLowerCase()}.`,
+        newStatus === "ACTIVE" ? "Enabled" : "Disabled"
+      );
+    }
+  };
+
+  const handleSave = async (data: DiscountFormData) => {
+    if (editing) {
+      const res = await fetch(`/api/discounts/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        router.refresh();
+        setModalOpen(false);
+        setEditing(null);
+        const r = await fetch("/api/discounts");
+        const d = await r.json();
+        if (d.discounts) setDiscounts(d.discounts);
+        toast.success(`Discount code "${data.code}" updated.`, "Saved");
+      }
+    } else {
+      const res = await fetch("/api/discounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error || "Failed to create discount code.", "Save Failed");
+        return;
+      }
+      setModalOpen(false);
+      const r = await fetch("/api/discounts");
+      const d = await r.json();
+      if (d.discounts) setDiscounts(d.discounts);
+      toast.success(`Discount code "${data.code}" is now active.`, "Created");
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Discounts</h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">Create and manage discount codes.</p>
+        </div>
+        <Button variant="primary" onClick={() => { setEditing(null); setModalOpen(true); }}>
+          <Plus size={14} />
+          Create Discount
+        </Button>
+      </div>
+
+      <div className="bg-white border border-[#e5e7eb] overflow-hidden">
+        {discounts.length === 0 ? (
+          <div className="p-12 text-center">
+            <Tag size={40} className="text-[#c9a96e] mx-auto mb-3" />
+            <p className="text-sm font-medium text-[#1a1a1a]">No discount codes yet</p>
+            <p className="text-xs text-[#6b7280] mt-1">Create your first discount code to attract customers.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
+                  {["Code", "Type", "Value", "Min Order", "Uses", "Expires", "Status", ""].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e5e7eb]">
+                {discounts.map((d) => (
+                  <tr key={d.id} className="hover:bg-[#fafaf9]">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-bold text-[#c9a96e]">{d.code}</span>
+                        <button onClick={() => copyCode(d.code)} className="text-[#6b7280] hover:text-[#1a1a1a]">
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#1a1a1a] capitalize">{d.type.toLowerCase()}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-[#1a1a1a]">
+                      {d.type === "PERCENTAGE" ? `${d.value}%` : formatPaisa(d.value)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#6b7280]">{formatPaisa(d.minOrder)}</td>
+                    <td className="px-4 py-3">
+                      <p className="text-xs font-medium text-[#1a1a1a]">{d.usedCount} / {d.maxUses}</p>
+                      <div className="w-20 h-1 bg-[#e5e7eb] mt-1">
+                        <div className="h-full bg-[#c9a96e]" style={{ width: `${Math.min((d.usedCount / d.maxUses) * 100, 100)}%` }} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#6b7280]">
+                      {formatDate(new Date(d.expiresAt * 1000).toISOString())}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={cn(STATUS_COLORS[d.status], "capitalize")}>
+                        {d.status.toLowerCase()}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 relative">
+                      <button onClick={() => setMenuOpen(menuOpen === d.id ? null : d.id)}
+                        className="text-[#6b7280] hover:text-[#1a1a1a]">
+                        <MoreVertical size={14} />
+                      </button>
+                      {menuOpen === d.id && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
+                          <div className="absolute right-4 top-full mt-1 w-44 bg-white border border-[#e5e7eb] shadow-lg z-20 py-1">
+                            <button onClick={() => { setEditing(d); setModalOpen(true); setMenuOpen(null); }}
+                              className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs text-[#1a1a1a] hover:bg-[#fafaf9]">
+                              <Edit size={12} /> Edit
+                            </button>
+                            <button onClick={() => handleToggleStatus(d)}
+                              className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs text-[#1a1a1a] hover:bg-[#fafaf9]">
+                              {d.status === "ACTIVE" ? "Disable" : "Enable"}
+                            </button>
+                            <div className="border-t border-[#e5e7eb] my-1" />
+                            <button onClick={() => handleDelete(d)}
+                              className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50">
+                              <Trash size={12} /> Delete
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {modalOpen && (
+        <DiscountModal
+          discount={editing}
+          onClose={() => { setModalOpen(false); setEditing(null); }}
+          onSave={handleSave}
+        />
+      )}
+    </div>
+  );
+}
+
+interface DiscountFormData {
+  code:      string;
+  type:      string;
+  value:     number;
+  minOrder:  number;
+  maxUses:   number;
+  expiresAt: string;
+  status:    string;
+}
+
+function DiscountModal({
+  discount, onClose, onSave,
+}: {
+  discount: DbDiscount | null;
+  onClose: () => void;
+  onSave: (data: DiscountFormData) => void;
+}) {
+  const toast = useToastStore();
+  const [form, setForm] = useState<DiscountFormData>({
+    code:      discount?.code ?? "",
+    type:      discount?.type ?? "PERCENTAGE",
+    value:     discount?.value ?? 10,
+    minOrder:  discount ? discount.minOrder / 100 : 0,
+    maxUses:   discount?.maxUses ?? 1000,
+    expiresAt: discount
+      ? new Date(discount.expiresAt * 1000).toISOString().split("T")[0]
+      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    status:    discount?.status ?? "ACTIVE",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.code.trim()) {
+      toast.error("Please enter a discount code.", "Code Required");
+      return;
+    }
+    setSaving(true);
+    await onSave({
+      ...form,
+      code: form.code.toUpperCase(),
+      minOrder: form.type === "FIXED" ? form.minOrder * 100 : form.minOrder * 100,
+      value: form.type === "FIXED" ? form.value * 100 : form.value,
+    });
+    setSaving(false);
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-lg bg-white shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto">
+
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
+            <h2 className="text-lg font-bold text-[#1a1a1a]">
+              {discount ? "Edit Discount" : "Create Discount"}
+            </h2>
+            <button onClick={onClose} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
+              <X size={20} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                Discount Code *
+              </label>
+              <input type="text" value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                placeholder="e.g. SUMMER20" required
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none font-mono uppercase" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                  Type *
+                </label>
+                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none">
+                  <option value="PERCENTAGE">Percentage (%)</option>
+                  <option value="FIXED">Fixed Amount (Rs.)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                  {form.type === "PERCENTAGE" ? "Discount (%)" : "Discount (Rs.)"}
+                </label>
+                <input type="number" value={form.value}
+                  onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+                  min={0} required
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                  Min Order (Rs.)
+                </label>
+                <input type="number" value={form.minOrder}
+                  onChange={(e) => setForm({ ...form, minOrder: Number(e.target.value) })}
+                  min={0}
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                  Max Uses
+                </label>
+                <input type="number" value={form.maxUses}
+                  onChange={(e) => setForm({ ...form, maxUses: Number(e.target.value) })}
+                  min={1}
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                  Expires On
+                </label>
+                <input type="date" value={form.expiresAt}
+                  onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+                  Status
+                </label>
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none">
+                  <option value="ACTIVE">Active</option>
+                  <option value="DISABLED">Disabled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-[#fafaf9] border border-[#e5e7eb] p-4 text-xs text-[#6b7280]">
+              <p className="font-semibold text-[#1a1a1a] mb-1">Preview</p>
+              <p>
+                Code <span className="font-mono font-bold text-[#c9a96e]">{form.code || "CODE"}</span> gives{" "}
+                <span className="font-bold text-[#1a1a1a]">
+                  {form.type === "PERCENTAGE" ? `${form.value}% off` : `Rs. ${form.value} off`}
+                </span>
+                {form.minOrder > 0 && <> on orders above <span className="font-bold">Rs. {form.minOrder}</span></>}
+                {". "}
+                Can be used {form.maxUses} times.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-[#e5e7eb]">
+              <button type="button" onClick={onClose} disabled={saving}
+                className="flex-1 py-3 text-sm font-medium border border-[#e5e7eb] text-[#6b7280] hover:text-[#1a1a1a] transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+              <button type="submit" disabled={saving}
+                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                <Save size={14} />
+                {saving ? "Saving..." : (discount ? "Update" : "Create")}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\discounts\page.tsx
+================================================================================
+
+import { db } from "@/lib/db/client";
+import type { DbDiscount } from "@/lib/db/types";
+import { DiscountsClient } from "./DiscountsClient";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+export default async function DiscountsPage() {
+  const result = await db.execute("SELECT * FROM discounts ORDER BY createdAt DESC");
+
+  // Convert Row objects to plain objects (required for Server → Client serialization)
+  const discounts = result.rows.map((row) => ({
+    id:        row.id        as string,
+    code:      row.code      as string,
+    type:      row.type      as string,
+    value:     Number(row.value),
+    minOrder:  Number(row.minOrder),
+    maxUses:   Number(row.maxUses),
+    usedCount: Number(row.usedCount),
+    status:    row.status    as string,
+    startsAt:  Number(row.startsAt),
+    expiresAt: Number(row.expiresAt),
+    createdAt: Number(row.createdAt),
+    updatedAt: Number(row.updatedAt),
+  })) as DbDiscount[];
+
+  return <DiscountsClient initialDiscounts={discounts} />;
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\discounts\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { db } from "@/lib/db/client";
+import { generateId, now } from "@/lib/db/helpers";
+
+export async function GET() {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  const result = await db.execute("SELECT * FROM discounts ORDER BY createdAt DESC");
+  return NextResponse.json({ discounts: result.rows });
+}
+
+export async function POST(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { code, type, value, minOrder, maxUses, expiresAt, status } = await req.json();
+
+    if (!code || !type || value === undefined) {
+      return NextResponse.json({ error: "Code, type, and value are required" }, { status: 400 });
+    }
+
+    // Check for duplicate code
+    const existing = await db.execute({
+      sql: "SELECT id FROM discounts WHERE code = ? COLLATE NOCASE LIMIT 1",
+      args: [code.toUpperCase()],
+    });
+    if (existing.rows.length > 0) {
+      return NextResponse.json({ error: "Discount code already exists" }, { status: 409 });
+    }
+
+    const id = generateId();
+    const t  = now();
+
+    // Parse expiry date
+    let expiryTimestamp = t + (365 * 24 * 60 * 60); // Default: 1 year
+    if (expiresAt) {
+      expiryTimestamp = Math.floor(new Date(expiresAt).getTime() / 1000);
+    }
+
+    await db.execute({
+      sql: `INSERT INTO discounts (id, code, type, value, minOrder, maxUses, usedCount, status, expiresAt, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+      args: [
+        id,
+        code.toUpperCase(),
+        type.toUpperCase(),
+        Number(value),
+        Number(minOrder || 0),
+        Number(maxUses || 1000),
+        (status || "ACTIVE").toUpperCase(),
+        expiryTimestamp,
+        t, t,
+      ],
+    });
+
+    return NextResponse.json({ success: true, id }, { status: 201 });
+  } catch (err) {
+    console.error("Create discount error:", err);
+    return NextResponse.json({ error: "Failed to create discount" }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\discounts\[id]\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { db } from "@/lib/db/client";
+import { now } from "@/lib/db/helpers";
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    const sets: string[] = [];
+    const args: (string | number)[] = [];
+
+    if (body.code      !== undefined) { sets.push("code = ?");      args.push(body.code.toUpperCase()); }
+    if (body.type      !== undefined) { sets.push("type = ?");      args.push(body.type.toUpperCase()); }
+    if (body.value     !== undefined) { sets.push("value = ?");     args.push(Number(body.value)); }
+    if (body.minOrder  !== undefined) { sets.push("minOrder = ?");  args.push(Number(body.minOrder)); }
+    if (body.maxUses   !== undefined) { sets.push("maxUses = ?");   args.push(Number(body.maxUses)); }
+    if (body.status    !== undefined) { sets.push("status = ?");    args.push(body.status.toUpperCase()); }
+    if (body.expiresAt !== undefined) {
+      sets.push("expiresAt = ?");
+      args.push(Math.floor(new Date(body.expiresAt).getTime() / 1000));
+    }
+
+    if (sets.length === 0) {
+      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+    }
+
+    sets.push("updatedAt = ?");
+    args.push(now());
+    args.push(id);
+
+    await db.execute({
+      sql: `UPDATE discounts SET ${sets.join(", ")} WHERE id = ?`,
+      args,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Update discount error:", err);
+    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+}
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    await db.execute({ sql: "DELETE FROM discounts WHERE id = ?", args: [id] });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Delete discount error:", err);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\lib\db\helpers.ts
+================================================================================
+
+import { randomBytes } from "crypto";
+
+/**
+ * Generate a unique ID (like cuid).
+ * Format: c + 24 chars of random hex
+ */
+export function generateId(): string {
+  return "c" + randomBytes(12).toString("hex");
+}
+
+/**
+ * Get current Unix timestamp (seconds)
+ */
+export function now(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+/**
+ * Convert Unix timestamp to Date
+ */
+export function toDate(timestamp: number | null): Date | null {
+  if (!timestamp) return null;
+  return new Date(timestamp * 1000);
+}
+
+/**
+ * SQLite stores booleans as 0/1
+ */
+export function toBool(value: number | null): boolean {
+  return value === 1;
+}
+
+export function fromBool(value: boolean): number {
+  return value ? 1 : 0;
+}
+
+/**
+ * Parse comma-separated tags to array
+ */
+export function tagsToArray(tags: string): string[] {
+  if (!tags || tags.trim() === "") return [];
+  return tags.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+export function arrayToTags(tags: string[]): string {
+  return tags.join(",");
+}
+
+/**
+ * Safely parse JSON, return null on failure
+ */
+export function safeJsonParse<T>(json: string | null): T | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generate a unique order number
+ * Format: DNV + 8 digits
+ */
+export function generateOrderNumber(): string {
+  const timestamp = Date.now().toString().slice(-8);
+  return `DNV${timestamp}`;
+}
+
+================================================================================
+FILE: admin-panel\src\lib\db\types.ts
+================================================================================
+
+/**
+ * Database table types.
+ * These match the SQL schema exactly.
+ *
+ * Timestamps are Unix epochs (integers) in the DB.
+ * SQLite booleans stored as 0 | 1.
+ */
+
+// ─── Users ───────────────────────────────────────────────
+export interface DbUser {
+  id:            string;
+  name:          string;
+  email:         string;
+  emailVerified: number | null;
+  phone:         string | null;
+  password:      string | null;
+  avatar:        string | null;
+  isActive:      number;
+  birthday:      string | null;
+  loyaltyPoints: number;
+  createdAt:     number;
+  updatedAt:     number;
+}
+
+export interface DbAdmin {
+  id:         string;
+  name:       string;
+  email:      string;
+  password:   string;
+  role:       "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "STAFF";
+  avatar:     string | null;
+  isActive:   number;
+  lastLogin:  number | null;
+  createdAt:  number;
+  updatedAt:  number;
+}
+
+export interface DbAddress {
+  id:          string;
+  userId:      string;
+  label:       string;
+  fullName:    string;
+  phone:       string;
+  street:      string;
+  apartment:   string | null;
+  city:        string;
+  province:    string;
+  postalCode:  string;
+  country:     string;
+  isDefault:   number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+// ─── Collections ─────────────────────────────────────────
+export interface DbCollection {
+  id:              string;
+  name:            string;
+  slug:            string;
+  description:     string;
+  image:           string | null;
+  isActive:        number;
+  sortOrder:       number;
+  metaTitle:       string | null;
+  metaDescription: string | null;
+  createdAt:       number;
+  updatedAt:       number;
+}
+
+// ─── Products ────────────────────────────────────────────
+export type ProductStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export interface DbProduct {
+  id:               string;
+  name:             string;
+  slug:             string;
+  sku:              string;
+  description:      string;
+  shortDescription: string | null;
+  price:            number;
+  comparePrice:     number | null;
+  costPerItem:      number | null;
+  taxRate:          number;
+  status:           ProductStatus;
+  collectionId:     string | null;
+  isNew:            number;
+  isFeatured:       number;
+  isBestSeller:     number;
+  metaTitle:        string | null;
+  metaDescription:  string | null;
+  tags:             string;
+  rating:           number;
+  reviewCount:      number;
+  soldCount:        number;
+  waist:            number | null;   // inches
+  length:           number | null;   // inches
+  bottom:           number | null;   // inches
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface DbProductImage {
+  id:        string;
+  productId: string;
+  url:       string;
+  alt:       string;
+  isPrimary: number;
+  sortOrder: number;
+}
+
+export interface DbProductVariant {
+  id:              string;
+  productId:       string;
+  size:            string;
+  color:           string;
+  colorHex:        string;
+  sku:             string;
+  stock:           number;
+  price:           number;
+  compareAtPrice:  number | null;
+  weight:          number | null;
+  createdAt:       number;
+  updatedAt:       number;
+}
+
+// ─── Cart & Wishlist ─────────────────────────────────────
+export interface DbCart {
+  id:           string;
+  userId:       string;
+  lastActivity: number;
+  createdAt:    number;
+  updatedAt:    number;
+}
+
+export interface DbCartItem {
+  id:        string;
+  cartId:    string;
+  productId: string;
+  variantId: string;
+  quantity:  number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface DbWishlist {
+  id:        string;
+  userId:    string;
+  productId: string;
+  createdAt: number;
+}
+
+// ─── Abandoned Cart ──────────────────────────────────────
+export interface DbAbandonedCart {
+  id:               string;
+  userId:           string | null;
+  email:            string | null;
+  phone:            string | null;
+  fullName:         string | null;
+  city:             string | null;
+  itemsJson:        string;
+  itemCount:        number;
+  subtotal:         number;
+  totalValue:       number;
+  reachedCheckout:  number;
+  isContacted:      number;
+  isRecovered:      number;
+  recoveredOrderId: string | null;
+  adminNote:        string | null;
+  lastActivity:     number;
+  abandonedAt:      number;
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface AbandonedCartItem {
+  productId:  string;
+  variantId:  string;
+  name:       string;
+  image:      string;
+  size:       string;
+  color:      string;
+  price:      number;
+  quantity:   number;
+  slug:       string;
+}
+
+// ─── Orders ──────────────────────────────────────────────
+export type OrderStatus =
+  | "PENDING" | "CONFIRMED" | "PROCESSING"
+  | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+
+export type PaymentStatus =
+  | "PENDING" | "PAID" | "FAILED"
+  | "REFUNDED" | "PARTIALLY_REFUNDED";
+
+export type PaymentMethod =
+  | "COD" | "CARD" | "JAZZCASH" | "EASYPAISA" | "BANK_TRANSFER";
+
+export interface DbOrder {
+  id:                   string;
+  orderNumber:          string;
+  userId:               string | null;
+  guestEmail:           string | null;
+  guestName:            string | null;
+  guestPhone:           string | null;
+  subtotal:             number;
+  discount:             number;
+  loyaltyDiscount:      number;
+  loyaltyPointsUsed:    number;
+  loyaltyPointsEarned:  number;
+  birthdayDiscount:     number;
+  isBirthdayOrder:      number;
+  shipping:             number;
+  tax:                  number;
+  total:                number;
+  status:               OrderStatus;
+  paymentStatus:        PaymentStatus;
+  paymentMethod:        PaymentMethod;
+  discountCode:         string | null;
+  discountId:           string | null;
+  addressId:            string | null;
+  shippingAddress:      string | null;
+  shippingMethod:       string;
+  trackingNumber:       string | null;
+  courierName:          string | null;
+  customerNote:         string | null;
+  adminNote:            string | null;
+  confirmedAt:          number | null;
+  shippedAt:            number | null;
+  deliveredAt:          number | null;
+  cancelledAt:          number | null;
+  createdById:          string | null;
+  updatedById:          string | null;
+  createdAt:            number;
+  updatedAt:            number;
+}
+
+export interface DbOrderItem {
+  id:        string;
+  orderId:   string;
+  productId: string;
+  variantId: string;
+  name:      string;
+  image:     string;
+  size:      string;
+  color:     string;
+  sku:       string;
+  price:     number;
+  quantity:  number;
+  subtotal:  number;
+}
+
+// ─── Loyalty ─────────────────────────────────────────────
+export type LoyaltyTransactionType = "EARNED" | "REDEEMED" | "EXPIRED" | "ADJUSTED";
+
+export interface DbLoyaltyTransaction {
+  id:          string;
+  userId:      string;
+  orderId:     string | null;
+  type:        LoyaltyTransactionType;
+  points:      number;
+  balance:     number;
+  description: string | null;
+  createdAt:   number;
+}
+
+// ─── Discounts ───────────────────────────────────────────
+export type DiscountType   = "PERCENTAGE" | "FIXED";
+export type DiscountStatus = "ACTIVE" | "EXPIRED" | "DISABLED";
+
+export interface DbDiscount {
+  id:          string;
+  code:        string;
+  type:        DiscountType;
+  value:       number;
+  minOrder:    number;
+  maxUses:     number;
+  usedCount:   number;
+  status:      DiscountStatus;
+  startsAt:    number;
+  expiresAt:   number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+// ─── Settings ────────────────────────────────────────────
+export interface DbSetting {
+  id:        string;
+  key:       string;
+  value:     string;
+  category:  string;
+  updatedAt: number;
+}
+
+// ─── Others ──────────────────────────────────────────────
+export interface DbReview {
+  id:          string;
+  userId:      string;
+  productId:   string;
+  rating:      number;
+  title:       string | null;
+  comment:     string;
+  isVerified:  number;
+  isApproved:  number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+export interface DbNewsletter {
+  id:            string;
+  email:         string;
+  isSubscribed:  number;
+  source:        string | null;
+  createdAt:     number;
+  updatedAt:     number;
+}
+
+export interface DbContactMessage {
+  id:         string;
+  name:       string;
+  email:      string;
+  phone:      string | null;
+  subject:    string;
+  message:    string;
+  isRead:     number;
+  isReplied:  number;
+  adminNote:  string | null;
+  createdAt:  number;
+  updatedAt:  number;
+}
+
+================================================================================
+FILE: admin-panel\src\lib\api-auth.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { getCurrentAdmin } from "@/lib/auth";
+
+/**
+ * Helper to protect API routes. Returns null if authorized, or a Response if not.
+ */
+export async function requireAdmin() {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
+}
+
+/**
+ * Helper that returns admin OR unauthorized response
+ */
+export async function getAdminOrError() {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return {
+      admin: null,
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    };
+  }
+  return { admin, error: null };
+}
+
+================================================================================
+FILE: admin-panel\src\components\ui\ImageUploader.tsx
+================================================================================
+
+"use client";
+import { useState, useRef } from "react";
+import { Upload, X, Image as ImageIcon, Check, AlertCircle, Loader } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  value:      string;            // Current image URL
+  onChange:   (url: string) => void;
+  type?:      "product" | "banner" | "thumbnail" | "og";
+  className?: string;
+  aspectRatio?: string;           // e.g., "aspect-[3/4]" or "aspect-video"
+}
+
+export function ImageUploader({
+  value,
+  onChange,
+  type = "product",
+  className,
+  aspectRatio = "aspect-[3/4]",
+}: Props) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]         = useState("");
+  const [stats, setStats]         = useState<{
+    format: string; savings: string; optimizedSize: string;
+  } | null>(null);
+  const [dragOver, setDragOver]   = useState(false);
+  const fileInputRef              = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    setError("");
+    setStats(null);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body:   formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Upload failed");
+        setUploading(false);
+        return;
+      }
+
+      onChange(data.image.url);
+      setStats({
+        format:        data.image.format,
+        savings:       data.image.savings,
+        optimizedSize: data.image.optimizedSize,
+      });
+    } catch (err) {
+      setError("Network error during upload");
+    }
+
+    setUploading(false);
+  };
+
+  const handleUrlPaste = async (url: string) => {
+    if (!url.startsWith("http")) return;
+
+    setError("");
+    setStats(null);
+    setUploading(true);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ url, type }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to process image");
+        // Still set the URL so user can use original
+        onChange(url);
+        setUploading(false);
+        return;
+      }
+
+      onChange(data.image.url);
+      setStats({
+        format:        data.image.format,
+        savings:       data.image.savings,
+        optimizedSize: data.image.optimizedSize,
+      });
+    } catch {
+      // If optimization fails, still use the original URL
+      onChange(url);
+      setError("Could not optimize, using original URL");
+    }
+
+    setUploading(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      handleFile(file);
+    }
+  };
+
+  return (
+    <div className={cn("space-y-3", className)}>
+
+      {/* Preview or Upload Area */}
+      {value ? (
+        <div className="relative group">
+          <div className={cn("relative bg-[#fafaf9] border border-[#e5e7eb] overflow-hidden", aspectRatio)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt="Preview" className="w-full h-full object-cover" />
+
+            {/* Overlay with actions */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#c9a96e] hover:text-white transition-colors"
+              >
+                Replace
+              </button>
+              <button
+                onClick={() => { onChange(""); setStats(null); }}
+                className="bg-red-500 text-white px-3 py-2 text-xs font-semibold hover:bg-red-600 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+
+          {/* Optimization stats */}
+          {stats && (
+            <div className="flex items-center gap-2 mt-2 text-[10px] text-green-700 bg-green-50 border border-green-200 px-2 py-1">
+              <Check size={10} />
+              <span>
+                Converted to <span className="font-bold uppercase">{stats.format}</span> · {stats.optimizedSize} · {stats.savings} saved
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
+            aspectRatio,
+            dragOver
+              ? "border-[#c9a96e] bg-[#f5f0e8]/50"
+              : "border-[#e5e7eb] bg-[#fafaf9] hover:border-[#c9a96e]"
+          )}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader size={24} className="text-[#c9a96e] animate-spin" />
+              <span className="text-xs text-[#6b7280]">Optimizing image...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 p-4">
+              <Upload size={24} className="text-[#6b7280]" />
+              <span className="text-xs font-semibold text-[#1a1a1a]">
+                Drop image here or click to upload
+              </span>
+              <span className="text-[10px] text-[#6b7280]">
+                PNG, JPG, WebP up to 10MB · Auto-converts to AVIF
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,image/tiff"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          e.target.value = "";
+        }}
+      />
+
+      {/* URL input (alternative to file upload) */}
+      <div>
+        <label className="block text-[10px] font-medium text-[#6b7280] mb-1">
+          Or paste image URL
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={value.startsWith("/uploads") ? "" : value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={(e) => {
+              const url = e.target.value.trim();
+              if (url.startsWith("http") && !url.includes("/uploads/")) {
+                handleUrlPaste(url);
+              }
+            }}
+            placeholder="https://images.unsplash.com/..."
+            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+          />
+        </div>
+        <p className="mt-1 text-[9px] text-[#6b7280]">
+          External URLs are auto-downloaded and converted to AVIF for best performance
+        </p>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 border border-red-200 px-2 py-1">
+          <AlertCircle size={10} />
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\components\ui\Button.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?:   "primary" | "secondary" | "outline" | "ghost" | "danger";
+  size?:      "sm" | "md" | "lg" | "icon";
+  isLoading?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = "primary", size = "md", isLoading, disabled, children, ...props }, ref) => {
+    const base = "inline-flex items-center justify-center font-medium tracking-wide transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed gap-2";
+
+    const variants = {
+      primary:   "bg-[#1a1a1a] text-white hover:bg-[#333]",
+      secondary: "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df]",
+      outline:   "border border-[#e5e7eb] text-[#1a1a1a] hover:bg-[#f8f9fa]",
+      ghost:     "text-[#6b7280] hover:bg-[#f8f9fa] hover:text-[#1a1a1a]",
+      danger:    "bg-red-500 text-white hover:bg-red-600",
+    };
+
+    const sizes = {
+      sm:   "text-xs px-3 py-1.5",
+      md:   "text-sm px-4 py-2",
+      lg:   "text-sm px-6 py-3",
+      icon: "text-sm p-2",
+    };
+
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || isLoading}
+        className={cn(base, variants[variant], sizes[size], className)}
+        {...props}
+      >
+        {isLoading ? (
+          <>
+            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            Loading...
+          </>
+        ) : children}
+      </button>
+    );
+  }
+);
+Button.displayName = "Button";
+export { Button };
+
+================================================================================
+FILE: admin-panel\src\components\ui\Badge.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+
+interface BadgeProps {
+  children:  React.ReactNode;
+  className?: string;
+  variant?:  "default" | "success" | "warning" | "danger" | "info" | "gold";
+  size?:     "sm" | "md";
+}
+
+const VARIANTS = {
+  default: "bg-gray-100 text-gray-700",
+  success: "bg-green-100 text-green-700",
+  warning: "bg-yellow-100 text-yellow-700",
+  danger:  "bg-red-100 text-red-700",
+  info:    "bg-blue-100 text-blue-700",
+  gold:    "bg-[#f5f0e8] text-[#c9a96e]",
+};
+
+export function Badge({
+  children, className, variant = "default", size = "sm",
+}: BadgeProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center font-semibold uppercase tracking-wide",
+        size === "sm" ? "text-[10px] px-2 py-0.5" : "text-xs px-2.5 py-1",
+        VARIANTS[variant],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\components\ui\ConfirmDialog.tsx
+================================================================================
+
+"use client";
+import { useEffect } from "react";
+import { AlertTriangle, HelpCircle, Info, X } from "lucide-react";
+import { useConfirmStore } from "@/store/confirmStore";
+
+const VARIANT_CONFIG = {
+  danger: {
+    icon: AlertTriangle,
+    iconBg: "bg-red-50",
+    iconColor: "text-red-500",
+    button: "bg-red-500 hover:bg-red-600 text-white",
+  },
+  warning: {
+    icon: AlertTriangle,
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-500",
+    button: "bg-[#1a1a1a] hover:bg-[#c9a96e] text-white",
+  },
+  info: {
+    icon: HelpCircle,
+    iconBg: "bg-[#f5f0e8]",
+    iconColor: "text-[#c9a96e]",
+    button: "bg-[#1a1a1a] hover:bg-[#c9a96e] text-white",
+  },
+} as const;
+
+export function ConfirmDialog() {
+  const { isOpen, options, handleConfirm, handleCancel } = useConfirmStore();
+
+  // ESC to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleCancel();
+      if (e.key === "Enter")  handleConfirm();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, handleCancel, handleConfirm]);
+
+  if (!isOpen || !options) return null;
+
+  const variant = options.variant ?? "info";
+  const cfg     = VARIANT_CONFIG[variant];
+  const Icon    = cfg.icon;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={handleCancel}
+        aria-hidden="true"
+      />
+
+      {/* Dialog */}
+      <div
+        className="fixed inset-0 z-[95] flex items-center justify-center p-4 pointer-events-none"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          className="
+            w-full max-w-md bg-white shadow-2xl pointer-events-auto
+            animate-in zoom-in-95 fade-in duration-200
+          "
+        >
+          {/* Close */}
+          <button
+            onClick={handleCancel}
+            className="absolute top-3 right-3 p-1.5 text-[#6b7280] hover:text-[#1a1a1a] transition-colors"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+
+          {/* Body */}
+          <div className="p-6">
+            <div className="flex gap-4">
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.iconBg}`}>
+                <Icon size={20} className={cfg.iconColor} />
+              </div>
+              <div className="flex-1 min-w-0 pt-0.5">
+                {options.title && (
+                  <h3 className="text-base font-bold text-[#1a1a1a] mb-1.5">
+                    {options.title}
+                  </h3>
+                )}
+                <p className="text-sm text-[#6b7280] leading-relaxed">
+                  {options.message}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2 px-6 py-4 bg-[#fafaf9] border-t border-[#e5e7eb]">
+            <button
+              onClick={handleCancel}
+              className="px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb] hover:border-[#1a1a1a] transition-colors"
+            >
+              {options.cancelText ?? "Cancel"}
+            </button>
+            <button
+              onClick={handleConfirm}
+              className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${cfg.button}`}
+              autoFocus
+            >
+              {options.confirmText ?? "Confirm"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Also handle Info variant icon (silence unused import lint)
+void Info;
+
+================================================================================
+FILE: admin-panel\src\store\toastStore.ts
+================================================================================
+
+"use client";
+import { create } from "zustand";
+
+export type ToastType = "success" | "error" | "info" | "warning";
+
+export interface Toast {
+  id:        string;
+  message:   string;
+  title?:    string;
+  type:      ToastType;
+  duration?: number;
+}
+
+interface ToastState {
+  toasts:      Toast[];
+  addToast:    (toast: Omit<Toast, "id">) => void;
+  removeToast: (id: string) => void;
+
+  // Shortcuts
+  success:     (message: string, title?: string) => void;
+  error:       (message: string, title?: string) => void;
+  info:        (message: string, title?: string) => void;
+  warning:     (message: string, title?: string) => void;
+}
+
+export const useToastStore = create<ToastState>((set, get) => ({
+  toasts: [],
+
+  addToast: (toast) => {
+    const id = Math.random().toString(36).slice(2);
+    const newToast: Toast = { ...toast, id, duration: toast.duration ?? 4000 };
+    set({ toasts: [...get().toasts, newToast] });
+
+    if (newToast.duration && newToast.duration > 0) {
+      setTimeout(() => get().removeToast(id), newToast.duration);
+    }
+  },
+
+  removeToast: (id) => {
+    set({ toasts: get().toasts.filter((t) => t.id !== id) });
+  },
+
+  success: (message, title) => get().addToast({ type: "success", message, title }),
+  error:   (message, title) => get().addToast({ type: "error",   message, title }),
+  info:    (message, title) => get().addToast({ type: "info",    message, title }),
+  warning: (message, title) => get().addToast({ type: "warning", message, title }),
+}));
+
+================================================================================
+FILE: admin-panel\src\store\confirmStore.ts
+================================================================================
+
+"use client";
+import { create } from "zustand";
+
+export interface ConfirmOptions {
+  title?:       string;
+  message:      string;
+  confirmText?: string;
+  cancelText?:  string;
+  variant?:     "danger" | "warning" | "info";
+}
+
+interface ConfirmState {
+  isOpen:   boolean;
+  options:  ConfirmOptions | null;
+  resolver: ((value: boolean) => void) | null;
+
+  confirm: (options: ConfirmOptions) => Promise<boolean>;
+  handleConfirm: () => void;
+  handleCancel:  () => void;
+}
+
+export const useConfirmStore = create<ConfirmState>((set, get) => ({
+  isOpen:   false,
+  options:  null,
+  resolver: null,
+
+  confirm: (options) => {
+    return new Promise<boolean>((resolve) => {
+      set({ isOpen: true, options, resolver: resolve });
+    });
+  },
+
+  handleConfirm: () => {
+    const { resolver } = get();
+    if (resolver) resolver(true);
+    set({ isOpen: false, options: null, resolver: null });
+  },
+
+  handleCancel: () => {
+    const { resolver } = get();
+    if (resolver) resolver(false);
+    set({ isOpen: false, options: null, resolver: null });
+  },
+}));
+
+// Convenience helper — call anywhere without importing the store
+export async function confirmAction(options: ConfirmOptions): Promise<boolean> {
+  return useConfirmStore.getState().confirm(options);
+}
+
+================================================================================
+FILE: admin-panel\src\types\index.ts
+================================================================================
+
+// ─── Admin User ───────────────────────────────────────────
+export interface AdminUser {
+  id:        string;
+  name:      string;
+  email:     string;
+  role:      AdminRole;
+  avatar?:   string;
+  lastLogin: string;
+  isActive:  boolean;
+}
+
+export type AdminRole = "super_admin" | "admin" | "manager" | "staff";
+
+// ─── Product ──────────────────────────────────────────────
+export type ProductStatus = "published" | "draft" | "archived";
+
+export interface AdminProduct {
+  id:           string;
+  name:         string;
+  slug:         string;
+  sku:          string;
+  status:       ProductStatus;
+  price:        number;
+  comparePrice: number | null;
+  collection:   string;
+  collectionId: string;
+  stock:        number;
+  sold:         number;
+  image:        string;
+  images?:       string[];  // Multiple image URLs
+  isNew:        boolean;
+  isFeatured:   boolean;
+  createdAt:    string;
+  updatedAt:    string;
+}
+
+// ─── Order ────────────────────────────────────────────────
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+
+export interface AdminOrderItem {
+  id:        string;
+  productId: string;
+  name:      string;
+  image:     string;
+  size:      string;
+  color:     string;
+  price:     number;
+  quantity:  number;
+  sku:       string;
+}
+
+export interface AdminOrder {
+  id:            string;
+  orderNumber:   string;
+  customer:      string;
+  customerEmail: string;
+  customerPhone: string;
+  items:         AdminOrderItem[];
+  status:        OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: string;
+  subtotal:      number;
+  discount:      number;
+  shipping:      number;
+  total:         number;
+  city:          string;
+  address:       string;
+  notes?:        string;
+  trackingNum?:  string;
+  createdAt:     string;
+  updatedAt:     string;
+}
+
+// ─── Customer ─────────────────────────────────────────────
+export interface AdminCustomer {
+  id:          string;
+  name:        string;
+  email:       string;
+  phone:       string;
+  city:        string;
+  totalOrders: number;
+  totalSpent:  number;
+  lastOrder:   string;
+  isActive:    boolean;
+  joinedAt:    string;
+}
+
+// ─── Collection ───────────────────────────────────────────
+export interface AdminCollection {
+  id:           string;
+  name:         string;
+  slug:         string;
+  description:  string;
+  image:        string;
+  productCount: number;
+  isActive:     boolean;
+  createdAt:    string;
+}
+
+// ─── Discount ─────────────────────────────────────────────
+export type DiscountType   = "percentage" | "fixed";
+export type DiscountStatus = "active" | "expired" | "disabled";
+
+export interface AdminDiscount {
+  id:          string;
+  code:        string;
+  type:        DiscountType;
+  value:       number;
+  minOrder:    number;
+  maxUses:     number;
+  usedCount:   number;
+  status:      DiscountStatus;
+  expiresAt:   string;
+  createdAt:   string;
+}
+
+// ─── Analytics ────────────────────────────────────────────
+export interface DashboardStats {
+  totalRevenue:     number;
+  revenueChange:    number;
+  totalOrders:      number;
+  ordersChange:     number;
+  totalCustomers:   number;
+  customersChange:  number;
+  totalProducts:    number;
+  avgOrderValue:    number;
+  conversionRate:   number;
+  pendingOrders:    number;
+  lowStockItems:    number;
+}
+
+export interface RevenueDataPoint {
+  date:    string;
+  revenue: number;
+  orders:  number;
+}
+
+export interface TopProduct {
+  id:       string;
+  name:     string;
+  image:    string;
+  sold:     number;
+  revenue:  number;
+  stock:    number;
+}
+
+// ─── Table ────────────────────────────────────────────────
+export interface TableColumn<T> {
+  key:        keyof T | string;
+  label:      string;
+  sortable?:  boolean;
+  render?:    (value: unknown, row: T) => React.ReactNode;
+  width?:     string;
+}
+
+export interface SortConfig {
+  key:       string;
+  direction: "asc" | "desc";
+}

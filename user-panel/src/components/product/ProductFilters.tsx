@@ -1,8 +1,7 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SIZES } from "@/lib/constants";
 
 export interface FilterState {
   collections: string[];
@@ -13,23 +12,19 @@ export interface FilterState {
   sortBy:      string;
 }
 
-interface ProductFiltersProps {
-  filters:    FilterState;
-  onChange:   (filters: FilterState) => void;
-  isMobile?:  boolean;
-  onClose?:   () => void;
+export interface ColorOption {
+  name: string;
+  hex:  string;
 }
 
-const COLORS = [
-  { name: "Dark Blue",  hex: "#1e3a5f" },
-  { name: "Light Blue", hex: "#7ba8d0" },
-  { name: "Black",      hex: "#111111" },
-  { name: "Grey",       hex: "#6b7280" },
-  { name: "Charcoal",   hex: "#36454f" },
-  { name: "White",      hex: "#ffffff" },
-  { name: "Beige",      hex: "#f5f0e8" },
-  { name: "Khaki",      hex: "#c3b091" },
-];
+interface ProductFiltersProps {
+  filters:          FilterState;
+  onChange:         (filters: FilterState) => void;
+  availableSizes:   string[];       // waist values present in current catalog
+  availableColors:  ColorOption[];  // colors present in current catalog
+  isMobile?:        boolean;
+  onClose?:         () => void;
+}
 
 const SORT_OPTIONS = [
   { value: "newest",       label: "Newest First" },
@@ -55,7 +50,7 @@ function Accordion({ title, children, defaultOpen = true }: {
 }
 
 export function ProductFilters({
-  filters, onChange, isMobile = false, onClose,
+  filters, onChange, availableSizes, availableColors, isMobile = false, onClose,
 }: ProductFiltersProps) {
   const [collections, setCollections] = useState<string[]>([]);
 
@@ -184,44 +179,49 @@ export function ProductFilters({
           </div>
         </Accordion>
 
-        {/* Waist filter — uses `sizes` state key but filters by product.waist */}
-        <Accordion title="Waist Size">
-          <div className="flex flex-wrap gap-2">
-            {SIZES.map((size) => (
-              <button
-                key={size}
-                onClick={() => toggle("sizes", size)}
-                className={cn(
-                  "w-10 h-10 text-xs font-medium border transition-all duration-150",
-                  filters.sizes.includes(size)
-                    ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-                    : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
-                )}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        </Accordion>
+        {/* Waist filter — only shows waist values that exist in the catalog */}
+        {availableSizes.length > 0 && (
+          <Accordion title="Waist Size">
+            <div className="flex flex-wrap gap-2">
+              {availableSizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => toggle("sizes", size)}
+                  className={cn(
+                    "w-10 h-10 text-xs font-medium border transition-all duration-150",
+                    filters.sizes.includes(size)
+                      ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                  )}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </Accordion>
+        )}
 
-        <Accordion title="Color">
-          <div className="flex flex-wrap gap-2.5">
-            {COLORS.map((color) => (
-              <button
-                key={color.name}
-                onClick={() => toggle("colors", color.name)}
-                title={color.name}
-                className={cn(
-                  "w-7 h-7 rounded-full border-2 transition-all duration-150",
-                  filters.colors.includes(color.name)
-                    ? "border-[#c9a96e] scale-110"
-                    : "border-[#e5e7eb] hover:border-[#c9a96e]"
-                )}
-                style={{ backgroundColor: color.hex }}
-              />
-            ))}
-          </div>
-        </Accordion>
+        {/* Color filter — only shows colors that exist in the catalog */}
+        {availableColors.length > 0 && (
+          <Accordion title="Color">
+            <div className="flex flex-wrap gap-2.5">
+              {availableColors.map((color) => (
+                <button
+                  key={color.name}
+                  onClick={() => toggle("colors", color.name)}
+                  title={color.name}
+                  className={cn(
+                    "w-7 h-7 rounded-full border-2 transition-all duration-150",
+                    filters.colors.includes(color.name)
+                      ? "border-[#c9a96e] scale-110"
+                      : "border-[#e5e7eb] hover:border-[#c9a96e]"
+                  )}
+                  style={{ backgroundColor: color.hex }}
+                />
+              ))}
+            </div>
+          </Accordion>
+        )}
 
         <Accordion title="Price Range">
           <div className="px-1">

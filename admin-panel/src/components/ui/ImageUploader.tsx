@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 import { useState, useRef } from "react";
 import { Upload, X, Image as ImageIcon, Check, AlertCircle, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  value:      string;            // Current image URL
+  value:      string;
   onChange:   (url: string) => void;
   type?:      "product" | "banner" | "thumbnail" | "og";
   className?: string;
-  aspectRatio?: string;           // e.g., "aspect-[3/4]" or "aspect-video"
+  aspectRatio?: string;
 }
 
 export function ImageUploader({
@@ -55,7 +55,7 @@ export function ImageUploader({
         savings:       data.image.savings,
         optimizedSize: data.image.optimizedSize,
       });
-    } catch (err) {
+    } catch {
       setError("Network error during upload");
     }
 
@@ -80,7 +80,6 @@ export function ImageUploader({
 
       if (!res.ok) {
         setError(data.error || "Failed to process image");
-        // Still set the URL so user can use original
         onChange(url);
         setUploading(false);
         return;
@@ -93,7 +92,6 @@ export function ImageUploader({
         optimizedSize: data.image.optimizedSize,
       });
     } catch {
-      // If optimization fails, still use the original URL
       onChange(url);
       setError("Could not optimize, using original URL");
     }
@@ -110,6 +108,15 @@ export function ImageUploader({
     }
   };
 
+  // ── Handler that stops the click from propagating up to a parent form ──
+  // This is the KEY fix: buttons default to type="submit" inside a <form>,
+  // which was triggering the form's onSubmit whenever "Replace" was clicked.
+  const openFilePicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className={cn("space-y-3", className)}>
 
@@ -123,13 +130,20 @@ export function ImageUploader({
             {/* Overlay with actions */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                type="button"
+                onClick={openFilePicker}
                 className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#c9a96e] hover:text-white transition-colors"
               >
                 Replace
               </button>
               <button
-                onClick={() => { onChange(""); setStats(null); }}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onChange("");
+                  setStats(null);
+                }}
                 className="bg-red-500 text-white px-3 py-2 text-xs font-semibold hover:bg-red-600 transition-colors"
               >
                 Remove
@@ -142,7 +156,7 @@ export function ImageUploader({
             <div className="flex items-center gap-2 mt-2 text-[10px] text-green-700 bg-green-50 border border-green-200 px-2 py-1">
               <Check size={10} />
               <span>
-                Converted to <span className="font-bold uppercase">{stats.format}</span> · {stats.optimizedSize} · {stats.savings} saved
+                Converted to <span className="font-bold uppercase">{stats.format}</span> &middot; {stats.optimizedSize} &middot; {stats.savings} saved
               </span>
             </div>
           )}
@@ -156,7 +170,7 @@ export function ImageUploader({
               ? "border-[#c9a96e] bg-[#f5f0e8]/50"
               : "border-[#e5e7eb] bg-[#fafaf9] hover:border-[#c9a96e]"
           )}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={openFilePicker}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -173,7 +187,7 @@ export function ImageUploader({
                 Drop image here or click to upload
               </span>
               <span className="text-[10px] text-[#6b7280]">
-                PNG, JPG, WebP up to 10MB · Auto-converts to AVIF
+                PNG, JPG, WebP up to 10MB &middot; Auto-converts to AVIF
               </span>
             </div>
           )}

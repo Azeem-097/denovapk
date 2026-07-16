@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, FolderOpen, BarChart3,
   ShoppingCart, Users, Tag, Settings, LogOut, ChevronRight,
-  Layers, Star, ShoppingBag, Cake, Award,
+  Layers, Star, ShoppingBag, Cake, Award, LayoutTemplate, Megaphone,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
@@ -30,9 +31,14 @@ const NAV_SECTIONS = [
     { href: "/birthdays",         label: "Birthdays",       icon: Cake },
     { href: "/loyalty",           label: "Loyalty Program", icon: Award },
   ]},
+  { label: "Storefront", items: [
+    { href: "/hero-banners",      label: "Hero Banners",      icon: LayoutTemplate },
+    { href: "/announcement-bar",  label: "Announcement Bar",  icon: Megaphone },
+    { href: "/gallery",           label: "Gallery",           icon: LayoutGrid },
+  ]},
   { label: "Store", items: [
     { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/staff",    label: "Staff",     icon: Star },
+    { href: "/staff",    label: "Staff",    icon: Star },
   ]},
 ];
 
@@ -46,7 +52,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router   = useRouter();
   const { admin, logout } = useAdminAuthStore();
 
-  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const handleLogout = async () => {
     if (confirm("Sign out of the admin panel?")) {
@@ -82,9 +89,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               {section.items.map((item) => {
                 const active = isActive(item.href);
                 return (
-                  <Link key={item.href} href={item.href} onClick={onClose}
-                    className={cn("flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 transition-all duration-150",
-                      active ? "bg-[#c9a96e] text-white" : "text-white/60 hover:bg-white/10 hover:text-white")}>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 transition-all duration-150",
+                      active
+                        ? "bg-[#c9a96e] text-white"
+                        : "text-white/60 hover:bg-white/10 hover:text-white"
+                    )}
+                  >
                     <item.icon size={17} className="flex-shrink-0" />
                     <span className="flex-1">{item.label}</span>
                     {active && <ChevronRight size={13} className="opacity-60" />}
@@ -102,10 +117,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{admin?.name || "Admin"}</p>
-              <p className="text-[10px] text-white/50 truncate">{admin?.role?.replace("_", " ").toLowerCase()}</p>
+              <p className="text-[10px] text-white/50 truncate">
+                {admin?.role?.replace("_", " ").toLowerCase()}
+              </p>
             </div>
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/50 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/50 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+          >
             <LogOut size={14} />Sign Out
           </button>
         </div>

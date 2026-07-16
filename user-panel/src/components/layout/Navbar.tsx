@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
@@ -54,8 +54,15 @@ export function Navbar() {
 
   return (
     <>
+      {/*
+        Changed from `fixed top-0` to `sticky top-0`.
+        - sticky = stays visible on scroll (same UX as fixed)
+        - BUT it also takes up space in normal flow
+        - So content below (hero, etc.) starts AFTER the navbar
+        - No overlap. No layout hacks. Clean.
+      */}
       <header className={cn(
-        "fixed top-0 left-0 right-0 z-40 transition-all duration-300",
+        "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
         scrolled
           ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-[#e5e7eb]"
           : "bg-white/90 backdrop-blur-sm"

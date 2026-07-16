@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { ProductFilters, type FilterState } from "@/components/product/ProductFilters";
+import { ProductFilters, type FilterState, type ColorOption } from "@/components/product/ProductFilters";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
@@ -33,6 +33,29 @@ export function ShopPageClient({ products }: Props) {
     else if (filterParam === "sale")   setFilters((f) => ({ ...f, sortBy: "price-asc" }));
     else if (filterParam === "bestsellers") setFilters((f) => ({ ...f, sortBy: "bestselling" }));
   }, [filterParam]);
+
+  // ─── Dynamic filter options — derived from actual catalog ──────
+  // Only waist sizes that at least one product has
+  const availableSizes = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      if (p.waist !== null && p.waist !== undefined) set.add(String(p.waist));
+    });
+    return Array.from(set).sort((a, b) => Number(a) - Number(b));
+  }, [products]);
+
+  // Only colors that at least one product variant has
+  const availableColors = useMemo(() => {
+    const map = new Map<string, string>(); // name -> hex
+    products.forEach((p) => {
+      p.variants.forEach((v) => {
+        if (v.color && !map.has(v.color)) map.set(v.color, v.colorHex || "#000000");
+      });
+    });
+    return Array.from(map.entries())
+      .map(([name, hex]): ColorOption => ({ name, hex }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setIsLoading(true);
@@ -102,7 +125,12 @@ export function ShopPageClient({ products }: Props) {
         <div className="flex gap-8 lg:gap-10">
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-24">
-              <ProductFilters filters={filters} onChange={handleFilterChange} />
+              <ProductFilters
+                filters={filters}
+                onChange={handleFilterChange}
+                availableSizes={availableSizes}
+                availableColors={availableColors}
+              />
             </div>
           </aside>
 
@@ -147,7 +175,14 @@ export function ShopPageClient({ products }: Props) {
         <>
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setMobileFilters(false)} />
           <div className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-sm shadow-2xl">
-            <ProductFilters filters={filters} onChange={handleFilterChange} isMobile onClose={() => setMobileFilters(false)} />
+            <ProductFilters
+              filters={filters}
+              onChange={handleFilterChange}
+              availableSizes={availableSizes}
+              availableColors={availableColors}
+              isMobile
+              onClose={() => setMobileFilters(false)}
+            />
           </div>
         </>
       )}

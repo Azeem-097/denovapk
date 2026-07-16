@@ -59,7 +59,9 @@ function adaptVariant(v: DbProductVariant): ProductVariant {
 }
 
 // ─── Collection ──────────────────────────────────────────
-export function adaptCollection(c: DbCollection & { productCount?: number }): Collection {
+export function adaptCollection(
+  c: DbCollection & { productCount?: number; minPrice?: number | null; maxPrice?: number | null }
+): Collection {
   return {
     id:           c.id,
     name:         c.name,
@@ -67,6 +69,8 @@ export function adaptCollection(c: DbCollection & { productCount?: number }): Co
     description:  c.description,
     image:        c.image ?? "",
     productCount: c.productCount ?? 0,
+    minPrice:     c.minPrice != null ? c.minPrice / 100 : undefined,
+    maxPrice:     c.maxPrice != null ? c.maxPrice / 100 : undefined,
   };
 }
 

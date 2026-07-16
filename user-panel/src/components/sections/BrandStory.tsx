@@ -33,12 +33,13 @@ export function BrandStory() {
           <FadeIn className="relative">
             <div className="relative aspect-[4/5] sm:aspect-[3/4] lg:aspect-[4/5]">
               <Image
-                src="https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80"
+                src="/uploads/general/AboutUs.png"
                 alt="Denova PK craftsmanship"
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 loading="lazy"
+                unoptimized
               />
             </div>
 
