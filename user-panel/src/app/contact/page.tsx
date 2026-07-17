@@ -1,5 +1,5 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle, MessageCircle } from "lucide-react";
@@ -11,22 +11,51 @@ import { SlideUp } from "@/components/animations/SlideUp";
 import { contactSchema, type ContactFormData } from "@/lib/validations";
 import { useToastStore } from "@/store/toastStore";
 
-const CONTACT_INFO = [
-  { icon: Phone, label: "Phone", value: "+92 300 123 4567", href: "tel:+923001234567" },
-  { icon: Mail,  label: "Email", value: "hello@denovapk.com", href: "mailto:hello@denovapk.com" },
-  { icon: MessageCircle, label: "WhatsApp", value: "+92 300 123 4567", href: "https://wa.me/923001234567" },
-  { icon: MapPin, label: "Address", value: "Gulberg III, Lahore, Pakistan", href: null },
-];
-
 const HOURS = [
   { day: "Monday – Friday", time: "10:00 AM — 8:00 PM" },
   { day: "Saturday",        time: "11:00 AM — 6:00 PM" },
   { day: "Sunday",          time: "Closed" },
 ];
 
+interface SiteInfo {
+  email:    string;
+  phone:    string;
+  whatsapp: string;
+  address:  string;
+}
+
+const DEFAULT_INFO: SiteInfo = {
+  email:    "hello@denovapk.com",
+  phone:    "+92 300 123 4567",
+  whatsapp: "+923001234567",
+  address:  "Gulberg III, Lahore, Pakistan",
+};
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, "");
+}
+
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [info, setInfo] = useState<SiteInfo>(DEFAULT_INFO);
   const showToast = useToastStore((s) => s.addToast);
+
+  // Fetch site info once on mount
+  useEffect(() => {
+    fetch("/api/site-info")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d) {
+          setInfo({
+            email:    d.email    || DEFAULT_INFO.email,
+            phone:    d.phone    || DEFAULT_INFO.phone,
+            whatsapp: d.whatsapp || DEFAULT_INFO.whatsapp,
+            address:  d.address  || DEFAULT_INFO.address,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const {
     register,
@@ -38,13 +67,22 @@ export default function ContactPage() {
   });
 
   const onSubmit = async (data: ContactFormData) => {
-    void data; // API call here
+    void data;
     await new Promise((r) => setTimeout(r, 1200));
     setSubmitted(true);
     reset();
     showToast({ type: "success", message: "Message sent successfully!" });
     setTimeout(() => setSubmitted(false), 5000);
   };
+
+  const waNumber = normalizePhone(info.whatsapp);
+
+  const CONTACT_INFO = [
+    { icon: Phone,         label: "Phone",    value: info.phone,    href: `tel:${normalizePhone(info.phone)}` },
+    { icon: Mail,          label: "Email",    value: info.email,    href: `mailto:${info.email}` },
+    { icon: MessageCircle, label: "WhatsApp", value: info.phone,    href: `https://wa.me/${waNumber}` },
+    { icon: MapPin,        label: "Address",  value: info.address,  href: null },
+  ];
 
   return (
     <>
@@ -92,105 +130,66 @@ export default function ContactPage() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Full Name"
-                    required
-                    placeholder="John Doe"
-                    {...register("name")}
-                    error={errors.name?.message}
-                  />
-                  <Input
-                    label="Email Address"
-                    required
-                    type="email"
-                    placeholder="you@example.com"
-                    {...register("email")}
-                    error={errors.email?.message}
-                  />
+                  <Input label="Full Name" required placeholder="John Doe"
+                    {...register("name")} error={errors.name?.message} />
+                  <Input label="Email Address" required type="email" placeholder="you@example.com"
+                    {...register("email")} error={errors.email?.message} />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Phone (optional)"
-                    type="tel"
-                    placeholder="+92 300 1234567"
-                    {...register("phone")}
-                    error={errors.phone?.message}
-                  />
-                  <Input
-                    label="Subject"
-                    required
-                    placeholder="Order inquiry"
-                    {...register("subject")}
-                    error={errors.subject?.message}
-                  />
+                  <Input label="Phone (optional)" type="tel" placeholder="+92 300 1234567"
+                    {...register("phone")} error={errors.phone?.message} />
+                  <Input label="Subject" required placeholder="Order inquiry"
+                    {...register("subject")} error={errors.subject?.message} />
                 </div>
 
-                <Textarea
-                  label="Message"
-                  required
-                  rows={6}
+                <Textarea label="Message" required rows={6}
                   placeholder="Tell us how we can help..."
-                  {...register("message")}
-                  error={errors.message?.message}
-                />
+                  {...register("message")} error={errors.message?.message} />
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting || submitted}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors disabled:opacity-60"
-                >
+                <button type="submit" disabled={isSubmitting || submitted}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors disabled:opacity-60">
                   {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Sending...
-                    </>
+                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending...</>
                   ) : submitted ? (
-                    <>
-                      <CheckCircle size={16} />
-                      Message Sent!
-                    </>
+                    <><CheckCircle size={16} />Message Sent!</>
                   ) : (
-                    <>
-                      <Send size={15} />
-                      Send Message
-                    </>
+                    <><Send size={15} />Send Message</>
                   )}
                 </button>
               </form>
             </div>
           </FadeIn>
 
-          {/* Sidebar: Contact info */}
+          {/* Sidebar */}
           <div className="space-y-6">
 
-            {/* Contact info card */}
             <SlideUp>
               <div className="bg-[#1a1a1a] text-white p-6 sm:p-8">
                 <h3 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#c9a96e] mb-5">
                   Contact Info
                 </h3>
                 <div className="space-y-4">
-                  {CONTACT_INFO.map((info) => (
-                    <div key={info.label} className="flex items-start gap-3">
+                  {CONTACT_INFO.map((item) => (
+                    <div key={item.label} className="flex items-start gap-3">
                       <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                        <info.icon size={15} className="text-[#c9a96e]" />
+                        <item.icon size={15} className="text-[#c9a96e]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] uppercase tracking-wider text-white/50 mb-0.5">
-                          {info.label}
+                          {item.label}
                         </p>
-                        {info.href ? (
+                        {item.href ? (
                           <a
-                            href={info.href}
-                            target={info.href.startsWith("http") ? "_blank" : undefined}
-                            rel={info.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                            href={item.href}
+                            target={item.href.startsWith("http") ? "_blank" : undefined}
+                            rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                             className="text-sm text-white hover:text-[#c9a96e] transition-colors break-words"
                           >
-                            {info.value}
+                            {item.value}
                           </a>
                         ) : (
-                          <p className="text-sm text-white break-words">{info.value}</p>
+                          <p className="text-sm text-white break-words">{item.value}</p>
                         )}
                       </div>
                     </div>
@@ -199,7 +198,6 @@ export default function ContactPage() {
               </div>
             </SlideUp>
 
-            {/* Hours */}
             <SlideUp stagger={100} index={1}>
               <div className="bg-white border border-[#e5e7eb] p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-5">
@@ -219,7 +217,6 @@ export default function ContactPage() {
               </div>
             </SlideUp>
 
-            {/* Map placeholder */}
             <SlideUp stagger={100} index={2}>
               <div className="bg-white border border-[#e5e7eb] overflow-hidden">
                 <div className="relative aspect-[4/3] bg-[#fafaf9]">
@@ -227,7 +224,7 @@ export default function ContactPage() {
                     src="https://www.openstreetmap.org/export/embed.html?bbox=74.34%2C31.51%2C74.36%2C31.53&layer=mapnik"
                     className="absolute inset-0 w-full h-full border-0"
                     loading="lazy"
-                    title="Denova PK location"
+                    title={`${info.address} location`}
                   />
                 </div>
                 <div className="p-4">
@@ -235,7 +232,7 @@ export default function ContactPage() {
                     Visit Our Flagship Store
                   </p>
                   <p className="text-xs text-[#6b7280] mt-1">
-                    Gulberg III, Lahore, Pakistan
+                    {info.address}
                   </p>
                 </div>
               </div>

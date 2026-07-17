@@ -1,25 +1,21 @@
-﻿"use client";
+"use client";
 import { useState, useMemo } from "react";
-import { Heart, Share2, ShoppingBag, CheckCircle, Package, RotateCcw, Shield, Ruler } from "lucide-react";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { Badge } from "@/components/ui/Badge";
+import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ProductImages } from "@/components/product/ProductImages";
 import { ColorSelector } from "@/components/product/ColorSelector";
+import { SizeSelector } from "@/components/product/SizeSelector";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { FadeIn } from "@/components/animations/FadeIn";
-import { TextReveal } from "@/components/animations/TextReveal";
 import { useCartStore } from "@/store/cartStore";
-import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
-import { formatPrice, getDiscountPercent, getStars } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
-const TRUST_BADGES = [
-  { icon: Package,   label: "Free shipping",     sublabel: "on orders above PKR 5,000" },
-  { icon: RotateCcw, label: "Easy returns",      sublabel: "within 7 days" },
-  { icon: Shield,    label: "Authentic quality", sublabel: "100% guaranteed" },
-];
+// Editorial PKR formatter — "PKR 6,990"
+function formatPKR(amount: number): string {
+  return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
+}
 
 interface Props {
   product:         Product;
@@ -27,6 +23,7 @@ interface Props {
 }
 
 export function ProductDetailClient({ product, relatedProducts }: Props) {
+  // ─── Unique colors ────────────────────────────────────
   const uniqueColors = useMemo(() =>
     Array.from(
       new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
@@ -40,249 +37,312 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   }, [product.variants, uniqueColors]);
 
   const [selectedColor, setSelectedColor] = useState(firstInStockColor);
-  const [quantity,      setQuantity]      = useState(1);
-  const [addedToCart,   setAddedToCart]   = useState(false);
 
-  const addToCart      = useCartStore((s) => s.addItem);
-  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
-  const isInWishlist   = useWishlistStore((s) => s.isInWishlist(product.id));
-  const showToast      = useToastStore((s) => s.addToast);
+  // ─── Sizes derived from variants of selected color ────
+  const sizesForColor = useMemo(() => {
+    const variants = product.variants.filter((v) => v.color === selectedColor);
+    return Array.from(new Set(variants.map((v) => v.size)));
+  }, [product.variants, selectedColor]);
+
+  const outOfStockSizes = useMemo(() => {
+    return product.variants
+      .filter((v) => v.color === selectedColor && v.stock === 0)
+      .map((v) => v.size);
+  }, [product.variants, selectedColor]);
+
+  const firstInStockSize = useMemo(() => {
+    const v = product.variants.find((x) => x.color === selectedColor && x.stock > 0);
+    return v?.size ?? sizesForColor[0] ?? "";
+  }, [product.variants, selectedColor, sizesForColor]);
+
+  const [selectedSize, setSelectedSize] = useState(firstInStockSize);
+
+  // Re-sync size when color changes
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    const firstAvail = product.variants.find((v) => v.color === color && v.stock > 0);
+    setSelectedSize(firstAvail?.size ?? "");
+  };
+
+  // ─── Quantity + cart ──────────────────────────────────
+  const [quantity, setQuantity]         = useState(1);
+  const [addedToCart, setAddedToCart]   = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("details");
+
+  const addToCart = useCartStore((s) => s.addItem);
+  const showToast = useToastStore((s) => s.addToast);
 
   const selectedVariant = useMemo(() =>
-    product.variants.find((v) => v.color === selectedColor),
-    [product.variants, selectedColor]
+    product.variants.find((v) => v.color === selectedColor && v.size === selectedSize),
+    [product.variants, selectedColor, selectedSize]
   );
 
   const isOutOfStock = !selectedVariant || selectedVariant.stock === 0;
-
   const hasDiscount  = product.compareAtPrice && product.compareAtPrice > product.price;
-  const discountPct  = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
-  const fitLabel = useMemo(() => {
-    if (product.waist === null || product.waist === undefined) return null;
-    const w = `${product.waist}W`;
-    const l = product.length !== null && product.length !== undefined ? ` × ${product.length}L` : "";
-    return `${w}${l}`;
-  }, [product.waist, product.length]);
-
+  // ─── Fit label + measurements (for accordion content) ─
   const measurements = [
     { label: "Waist",  value: product.waist,  unit: '"' },
     { label: "Length", value: product.length, unit: '"' },
     { label: "Bottom", value: product.bottom, unit: '"' },
   ].filter((m) => m.value != null);
 
+  const fitLabel = useMemo(() => {
+    if (product.waist === null || product.waist === undefined) return null;
+    const w = `${product.waist}W`;
+    const l = product.length !== null && product.length !== undefined ? ` x ${product.length}L` : "";
+    return `${w}${l}`;
+  }, [product.waist, product.length]);
+
   const handleAddToCart = () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant) {
+      showToast({ type: "error", message: "Please select a size" });
+      return;
+    }
     addToCart({
-      productId: product.id, variantId: selectedVariant.id, name: product.name,
-      image: primaryImage.url, size: selectedVariant.size, color: selectedColor,
-      colorHex: selectedVariant.colorHex, price: product.price, quantity, slug: product.slug,
+      productId: product.id,
+      variantId: selectedVariant.id,
+      name:      product.name,
+      image:     primaryImage.url,
+      size:      selectedVariant.size,
+      color:     selectedColor,
+      colorHex:  selectedVariant.colorHex,
+      price:     product.price,
+      quantity,
+      slug:      product.slug,
     });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
   };
 
-  const handleWishlist = () => {
-    toggleWishlist({
-      id: product.id, productId: product.id, name: product.name,
-      image: primaryImage.url, price: product.price, slug: product.slug,
-    });
-    showToast({ type: "success", message: isInWishlist ? "Removed from wishlist" : "Added to wishlist" });
-  };
-
-  const handleShare = async () => {
-    try { await navigator.share({ title: product.name, url: window.location.href }); }
-    catch {
-      await navigator.clipboard.writeText(window.location.href);
-      showToast({ type: "info", message: "Link copied to clipboard!" });
-    }
+  const toggleAccordion = (key: string) => {
+    setOpenAccordion((prev) => (prev === key ? null : key));
   };
 
   return (
     <>
-      <div className="pt-24 sm:pt-28 pb-10">
+      <div className="pt-24 sm:pt-28 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn>
-            <Breadcrumb className="mb-6" items={[
-              { label: "Home",             href: "/" },
-              { label: "Shop",             href: "/shop" },
-              { label: product.collection, href: `/collections/${product.collectionId}` },
-              { label: product.name },
-            ]} />
-          </FadeIn>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-14">
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14">
+            {/* ═══════════════════════════════════════════
+                LEFT: image grid
+                ═══════════════════════════════════════════ */}
             <FadeIn>
-              <ProductImages images={product.images} productName={product.name} />
+              <ProductImages
+                images={product.images}
+                productName={product.name}
+                productId={product.id}
+                productSlug={product.slug}
+                productPrice={product.price}
+              />
             </FadeIn>
 
-            <div className="flex flex-col">
-              <FadeIn>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {product.isNew        && <Badge variant="new">New Arrival</Badge>}
-                  {hasDiscount          && <Badge variant="sale">-{discountPct}% Off</Badge>}
-                  {product.isBestSeller && <Badge variant="bestseller">Best Seller</Badge>}
-                </div>
-              </FadeIn>
+            {/* ═══════════════════════════════════════════
+                RIGHT: sticky content column
+                ═══════════════════════════════════════════ */}
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <FadeIn delay={100}>
 
-              <FadeIn delay={50}>
-                <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#c9a96e] mb-2">
-                  {product.collection}
-                </p>
-              </FadeIn>
-
-              <TextReveal as="h1" delay={80}>
-                <span className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1a1a1a] leading-tight">
+                {/* Product name — bold sans uppercase */}
+                <h1 className="text-lg sm:text-xl font-bold tracking-[0.1em] uppercase text-[#1a1a1a] leading-tight mb-2">
                   {product.name}
-                </span>
-              </TextReveal>
+                </h1>
 
-              {fitLabel && (
-                <FadeIn delay={100}>
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[#c9a96e]">
-                    <Ruler size={13} />
-                    Fit: {fitLabel}
-                  </div>
-                </FadeIn>
-              )}
+                {/* Collection sub-label */}
+                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-5">
+                  {product.collection || "Premium"}
+                </p>
 
-              <FadeIn delay={150}>
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="flex items-center gap-0.5">
-                    {getStars(product.rating).map((filled, i) => (
-                      <svg key={i} className={`w-4 h-4 ${filled ? "text-[#c9a96e]" : "text-[#e5e7eb]"}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
-                    ))}
-                  </div>
-                  <span className="text-sm text-[#6b7280]">{product.rating.toFixed(1)} ({product.reviewCount} reviews)</span>
+                {/* Price */}
+                <div className="flex items-baseline gap-3 mb-6">
+                  <span className="text-xl sm:text-2xl font-bold text-[#1a1a1a] tracking-wide">
+                    {formatPKR(product.price)}
+                  </span>
+                  {hasDiscount && (
+                    <span className="text-base text-[#9ca3af] line-through">
+                      {formatPKR(product.compareAtPrice!)}
+                    </span>
+                  )}
                 </div>
-              </FadeIn>
 
-              <FadeIn delay={200}>
-                <div className="flex items-baseline gap-3 mt-4">
-                  <span className="text-2xl sm:text-3xl font-bold text-[#1a1a1a]">{formatPrice(product.price)}</span>
-                  {hasDiscount && <span className="text-base text-[#6b7280] line-through">{formatPrice(product.compareAtPrice!)}</span>}
-                  {hasDiscount && <span className="text-sm font-semibold text-[#c9a96e]">Save {formatPrice(product.compareAtPrice! - product.price)}</span>}
-                </div>
-              </FadeIn>
-
-              <div className="my-5 h-px bg-[#e5e7eb]" />
-
-              {uniqueColors.length > 0 && (
-                <FadeIn delay={250}>
-                  <div className="mb-5">
+                {/* Color selector */}
+                {uniqueColors.length > 0 && (
+                  <div className="mb-7">
                     <ColorSelector
                       colors={uniqueColors}
                       selectedColor={selectedColor}
-                      onSelect={setSelectedColor}
+                      onSelect={handleColorChange}
                     />
                   </div>
-                </FadeIn>
-              )}
+                )}
 
-              <FadeIn delay={350}>
-                <div className="mb-6">
-                  <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] block mb-3">Quantity</span>
-                  <div className="flex items-center border border-[#e5e7eb] w-fit">
-                    <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] text-lg">−</button>
-                    <span className="w-12 text-center text-sm font-medium text-[#1a1a1a]">{quantity}</span>
-                    <button onClick={() => setQuantity((q) => Math.min(10, q + 1))} className="w-10 h-10 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] text-lg">+</button>
+                {/* Size selector */}
+                {sizesForColor.length > 0 && (
+                  <div className="mb-7">
+                    <SizeSelector
+                      sizes={sizesForColor}
+                      selectedSize={selectedSize}
+                      onSelect={setSelectedSize}
+                      outOfStock={outOfStockSizes}
+                    />
                   </div>
-                  {selectedVariant && (
-                    <p className={`mt-2 text-xs ${selectedVariant.stock === 0 ? "text-red-500 font-semibold" : selectedVariant.stock < 5 ? "text-orange-500 font-medium" : "text-[#6b7280]"}`}>
-                      {selectedVariant.stock === 0
-                        ? "Out of stock"
-                        : selectedVariant.stock < 5
-                          ? `Only ${selectedVariant.stock} left in stock`
-                          : `${selectedVariant.stock} in stock`}
-                    </p>
+                )}
+
+                {/* Quantity — compact inline */}
+                <div className="mb-6 flex items-center gap-4">
+                  <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                    Quantity
+                  </span>
+                  <div className="flex items-center border border-[#d1d5db]">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-10 text-center text-sm font-medium text-[#1a1a1a]">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity((q) => Math.min(selectedVariant?.stock ?? 10, q + 1))}
+                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
+                    <span className="text-xs text-[#c9a96e] font-medium">
+                      Only {selectedVariant.stock} left
+                    </span>
                   )}
                 </div>
-              </FadeIn>
 
-              <FadeIn delay={400}>
-                <div className="flex gap-3 mb-6">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="flex-1 gap-2"
-                    onClick={handleAddToCart}
-                    disabled={isOutOfStock}
+                {/* Big ADD TO CART button — Outfitters style */}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className={cn(
+                    "w-full h-14 flex items-center justify-between px-6 text-sm font-bold tracking-[0.15em] uppercase transition-all duration-200",
+                    isOutOfStock
+                      ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                      : addedToCart
+                      ? "bg-[#c9a96e] text-white"
+                      : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
+                  )}
+                >
+                  <span>
+                    {addedToCart
+                      ? "Added to Cart"
+                      : isOutOfStock
+                      ? "Out of Stock"
+                      : "Add to Cart"}
+                  </span>
+                  {addedToCart ? (
+                    <CheckCircle size={18} strokeWidth={2} />
+                  ) : (
+                    <ShoppingBag size={18} strokeWidth={1.75} />
+                  )}
+                </button>
+
+                {/* ═══════════════════════════════════════
+                    Description
+                    ═══════════════════════════════════════ */}
+                <div className="mt-10">
+                  <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">
+                    Product Description
+                  </h3>
+                  <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                    {product.description}
+                  </p>
+                </div>
+
+                {/* ═══════════════════════════════════════
+                    Accordions
+                    ═══════════════════════════════════════ */}
+                <div className="mt-8 border-t border-[#e5e7eb]">
+
+                  {/* PRODUCT DETAILS & COMPOSITION */}
+                  <AccordionItem
+                    id="details"
+                    title="Product Details & Composition"
+                    isOpen={openAccordion === "details"}
+                    onToggle={() => toggleAccordion("details")}
                   >
-                    {addedToCart ? (
-                      <><CheckCircle size={18} /> Added to Cart!</>
-                    ) : isOutOfStock ? (
-                      <>Out of Stock</>
-                    ) : (
-                      <><ShoppingBag size={18} /> Add to Cart</>
-                    )}
-                  </Button>
-                  <button onClick={handleWishlist}
-                    className={`w-14 h-14 flex items-center justify-center border transition-all ${
-                      isInWishlist ? "border-[#c9a96e] bg-[#c9a96e] text-white" : "border-[#e5e7eb] text-[#6b7280] hover:border-[#c9a96e] hover:text-[#c9a96e]"
-                    }`} aria-label="Add to wishlist">
-                    <Heart size={20} fill={isInWishlist ? "currentColor" : "none"} />
-                  </button>
-                  <button onClick={handleShare} className="w-14 h-14 flex items-center justify-center border border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-all" aria-label="Share product">
-                    <Share2 size={18} />
-                  </button>
-                </div>
-              </FadeIn>
-
-              {/* ── Description ── */}
-              <FadeIn delay={450}>
-                <div className="mt-1 pt-5 border-t border-[#e5e7eb]">
-                  <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">Description</h3>
-                  <p className="text-sm text-[#6b7280] leading-relaxed">{product.description}</p>
-                </div>
-              </FadeIn>
-
-              {product.tags.length > 0 && (
-                <FadeIn delay={475}>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {product.tags.map((tag) => (
-                      <span key={tag} className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]">{tag}</span>
-                    ))}
-                  </div>
-                </FadeIn>
-              )}
-
-              {/* ── Fit & Measurements ── */}
-              {measurements.length > 0 && (
-                <FadeIn delay={500}>
-                  <div className="mt-5 border border-[#e5e7eb]">
-                    <div className="px-4 py-2.5 border-b border-[#e5e7eb] bg-[#fafaf9] flex items-center gap-2">
-                      <Ruler size={13} className="text-[#c9a96e]" />
-                      <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
-                        Fit &amp; Measurements
-                      </h3>
-                    </div>
-                    <div className="divide-y divide-[#e5e7eb]">
-                      {measurements.map((m) => (
-                        <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
-                          <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">{m.label}</span>
-                          <span className="text-sm font-semibold text-[#1a1a1a]">
-                            {m.value}{m.unit}
-                          </span>
+                    <div className="space-y-4">
+                      {fitLabel && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-[#6b7280] font-medium">Fit:</span>
+                          <span className="text-[#1a1a1a] font-semibold">{fitLabel}</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </FadeIn>
-              )}
+                      )}
 
-              {/* ── Trust badges ── */}
-              <FadeIn delay={550}>
-                <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-[#e5e7eb]">
-                  {TRUST_BADGES.map(({ icon: Icon, label, sublabel }) => (
-                    <div key={label} className="flex flex-col items-center text-center gap-1.5">
-                      <Icon size={18} className="text-[#c9a96e]" />
-                      <span className="text-[10px] font-semibold text-[#1a1a1a] leading-tight">{label}</span>
-                      <span className="text-[9px] text-[#6b7280] leading-tight hidden sm:block">{sublabel}</span>
+                      {measurements.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Measurements
+                          </p>
+                          <div className="divide-y divide-[#e5e7eb] border border-[#e5e7eb]">
+                            {measurements.map((m) => (
+                              <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
+                                <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">
+                                  {m.label}
+                                </span>
+                                <span className="text-sm font-semibold text-[#1a1a1a]">
+                                  {m.value}{m.unit}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {product.tags.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Style Tags
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {product.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  </AccordionItem>
+
+                  {/* SHIPPING & RETURNS */}
+                  <AccordionItem
+                    id="shipping"
+                    title="Shipping & Returns"
+                    isOpen={openAccordion === "shipping"}
+                    onToggle={() => toggleAccordion("shipping")}
+                  >
+                    <div className="space-y-3 text-sm text-[#6b7280] leading-relaxed">
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Free Shipping</span>
+                        <span> on every order across Pakistan. Standard delivery within 3-5 business days.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Easy Returns</span>
+                        <span> within 7 days of delivery. Items must be unworn with original tags.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Authentic Quality</span>
+                        <span> - 100% guaranteed. Every piece is quality-inspected before shipping.</span>
+                      </div>
+                    </div>
+                  </AccordionItem>
+
                 </div>
               </FadeIn>
             </div>
@@ -294,3 +354,60 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     </>
   );
 }
+
+// ═══════════════════════════════════════════════════════════
+//  ACCORDION ITEM — clean Outfitters style with + / -
+// ═══════════════════════════════════════════════════════════
+function AccordionItem({
+  id, title, isOpen, onToggle, children,
+}: {
+  id:       string;
+  title:    string;
+  isOpen:   boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-[#e5e7eb]">
+      <button
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`accordion-${id}`}
+        className="w-full flex items-center justify-between py-4 text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-[#1a1a1a] text-lg font-light w-4">
+            {isOpen ? "-" : "+"}
+          </span>
+          <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] group-hover:text-[#c9a96e] transition-colors">
+            {title}
+          </span>
+        </div>
+        <ChevronDown
+          size={14}
+          className={cn(
+            "text-[#6b7280] transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+
+      <div
+        id={`accordion-${id}`}
+        className={cn(
+          "grid transition-all duration-300 ease-out",
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-5 pl-7">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Prevent unused-var errors from Button import (still available if needed later)
+void Button;

@@ -1,17 +1,26 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { getSiteInfo } from "@/lib/siteInfo";
+
+export const dynamic    = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "Denova PK terms of service and conditions of use.",
 };
 
-const SECTIONS = [
+interface Section {
+  title:   string;
+  content: string;
+}
+
+const SECTIONS: Section[] = [
   {
     title: "Acceptance of Terms",
-    content: "By accessing and using the Denova PK website, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our website or services.",
+    content: "By accessing and using the {{brand}} website, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our website or services.",
   },
   {
     title: "Use of the Website",
@@ -36,7 +45,7 @@ Engage in any conduct that restricts or inhibits anyone's use or enjoyment of th
   },
   {
     title: "Intellectual Property",
-    content: "All content on this website — including text, graphics, logos, images, and software — is the property of Denova PK and is protected by Pakistani and international copyright laws. You may not reproduce, distribute, or create derivative works without our express written permission.",
+    content: "All content on this website — including text, graphics, logos, images, and software — is the property of {{brand}} and is protected by Pakistani and international copyright laws. You may not reproduce, distribute, or create derivative works without our express written permission.",
   },
   {
     title: "User Accounts",
@@ -44,7 +53,7 @@ Engage in any conduct that restricts or inhibits anyone's use or enjoyment of th
   },
   {
     title: "Limitation of Liability",
-    content: "To the fullest extent permitted by law, Denova PK shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of our services or products.",
+    content: "To the fullest extent permitted by law, {{brand}} shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of our services or products.",
   },
   {
     title: "Governing Law",
@@ -56,11 +65,27 @@ Engage in any conduct that restricts or inhibits anyone's use or enjoyment of th
   },
   {
     title: "Contact",
-    content: "For questions regarding these terms, contact us at hello@denovapk.com or +92 300 123 4567.",
+    content: "For questions regarding these terms, contact us at {{email}} or {{phone}}.",
   },
 ];
 
-export default function TermsPage() {
+function fillTokens(text: string, tokens: Record<string, string>): string {
+  let out = text;
+  for (const [key, val] of Object.entries(tokens)) {
+    out = out.replaceAll(`{{${key}}}`, val);
+  }
+  return out;
+}
+
+export default async function TermsPage() {
+  const info = await getSiteInfo();
+
+  const tokens = {
+    email:   info.email,
+    phone:   info.phone,
+    brand:   info.brandName,
+  };
+
   return (
     <>
       <div className="pt-28 pb-10 sm:pt-32 sm:pb-14 bg-[#fafaf9] border-b border-[#e5e7eb]">
@@ -83,7 +108,7 @@ export default function TermsPage() {
           </TextReveal>
           <FadeIn delay={200}>
             <p className="text-[#6b7280] text-sm mt-4">
-              Last updated: January 2025
+              Last updated: {info.legalLastUpdated}
             </p>
           </FadeIn>
         </div>
@@ -97,7 +122,7 @@ export default function TermsPage() {
                 {i + 1}. {section.title}
               </h2>
               <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
-                {section.content}
+                {fillTokens(section.content, tokens)}
               </p>
             </div>
           </FadeIn>

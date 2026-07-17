@@ -1,33 +1,30 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
+import { useCallback, useState } from "react";
 import Image from "next/image";
-import { ChevronUp, ChevronDown, Tag, Lock, Award, Cake } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useCheckoutStore } from "@/store/checkoutStore";
+import { PromotionBanner } from "./PromotionBanner";
 import { formatPrice, cn } from "@/lib/utils";
 
-interface OrderSummaryProps {
-  showItems?: boolean;
-  editable?:  boolean;
-}
-
-export function OrderSummary({ showItems = true, editable = false }: OrderSummaryProps) {
+export function OrderSummary() {
   const items    = useCartStore((s) => s.items);
   const subtotal = useCartStore((s) => s.getSubtotal());
 
-  const shippingMethod    = useCheckoutStore((s) => s.shippingMethod);
-  const loyaltyDiscount   = useCheckoutStore((s) => s.loyaltyDiscount);
-  const loyaltyPointsUsed = useCheckoutStore((s) => s.loyaltyPointsUsed);
-  const birthdayDiscount  = useCheckoutStore((s) => s.birthdayDiscount);
+  const shippingMethod       = useCheckoutStore((s) => s.shippingMethod);
+  const loyaltyDiscount      = useCheckoutStore((s) => s.loyaltyDiscount);
+  const loyaltyPointsUsed    = useCheckoutStore((s) => s.loyaltyPointsUsed);
+  const birthdayDiscount     = useCheckoutStore((s) => s.birthdayDiscount);
+  const setLoyaltyRedemption = useCheckoutStore((s) => s.setLoyaltyRedemption);
+  const setBirthdayDiscount  = useCheckoutStore((s) => s.setBirthdayDiscount);
 
   const shipping = shippingMethod.price;
   const tax      = 0;
 
-  const [expanded, setExpanded]         = useState(false);
-  const [promoCode, setPromoCode]       = useState("");
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [promoLoading, setPromoLoading] = useState(false);
-  const [promoError, setPromoError]     = useState("");
+  const [promoCode, setPromoCode]         = useState("");
+  const [promoApplied, setPromoApplied]   = useState(false);
+  const [promoLoading, setPromoLoading]   = useState(false);
+  const [promoError, setPromoError]       = useState("");
   const [promoDiscount, setPromoDiscount] = useState(0);
 
   const total = subtotal + shipping + tax - loyaltyDiscount - birthdayDiscount - promoDiscount;
@@ -68,145 +65,174 @@ export function OrderSummary({ showItems = true, editable = false }: OrderSummar
     setPromoError("");
   };
 
+  const handlePromoApplied = useCallback((promo: {
+    type: "birthday" | "first_order" | "loyalty" | null;
+    discount: number;
+    loyaltyPoints: number;
+    canEarnLoyalty: boolean;
+  }) => {
+    if (promo.type === "birthday" || promo.type === "first_order") {
+      setBirthdayDiscount(promo.discount, true);
+      setLoyaltyRedemption(0, 0);
+    } else if (promo.type === "loyalty") {
+      setBirthdayDiscount(0, false);
+      setLoyaltyRedemption(promo.loyaltyPoints, promo.discount);
+    } else {
+      setBirthdayDiscount(0, false);
+      setLoyaltyRedemption(0, 0);
+    }
+  }, [setBirthdayDiscount, setLoyaltyRedemption]);
+
   return (
-    <div className="border border-[#e5e7eb] bg-white">
-      <button onClick={() => setExpanded(!expanded)}
-        className="lg:hidden w-full px-5 py-4 flex items-center justify-between border-b border-[#e5e7eb] bg-[#fafaf9]">
-        <div className="flex items-center gap-2">
-          <Tag size={14} className="text-[#c9a96e]" />
-          <span className="text-sm font-medium text-[#1a1a1a]">{expanded ? "Hide" : "Show"} order summary</span>
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </div>
-        <span className="text-base font-bold text-[#1a1a1a]">{formatPrice(total)}</span>
-      </button>
+    <div className="space-y-6">
 
-      <div className={cn("lg:block", !expanded && "hidden")}>
-        {showItems && (
-          <div className="px-5 py-4 border-b border-[#e5e7eb] max-h-[300px] overflow-y-auto">
-            <h3 className="hidden lg:block text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">
-              Your Order ({items.length})
-            </h3>
-            <div className="space-y-3">
-              {items.map((item) => {
-                const hasWaist = item.size && item.size !== "ONE-SIZE";
-                return (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="relative w-14 h-16 flex-shrink-0 bg-[#fafaf9]">
-                      <Image src={item.image} alt={item.name} fill className="object-cover" sizes="60px" />
-                      <span className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
-                        {item.quantity}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-[#1a1a1a] line-clamp-1">{item.name}</p>
-                      <p className="text-[10px] text-[#6b7280] mt-0.5">
-                        {item.color}
-                        {hasWaist && ` · ${item.size}" Waist`}
-                      </p>
-                      <p className="text-xs font-semibold text-[#1a1a1a] mt-1">{formatPrice(item.price * item.quantity)}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+      {/* ─── Items — extra top padding so first item's qty badge doesn't clip ─── */}
+      <div className="space-y-5 max-h-[480px] overflow-y-auto overflow-x-visible pt-3 pr-1">
+        {items.map((item) => {
+          const hasWaist = item.size && item.size !== "ONE-SIZE";
+          const variantText = [
+            item.color,
+            hasWaist ? `${item.size}"` : null,
+          ].filter(Boolean).join(" / ");
 
-        {editable && (
-          <div className="px-5 py-4 border-b border-[#e5e7eb]">
-            {promoApplied ? (
-              <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <Tag size={12} className="text-green-600" />
-                  <span className="text-xs font-semibold text-green-800">
-                    {promoCode} applied — {formatPrice(promoDiscount)} off
-                  </span>
+          return (
+            <div key={item.id} className="flex gap-4 items-start">
+              {/* Product image + qty badge */}
+              <div className="relative flex-shrink-0">
+                <div className="relative w-[76px] h-[92px] bg-[#f4f2ee] rounded-md overflow-hidden border border-[#e5e7eb]">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-contain p-2"
+                    sizes="76px"
+                  />
                 </div>
-                <button onClick={handleRemovePromo} className="text-[10px] text-red-500 hover:text-red-700 underline">
-                  Remove
-                </button>
+                {/* Round qty badge — Outfitters style */}
+                <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center bg-[#1a1a1a] text-white text-[11px] font-semibold rounded-full ring-2 ring-white z-10">
+                  {item.quantity}
+                </span>
               </div>
-            ) : (
-              <>
-                <div className="flex gap-2">
-                  <input type="text" value={promoCode}
-                    onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); }}
-                    placeholder="Promo code"
-                    className="flex-1 px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
-                  <button onClick={handleApplyPromo}
-                    disabled={!promoCode.trim() || promoLoading}
-                    className="px-4 py-2.5 text-xs font-semibold tracking-wide uppercase border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-40">
-                    {promoLoading ? "..." : "Apply"}
-                  </button>
-                </div>
-                {promoError && (
-                  <p className="text-[10px] text-red-500 mt-1.5 font-medium">{promoError}</p>
+
+              {/* Name + variant */}
+              <div className="flex-1 min-w-0 pt-1">
+                <p className="text-sm font-medium text-[#1a1a1a] line-clamp-2 leading-snug">
+                  {item.name}
+                </p>
+                {variantText && (
+                  <p className="text-xs text-[#6b7280] mt-1">{variantText}</p>
                 )}
-              </>
-            )}
+              </div>
+
+              {/* Price */}
+              <p className="text-sm font-medium text-[#1a1a1a] whitespace-nowrap pt-1">
+                {formatPrice(item.price * item.quantity)}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Promotions banner — above discount code */}
+      <PromotionBanner subtotal={subtotal} onPromoApplied={handlePromoApplied} />
+
+      {/* Discount code */}
+      <div>
+        {promoApplied ? (
+          <div className="flex items-center justify-between rounded-md bg-[#f0fdf4] border border-green-200 px-3 py-2.5">
+            <span className="text-xs font-medium text-green-800">
+              {promoCode} applied — {formatPrice(promoDiscount)} off
+            </span>
+            <button onClick={handleRemovePromo} className="text-[10px] text-red-500 hover:text-red-700 underline">
+              Remove
+            </button>
           </div>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); }}
+                placeholder="Discount code or gift card"
+                className="flex-1 rounded-md px-3.5 py-2.5 text-sm border border-[#d1d5db] focus:border-[#1a1a1a] focus:outline-none placeholder:text-[#9ca3af]"
+              />
+              <button
+                onClick={handleApplyPromo}
+                disabled={!promoCode.trim() || promoLoading}
+                className="rounded-md bg-[#f4f2ee] px-5 text-sm font-medium text-[#6b7280] hover:bg-[#e5e7eb] hover:text-[#1a1a1a] transition-colors disabled:opacity-40"
+              >
+                {promoLoading ? "..." : "Apply"}
+              </button>
+            </div>
+            {promoError && (
+              <p className="text-[11px] text-red-500 mt-1.5">{promoError}</p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Totals */}
+      <div className="space-y-2 text-sm">
+        <Row label="Subtotal" value={formatPrice(subtotal)} />
+
+        {promoDiscount > 0 && (
+          <Row label={promoCode} value={`− ${formatPrice(promoDiscount)}`} accent="green" />
         )}
 
-        <div className="px-5 py-4 space-y-2 border-b border-[#e5e7eb]">
-          <SumRow label="Subtotal" value={formatPrice(subtotal)} />
+        {birthdayDiscount > 0 && (
+          <Row label="Birthday reward" value={`− ${formatPrice(birthdayDiscount)}`} accent="brand" />
+        )}
 
-          {promoDiscount > 0 && (
-            <SumRow
-              label={<span className="inline-flex items-center gap-1 text-green-600">
-                <Tag size={11} />
-                {promoCode}
-              </span>}
-              value={`- ${formatPrice(promoDiscount)}`}
-              highlight
-            />
-          )}
+        {loyaltyDiscount > 0 && (
+          <Row label={`Loyalty (${loyaltyPointsUsed} pts)`} value={`− ${formatPrice(loyaltyDiscount)}`} accent="brand" />
+        )}
 
-          {birthdayDiscount > 0 && (
-            <SumRow
-              label={<span className="inline-flex items-center gap-1">
-                <Cake size={11} className="text-[#c9a96e]" />
-                Birthday Reward
-              </span>}
-              value={`- ${formatPrice(birthdayDiscount)}`}
-              highlight
-            />
-          )}
+        <Row
+          label={
+            <span className="inline-flex items-center gap-1">
+              Shipping
+              <HelpCircle size={13} className="text-[#9ca3af]" />
+            </span>
+          }
+          value={shipping === 0 ? "FREE" : formatPrice(shipping)}
+        />
 
-          {loyaltyDiscount > 0 && (
-            <SumRow
-              label={<span className="inline-flex items-center gap-1">
-                <Award size={11} className="text-[#c9a96e]" />
-                Loyalty ({loyaltyPointsUsed} pts)
-              </span>}
-              value={`- ${formatPrice(loyaltyDiscount)}`}
-              highlight
-            />
-          )}
+        {tax > 0 && <Row label="Tax" value={formatPrice(tax)} />}
+      </div>
 
-          <SumRow label="Shipping" value={shipping === 0 ? "FREE" : formatPrice(shipping)} highlight={shipping === 0} />
-          <SumRow label="Tax" value={formatPrice(tax)} />
-        </div>
-
-        <div className="px-5 py-4">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-semibold tracking-wide uppercase text-[#1a1a1a]">Total</span>
-            <span className="text-xl font-bold text-[#1a1a1a]">{formatPrice(total)}</span>
+      {/* Grand total */}
+      <div className="pt-2 border-t border-[#e5e7eb]">
+        <div className="pt-4 flex items-baseline justify-between">
+          <span className="text-base font-semibold text-[#1a1a1a]">Total</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xs text-[#6b7280] font-medium">PKR</span>
+            <span className="text-xl font-bold text-[#1a1a1a]">{formatPrice(total).replace(/^Rs\.?\s*/, "Rs ")}</span>
           </div>
-          <p className="mt-2 flex items-center gap-1.5 text-[10px] text-[#6b7280]">
-            <Lock size={11} className="text-[#c9a96e]" />
-            Secure encrypted checkout
-          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function SumRow({ label, value, highlight }: { label: React.ReactNode; value: string; highlight?: boolean }) {
+function Row({
+  label, value, accent,
+}: {
+  label: React.ReactNode;
+  value: string;
+  accent?: "brand" | "green";
+}) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center justify-between">
       <span className="text-[#6b7280]">{label}</span>
-      <span className={cn("font-medium", highlight ? "text-[#c9a96e]" : "text-[#1a1a1a]")}>{value}</span>
+      <span className={cn(
+        "font-medium",
+        accent === "brand" ? "text-[#c9a96e]" :
+        accent === "green" ? "text-green-600" :
+        "text-[#1a1a1a]"
+      )}>
+        {value}
+      </span>
     </div>
   );
 }

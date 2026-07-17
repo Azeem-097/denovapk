@@ -14,48 +14,49 @@ export function SizeSelector({
   onSelect,
   outOfStock = [],
 }: SizeSelectorProps) {
+  if (sizes.length === 0) return null;
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
-          Size
-          {selectedSize && (
-            <span className="ml-2 font-normal text-[#6b7280] normal-case tracking-normal">
-              — {selectedSize}
-            </span>
-          )}
+      <div className="mb-4">
+        <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+          Select Size
         </span>
-        <button className="text-xs text-[#c9a96e] underline hover:text-[#b8955a] transition-colors">
-          Waist Guide
-        </button>
       </div>
-      <div className="flex flex-wrap gap-2">
+
+      <div className="flex flex-wrap gap-x-6 gap-y-3">
         {sizes.map((size) => {
           const oos = outOfStock.includes(size);
+          const isSelected = selectedSize === size;
+
           return (
             <button
               key={size}
               onClick={() => !oos && onSelect(size)}
               disabled={oos}
               className={cn(
-                "relative w-11 h-11 text-xs font-medium border transition-all duration-150",
+                "text-sm font-medium tracking-wide transition-all duration-150 relative",
                 oos
-                  ? "border-[#e5e7eb] text-[#d1d5db] cursor-not-allowed"
-                  : selectedSize === size
-                  ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-                  : "border-[#e5e7eb] text-[#1a1a1a] hover:border-[#1a1a1a]"
+                  ? "text-[#d1d5db] cursor-not-allowed line-through"
+                  : isSelected
+                  ? "text-[#1a1a1a] font-bold"
+                  : "text-[#6b7280] hover:text-[#1a1a1a]"
               )}
             >
               {size}
-              {oos && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="absolute w-full h-px bg-[#d1d5db] rotate-45 origin-center" />
-                </span>
+              {isSelected && !oos && (
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#1a1a1a]" />
               )}
             </button>
           );
         })}
       </div>
+
+      {selectedSize && (
+        <p className="mt-3 text-[11px] text-[#6b7280] tracking-wide">
+          Selected: <span className="text-[#1a1a1a] font-semibold">{selectedSize}</span>
+        </p>
+      )}
     </div>
   );
 }

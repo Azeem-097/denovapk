@@ -2,15 +2,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { CartItem } from "@/types";
-import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
+import { useShippingConfigStore } from "./shippingConfigStore";
 
 interface CartState {
   items:      CartItem[];
   isOpen:     boolean;
   isSyncing:  boolean;
-  serverSync: boolean; // true = synced with server (logged in), false = local only
+  serverSync: boolean;
 
-  // Actions
   addItem:    (item: Omit<CartItem, "id">) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   updateQty:  (id: string, quantity: number) => Promise<void>;
@@ -19,12 +18,10 @@ interface CartState {
   closeCart:  () => void;
   toggleCart: () => void;
 
-  // Server sync
   syncFromServer:   () => Promise<void>;
   mergeToServer:    () => Promise<void>;
   setServerSync:    (enabled: boolean) => void;
 
-  // Computed
   getSubtotal:  () => number;
   getShipping:  () => number;
   getTotal:     () => number;
@@ -45,7 +42,6 @@ export const useCartStore = create<CartState>()(
           (i) => i.productId === newItem.productId && i.variantId === newItem.variantId
         );
 
-        // Update local state first (optimistic)
         if (existing) {
           set({
             items: items.map((i) =>
@@ -58,7 +54,6 @@ export const useCartStore = create<CartState>()(
         }
         set({ isOpen: true });
 
-        // Sync to server if logged in
         if (get().serverSync) {
           try {
             const res = await fetch("/api/cart", {
@@ -79,10 +74,7 @@ export const useCartStore = create<CartState>()(
       },
 
       removeItem: async (id) => {
-        // Local first
         set({ items: get().items.filter((i) => i.id !== id) });
-
-        // Server sync
         if (get().serverSync) {
           try {
             const res = await fetch(`/api/cart/${id}`, { method: "DELETE" });
@@ -95,16 +87,9 @@ export const useCartStore = create<CartState>()(
       },
 
       updateQty: async (id, quantity) => {
-        if (quantity <= 0) {
-          await get().removeItem(id);
-          return;
-        }
-        // Local first
-        set({
-          items: get().items.map((i) => i.id === id ? { ...i, quantity } : i),
-        });
+        if (quantity <= 0) { await get().removeItem(id); return; }
+        set({ items: get().items.map((i) => i.id === id ? { ...i, quantity } : i) });
 
-        // Server sync
         if (get().serverSync) {
           try {
             const res = await fetch(`/api/cart/${id}`, {
@@ -131,16 +116,13 @@ export const useCartStore = create<CartState>()(
       closeCart:  () => set({ isOpen: false }),
       toggleCart: () => set({ isOpen: !get().isOpen }),
 
-      // ── Server sync methods ─────────────────────────
       syncFromServer: async () => {
         set({ isSyncing: true });
         try {
           const res = await fetch("/api/cart");
           if (res.ok) {
             const data = await res.json();
-            if (data.cart) {
-              set({ items: mapServerCart(data.cart) });
-            }
+            if (data.cart) set({ items: mapServerCart(data.cart) });
           }
         } catch {}
         set({ isSyncing: false });
@@ -148,17 +130,12 @@ export const useCartStore = create<CartState>()(
 
       mergeToServer: async () => {
         const localItems = get().items;
-        if (localItems.length === 0) {
-          await get().syncFromServer();
-          return;
-        }
+        if (localItems.length === 0) { await get().syncFromServer(); return; }
 
         set({ isSyncing: true });
         try {
           const merge = localItems.map((i) => ({
-            productId: i.productId,
-            variantId: i.variantId,
-            quantity:  i.quantity,
+            productId: i.productId, variantId: i.variantId, quantity: i.quantity,
           }));
           const res = await fetch("/api/cart", {
             method:  "POST",
@@ -175,11 +152,11 @@ export const useCartStore = create<CartState>()(
 
       setServerSync: (enabled) => set({ serverSync: enabled }),
 
-      getSubtotal:  () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-      getShipping:  () => {
+      getSubtotal: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+      getShipping: () => {
         const subtotal = get().getSubtotal();
-        if (subtotal === 0) return 0;
-        return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 250;
+        // Read dynamic shipping config
+        return useShippingConfigStore.getState().calcShipping(subtotal);
       },
       getTotal:     () => get().getSubtotal() + get().getShipping(),
       getItemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
@@ -192,7 +169,6 @@ export const useCartStore = create<CartState>()(
   )
 );
 
-// ─── Helper: convert server cart to local format ─────────
 function mapServerCart(cart: { items: Array<{
   id: string; productId: string; variantId: string; quantity: number;
   product: { name: string; slug: string; images: Array<{ url: string }> };
@@ -207,7 +183,7 @@ function mapServerCart(cart: { items: Array<{
     size:      item.variant.size,
     color:     item.variant.color,
     colorHex:  item.variant.colorHex,
-    price:     item.variant.price / 100, // paisa → rupees
+    price:     item.variant.price / 100,
     quantity:  item.quantity,
     slug:      item.product.slug,
   }));

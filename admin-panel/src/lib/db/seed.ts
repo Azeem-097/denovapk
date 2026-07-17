@@ -11,6 +11,30 @@ import { randomBytes } from "crypto";
 const genId = () => "c" + randomBytes(12).toString("hex");
 const now   = () => Math.floor(Date.now() / 1000);
 
+// ═══════════════════════════════════════════════════════════════════
+//  SAFETY GUARD — prevents accidental data wipe
+// ═══════════════════════════════════════════════════════════════════
+const FORCE_FLAG = process.argv.includes("--force");
+
+if (!FORCE_FLAG) {
+  console.error("\n╔══════════════════════════════════════════════════════════════╗");
+  console.error("║                                                              ║");
+  console.error("║   ⚠️   DANGER: This script will DELETE ALL DATA in your DB   ║");
+  console.error("║                                                              ║");
+  console.error("║   - All products, collections, orders, users will be wiped   ║");
+  console.error("║   - All settings will be reset to defaults                   ║");
+  console.error("║   - This cannot be undone (no backups on Turso Free tier)    ║");
+  console.error("║                                                              ║");
+  console.error("║   To proceed, re-run with the --force flag:                  ║");
+  console.error("║                                                              ║");
+  console.error("║     npm run db:seed -- --force                               ║");
+  console.error("║                                                              ║");
+  console.error("╚══════════════════════════════════════════════════════════════╝\n");
+  process.exit(1);
+}
+
+console.log("[FORCE FLAG DETECTED] Proceeding with database seed...\n");
+
 async function seed() {
   const url       = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -24,7 +48,6 @@ async function seed() {
 
   console.log("Seeding database...\n");
 
-  // Clean existing data
   console.log("Cleaning existing data...");
   const tables = [
     "loyalty_transactions", "abandoned_carts",
@@ -44,7 +67,6 @@ async function seed() {
   }
   console.log("Cleaned.\n");
 
-  // ─── Admin ───────────────────────────────────────────
   console.log("Creating admin...");
   const adminId       = genId();
   const adminPassword = await bcrypt.hash("admin1234", 10);
@@ -55,7 +77,6 @@ async function seed() {
   });
   console.log("Admin: admin@denovapk.com / admin1234\n");
 
-  // ─── User (with birthday for testing) ────────────────
   console.log("Creating test user with birthday...");
   const userId       = genId();
   const userPassword = await bcrypt.hash("demo1234", 10);
@@ -77,7 +98,6 @@ async function seed() {
   });
   console.log(`User: ayesha@example.com / demo1234 (birthday: ${testBirthday}, 500 pts)\n`);
 
-  // ─── Collections ─────────────────────────────────────
   console.log("Creating collections...");
   const collections = [
     { id: genId(), name: "Summer Essentials", slug: "summer-essentials", desc: "Light, breathable pieces for the warm season",  img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800" },
@@ -96,7 +116,6 @@ async function seed() {
   }
   console.log("");
 
-  // ─── Products ────────────────────────────────────────
   console.log("Creating products...");
   const products = [
     { name: "Classic Linen Kurta",    slug: "classic-linen-kurta",    sku: "CLK-001", price: 350000,  compare: 450000,  coll: 0, sold: 278, stock: 23, isNew: 0, isFeatured: 1, isBestSeller: 1, img: "https://images.unsplash.com/photo-1604975701397-6365ccbd028a?w=800", desc: "A timeless linen kurta crafted for everyday elegance.", tags: "kurta,linen,summer" },
@@ -139,7 +158,6 @@ async function seed() {
   }
   console.log("");
 
-  // ─── Discounts ───────────────────────────────────────
   console.log("Creating discounts...");
   const oneYear = now() + 60 * 60 * 24 * 365;
   await db.execute({
@@ -154,8 +172,43 @@ async function seed() {
   });
   console.log("2 discount codes\n");
 
-  // ─── SETTINGS (Default configuration) ────────────────
   console.log("Creating default settings...");
+
+  // Footer link columns (JSON arrays serialized as strings)
+  const footerCol1Links = JSON.stringify([
+    { label: "New Arrivals", href: "/shop?filter=new" },
+    { label: "Best Sellers", href: "/shop?filter=bestsellers" },
+    { label: "Sale",         href: "/shop?filter=sale" },
+    { label: "All Products", href: "/shop" },
+  ]);
+
+  const footerCol2Links = JSON.stringify([
+    { label: "Premium",         href: "/collections/premium" },
+    { label: "Super Premium",   href: "/collections/super-premium" },
+    { label: "All Collections", href: "/collections" },
+  ]);
+
+  const footerCol3Links = JSON.stringify([
+    { label: "Track My Order",    href: "/track-order" },
+    { label: "Returns & Refunds", href: "/returns" },
+    { label: "Shipping Policy",   href: "/shipping" },
+    { label: "Size Guide",        href: "/size-guide" },
+    { label: "FAQ",               href: "/faq" },
+    { label: "Contact Us",        href: "/contact" },
+  ]);
+
+  const footerCol4Links = JSON.stringify([
+    { label: "About Denova",     href: "/about" },
+    { label: "Careers",          href: "/careers" },
+    { label: "Privacy Policy",   href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
+  ]);
+
+  const footerBottomLinks = JSON.stringify([
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms",   href: "/terms" },
+    { label: "Sitemap", href: "/sitemap" },
+  ]);
 
   const defaultSettings: Array<[string, string, string]> = [
     ["brand_name",              "Denova PK",                                                      "restaurant"],
@@ -196,6 +249,32 @@ async function seed() {
     ["social_facebook",         "https://facebook.com/denovapk",                                   "social"],
     ["social_instagram",        "https://instagram.com/denovapk",                                  "social"],
     ["social_tiktok",           "https://tiktok.com/@denovapk",                                    "social"],
+
+    // ── Shipping ──
+    ["free_delivery_all",       "false",                                                           "shipping"],
+    ["shipping_base_cost",      "250",                                                             "shipping"],
+    ["cod_extra_fee",           "0",                                                               "shipping"],
+
+    // ── Payment Methods — all enabled by default ──
+    ["payment_cod_enabled",       "true",                                                          "payments"],
+    ["payment_card_enabled",      "true",                                                          "payments"],
+    ["payment_jazzcash_enabled",  "true",                                                          "payments"],
+    ["payment_easypaisa_enabled", "true",                                                          "payments"],
+    ["payment_bank_enabled",      "true",                                                          "payments"],
+
+    // ── Footer ──
+    ["footer_brand_description", "Premium clothing crafted for the modern Pakistani.",             "footer"],
+    ["footer_copyright",         "Denova PK. All rights reserved.",                                "footer"],
+    ["footer_payment_methods",   "JazzCash | EasyPaisa | COD | Bank Transfer",                     "footer"],
+    ["footer_col1_title",        "Shop",                                                           "footer"],
+    ["footer_col1_links",        footerCol1Links,                                                  "footer"],
+    ["footer_col2_title",        "Collections",                                                    "footer"],
+    ["footer_col2_links",        footerCol2Links,                                                  "footer"],
+    ["footer_col3_title",        "Help",                                                           "footer"],
+    ["footer_col3_links",        footerCol3Links,                                                  "footer"],
+    ["footer_col4_title",        "Company",                                                        "footer"],
+    ["footer_col4_links",        footerCol4Links,                                                  "footer"],
+    ["footer_bottom_links",      footerBottomLinks,                                                "footer"],
   ];
 
   for (const [key, value, category] of defaultSettings) {

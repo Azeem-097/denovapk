@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import { inter, playfair, cormorant } from "@/lib/fonts";
-import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
-import { Navbar }          from "@/components/layout/Navbar";
-import { Footer }          from "@/components/layout/Footer";
-import { CartDrawer }      from "@/components/cart/CartDrawer";
-import { SearchModal }     from "@/components/layout/SearchModal";
 import { ToastContainer }  from "@/components/ui/Toast";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { CartAbandonmentTracker } from "@/components/providers/CartAbandonmentTracker";
-import { WhatsAppWidget }  from "@/components/layout/WhatsAppWidget";
+import { ShippingConfigLoader } from "@/components/providers/ShippingConfigLoader";
+import { PaymentConfigLoader } from "@/components/providers/PaymentConfigLoader";
+import { LayoutShell } from "@/components/layout/LayoutShell";
 import "./globals.css";
 
 const SITE_URL         = "https://denovapk.com";
@@ -68,14 +65,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased bg-white text-[#111111]">
         <SessionProvider>
           <CartAbandonmentTracker />
-          <AnnouncementBar />
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-          <CartDrawer />
-          <SearchModal />
+          <LayoutShell>{children}</LayoutShell>
           <ToastContainer />
-          <WhatsAppWidget />
+          <ShippingConfigLoader />
+          <PaymentConfigLoader />
         </SessionProvider>
       </body>
     </html>

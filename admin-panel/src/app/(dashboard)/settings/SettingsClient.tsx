@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { FooterTab } from "./FooterTab";
 import { FirstOrderTab } from "./FirstOrderTab";
+import { ShippingTab } from "./ShippingTab";
+import { PaymentMethodsTab } from "./PaymentMethodsTab";
 import {
   Store, Phone, ShoppingBag, Cake, Award,
-  DollarSign, Globe, Save, CheckCircle, MessageCircle,
+  DollarSign, Globe, Save, CheckCircle, MessageCircle, Truck, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -15,13 +17,15 @@ interface Props {
 
 type TabId =
   | "restaurant" | "contact" | "abandoned_cart" | "birthday"
-  | "loyalty" | "pricing" | "social" | "first_order" | "footer"
-  | "whatsapp";
+  | "loyalty" | "pricing" | "shipping" | "payments" | "social"
+  | "first_order" | "footer" | "whatsapp";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
   { id: "restaurant",     label: "Brand Information",   icon: Store       },
   { id: "contact",        label: "Contact Information", icon: Phone       },
   { id: "whatsapp",       label: "WhatsApp Widget",     icon: MessageCircle },
+  { id: "shipping",       label: "Shipping & Delivery", icon: Truck       },
+  { id: "payments",       label: "Payment Methods",     icon: CreditCard  },
   { id: "abandoned_cart", label: "Abandoned Cart",      icon: ShoppingBag },
   { id: "birthday",       label: "Birthday Rewards",    icon: Cake        },
   { id: "first_order",    label: "First Order Discount", icon: Award      },
@@ -48,9 +52,7 @@ export function SettingsClient({ initialSettings }: Props) {
     setSaving(true);
     const tabSettings = settings[activeTab] ?? {};
 
-    // WhatsApp tab uses a different storage strategy (single JSON blob)
     if (activeTab === "whatsapp") {
-      // Convert flat form fields to JSON structure
       const config = {
         enabled:          (tabSettings.enabled ?? "true") === "true",
         phone:            tabSettings.phone ?? "",
@@ -67,21 +69,15 @@ export function SettingsClient({ initialSettings }: Props) {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
-            settings: [
-              { key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }
-            ]
+            settings: [{ key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }]
           }),
         });
-        if (res.ok) {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 2500);
-        }
+        if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
       } catch {}
       setSaving(false);
       return;
     }
 
-    // Other tabs use standard flat key/value structure
     const payload = Object.entries(tabSettings).map(([key, value]) => ({
       key, value, category: activeTab,
     }));
@@ -92,37 +88,14 @@ export function SettingsClient({ initialSettings }: Props) {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ settings: payload }),
       });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      }
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
     } catch {}
     setSaving(false);
   };
 
-  // For WhatsApp tab, hydrate form from JSON blob
   const whatsappSettings = (() => {
     if (settings.whatsapp && Object.keys(settings.whatsapp).length > 0) {
       return settings.whatsapp;
-    }
-    // Try to load from whatsapp_widget key (JSON blob)
-    const raw = settings.whatsapp?.whatsapp_widget;
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        return {
-          enabled:          String(parsed.enabled ?? true),
-          phone:            parsed.phone ?? "",
-          communityLink:    parsed.communityLink ?? "",
-          greeting:         parsed.greeting ?? "Hi! I'm interested in Denova PK.",
-          directLabel:      parsed.directLabel ?? "Direct Message",
-          communityLabel:   parsed.communityLabel ?? "Join Community",
-          directSubtext:    parsed.directSubtext ?? "Chat with our support team",
-          communitySubtext: parsed.communitySubtext ?? "Join our WhatsApp community",
-        };
-      } catch {
-        return {};
-      }
     }
     return {};
   })();
@@ -171,6 +144,8 @@ export function SettingsClient({ initialSettings }: Props) {
             {activeTab === "restaurant"     && <RestaurantTab     settings={settings.restaurant     ?? {}} onChange={(k, v) => updateSetting("restaurant", k, v)} />}
             {activeTab === "contact"        && <ContactTab        settings={settings.contact        ?? {}} onChange={(k, v) => updateSetting("contact", k, v)} />}
             {activeTab === "whatsapp"       && <WhatsAppTab       settings={whatsappSettings              } onChange={(k, v) => updateSetting("whatsapp", k, v)} />}
+            {activeTab === "shipping"       && <ShippingTab       settings={settings.shipping       ?? {}} onChange={(k, v) => updateSetting("shipping", k, v)} />}
+            {activeTab === "payments"       && <PaymentMethodsTab settings={settings.payments      ?? {}} onChange={(k, v) => updateSetting("payments", k, v)} />}
             {activeTab === "abandoned_cart" && <AbandonedCartTab  settings={settings.abandoned_cart ?? {}} onChange={(k, v) => updateSetting("abandoned_cart", k, v)} />}
             {activeTab === "birthday"       && <BirthdayTab       settings={settings.birthday       ?? {}} onChange={(k, v) => updateSetting("birthday", k, v)} />}
             {activeTab === "first_order"    && <FirstOrderTab     settings={settings.first_order    ?? {}} onChange={(k, v) => updateSetting("first_order", k, v)} />}
@@ -182,11 +157,7 @@ export function SettingsClient({ initialSettings }: Props) {
 
           <div className="flex justify-end">
             <Button variant="primary" size="md" onClick={saveCurrentTab} disabled={saving}>
-              {saved ? (
-                <><CheckCircle size={15} />Saved!</>
-              ) : (
-                <><Save size={15} />{saving ? "Saving..." : "Save Changes"}</>
-              )}
+              {saved ? (<><CheckCircle size={15} />Saved!</>) : (<><Save size={15} />{saving ? "Saving..." : "Save Changes"}</>)}
             </Button>
           </div>
         </div>
@@ -236,8 +207,20 @@ function RestaurantTab({ settings, onChange }: TabProps) {
         <Field label="Tagline" id="brand_tagline" value={settings.brand_tagline ?? ""} onChange={(v) => onChange("brand_tagline", v)} hint="Short slogan shown across the site" />
         <Field label="Description" id="brand_description" value={settings.brand_description ?? ""} onChange={(v) => onChange("brand_description", v)} rows={3} />
         <Field label="City" id="brand_city" value={settings.brand_city ?? ""} onChange={(v) => onChange("brand_city", v)} />
-        <Field label="Full Address" id="brand_address" value={settings.brand_address ?? ""} onChange={(v) => onChange("brand_address", v)} rows={2} />
+        <Field label="Full Address" id="brand_address" value={settings.brand_address ?? ""} onChange={(v) => onChange("brand_address", v)} rows={2}
+          hint="Shown on Contact page and legal pages (Privacy, Terms)" />
         <Field label="Established Year" id="brand_year" value={settings.brand_year ?? ""} onChange={(v) => onChange("brand_year", v)} />
+
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Legal Pages</h3>
+          <Field
+            label="Last Updated Date"
+            id="legal_last_updated"
+            value={settings.legal_last_updated ?? "July 2026"}
+            onChange={(v) => onChange("legal_last_updated", v)}
+            hint="Shown at top of Privacy Policy and Terms of Service. e.g. 'July 2026'. Update whenever you revise the policies."
+          />
+        </div>
       </div>
     </div>
   );
@@ -250,8 +233,11 @@ function ContactTab({ settings, onChange }: TabProps) {
         <Phone size={16} className="text-[#c9a96e]" />
         Contact Information
       </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        These details are shown on the Contact page, legal pages (Privacy, Terms, Shipping), and in the footer.
+      </p>
       <div className="space-y-4">
-        <Field label="Primary Phone" id="contact_phone_primary" value={settings.contact_phone_primary ?? ""} onChange={(v) => onChange("contact_phone_primary", v)} type="tel" />
+        <Field label="Primary Phone" id="contact_phone_primary" value={settings.contact_phone_primary ?? ""} onChange={(v) => onChange("contact_phone_primary", v)} type="tel" hint="Shown across the site. e.g. +92 300 123 4567" />
         <Field label="Secondary Phone" id="contact_phone_secondary" value={settings.contact_phone_secondary ?? ""} onChange={(v) => onChange("contact_phone_secondary", v)} type="tel" />
         <Field label="Email" id="contact_email" value={settings.contact_email ?? ""} onChange={(v) => onChange("contact_email", v)} type="email" />
         <Field label="WhatsApp Number" id="contact_whatsapp" value={settings.contact_whatsapp ?? ""} onChange={(v) => onChange("contact_whatsapp", v)} type="tel" hint="Include country code, no spaces. e.g. +923001234567" />
@@ -268,9 +254,7 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
         <MessageCircle size={16} className="text-[#c9a96e]" />
         WhatsApp Floating Widget
       </h2>
-
       <div className="space-y-4">
-        {/* Enable toggle */}
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("enabled", e.target.checked ? "true" : "false")}
@@ -281,52 +265,21 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
           </div>
         </label>
 
-        {/* Preview */}
-        <div className="bg-[#f5f0e8]/30 border border-[#c9a96e]/30 p-4 flex items-start gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center flex-shrink-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.14 1.545 5.873L.057 23.997l6.306-1.654A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.017-1.376l-.36-.214-3.733.979 1-3.646-.234-.374A9.818 9.818 0 0 1 12 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/>
-            </svg>
-          </div>
-          <div className="flex-1 text-xs text-[#1a1a1a] leading-relaxed">
-            <p className="font-semibold mb-1">How it works</p>
-            <p>Customers click the floating WhatsApp icon in the bottom-right corner. A menu pops up with two options: <strong>Direct Message</strong> (opens chat with your number) and <strong>Join Community</strong> (opens your WhatsApp group/community link).</p>
-          </div>
-        </div>
-
         <div className="pt-2">
           <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Direct Message Option</h3>
           <div className="space-y-4">
-            <Field
-              label="WhatsApp Phone Number"
-              id="phone"
-              value={settings.phone ?? ""}
-              onChange={(v) => onChange("phone", v)}
-              type="tel"
-              hint="Include country code, e.g. +923001234567 (spaces/dashes are OK - will be cleaned)"
-            />
-            <Field
-              label="Greeting Message (pre-filled in chat)"
-              id="greeting"
+            <Field label="WhatsApp Phone Number" id="phone"
+              value={settings.phone ?? ""} onChange={(v) => onChange("phone", v)} type="tel" />
+            <Field label="Greeting Message (pre-filled in chat)" id="greeting"
               value={settings.greeting ?? "Hi! I'm interested in Denova PK."}
-              onChange={(v) => onChange("greeting", v)}
-              hint="This text appears when customer clicks Direct Message"
-              rows={2}
-            />
+              onChange={(v) => onChange("greeting", v)} rows={2} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Button Label"
-                id="directLabel"
+              <Field label="Button Label" id="directLabel"
                 value={settings.directLabel ?? "Direct Message"}
-                onChange={(v) => onChange("directLabel", v)}
-              />
-              <Field
-                label="Button Subtext"
-                id="directSubtext"
+                onChange={(v) => onChange("directLabel", v)} />
+              <Field label="Button Subtext" id="directSubtext"
                 value={settings.directSubtext ?? "Chat with our support team"}
-                onChange={(v) => onChange("directSubtext", v)}
-              />
+                onChange={(v) => onChange("directSubtext", v)} />
             </div>
           </div>
         </div>
@@ -334,27 +287,16 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
         <div className="pt-4 border-t border-[#e5e7eb]">
           <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Community Option</h3>
           <div className="space-y-4">
-            <Field
-              label="Community / Group Invite Link"
-              id="communityLink"
+            <Field label="Community / Group Invite Link" id="communityLink"
               value={settings.communityLink ?? ""}
-              onChange={(v) => onChange("communityLink", v)}
-              type="url"
-              hint="Full WhatsApp community/group invite URL, e.g. https://chat.whatsapp.com/xxx"
-            />
+              onChange={(v) => onChange("communityLink", v)} type="url" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Button Label"
-                id="communityLabel"
+              <Field label="Button Label" id="communityLabel"
                 value={settings.communityLabel ?? "Join Community"}
-                onChange={(v) => onChange("communityLabel", v)}
-              />
-              <Field
-                label="Button Subtext"
-                id="communitySubtext"
+                onChange={(v) => onChange("communityLabel", v)} />
+              <Field label="Button Subtext" id="communitySubtext"
                 value={settings.communitySubtext ?? "Join our WhatsApp community"}
-                onChange={(v) => onChange("communitySubtext", v)}
-              />
+                onChange={(v) => onChange("communitySubtext", v)} />
             </div>
           </div>
         </div>
@@ -386,7 +328,7 @@ function AbandonedCartTab({ settings, onChange }: TabProps) {
           type="number" hint="After this many minutes of inactivity, the cart is marked as abandoned" />
         <Field label="WhatsApp Follow-up Message" id="abandoned_cart_wa_message"
           value={settings.abandoned_cart_wa_message ?? ""} onChange={(v) => onChange("abandoned_cart_wa_message", v)}
-          rows={6} hint="Available tokens: {{name}} - customer name, {{amount}} - cart total in PKR" />
+          rows={6} hint="Available tokens: {{name}}, {{amount}}" />
       </div>
     </div>
   );
@@ -415,11 +357,11 @@ function BirthdayTab({ settings, onChange }: TabProps) {
           <Field label="Fixed Discount Amount (Rs.)" id="birthday_fixed_amount" value={settings.birthday_fixed_amount ?? "0"} onChange={(v) => onChange("birthday_fixed_amount", v)} type="number" hint="Use instead of %. Set 0 to disable" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Minimum Order (Rs.)" id="birthday_min_order" value={settings.birthday_min_order ?? "3000"} onChange={(v) => onChange("birthday_min_order", v)} type="number" hint="Minimum cart total to redeem" />
-          <Field label="Offer Validity (Days)" id="birthday_validity_days" value={settings.birthday_validity_days ?? "7"} onChange={(v) => onChange("birthday_validity_days", v)} type="number" hint="Days after birthday the offer is valid" />
+          <Field label="Minimum Order (Rs.)" id="birthday_min_order" value={settings.birthday_min_order ?? "3000"} onChange={(v) => onChange("birthday_min_order", v)} type="number" />
+          <Field label="Offer Validity (Days)" id="birthday_validity_days" value={settings.birthday_validity_days ?? "7"} onChange={(v) => onChange("birthday_validity_days", v)} type="number" />
         </div>
-        <Field label="Reminder Period (Days)" id="birthday_reminder_days" value={settings.birthday_reminder_days ?? "7"} onChange={(v) => onChange("birthday_reminder_days", v)} type="number" hint="Show upcoming birthdays this many days ahead" />
-        <Field label="Free Gift Description (optional)" id="birthday_free_gift" value={settings.birthday_free_gift ?? ""} onChange={(v) => onChange("birthday_free_gift", v)} hint="e.g. Free Denim Care Kit - mentioned in WhatsApp message" />
+        <Field label="Reminder Period (Days)" id="birthday_reminder_days" value={settings.birthday_reminder_days ?? "7"} onChange={(v) => onChange("birthday_reminder_days", v)} type="number" />
+        <Field label="Free Gift Description (optional)" id="birthday_free_gift" value={settings.birthday_free_gift ?? ""} onChange={(v) => onChange("birthday_free_gift", v)} />
         <Field label="WhatsApp Message Template" id="birthday_wa_message" value={settings.birthday_wa_message ?? ""} onChange={(v) => onChange("birthday_wa_message", v)} rows={6} hint="Tokens: {{name}} {{discount}} {{minOrder}} {{days}}" />
       </div>
     </div>
@@ -446,12 +388,12 @@ function LoyaltyTab({ settings, onChange }: TabProps) {
         </label>
         <Field label="Program Name" id="loyalty_program_name" value={settings.loyalty_program_name ?? "Denova Rewards"} onChange={(v) => onChange("loyalty_program_name", v)} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Earning Rate (%)" id="loyalty_earning_rate" value={settings.loyalty_earning_rate ?? "5"} onChange={(v) => onChange("loyalty_earning_rate", v)} type="number" hint="% of order value earned as points" />
-          <Field label="Point Value (Rs. per point)" id="loyalty_point_value" value={settings.loyalty_point_value ?? "1"} onChange={(v) => onChange("loyalty_point_value", v)} type="number" hint="1 point = X Rs when redeemed" />
+          <Field label="Earning Rate (%)" id="loyalty_earning_rate" value={settings.loyalty_earning_rate ?? "5"} onChange={(v) => onChange("loyalty_earning_rate", v)} type="number" />
+          <Field label="Point Value (Rs. per point)" id="loyalty_point_value" value={settings.loyalty_point_value ?? "1"} onChange={(v) => onChange("loyalty_point_value", v)} type="number" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Minimum Points to Redeem" id="loyalty_min_redemption" value={settings.loyalty_min_redemption ?? "100"} onChange={(v) => onChange("loyalty_min_redemption", v)} type="number" hint="Customer needs at least this many points" />
-          <Field label="Max Redemption % per Order" id="loyalty_max_redemption_pct" value={settings.loyalty_max_redemption_pct ?? "20"} onChange={(v) => onChange("loyalty_max_redemption_pct", v)} type="number" hint="Max % of order that can be paid with points" />
+          <Field label="Minimum Points to Redeem" id="loyalty_min_redemption" value={settings.loyalty_min_redemption ?? "100"} onChange={(v) => onChange("loyalty_min_redemption", v)} type="number" />
+          <Field label="Max Redemption % per Order" id="loyalty_max_redemption_pct" value={settings.loyalty_max_redemption_pct ?? "20"} onChange={(v) => onChange("loyalty_max_redemption_pct", v)} type="number" />
         </div>
       </div>
     </div>
@@ -465,11 +407,12 @@ function PricingTab({ settings, onChange }: TabProps) {
         <DollarSign size={16} className="text-[#c9a96e]" />
         Pricing &amp; Tax
       </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        Shipping costs are managed in the Shipping tab. Payment methods are managed in the Payment Methods tab.
+      </p>
       <div className="space-y-4">
         <Field label="Tax Percentage (%)" id="tax_percentage" value={settings.tax_percentage ?? "0"} onChange={(v) => onChange("tax_percentage", v)} type="number" />
         <Field label="Currency Symbol" id="currency_symbol" value={settings.currency_symbol ?? "Rs."} onChange={(v) => onChange("currency_symbol", v)} />
-        <Field label="Free Shipping Threshold (Rs.)" id="free_shipping_threshold" value={settings.free_shipping_threshold ?? "5000"} onChange={(v) => onChange("free_shipping_threshold", v)} type="number" />
-        <Field label="Default Shipping Cost (Rs.)" id="shipping_cost_default" value={settings.shipping_cost_default ?? "250"} onChange={(v) => onChange("shipping_cost_default", v)} type="number" />
       </div>
     </div>
   );

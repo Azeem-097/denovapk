@@ -35,7 +35,10 @@ interface FooterData {
   bottomLinks: FooterLink[];
 }
 
-// Fallback data (shown before API loads)
+// ═══════════════════════════════════════════════════════════
+// FALLBACK — used when admin hasn't configured footer links,
+// or before the API responds. Ships good defaults out of the box.
+// ═══════════════════════════════════════════════════════════
 const FALLBACK: FooterData = {
   brand: {
     name:        "Denova PK",
@@ -60,10 +63,9 @@ const FALLBACK: FooterData = {
       { label: "All Products", href: "/shop" },
     ]},
     { title: "Collections", links: [
-      { label: "Summer Essentials", href: "/collections/summer-essentials" },
-      { label: "Formal Edit",       href: "/collections/formal-edit" },
-      { label: "Casual Comfort",    href: "/collections/casual-comfort" },
-      { label: "Winter Luxe",       href: "/collections/winter-luxe" },
+      { label: "Premium",       href: "/collections/premium" },
+      { label: "Super Premium", href: "/collections/super-premium" },
+      { label: "All Collections", href: "/collections" },
     ]},
     { title: "Help", links: [
       { label: "Track My Order",    href: "/track-order" },
@@ -87,18 +89,66 @@ const FALLBACK: FooterData = {
   ],
 };
 
+/**
+ * Smart merge: use API data when present, fall back per-column
+ * if the admin hasn't configured that specific column's links.
+ */
+function mergeWithFallback(api: FooterData): FooterData {
+  // Merge columns individually — API column wins if it has ANY links,
+  // otherwise use the fallback column at that index.
+  const mergedColumns: FooterColumn[] = FALLBACK.columns.map((fbCol, i) => {
+    const apiCol = api.columns[i];
+    // Use API column if it has links; else use fallback
+    if (apiCol && apiCol.links && apiCol.links.length > 0) {
+      return {
+        title: apiCol.title || fbCol.title,
+        links: apiCol.links,
+      };
+    }
+    return fbCol;
+  });
+
+  return {
+    brand: {
+      name:        api.brand.name        || FALLBACK.brand.name,
+      description: api.brand.description || FALLBACK.brand.description,
+      copyright:   api.brand.copyright   || FALLBACK.brand.copyright,
+      payment:     api.brand.payment     || FALLBACK.brand.payment,
+    },
+    contact: {
+      phone:    api.contact.phone    || FALLBACK.contact.phone,
+      email:    api.contact.email    || FALLBACK.contact.email,
+      whatsapp: api.contact.whatsapp || FALLBACK.contact.whatsapp,
+      address:  api.contact.address  || FALLBACK.contact.address,
+    },
+    social: {
+      instagram: api.social.instagram || FALLBACK.social.instagram,
+      facebook:  api.social.facebook  || FALLBACK.social.facebook,
+      tiktok:    api.social.tiktok    || FALLBACK.social.tiktok,
+    },
+    columns: mergedColumns,
+    bottomLinks: (api.bottomLinks && api.bottomLinks.length > 0)
+      ? api.bottomLinks
+      : FALLBACK.bottomLinks,
+  };
+}
+
 export function Footer() {
   const [data, setData] = useState<FooterData>(FALLBACK);
   const year = new Date().getFullYear();
 
-  // Fetch footer data from API
   useEffect(() => {
     fetch("/api/footer")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
-        if (d && !d.error) setData(d);
+        if (d && !d.error) {
+          // Merge smartly — never show empty columns
+          setData(mergeWithFallback(d));
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Keep FALLBACK — already loaded
+      });
   }, []);
 
   const socialLinks = [
@@ -209,7 +259,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Dynamic link columns (4 columns from settings) */}
+          {/* Dynamic link columns — never empty thanks to smart merge */}
           {data.columns.map((col, i) => (
             <div key={i} className="lg:col-span-1">
               <h4 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#c9a96e] mb-4">
@@ -217,7 +267,7 @@ export function Footer() {
               </h4>
               <ul className="flex flex-col gap-2.5">
                 {col.links.map((link) => (
-                  <li key={link.href}>
+                  <li key={link.href + link.label}>
                     <Link href={link.href}
                       className="text-sm text-white/60 hover:text-white transition-colors">
                       {link.label}
@@ -240,7 +290,7 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-5">
               {data.bottomLinks.map((link) => (
-                <Link key={link.href} href={link.href}
+                <Link key={link.href + link.label} href={link.href}
                   className="text-xs text-white/40 hover:text-white/70 transition-colors">
                   {link.label}
                 </Link>

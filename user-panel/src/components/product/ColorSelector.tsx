@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { cn } from "@/lib/utils";
 
 interface ColorOption {
@@ -17,37 +17,46 @@ export function ColorSelector({
   selectedColor,
   onSelect,
 }: ColorSelectorProps) {
+  const activeColorName = colors.find((c) => c.name === selectedColor)?.name ?? "";
+
   return (
     <div>
       <div className="mb-3">
-        <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
+        <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
           Color
-          {selectedColor && (
-            <span className="ml-2 font-normal text-[#6b7280] normal-case tracking-normal">
-              — {selectedColor}
-            </span>
-          )}
         </span>
+        {activeColorName && (
+          <span className="ml-2 text-xs text-[#6b7280] tracking-wide">
+            {activeColorName}
+          </span>
+        )}
       </div>
-      <div className="flex flex-wrap gap-3">
-        {colors.map((color) => (
-          <button
-            key={color.name}
-            onClick={() => onSelect(color.name)}
-            title={color.name}
-            className={cn(
-              "relative w-8 h-8 rounded-full border-2 transition-all duration-150",
-              selectedColor === color.name
-                ? "border-[#c9a96e] scale-110"
-                : "border-[#e5e7eb] hover:border-[#c9a96e] hover:scale-105"
-            )}
-            style={{ backgroundColor: color.hex }}
-          >
-            {selectedColor === color.name && (
-              <span className="absolute inset-0 rounded-full ring-2 ring-[#c9a96e] ring-offset-1" />
-            )}
-          </button>
-        ))}
+
+      <div className="flex flex-wrap gap-2">
+        {colors.map((color) => {
+          const isSelected = selectedColor === color.name;
+          return (
+            <button
+              key={color.name}
+              onClick={() => onSelect(color.name)}
+              title={color.name}
+              className={cn(
+                "relative w-8 h-8 border transition-all duration-150",
+                isSelected
+                  ? "border-[#1a1a1a] p-0.5"
+                  : "border-[#d1d5db] hover:border-[#1a1a1a]"
+              )}
+            >
+              <span
+                className="block w-full h-full"
+                style={{ backgroundColor: color.hex }}
+              />
+              {isSelected && (
+                <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 bg-[#1a1a1a]" />
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

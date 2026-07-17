@@ -1,4 +1,4 @@
-﻿import { ProductCard }       from "./ProductCard";
+import { ProductCard }       from "./ProductCard";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import { SlideUp }            from "@/components/animations/SlideUp";
 import type { Product }       from "@/types";
@@ -23,7 +23,7 @@ export function ProductGrid({
 
   if (isLoading) {
     return (
-      <div className={`grid ${colClasses[columns]} gap-4 sm:gap-5 lg:gap-6`}>
+      <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
         {Array.from({ length: 8 }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
@@ -56,7 +56,7 @@ export function ProductGrid({
   }
 
   return (
-    <div className={`grid ${colClasses[columns]} gap-4 sm:gap-5 lg:gap-6`}>
+    <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
       {products.map((product, i) => (
         <SlideUp key={product.id} stagger={60} index={i % 8}>
           <ProductCard product={product} />

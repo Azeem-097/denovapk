@@ -8,14 +8,15 @@ export interface ShippingMethod {
 
 export type PaymentMethod = "cod" | "card" | "jazzcash" | "easypaisa" | "bank";
 
-export const SHIPPING_METHODS: ShippingMethod[] = [
-  { id: "standard", name: "Standard Delivery", time: "3-5 business days", price: 250 },
-  { id: "express",  name: "Express Delivery",  time: "1-2 business days", price: 500 },
-  { id: "sameday",  name: "Same Day (Lahore)", time: "Within 24 hours",   price: 800 },
-];
+// Default shipping method (updated dynamically from admin settings)
+export const DEFAULT_SHIPPING_METHOD: ShippingMethod = {
+  id:    "standard",
+  name:  "Standard Delivery",
+  time:  "3-5 business days across Pakistan",
+  price: 250,
+};
 
 interface CheckoutState {
-  currentStep:        number;
   shippingData:       ShippingFormData | null;
   shippingMethod:     ShippingMethod;
   paymentMethod:      PaymentMethod;
@@ -24,10 +25,9 @@ interface CheckoutState {
   loyaltyPointsUsed:  number;
   loyaltyDiscount:    number;
 
-  birthdayDiscount:   number;      // NEW
-  isBirthdayEligible: boolean;     // NEW
+  birthdayDiscount:   number;
+  isBirthdayEligible: boolean;
 
-  setStep:               (step: number) => void;
   setShippingData:       (data: ShippingFormData) => void;
   setShippingMethod:     (method: ShippingMethod) => void;
   setPaymentMethod:      (method: PaymentMethod) => void;
@@ -38,9 +38,8 @@ interface CheckoutState {
 }
 
 export const useCheckoutStore = create<CheckoutState>((set) => ({
-  currentStep:        1,
   shippingData:       null,
-  shippingMethod:     SHIPPING_METHODS[0],
+  shippingMethod:     DEFAULT_SHIPPING_METHOD,
   paymentMethod:      "cod",
   orderNumber:        null,
   loyaltyPointsUsed:  0,
@@ -48,7 +47,6 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   birthdayDiscount:   0,
   isBirthdayEligible: false,
 
-  setStep:              (currentStep)    => set({ currentStep }),
   setShippingData:      (shippingData)   => set({ shippingData }),
   setShippingMethod:    (shippingMethod) => set({ shippingMethod }),
   setPaymentMethod:     (paymentMethod)  => set({ paymentMethod }),
@@ -61,10 +59,13 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   }),
 
   reset: () => set({
-    currentStep: 1, shippingData: null,
-    shippingMethod: SHIPPING_METHODS[0], paymentMethod: "cod",
+    shippingData: null,
+    shippingMethod: DEFAULT_SHIPPING_METHOD, paymentMethod: "cod",
     orderNumber: null,
     loyaltyPointsUsed: 0, loyaltyDiscount: 0,
     birthdayDiscount: 0, isBirthdayEligible: false,
   }),
 }));
+
+// Kept for backward compatibility with any existing imports
+export const SHIPPING_METHODS = [DEFAULT_SHIPPING_METHOD];

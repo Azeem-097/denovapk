@@ -14,6 +14,24 @@ import { db } from "@/lib/db/client";
 import { now } from "@/lib/db/helpers";
 import type { PaymentMethod } from "@/lib/db/types";
 
+// Map client-facing payment method to admin setting key
+const PAYMENT_METHOD_SETTING_MAP: Record<string, string> = {
+  cod:       "payment_cod_enabled",
+  card:      "payment_card_enabled",
+  jazzcash:  "payment_jazzcash_enabled",
+  easypaisa: "payment_easypaisa_enabled",
+  bank:      "payment_bank_enabled",
+};
+
+// Friendly labels for error messages
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cod:       "Cash on Delivery",
+  card:      "Credit / Debit Card",
+  jazzcash:  "JazzCash",
+  easypaisa: "Easypaisa",
+  bank:      "Bank Transfer",
+};
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -27,10 +45,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // ═══════════════════════════════════════════════════════
+    //  VALIDATE PAYMENT METHOD (server-side, never trust client)
+    // ═══════════════════════════════════════════════════════
+    const pmLower = String(paymentMethod).toLowerCase();
+    const settingKey = PAYMENT_METHOD_SETTING_MAP[pmLower];
+
+    if (!settingKey) {
+      return NextResponse.json({
+        error: `Invalid payment method: ${paymentMethod}`,
+      }, { status: 400 });
+    }
+
+    // Check if this payment method is enabled by admin
+    // Fallback for COD: check legacy `cod_enabled` too
+    let isMethodEnabled = await getBoolSetting(settingKey, true);
+    if (pmLower === "cod") {
+      const legacyCod = await getBoolSetting("cod_enabled", true);
+      isMethodEnabled = isMethodEnabled && legacyCod;
+    }
+
+    if (!isMethodEnabled) {
+      return NextResponse.json({
+        error: `${PAYMENT_METHOD_LABELS[pmLower]} is currently unavailable. Please choose another payment method.`,
+      }, { status: 400 });
+    }
+
     const user = await getCurrentUser();
     const fullUser = user ? await getUserById(user.id) : null;
 
-    // Convert items to paisa
     const orderItems = items.map((item: {
       productId: string; variantId: string; name: string; image: string;
       size: string; color: string; price: number; quantity: number;
@@ -41,8 +84,32 @@ export async function POST(req: Request) {
       price: rupeesToPaisa(item.price), quantity: item.quantity,
     }));
 
-    const subtotal     = orderItems.reduce((sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity, 0);
-    const shippingCost = rupeesToPaisa(shippingMethod?.price ?? 0);
+    const subtotal = orderItems.reduce(
+      (sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity,
+      0
+    );
+
+    // ─── Server-side shipping calc ───────────────────────
+    const [freeDeliveryAll, baseCost, threshold, codFee] = await Promise.all([
+      getBoolSetting("free_delivery_all",       false),
+      getNumberSetting("shipping_base_cost",    250),
+      getNumberSetting("free_shipping_threshold", 5000),
+      getNumberSetting("cod_extra_fee",         0),
+    ]);
+
+    const subtotalRupees = subtotal / 100;
+    let shippingRupees = 0;
+    if (freeDeliveryAll) {
+      shippingRupees = 0;
+    } else if (threshold > 0 && subtotalRupees >= threshold) {
+      shippingRupees = 0;
+    } else {
+      shippingRupees = baseCost;
+    }
+    if (pmLower === "cod" && codFee > 0) {
+      shippingRupees += codFee;
+    }
+    const shippingCost = rupeesToPaisa(shippingRupees);
 
     // ─── Discount code ────────────────────────────────────
     let discountAmount = 0;
@@ -56,11 +123,8 @@ export async function POST(req: Request) {
     }
 
     // ═══════════════════════════════════════════════════════
-    // EXCLUSIVE PROMOTION LOGIC
-    // Priority: Birthday > First Order > Loyalty
-    // Only ONE can apply per order
+    //  Promotion logic (unchanged)
     // ═══════════════════════════════════════════════════════
-
     let promoType: "birthday" | "first_order" | "loyalty" | null = null;
     let birthdayDiscount = 0;
     let isBirthdayOrder  = false;
@@ -68,7 +132,6 @@ export async function POST(req: Request) {
     let actualPointsToUse    = 0;
     let canEarnLoyalty        = true;
 
-    // ── CHECK 1: Birthday ────────────────────────────────
     if (fullUser?.birthday) {
       const bdayEnabled = await getBoolSetting("birthday_enabled", true);
       if (bdayEnabled) {
@@ -96,7 +159,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── CHECK 2: First Order (only if birthday not active) ─
     if (!promoType && user) {
       const foEnabled = await getBoolSetting("first_order_enabled", true);
       if (foEnabled) {
@@ -119,7 +181,7 @@ export async function POST(req: Request) {
             canEarnLoyalty = false;
 
             if (foFixed > 0) {
-              birthdayDiscount = rupeesToPaisa(foFixed); // Reuse same field for simplicity
+              birthdayDiscount = rupeesToPaisa(foFixed);
             } else {
               birthdayDiscount = Math.round((subtotal * foPct) / 100);
             }
@@ -128,7 +190,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── CHECK 3: Loyalty (only if no higher promo) ────────
     if (!promoType && user && loyaltyPointsToUse && loyaltyPointsToUse > 0) {
       const loyaltyEnabled = await getBoolSetting("loyalty_enabled", true);
 
@@ -152,7 +213,7 @@ export async function POST(req: Request) {
 
     const total = subtotal - discountAmount - birthdayDiscount - loyaltyDiscountPaisa + shippingCost;
 
-    // ─── Smart address handling ────────────────────────────
+    // ─── Address handling (unchanged) ────────────────────
     let addressId: string | null = null;
     if (user && saveAddress) {
       const existingAddresses = await getUserAddresses(user.id);
@@ -193,7 +254,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // ─── Create order ────────────────────────────────────
     const order = await createOrder({
       userId: user?.id ?? null,
       guestEmail: user ? undefined : shipping.email,
@@ -214,7 +274,6 @@ export async function POST(req: Request) {
       discountCode: discountCode || undefined, discountId,
     });
 
-    // Update order with promo fields
     await db.execute({
       sql: `UPDATE orders SET
               loyaltyDiscount = ?, loyaltyPointsUsed = ?,
@@ -228,7 +287,6 @@ export async function POST(req: Request) {
       ],
     });
 
-    // Loyalty: Redeem (only if loyalty promo active)
     if (promoType === "loyalty" && user && actualPointsToUse > 0) {
       try {
         const pointValue = await getNumberSetting("loyalty_point_value", 1);
@@ -236,7 +294,6 @@ export async function POST(req: Request) {
       } catch (err) { console.error("Loyalty redemption failed:", err); }
     }
 
-    // Loyalty: Award (only if canEarnLoyalty is true)
     let pointsEarned = 0;
     if (user && canEarnLoyalty) {
       try {
@@ -257,7 +314,6 @@ export async function POST(req: Request) {
       } catch (err) { console.error("Loyalty earning failed:", err); }
     }
 
-    // Cleanup
     if (user) await clearCart(user.id);
     try { await markCartRecovered(user?.id ?? null, shipping.phone, order.id); } catch {}
 

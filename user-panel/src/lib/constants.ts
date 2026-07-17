@@ -3,7 +3,6 @@ export const SITE_DESCRIPTION = "Premium Denim Clothing - Crafted for the Modern
 
 // ══════════════════════════════════════════════════════════
 // HARDCODED to always point to production domain
-// Avoids ANY environment variable dependency
 // ══════════════════════════════════════════════════════════
 export const SITE_URL = "https://denovapk.com";
 
@@ -38,7 +37,12 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   refunded:   "Refunded",
 };
 
+// ═══════════════════════════════════════════════════════════
+// FALLBACK ONLY — actual value comes from admin settings via
+// /api/shipping-config. Do NOT import this for shipping logic.
+// ═══════════════════════════════════════════════════════════
 export const FREE_SHIPPING_THRESHOLD = 5000;
+
 export const ITEMS_PER_PAGE = 12;
 
 export const BRAND_YEAR = 2026;

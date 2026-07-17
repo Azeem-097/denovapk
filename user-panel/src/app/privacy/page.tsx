@@ -1,17 +1,28 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { getSiteInfo } from "@/lib/siteInfo";
+
+export const dynamic    = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "Denova PK privacy policy — how we collect, use, and protect your data.",
 };
 
-const SECTIONS = [
+interface Section {
+  title:   string;
+  content: string;
+}
+
+// Sections use {{email}} / {{phone}} / {{address}} / {{brand}} tokens
+// which are replaced with live admin settings at render time.
+const SECTIONS: Section[] = [
   {
     title: "Information We Collect",
-    content: `When you use Denova PK, we may collect the following information:
+    content: `When you use {{brand}}, we may collect the following information:
 
 Personal Identification: Your name, email address, phone number, and delivery address when you create an account or place an order.
 
@@ -57,7 +68,7 @@ Deletion: Request deletion of your personal data from our systems.
 Opt-out: Unsubscribe from marketing communications at any time.
 Portability: Request your data in a portable format.
 
-To exercise any of these rights, please contact us at hello@denovapk.com.`,
+To exercise any of these rights, please contact us at {{email}}.`,
   },
   {
     title: "Cookies Policy",
@@ -81,13 +92,30 @@ You can control cookie preferences through your browser settings or our cookie c
     title: "Contact Us",
     content: `If you have any questions about this Privacy Policy or how we handle your data, please contact us at:
 
-Email: hello@denovapk.com
-Phone: +92 300 123 4567
-Address: Gulberg III, Lahore, Pakistan`,
+Email: {{email}}
+Phone: {{phone}}
+Address: {{address}}`,
   },
 ];
 
-export default function PrivacyPage() {
+function fillTokens(text: string, tokens: Record<string, string>): string {
+  let out = text;
+  for (const [key, val] of Object.entries(tokens)) {
+    out = out.replaceAll(`{{${key}}}`, val);
+  }
+  return out;
+}
+
+export default async function PrivacyPage() {
+  const info = await getSiteInfo();
+
+  const tokens = {
+    email:   info.email,
+    phone:   info.phone,
+    address: info.address,
+    brand:   info.brandName,
+  };
+
   return (
     <>
       <div className="pt-28 pb-10 sm:pt-32 sm:pb-14 bg-[#fafaf9] border-b border-[#e5e7eb]">
@@ -110,7 +138,7 @@ export default function PrivacyPage() {
           </TextReveal>
           <FadeIn delay={200}>
             <p className="text-[#6b7280] text-sm mt-4">
-              Last updated: January 2025
+              Last updated: {info.legalLastUpdated}
             </p>
           </FadeIn>
         </div>
@@ -119,7 +147,7 @@ export default function PrivacyPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
         <FadeIn>
           <p className="text-sm text-[#6b7280] leading-relaxed mb-10 p-5 bg-[#fafaf9] border border-[#e5e7eb]">
-            At Denova PK, your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or make a purchase. Please read this policy carefully.
+            At {info.brandName}, your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or make a purchase. Please read this policy carefully.
           </p>
         </FadeIn>
 
@@ -131,7 +159,7 @@ export default function PrivacyPage() {
                   {i + 1}. {section.title}
                 </h2>
                 <div className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
-                  {section.content}
+                  {fillTokens(section.content, tokens)}
                 </div>
               </div>
             </FadeIn>
