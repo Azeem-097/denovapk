@@ -393,6 +393,7 @@ FILES:
 .\components\layout\WhatsAppWidget.tsx
 .\components\product\ColorSelector.tsx
 .\components\product\DiscountBadge.tsx
+.\components\product\ImageLightbox.tsx
 .\components\product\LiveViewCounter.tsx
 .\components\product\ProductBgWrapper.tsx
 .\components\product\ProductCard.tsx
@@ -407,11 +408,14 @@ FILES:
 .\components\providers\SessionProvider.tsx
 .\components\providers\ShippingConfigLoader.tsx
 .\components\sections\BrandStory.tsx
+.\components\sections\BrandTicker.tsx
 .\components\sections\FeaturedCollections.tsx
+.\components\sections\FixedHeroBackground.tsx
 .\components\sections\GallerySection.tsx
 .\components\sections\HeroSection.tsx
 .\components\sections\NewArrivals.tsx
 .\components\sections\NewsletterSection.tsx
+.\components\sections\SaleCountdown.tsx
 .\components\sections\Testimonials.tsx
 .\components\ui\Badge.tsx
 .\components\ui\Breadcrumb.tsx

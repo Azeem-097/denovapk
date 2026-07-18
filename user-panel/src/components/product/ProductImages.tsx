@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Package, Heart } from "lucide-react";
+import { Package, Heart, Plus } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
 import { ProductBgWrapper } from "./ProductBgWrapper";
 import { DiscountBadge } from "./DiscountBadge";
+import { ImageLightbox } from "./ImageLightbox";
 import { cn } from "@/lib/utils";
 import type { ProductImage as ProductImageType } from "@/types";
 
@@ -16,7 +17,7 @@ interface ProductImagesProps {
   productSlug:      string;
   productPrice:     number;
   bgColor?:         string | null;
-  discountPercent?: number;   // if > 0, shows ribbon on first image
+  discountPercent?: number;
 }
 
 const PLACEHOLDER: ProductImageType = {
@@ -43,6 +44,17 @@ export function ProductImages({
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [mobileIndex, setMobileIndex] = useState(0);
+
+  // ─── Lightbox state ──────────────────────────────────────
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx,  setLightboxIdx]  = useState(0);
+
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIdx(idx);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
   const handleScroll = useCallback(() => {
     const el = scrollerRef.current;
@@ -82,40 +94,76 @@ export function ProductImages({
   };
 
   const hasDiscount = !!discountPercent && discountPercent > 0;
+  const isPlaceholder = (url: string) => url === PLACEHOLDER.url;
 
   return (
     <>
-      {/* DESKTOP */}
+      {/* DESKTOP — 2x2 grid, click any image to open lightbox */}
       <div className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3">
         {sortedImages.map((img, i) => (
           <div key={img.id + i} className="relative group">
-            <ProductBgWrapper
-              bgColor={bgColor}
+            <button
+              type="button"
+              onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+              disabled={isPlaceholder(img.url)}
               className={cn(
-                "aspect-[4/5]",
-                !bgColor && "bg-[#f4f2ee]"
+                "block w-full relative cursor-zoom-in disabled:cursor-default rounded-xl lg:rounded-2xl overflow-hidden",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-2"
               )}
+              aria-label={`View image ${i + 1} in full screen`}
             >
-              {img.url === PLACEHOLDER.url ? (
-                <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
-                  <Package size={48} strokeWidth={1.5} />
-                  <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
-                    Image coming soon
-                  </p>
-                </div>
-              ) : (
-                <Image
-                  src={img.url}
-                  alt={img.alt || productName}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 50vw, 45vw"
-                  priority={i === 0}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  unoptimized={img.url.endsWith(".svg")}
-                />
+              <ProductBgWrapper
+                bgColor={bgColor}
+                className={cn(
+                  "aspect-[4/5]",
+                  !bgColor && "bg-[#f4f2ee]"
+                )}
+              >
+                {isPlaceholder(img.url) ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                    <Package size={48} strokeWidth={1.5} />
+                    <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                      Image coming soon
+                    </p>
+                  </div>
+                ) : (
+                  <Image
+                    src={img.url}
+                    alt={img.alt || productName}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 45vw"
+                    priority={i === 0}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    unoptimized={img.url.endsWith(".svg")}
+                  />
+                )}
+              </ProductBgWrapper>
+
+              {/* Hover overlay: dark scrim + circular "+" icon */}
+              {!isPlaceholder(img.url) && (
+                <>
+                  {/* Dark scrim */}
+                  <div
+                    className={cn(
+                      "absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-400 pointer-events-none"
+                    )}
+                  />
+                  {/* Circular + icon */}
+                  <div
+                    className={cn(
+                      "absolute inset-0 flex items-center justify-center pointer-events-none",
+                      "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100",
+                      "transition-all duration-400 ease-out"
+                    )}
+                  >
+                    <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center">
+                      <Plus size={24} className="text-[#1a1a1a]" strokeWidth={1.75} />
+                    </div>
+                  </div>
+                </>
               )}
-            </ProductBgWrapper>
+            </button>
 
             {/* Discount ribbon — only on primary image */}
             {i === 0 && hasDiscount && (
@@ -127,7 +175,7 @@ export function ProductImages({
                 onClick={handleWishlist}
                 aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
                 className={cn(
-                  "absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm transition-all duration-300",
+                  "absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300",
                   "opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0",
                   mounted && isInWishlist && "opacity-100 translate-x-0"
                 )}
@@ -145,7 +193,7 @@ export function ProductImages({
         ))}
       </div>
 
-      {/* MOBILE */}
+      {/* MOBILE — swipeable carousel; tap image to open lightbox */}
       <div className="sm:hidden">
         <div className="relative">
           <button
@@ -174,18 +222,22 @@ export function ProductImages({
             style={{ scrollBehavior: "auto" }}
           >
             {sortedImages.map((img, i) => (
-              <div
+              <button
                 key={img.id + i}
-                className="flex-shrink-0 w-full snap-start"
+                type="button"
+                onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+                disabled={isPlaceholder(img.url)}
+                className="flex-shrink-0 w-full snap-start cursor-zoom-in disabled:cursor-default"
+                aria-label={`View image ${i + 1} in full screen`}
               >
                 <ProductBgWrapper
                   bgColor={bgColor}
                   className={cn(
-                    "aspect-[4/5]",
+                    "aspect-[4/5] rounded-xl",
                     !bgColor && "bg-[#f4f2ee]"
                   )}
                 >
-                  {img.url === PLACEHOLDER.url ? (
+                  {isPlaceholder(img.url) ? (
                     <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
                       <Package size={48} strokeWidth={1.5} />
                       <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
@@ -204,7 +256,7 @@ export function ProductImages({
                     />
                   )}
                 </ProductBgWrapper>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -236,6 +288,15 @@ export function ProductImages({
           </div>
         )}
       </div>
+
+      {/* ═══ LIGHTBOX ═══════════════════════════════════════ */}
+      <ImageLightbox
+        images={sortedImages.filter((img) => !isPlaceholder(img.url))}
+        initialIdx={lightboxIdx}
+        productName={productName}
+        isOpen={lightboxOpen}
+        onClose={closeLightbox}
+      />
 
       <style jsx global>{`
         .scrollbar-hide {

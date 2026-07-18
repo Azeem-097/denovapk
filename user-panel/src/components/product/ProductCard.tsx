@@ -91,7 +91,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <ProductBgWrapper
           bgColor={product.bgColor}
           className={cn(
-            "aspect-[4/5]",
+            "aspect-[4/5] rounded-xl sm:rounded-2xl",
             !product.bgColor && "bg-[#f4f2ee]"
           )}
         >
@@ -126,26 +126,26 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
         </ProductBgWrapper>
 
-        {/* Corner accents that reveal on hover */}
+        {/* Corner accents that reveal on hover — nudged inward to sit inside the rounded corner */}
         <div
           className={cn(
-            "absolute top-2 left-2 w-4 h-4 border-t border-l border-[#c9a96e] transition-all duration-500 pointer-events-none",
+            "absolute top-3 left-3 w-4 h-4 border-t border-l border-[#c9a96e] transition-all duration-500 pointer-events-none",
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />
         <div
           className={cn(
-            "absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#c9a96e] transition-all duration-500 delay-100 pointer-events-none",
+            "absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#c9a96e] transition-all duration-500 delay-100 pointer-events-none",
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />
 
-        {/* Wishlist */}
+        {/* Wishlist — rounded to match card aesthetic */}
         <button
           onClick={handleWishlist}
           aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-white/95 backdrop-blur-sm transition-all duration-300 active:scale-90",
+            "absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300 active:scale-90",
             isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none",
             mounted && isInWishlist && "opacity-100 translate-x-0"
           )}
@@ -159,10 +159,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
           />
         </button>
 
-        {/* Quick Add bar */}
+        {/* Quick Add bar — rounded bottom corners match container */}
         <div
           className={cn(
-            "absolute bottom-0 left-0 right-0 z-10 transition-all duration-400 ease-out",
+            "absolute bottom-0 left-0 right-0 z-10 transition-all duration-400 ease-out overflow-hidden rounded-b-xl sm:rounded-b-2xl",
             isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full pointer-events-none"
           )}
         >
@@ -203,7 +203,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             {uniqueColors.slice(0, 6).map((color, i) => (
               <span
                 key={color.hex}
-                className="w-2.5 h-2.5 border border-[#d1d5db] transition-transform duration-300 hover:scale-125"
+                className="w-2.5 h-2.5 border border-[#d1d5db] rounded-full transition-transform duration-300 hover:scale-125"
                 style={{
                   backgroundColor: color.hex,
                   transitionDelay: `${i * 30}ms`,
