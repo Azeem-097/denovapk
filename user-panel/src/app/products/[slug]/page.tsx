@@ -1,10 +1,11 @@
-﻿import { notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts } from "@/lib/db/repositories/products";
 import { adaptProduct } from "@/lib/adapters";
 import { ProductDetailClient } from "./ProductDetailClient";
 
-export const dynamic    = "force-dynamic";
-export const revalidate = 0;
+// ISR: 60s cache. Stock levels update within 1 minute for browsing users.
+// (Real stock validation happens at checkout — this is safe.)
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -50,7 +51,6 @@ export default async function ProductDetailPage({ params }: Props) {
     }
   } catch (err) {
     console.error("Failed to load related products:", err);
-    // Silently fall back to empty related — page still renders
   }
 
   return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;

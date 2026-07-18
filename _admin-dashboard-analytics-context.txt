@@ -1,0 +1,2686 @@
+================================================================================
+ADMIN DASHBOARD + ANALYTICS — Wire to Real Data
+Generated: 2026-07-18 17:20:32
+================================================================================
+
+================================================================================
+PATH: admin-panel\src\app\(dashboard)\page.tsx
+================================================================================
+
+import Image from "next/image";
+import Link from "next/link";
+import {
+  DollarSign, ShoppingCart, Users, Package,
+  AlertTriangle, Clock, ArrowRight, TrendingUp,
+} from "lucide-react";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { getDashboardStats, getRevenueChartData, getTopProducts } from "@/lib/db/repositories/dashboard";
+import { getAllOrders } from "@/lib/db/repositories/orders";
+import { formatPaisa } from "@/lib/priceUtils";
+import { formatDate, cn } from "@/lib/utils";
+import { ORDER_STATUS_COLORS } from "@/lib/constants";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+export default async function DashboardPage() {
+  // Fetch everything in parallel
+  const [stats, revenueData, topProducts, recentOrders] = await Promise.all([
+    getDashboardStats(),
+    getRevenueChartData(),
+    getTopProducts(5),
+    getAllOrders({ limit: 5 }),
+  ]);
+
+  return (
+    <div className="space-y-6">
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Dashboard</h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">
+            Welcome back! Here is what is happening with Denova PK today.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-[#6b7280] bg-white border border-[#e5e7eb] px-3 py-2">
+          <Clock size={13} className="text-[#c9a96e]" />
+          {new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        </div>
+      </div>
+
+      {/* Alert banners */}
+      {(stats.pendingOrders > 0 || stats.lowStockItems > 0) && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          {stats.pendingOrders > 0 && (
+            <Link href="/orders" className="flex-1 flex items-center gap-3 bg-orange-50 border border-orange-200 px-4 py-3 hover:bg-orange-100 transition-colors">
+              <AlertTriangle size={16} className="text-orange-500 flex-shrink-0" />
+              <p className="text-sm text-orange-700 font-medium">
+                {stats.pendingOrders} pending {stats.pendingOrders === 1 ? "order needs" : "orders need"} your attention
+              </p>
+              <ArrowRight size={14} className="text-orange-500 ml-auto flex-shrink-0" />
+            </Link>
+          )}
+          {stats.lowStockItems > 0 && (
+            <Link href="/inventory" className="flex-1 flex items-center gap-3 bg-red-50 border border-red-200 px-4 py-3 hover:bg-red-100 transition-colors">
+              <Package size={16} className="text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-700 font-medium">
+                {stats.lowStockItems} product {stats.lowStockItems === 1 ? "variant is" : "variants are"} low in stock
+              </p>
+              <ArrowRight size={14} className="text-red-500 ml-auto flex-shrink-0" />
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard title="Total Revenue" value={formatPaisa(stats.totalRevenue)} change={stats.revenueChange} icon={DollarSign} />
+        <StatsCard title="Total Orders"  value={stats.totalOrders.toLocaleString()} change={stats.ordersChange} icon={ShoppingCart} />
+        <StatsCard title="Customers"     value={stats.totalCustomers.toLocaleString()} change={stats.customersChange} icon={Users} />
+        <StatsCard title="Products"      value={stats.totalProducts.toString()} icon={Package} />
+      </div>
+
+      {/* Secondary stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-[#e5e7eb] p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={15} className="text-[#c9a96e]" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Avg Order Value</p>
+          </div>
+          <p className="text-2xl font-bold text-[#1a1a1a]">{formatPaisa(stats.avgOrderValue)}</p>
+        </div>
+        <div className="bg-white border border-[#e5e7eb] p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={15} className="text-[#c9a96e]" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Conversion Rate</p>
+          </div>
+          <p className="text-2xl font-bold text-[#1a1a1a]">{stats.conversionRate}%</p>
+        </div>
+        <div className="bg-orange-50 border border-orange-200 p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Clock size={15} className="text-orange-500" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Pending Orders</p>
+          </div>
+          <p className="text-2xl font-bold text-orange-700">{stats.pendingOrders}</p>
+        </div>
+      </div>
+
+      {/* Charts + Top Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <RevenueChart data={revenueData} />
+
+        <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Top Products</h2>
+            <Link href="/products" className="text-xs text-[#c9a96e] hover:underline">View all</Link>
+          </div>
+          {topProducts.length === 0 ? (
+            <p className="text-center text-sm text-[#6b7280] py-8">No sales yet</p>
+          ) : (
+            <div className="space-y-3">
+              {topProducts.map((p, i) => (
+                <div key={p.id} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-[#6b7280] w-4 flex-shrink-0">{i + 1}</span>
+                  {p.image && (
+                    <div className="relative w-10 h-10 flex-shrink-0 bg-[#fafaf9]">
+                      <Image src={p.image} alt={p.name} fill className="object-cover" sizes="40px" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#1a1a1a] truncate">{p.name}</p>
+                    <p className="text-[10px] text-[#6b7280]">{p.sold} sold</p>
+                  </div>
+                  <p className="text-xs font-bold text-[#1a1a1a] flex-shrink-0">{formatPaisa(p.revenue)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent orders */}
+      <div className="bg-white border border-[#e5e7eb]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Recent Orders</h2>
+          <Link href="/orders" className="text-xs text-[#c9a96e] hover:underline inline-flex items-center gap-1">
+            View all <ArrowRight size={11} />
+          </Link>
+        </div>
+
+        {recentOrders.length === 0 ? (
+          <div className="p-10 text-center">
+            <ShoppingCart size={32} className="text-[#c9a96e] mx-auto mb-3" />
+            <p className="text-sm text-[#6b7280]">No orders yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
+                  {["Order", "Customer", "Items", "Total", "Status", "Date"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold tracking-wider uppercase text-[#6b7280]">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e5e7eb]">
+                {recentOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-[#fafaf9] transition-colors">
+                    <td className="px-4 py-3.5">
+                      <Link href={`/orders/${order.id}`} className="text-[#c9a96e] font-semibold hover:underline text-xs">
+                        #{order.orderNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <p className="font-medium text-[#1a1a1a] text-xs">{order.guestName ?? "Registered User"}</p>
+                      <p className="text-[11px] text-[#6b7280]">{order.guestEmail ?? "-"}</p>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs text-[#6b7280]">
+                      {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                    </td>
+                    <td className="px-4 py-3.5 text-xs font-bold text-[#1a1a1a]">{formatPaisa(order.total)}</td>
+                    <td className="px-4 py-3.5">
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide border",
+                        ORDER_STATUS_COLORS[order.status.toLowerCase()]
+                      )}>
+                        {order.status.toLowerCase()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs text-[#6b7280]">{formatDate(new Date(order.createdAt * 1000).toISOString())}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Client component for chart ────────────────────────────
+function RevenueChart({ data }: { data: Array<{ date: string; revenue: number; orders: number }> }) {
+  const max = Math.max(...data.map((d) => d.revenue), 1);
+
+  return (
+    <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Revenue Overview</h2>
+        <span className="text-xs text-[#6b7280]">Last 12 months</span>
+      </div>
+      <div className="flex items-end gap-2 h-40">
+        {data.slice(-6).map((d) => (
+          <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+            <p className="text-[10px] text-[#6b7280] font-semibold">
+              {d.revenue > 0 ? `${Math.round(d.revenue / 100 / 1000)}K` : "-"}
+            </p>
+            <div className="w-full relative">
+              <div
+                className="w-full bg-[#c9a96e] hover:bg-[#b8955a] transition-colors rounded-sm min-h-[4px]"
+                style={{ height: `${Math.max((d.revenue / max) * 100, 4)}px` }}
+                title={`${d.date}: ${formatPaisa(d.revenue)}`}
+              />
+            </div>
+            <p className="text-[10px] text-[#6b7280]">{d.date}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+PATH: admin-panel\src\app\(dashboard)\layout.tsx
+================================================================================
+
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { AdminLayout } from "@/components/layout/AdminLayout";
+import { useAdminAuthStore } from "@/store/adminAuthStore";
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router     = useRouter();
+  const isLoggedIn = useAdminAuthStore((s) => s.isLoggedIn);
+  const isLoading  = useAdminAuthStore((s) => s.isLoading);
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.replace("/login");
+    }
+  }, [isLoading, isLoggedIn, router]);
+
+  if (isLoading || !isLoggedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#c9a96e] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs tracking-[0.2em] uppercase text-[#6b7280]">Loading Admin</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <AdminLayout>{children}</AdminLayout>;
+}
+
+================================================================================
+PATH: admin-panel\src\app\(dashboard)\analytics\page.tsx
+================================================================================
+
+"use client";
+import { BarChart3, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign } from "lucide-react";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { dashboardStats, revenueData, topProducts } from "@/lib/data";
+import { formatPrice, cn } from "@/lib/utils";
+import Image from "next/image";
+
+export default function AnalyticsPage() {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-[#1a1a1a]">Analytics</h1>
+        <p className="text-sm text-[#6b7280] mt-0.5">Detailed performance and sales insights.</p>
+      </div>
+
+      {/* Time period */}
+      <div className="bg-white border border-[#e5e7eb] p-3 flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium text-[#6b7280] mr-2">Period:</span>
+        {["7 days", "30 days", "3 months", "6 months", "12 months", "All time"].map((p, i) => (
+          <button
+            key={p}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium border transition-colors",
+              i === 2
+                ? "bg-[#1a1a1a] text-white border-[#1a1a1a]"
+                : "text-[#6b7280] border-[#e5e7eb] hover:text-[#1a1a1a] hover:border-[#1a1a1a]"
+            )}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard title="Revenue"           value={formatPrice(dashboardStats.totalRevenue)}    change={12.5}  icon={DollarSign} />
+        <StatsCard title="Orders"            value={dashboardStats.totalOrders.toLocaleString()} change={8.3}   icon={ShoppingCart} />
+        <StatsCard title="New Customers"     value="245"                                          change={22.1}  icon={Users} />
+        <StatsCard title="Conversion Rate"   value={`${dashboardStats.conversionRate}%`}          change={-2.4}  icon={TrendingUp} />
+      </div>
+
+      {/* Revenue chart - large */}
+      <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">
+            Revenue Over Time
+          </h2>
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-[#c9a96e]" />
+              <span className="text-[#6b7280]">Revenue</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-[#1a1a1a]" />
+              <span className="text-[#6b7280]">Orders</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-2 h-64">
+          {revenueData.map((d) => {
+            const maxRev    = Math.max(...revenueData.map((r) => r.revenue));
+            const maxOrders = Math.max(...revenueData.map((r) => r.orders));
+            return (
+              <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full flex items-end gap-0.5 h-56">
+                  <div
+                    className="flex-1 bg-[#c9a96e] hover:bg-[#b8955a] transition-colors rounded-t"
+                    style={{ height: `${(d.revenue / maxRev) * 100}%` }}
+                    title={`Revenue: ${formatPrice(d.revenue)}`}
+                  />
+                  <div
+                    className="flex-1 bg-[#1a1a1a] hover:bg-[#333] transition-colors rounded-t"
+                    style={{ height: `${(d.orders / maxOrders) * 100}%` }}
+                    title={`Orders: ${d.orders}`}
+                  />
+                </div>
+                <p className="text-[10px] text-[#6b7280] font-medium">{d.date}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Two-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* Top Products */}
+        <div className="bg-white border border-[#e5e7eb] p-5">
+          <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a] mb-5">
+            Top Products by Revenue
+          </h2>
+          <div className="space-y-3">
+            {topProducts.map((p, i) => (
+              <div key={p.id} className="flex items-center gap-3">
+                <span className="text-sm font-bold text-[#c9a96e] w-6">{i + 1}</span>
+                <div className="relative w-10 h-10 bg-[#fafaf9] flex-shrink-0">
+                  <Image src={p.image} alt={p.name} fill className="object-cover" sizes="40px" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[#1a1a1a] truncate">{p.name}</p>
+                  <p className="text-[10px] text-[#6b7280]">{p.sold} units sold</p>
+                </div>
+                <p className="text-xs font-bold text-[#1a1a1a]">{formatPrice(p.revenue)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Traffic Sources (mock) */}
+        <div className="bg-white border border-[#e5e7eb] p-5">
+          <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a] mb-5">
+            Traffic Sources
+          </h2>
+          <div className="space-y-3">
+            {[
+              { source: "Instagram",       visits: 4521, pct: 42, trend: "up"   },
+              { source: "Direct",          visits: 2891, pct: 27, trend: "up"   },
+              { source: "Google Search",   visits: 1893, pct: 18, trend: "up"   },
+              { source: "Facebook",        visits: 843,  pct: 8,  trend: "down" },
+              { source: "TikTok",          visits: 542,  pct: 5,  trend: "up"   },
+            ].map((t) => (
+              <div key={t.source}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-[#1a1a1a]">{t.source}</span>
+                    {t.trend === "up"
+                      ? <TrendingUp size={11} className="text-green-500" />
+                      : <TrendingDown size={11} className="text-red-500" />}
+                  </div>
+                  <span className="text-xs text-[#6b7280]">{t.visits.toLocaleString()} visits ({t.pct}%)</span>
+                </div>
+                <div className="h-1.5 bg-[#e5e7eb] overflow-hidden">
+                  <div className="h-full bg-[#c9a96e]" style={{ width: `${t.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#f5f0e8] border border-[#c9a96e]/30 p-5 text-center">
+        <BarChart3 size={24} className="text-[#c9a96e] mx-auto mb-2" />
+        <p className="text-sm font-semibold text-[#1a1a1a]">More Analytics Coming Soon</p>
+        <p className="text-xs text-[#6b7280] mt-1">Conversion funnels, customer LTV, cohort analysis, and more.</p>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+PATH: admin-panel\src\components\dashboard\StatsCard.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+import { TrendingUp, TrendingDown } from "lucide-react";
+
+interface StatsCardProps {
+  title:      string;
+  value:      string;
+  change?:    number;
+  changeLabel?: string;
+  icon:       React.ComponentType<{ size?: number; className?: string }>;
+  iconBg?:    string;
+  className?: string;
+}
+
+export function StatsCard({
+  title, value, change, changeLabel = "vs last month",
+  icon: Icon, iconBg = "bg-[#f5f0e8]", className,
+}: StatsCardProps) {
+  const isPositive = (change ?? 0) >= 0;
+
+  return (
+    <div className={cn(
+      "bg-white border border-[#e5e7eb] p-5 lg:p-6",
+      className
+    )}>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className={cn("w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0", iconBg)}>
+          <Icon size={20} className="text-[#c9a96e]" />
+        </div>
+        {change !== undefined && (
+          <div className={cn(
+            "inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full",
+            isPositive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          )}>
+            {isPositive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {Math.abs(change)}%
+          </div>
+        )}
+      </div>
+
+      <p className="text-2xl lg:text-3xl font-bold text-[#1a1a1a] mb-1">
+        {value}
+      </p>
+      <p className="text-xs text-[#6b7280] font-medium uppercase tracking-wide">
+        {title}
+      </p>
+      {change !== undefined && (
+        <p className="text-[11px] text-[#6b7280] mt-1">
+          {isPositive ? "+" : ""}{change}% {changeLabel}
+        </p>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+PATH: admin-panel\src\components\analytics
+================================================================================
+
+(This is a folder. Listing children:)
+  <empty folder>
+
+================================================================================
+PATH: admin-panel\src\lib\db\repositories\dashboard.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+
+export interface DashboardStats {
+  totalRevenue:    number; // in paisa
+  totalOrders:     number;
+  totalCustomers:  number;
+  totalProducts:   number;
+  pendingOrders:   number;
+  lowStockItems:   number;
+  avgOrderValue:   number;
+  conversionRate:  number;
+  revenueChange:   number;
+  ordersChange:    number;
+  customersChange: number;
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const now       = Math.floor(Date.now() / 1000);
+  const thirtyDaysAgo = now - (60 * 60 * 24 * 30);
+  const sixtyDaysAgo  = now - (60 * 60 * 24 * 60);
+
+  const [
+    revenue, orders, customers, products, pending, lowStock,
+    revenue30, revenue60, orders30, orders60, customers30, customers60,
+  ] = await Promise.all([
+    db.execute("SELECT COALESCE(SUM(total), 0) as v FROM orders WHERE paymentStatus = 'PAID'"),
+    db.execute("SELECT COUNT(*) as c FROM orders"),
+    db.execute("SELECT COUNT(*) as c FROM users"),
+    db.execute("SELECT COUNT(*) as c FROM products WHERE status = 'PUBLISHED'"),
+    db.execute("SELECT COUNT(*) as c FROM orders WHERE status = 'PENDING'"),
+    db.execute("SELECT COUNT(*) as c FROM product_variants WHERE stock < 10"),
+    db.execute({ sql: "SELECT COALESCE(SUM(total), 0) as v FROM orders WHERE createdAt >= ? AND paymentStatus = 'PAID'", args: [thirtyDaysAgo] }),
+    db.execute({ sql: "SELECT COALESCE(SUM(total), 0) as v FROM orders WHERE createdAt >= ? AND createdAt < ? AND paymentStatus = 'PAID'", args: [sixtyDaysAgo, thirtyDaysAgo] }),
+    db.execute({ sql: "SELECT COUNT(*) as c FROM orders WHERE createdAt >= ?", args: [thirtyDaysAgo] }),
+    db.execute({ sql: "SELECT COUNT(*) as c FROM orders WHERE createdAt >= ? AND createdAt < ?", args: [sixtyDaysAgo, thirtyDaysAgo] }),
+    db.execute({ sql: "SELECT COUNT(*) as c FROM users WHERE createdAt >= ?", args: [thirtyDaysAgo] }),
+    db.execute({ sql: "SELECT COUNT(*) as c FROM users WHERE createdAt >= ? AND createdAt < ?", args: [sixtyDaysAgo, thirtyDaysAgo] }),
+  ]);
+
+  const totalRevenue   = Number(revenue.rows[0].v);
+  const totalOrders    = Number(orders.rows[0].c);
+  const totalCustomers = Number(customers.rows[0].c);
+
+  const rev30 = Number(revenue30.rows[0].v);
+  const rev60 = Number(revenue60.rows[0].v);
+  const ord30 = Number(orders30.rows[0].c);
+  const ord60 = Number(orders60.rows[0].c);
+  const cus30 = Number(customers30.rows[0].c);
+  const cus60 = Number(customers60.rows[0].c);
+
+  return {
+    totalRevenue,
+    totalOrders,
+    totalCustomers,
+    totalProducts:  Number(products.rows[0].c),
+    pendingOrders:  Number(pending.rows[0].c),
+    lowStockItems:  Number(lowStock.rows[0].c),
+    avgOrderValue:  totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
+    conversionRate: 3.4, // Mock - would need traffic data
+    revenueChange:   percentChange(rev30, rev60),
+    ordersChange:    percentChange(ord30, ord60),
+    customersChange: percentChange(cus30, cus60),
+  };
+}
+
+function percentChange(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Number(((current - previous) / previous * 100).toFixed(1));
+}
+
+// ─── Revenue chart data (last 12 months) ─────────────────
+export interface RevenueDataPoint {
+  date:    string;
+  revenue: number;
+  orders:  number;
+}
+
+export async function getRevenueChartData(): Promise<RevenueDataPoint[]> {
+  const now = Math.floor(Date.now() / 1000);
+  const points: RevenueDataPoint[] = [];
+
+  for (let i = 11; i >= 0; i--) {
+    const monthEnd   = now - (i * 30 * 24 * 60 * 60);
+    const monthStart = monthEnd - (30 * 24 * 60 * 60);
+
+    const result = await db.execute({
+      sql:  "SELECT COALESCE(SUM(total), 0) as r, COUNT(*) as c FROM orders WHERE createdAt >= ? AND createdAt < ? AND paymentStatus = 'PAID'",
+      args: [monthStart, monthEnd],
+    });
+
+    const date = new Date(monthEnd * 1000);
+    const monthName = date.toLocaleDateString("en-US", { month: "short" });
+
+    points.push({
+      date:    monthName,
+      revenue: Number(result.rows[0].r),
+      orders:  Number(result.rows[0].c),
+    });
+  }
+
+  return points;
+}
+
+// ─── Top products ────────────────────────────────────────
+export interface TopProduct {
+  id:      string;
+  name:    string;
+  image:   string;
+  sold:    number;
+  revenue: number;
+  stock:   number;
+}
+
+export async function getTopProducts(limit = 5): Promise<TopProduct[]> {
+  const result = await db.execute({
+    sql: `
+      SELECT p.id, p.name, p.soldCount as sold, p.price,
+        (p.soldCount * p.price) as revenue,
+        (SELECT COALESCE(SUM(stock), 0) FROM product_variants WHERE productId = p.id) as stock,
+        (SELECT url FROM product_images WHERE productId = p.id AND isPrimary = 1 LIMIT 1) as image
+      FROM products p
+      WHERE p.status = 'PUBLISHED'
+      ORDER BY p.soldCount DESC
+      LIMIT ?
+    `,
+    args: [limit],
+  });
+
+  return result.rows.map((r) => ({
+    id:      r.id as string,
+    name:    r.name as string,
+    image:   (r.image as string) ?? "",
+    sold:    Number(r.sold),
+    revenue: Number(r.revenue),
+    stock:   Number(r.stock),
+  }));
+}
+
+================================================================================
+PATH: admin-panel\src\lib\db\repositories\orders.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now, generateOrderNumber } from "@/lib/db/helpers";
+import type {
+  DbOrder, DbOrderItem, DbAddress, OrderStatus, PaymentStatus, PaymentMethod,
+} from "@/lib/db/types";
+
+export interface OrderWithItems extends DbOrder {
+  items:   DbOrderItem[];
+  address: DbAddress | null;
+}
+
+// ─── Get orders for a user ───────────────────────────────
+export async function getUserOrders(userId: string): Promise<OrderWithItems[]> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC",
+    args: [userId],
+  });
+
+  const orders = result.rows as unknown as DbOrder[];
+  if (orders.length === 0) return [];
+
+  return await enrichOrdersWithRelations(orders);
+}
+
+// ─── Get single order ────────────────────────────────────
+export async function getOrderById(id: string): Promise<OrderWithItems | null> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM orders WHERE id = ? LIMIT 1",
+    args: [id],
+  });
+  if (result.rows.length === 0) return null;
+
+  const [order] = await enrichOrdersWithRelations([result.rows[0] as unknown as DbOrder]);
+  return order;
+}
+
+export async function getOrderByNumber(orderNumber: string): Promise<OrderWithItems | null> {
+  const result = await db.execute({
+    sql:  "SELECT * FROM orders WHERE orderNumber = ? LIMIT 1",
+    args: [orderNumber],
+  });
+  if (result.rows.length === 0) return null;
+
+  const [order] = await enrichOrdersWithRelations([result.rows[0] as unknown as DbOrder]);
+  return order;
+}
+
+// ─── All orders (admin) ──────────────────────────────────
+export interface GetAllOrdersOptions {
+  status?: OrderStatus | "ALL";
+  search?: string;
+  limit?:  number;
+  offset?: number;
+}
+
+export async function getAllOrders(opts: GetAllOrdersOptions = {}): Promise<OrderWithItems[]> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") {
+    conditions.push("status = ?");
+    args.push(opts.status);
+  }
+
+  if (opts.search) {
+    conditions.push("(orderNumber LIKE ? OR guestEmail LIKE ? OR guestName LIKE ?)");
+    const term = `%${opts.search}%`;
+    args.push(term, term, term);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const result = await db.execute({
+    sql:  `SELECT * FROM orders ${where} ORDER BY createdAt DESC ${opts.limit ? `LIMIT ${opts.limit}` : ""} ${opts.offset ? `OFFSET ${opts.offset}` : ""}`,
+    args,
+  });
+
+  const orders = result.rows as unknown as DbOrder[];
+  if (orders.length === 0) return [];
+
+  return await enrichOrdersWithRelations(orders);
+}
+
+// ─── Create order ────────────────────────────────────────
+export interface CreateOrderInput {
+  userId?:      string | null;
+  guestEmail?:  string;
+  guestName?:   string;
+  guestPhone?:  string;
+  items: Array<{
+    productId: string;
+    variantId: string;
+    name:      string;
+    image:     string;
+    size:      string;
+    color:     string;
+    sku:       string;
+    price:     number;
+    quantity:  number;
+  }>;
+  subtotal:       number;
+  discount?:      number;
+  shipping:       number;
+  tax?:           number;
+  total:          number;
+  paymentMethod:  PaymentMethod;
+  addressId?:     string | null;
+  shippingAddress?: object;
+  shippingMethod: string;
+  customerNote?:  string;
+  discountCode?:  string;
+  discountId?:    string;
+}
+
+export async function createOrder(input: CreateOrderInput): Promise<OrderWithItems> {
+  const orderId    = generateId();
+  const orderNum   = generateOrderNumber();
+  const t          = now();
+
+  // Insert order
+  await db.execute({
+    sql: `INSERT INTO orders (
+      id, orderNumber, userId, guestEmail, guestName, guestPhone,
+      subtotal, discount, shipping, tax, total,
+      status, paymentStatus, paymentMethod,
+      discountCode, discountId, addressId, shippingAddress,
+      shippingMethod, customerNote, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      orderId, orderNum, input.userId ?? null,
+      input.guestEmail ?? null, input.guestName ?? null, input.guestPhone ?? null,
+      input.subtotal, input.discount ?? 0, input.shipping, input.tax ?? 0, input.total,
+      "PENDING", input.paymentMethod === "COD" ? "PENDING" : "PENDING", input.paymentMethod,
+      input.discountCode ?? null, input.discountId ?? null,
+      input.addressId ?? null,
+      input.shippingAddress ? JSON.stringify(input.shippingAddress) : null,
+      input.shippingMethod, input.customerNote ?? null,
+      t, t,
+    ],
+  });
+
+  // Insert items
+  for (const item of input.items) {
+    await db.execute({
+      sql: `INSERT INTO order_items (
+        id, orderId, productId, variantId, name, image, size, color, sku, price, quantity, subtotal
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        generateId(), orderId, item.productId, item.variantId,
+        item.name, item.image, item.size, item.color, item.sku,
+        item.price, item.quantity, item.price * item.quantity,
+      ],
+    });
+
+    // Decrement stock
+    await db.execute({
+      sql:  "UPDATE product_variants SET stock = MAX(0, stock - ?) WHERE id = ?",
+      args: [item.quantity, item.variantId],
+    });
+
+    // Increment sold count
+    await db.execute({
+      sql:  "UPDATE products SET soldCount = soldCount + ? WHERE id = ?",
+      args: [item.quantity, item.productId],
+    });
+  }
+
+  // Increment discount usage
+  if (input.discountId) {
+    await db.execute({
+      sql:  "UPDATE discounts SET usedCount = usedCount + 1 WHERE id = ?",
+      args: [input.discountId],
+    });
+  }
+
+  return (await getOrderById(orderId))!;
+}
+
+// ─── Update order status ─────────────────────────────────
+export async function updateOrderStatus(
+  id: string, status: OrderStatus, trackingNumber?: string
+): Promise<void> {
+  const t = now();
+  const sets: string[] = ["status = ?", "updatedAt = ?"];
+  const args: (string | number)[] = [status, t];
+
+  // Set status-specific timestamps
+  if (status === "CONFIRMED") { sets.push("confirmedAt = ?"); args.push(t); }
+  if (status === "SHIPPED")   { sets.push("shippedAt = ?");   args.push(t); }
+  if (status === "DELIVERED") { sets.push("deliveredAt = ?"); args.push(t); }
+  if (status === "CANCELLED") { sets.push("cancelledAt = ?"); args.push(t); }
+
+  if (trackingNumber !== undefined) {
+    sets.push("trackingNumber = ?");
+    args.push(trackingNumber);
+  }
+
+  args.push(id);
+
+  await db.execute({
+    sql:  `UPDATE orders SET ${sets.join(", ")} WHERE id = ?`,
+    args,
+  });
+}
+
+export async function updatePaymentStatus(id: string, status: PaymentStatus): Promise<void> {
+  await db.execute({
+    sql:  "UPDATE orders SET paymentStatus = ?, updatedAt = ? WHERE id = ?",
+    args: [status, now(), id],
+  });
+}
+
+// ─── Helper: enrich orders with items + address ─────────
+async function enrichOrdersWithRelations(orders: DbOrder[]): Promise<OrderWithItems[]> {
+  const orderIds   = orders.map((o) => o.id);
+  const placeholders = orderIds.map(() => "?").join(",");
+
+  const itemsResult = await db.execute({
+    sql:  `SELECT * FROM order_items WHERE orderId IN (${placeholders})`,
+    args: orderIds,
+  });
+  const items = itemsResult.rows as unknown as DbOrderItem[];
+
+  // Fetch addresses for orders that have addressId
+  const addressIds = orders.map((o) => o.addressId).filter(Boolean) as string[];
+  let addresses: DbAddress[] = [];
+  if (addressIds.length > 0) {
+    const addrPlaceholders = addressIds.map(() => "?").join(",");
+    const addrResult = await db.execute({
+      sql:  `SELECT * FROM addresses WHERE id IN (${addrPlaceholders})`,
+      args: addressIds,
+    });
+    addresses = addrResult.rows as unknown as DbAddress[];
+  }
+
+  return orders.map((order) => ({
+    ...order,
+    items:   items.filter((i) => i.orderId === order.id),
+    address: addresses.find((a) => a.id === order.addressId) ?? null,
+  }));
+}
+
+// ─── Order stats (for dashboard) ─────────────────────────
+export async function getOrderStats() {
+  const [total, pending, shipped, delivered, revenue] = await Promise.all([
+    db.execute("SELECT COUNT(*) as c FROM orders"),
+    db.execute("SELECT COUNT(*) as c FROM orders WHERE status = 'PENDING'"),
+    db.execute("SELECT COUNT(*) as c FROM orders WHERE status = 'SHIPPED'"),
+    db.execute("SELECT COUNT(*) as c FROM orders WHERE status = 'DELIVERED'"),
+    db.execute("SELECT COALESCE(SUM(total), 0) as t FROM orders WHERE paymentStatus = 'PAID'"),
+  ]);
+
+  return {
+    totalOrders:     Number(total.rows[0].c),
+    pendingOrders:   Number(pending.rows[0].c),
+    shippedOrders:   Number(shipped.rows[0].c),
+    deliveredOrders: Number(delivered.rows[0].c),
+    totalRevenue:    Number(revenue.rows[0].t),
+  };
+}
+
+================================================================================
+PATH: admin-panel\src\lib\db\repositories\customers.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import type { DbUser } from "@/lib/db/types";
+
+export interface CustomerWithStats extends DbUser {
+  totalOrders: number;
+  totalSpent:  number;
+  lastOrder:   string | null;
+  city:        string;
+}
+
+export interface GetCustomersOptions {
+  search?: string;
+  filter?: "all" | "active" | "inactive" | "vip";
+  limit?:  number;
+  offset?: number;
+}
+
+export async function getAllCustomers(opts: GetCustomersOptions = {}): Promise<CustomerWithStats[]> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.filter === "active")   conditions.push("u.isActive = 1");
+  if (opts.filter === "inactive") conditions.push("u.isActive = 0");
+
+  if (opts.search) {
+    conditions.push("(u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)");
+    const term = `%${opts.search}%`;
+    args.push(term, term, term);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const result = await db.execute({
+    sql: `
+      SELECT u.*,
+        COALESCE((SELECT COUNT(*) FROM orders WHERE userId = u.id), 0) as totalOrders,
+        COALESCE((SELECT SUM(total) FROM orders WHERE userId = u.id AND paymentStatus = 'PAID'), 0) as totalSpent,
+        (SELECT MAX(createdAt) FROM orders WHERE userId = u.id) as lastOrderTs,
+        COALESCE((SELECT city FROM addresses WHERE userId = u.id AND isDefault = 1 LIMIT 1),
+                 (SELECT city FROM addresses WHERE userId = u.id LIMIT 1), '') as city
+      FROM users u
+      ${where}
+      ORDER BY u.createdAt DESC
+      ${opts.limit  ? `LIMIT ${opts.limit}`   : ""}
+      ${opts.offset ? `OFFSET ${opts.offset}` : ""}
+    `,
+    args,
+  });
+
+  const rows = result.rows as unknown as Array<DbUser & {
+    totalOrders: number;
+    totalSpent:  number;
+    lastOrderTs: number | null;
+    city:        string;
+  }>;
+
+  let customers = rows.map((row) => ({
+    ...row,
+    totalOrders: Number(row.totalOrders),
+    totalSpent:  Number(row.totalSpent),
+    lastOrder:   row.lastOrderTs ? new Date(row.lastOrderTs * 1000).toISOString() : null,
+    city:        row.city,
+  }));
+
+  // VIP filter (client-side because totalSpent is calculated)
+  if (opts.filter === "vip") {
+    customers = customers.filter((c) => c.totalSpent > 10000000); // > PKR 100,000 in paisa
+  }
+
+  return customers;
+}
+
+export async function getCustomerById(id: string): Promise<CustomerWithStats | null> {
+  const customers = await getAllCustomers({ limit: 1 });
+  const result = await db.execute({
+    sql: `
+      SELECT u.*,
+        COALESCE((SELECT COUNT(*) FROM orders WHERE userId = u.id), 0) as totalOrders,
+        COALESCE((SELECT SUM(total) FROM orders WHERE userId = u.id AND paymentStatus = 'PAID'), 0) as totalSpent,
+        (SELECT MAX(createdAt) FROM orders WHERE userId = u.id) as lastOrderTs,
+        COALESCE((SELECT city FROM addresses WHERE userId = u.id AND isDefault = 1 LIMIT 1),
+                 (SELECT city FROM addresses WHERE userId = u.id LIMIT 1), '') as city
+      FROM users u
+      WHERE u.id = ? LIMIT 1
+    `,
+    args: [id],
+  });
+
+  if (result.rows.length === 0) return null;
+
+  const row = result.rows[0] as unknown as DbUser & {
+    totalOrders: number; totalSpent: number; lastOrderTs: number | null; city: string;
+  };
+
+  return {
+    ...row,
+    totalOrders: Number(row.totalOrders),
+    totalSpent:  Number(row.totalSpent),
+    lastOrder:   row.lastOrderTs ? new Date(row.lastOrderTs * 1000).toISOString() : null,
+    city:        row.city,
+  };
+}
+
+export async function getCustomerCount(): Promise<number> {
+  const result = await db.execute("SELECT COUNT(*) as c FROM users");
+  return Number(result.rows[0].c);
+}
+
+================================================================================
+PATH: admin-panel\src\lib\db\repositories\products.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now, tagsToArray } from "@/lib/db/helpers";
+import type {
+  DbProduct, DbProductImage, DbProductVariant, ProductStatus,
+} from "@/lib/db/types";
+
+export interface ProductWithRelations extends DbProduct {
+  images:      DbProductImage[];
+  variants:    DbProductVariant[];
+  collection?: { id: string; name: string; slug: string } | null;
+}
+
+// Turso/SQLite strips result columns named "length" (reserved word).
+// Workaround: alias to a different name in SQL, then remap in code.
+const PRODUCT_COLS = `
+  p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
+  p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
+  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
+  p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
+  p.waist, p."length" as lengthInches, p.bottom, p.bgColor,
+  p.createdAt, p.updatedAt
+`;
+
+function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
+  const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
+  return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
+}
+
+export interface GetProductsOptions {
+  status?:       ProductStatus | "ALL";
+  collectionId?: string;
+  featured?:     boolean;
+  isNew?:        boolean;
+  isBestSeller?: boolean;
+  search?:       string;
+  sortBy?:       "newest" | "price-asc" | "price-desc" | "bestselling" | "rating";
+  limit?:        number;
+  offset?:       number;
+}
+
+export async function getProducts(opts: GetProductsOptions = {}): Promise<ProductWithRelations[]> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") {
+    conditions.push("p.status = ?");
+    args.push(opts.status);
+  } else if (!opts.status) {
+    conditions.push("p.status = ?");
+    args.push("PUBLISHED");
+  }
+
+  if (opts.collectionId) { conditions.push("p.collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("p.isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("p.isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("p.isBestSeller = 1"); }
+  if (opts.search) {
+    conditions.push("(p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)");
+    const term = `%${opts.search}%`;
+    args.push(term, term, term);
+  }
+
+  const where   = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  let   orderBy = "p.createdAt DESC";
+  switch (opts.sortBy) {
+    case "price-asc":   orderBy = "p.price ASC";      break;
+    case "price-desc":  orderBy = "p.price DESC";     break;
+    case "bestselling": orderBy = "p.soldCount DESC"; break;
+    case "rating":      orderBy = "p.rating DESC";    break;
+  }
+
+  const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
+  const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
+
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p
+          LEFT JOIN collections c ON c.id = p.collectionId
+          ${where} ORDER BY ${orderBy} ${limit} ${offset}`,
+    args,
+  });
+
+  const rawProducts = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as (DbProduct & {
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  })[];
+
+  if (rawProducts.length === 0) return [];
+
+  const productIds   = rawProducts.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`, args: productIds }),
+    db.execute({ sql: `SELECT * FROM product_variants WHERE productId IN (${placeholders})`, args: productIds }),
+  ]);
+
+  const images   = imgResult.rows as unknown as DbProductImage[];
+  const variants = varResult.rows as unknown as DbProductVariant[];
+
+  return rawProducts.map((p) => ({
+    ...p,
+    images:     images.filter((i) => i.productId === p.id),
+    variants:   variants.filter((v) => v.productId === p.id),
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  }));
+}
+
+export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.slug = ? LIMIT 1`,
+    args: [slug],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductById(id: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.id = ? LIMIT 1`,
+    args: [id],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductCount(opts: GetProductsOptions = {}): Promise<number> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") { conditions.push("status = ?"); args.push(opts.status); }
+  else if (!opts.status) { conditions.push("status = ?"); args.push("PUBLISHED"); }
+  if (opts.collectionId) { conditions.push("collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("isBestSeller = 1"); }
+
+  const where  = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const result = await db.execute({ sql: `SELECT COUNT(*) as count FROM products ${where}`, args });
+  return Number(result.rows[0].count);
+}
+
+export async function getRelatedProducts(
+  productId: string, collectionId: string, limit = 4
+): Promise<ProductWithRelations[]> {
+  const result = await db.execute({
+    sql:  `SELECT ${PRODUCT_COLS} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
+    args: [collectionId, productId, limit],
+  });
+  const products = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as DbProduct[];
+  if (products.length === 0) return [];
+
+  const productIds   = products.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+  const imgResult    = await db.execute({
+    sql:  `SELECT * FROM product_images WHERE productId IN (${placeholders}) AND isPrimary = 1`,
+    args: productIds,
+  });
+  const images = imgResult.rows as unknown as DbProductImage[];
+  return products.map((p) => ({ ...p, images: images.filter((i) => i.productId === p.id), variants: [] }));
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN CRUD
+// ═══════════════════════════════════════════════════════
+
+import { now as nowTs, tagsToArray as tagsToArr } from "@/lib/db/helpers";
+
+export interface CreateProductInput {
+  name:             string;
+  slug:             string;
+  sku:              string;
+  description:      string;
+  price:            number;
+  comparePrice?:    number | null;
+  costPerItem?:     number;
+  collectionId?:    string | null;
+  status?:          ProductStatus;
+  isNew?:           boolean;
+  isFeatured?:      boolean;
+  isBestSeller?:    boolean;
+  tags?:            string[];
+  metaTitle?:       string;
+  metaDescription?: string;
+  imageUrl?:        string;
+  imageUrls?:       string[];
+  waist?:           number | null;
+  length?:          number | null;
+  bottom?:          number | null;
+  bgColor?:         string | null;   // hex color like "#f5f0e8" or null to keep original
+  variants?: Array<{
+    size:     string;
+    color:    string;
+    colorHex: string;
+    sku:      string;
+    stock:    number;
+    price:    number;
+  }>;
+}
+
+export async function createProduct(input: CreateProductInput): Promise<string> {
+  const id = generateId();
+  const t  = nowTs();
+
+  await db.execute({
+    sql: `INSERT INTO products (
+      id, name, slug, sku, description, price, comparePrice, costPerItem,
+      collectionId, status, isNew, isFeatured, isBestSeller, tags,
+      metaTitle, metaDescription, waist, "length", bottom, bgColor, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id, input.name, input.slug, input.sku, input.description,
+      input.price, input.comparePrice ?? null, input.costPerItem ?? null,
+      input.collectionId ?? null, input.status ?? "DRAFT",
+      input.isNew ? 1 : 0, input.isFeatured ? 1 : 0, input.isBestSeller ? 1 : 0,
+      (input.tags ?? []).join(","),
+      input.metaTitle ?? null, input.metaDescription ?? null,
+      input.waist  ?? null,
+      input.length ?? null,
+      input.bottom ?? null,
+      input.bgColor ?? null,
+      t, t,
+    ],
+  });
+
+  const allImages = input.imageUrls && input.imageUrls.length > 0
+    ? input.imageUrls
+    : (input.imageUrl ? [input.imageUrl] : []);
+
+  for (let i = 0; i < allImages.length; i++) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), id, allImages[i], input.name, i === 0 ? 1 : 0, i],
+    });
+  }
+
+  if (input.variants && input.variants.length > 0) {
+    for (const v of input.variants) {
+      await db.execute({
+        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [generateId(), id, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+      });
+    }
+  }
+
+  return id;
+}
+
+export async function updateProduct(
+  id: string,
+  updates: Partial<Omit<CreateProductInput, "variants" | "imageUrl" | "imageUrls">>
+): Promise<void> {
+  const sets: string[] = [];
+  const args: (string | number | null)[] = [];
+
+  const map: Record<string, unknown> = {
+    name:            updates.name,
+    slug:            updates.slug,
+    sku:             updates.sku,
+    description:     updates.description,
+    price:           updates.price,
+    comparePrice:    updates.comparePrice,
+    costPerItem:     updates.costPerItem,
+    collectionId:    updates.collectionId,
+    status:          updates.status,
+    isNew:           updates.isNew        === undefined ? undefined : (updates.isNew        ? 1 : 0),
+    isFeatured:      updates.isFeatured   === undefined ? undefined : (updates.isFeatured   ? 1 : 0),
+    isBestSeller:    updates.isBestSeller === undefined ? undefined : (updates.isBestSeller ? 1 : 0),
+    tags:            updates.tags ? updates.tags.join(",") : undefined,
+    metaTitle:       updates.metaTitle,
+    metaDescription: updates.metaDescription,
+    waist:           updates.waist,
+    bottom:          updates.bottom,
+    bgColor:         updates.bgColor,
+  };
+
+  Object.entries(map).forEach(([k, v]) => {
+    if (v !== undefined) { sets.push(`${k} = ?`); args.push(v as string | number | null); }
+  });
+
+  if (updates.length !== undefined) {
+    sets.push(`"length" = ?`);
+    args.push(updates.length as number | null);
+  }
+
+  if (sets.length === 0) return;
+  sets.push("updatedAt = ?");
+  args.push(nowTs());
+  args.push(id);
+
+  await db.execute({ sql: `UPDATE products SET ${sets.join(", ")} WHERE id = ?`, args });
+}
+
+/**
+ * Hard-delete a product and ALL references to it.
+ * Manually cascades because SQLite/Turso schema uses REFERENCES without ON DELETE CASCADE
+ * on cart_items and order_items. Order of deletion matters (FK constraints).
+ */
+export async function deleteProduct(id: string): Promise<void> {
+  await db.execute({ sql: "DELETE FROM reviews    WHERE productId = ?", args: [id] });
+  await db.execute({ sql: "DELETE FROM wishlists  WHERE productId = ?", args: [id] });
+
+  await db.execute({ sql: "DELETE FROM cart_items WHERE productId = ?", args: [id] });
+  await db.execute({
+    sql: "DELETE FROM cart_items WHERE variantId IN (SELECT id FROM product_variants WHERE productId = ?)",
+    args: [id],
+  });
+
+  await db.execute({ sql: "DELETE FROM order_items WHERE productId = ?", args: [id] });
+  await db.execute({
+    sql: "DELETE FROM order_items WHERE variantId IN (SELECT id FROM product_variants WHERE productId = ?)",
+    args: [id],
+  });
+
+  await db.execute({ sql: "DELETE FROM product_variants WHERE productId = ?", args: [id] });
+  await db.execute({ sql: "DELETE FROM product_images   WHERE productId = ?", args: [id] });
+
+  await db.execute({ sql: "DELETE FROM products WHERE id = ?", args: [id] });
+}
+
+export async function updateVariantStock(variantId: string, stock: number): Promise<void> {
+  await db.execute({
+    sql:  "UPDATE product_variants SET stock = ?, updatedAt = ? WHERE id = ?",
+    args: [Math.max(0, stock), nowTs(), variantId],
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  IMAGE + VARIANT SYNC (for edit flow)
+// ═══════════════════════════════════════════════════════
+
+export async function replaceProductImages(
+  productId: string,
+  imageUrls: string[],
+  altText:   string
+): Promise<void> {
+  await db.execute({
+    sql:  "DELETE FROM product_images WHERE productId = ?",
+    args: [productId],
+  });
+
+  for (let i = 0; i < imageUrls.length; i++) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), productId, imageUrls[i], altText, i === 0 ? 1 : 0, i],
+    });
+  }
+}
+
+export interface VariantSyncInput {
+  id?:       string;
+  size:      string;
+  color:     string;
+  colorHex:  string;
+  sku:       string;
+  stock:     number;
+  price:     number;
+}
+
+export async function syncProductVariants(
+  productId: string,
+  variants:  VariantSyncInput[]
+): Promise<void> {
+  const t = nowTs();
+
+  const existingResult = await db.execute({
+    sql:  "SELECT id FROM product_variants WHERE productId = ?",
+    args: [productId],
+  });
+  const existingIds = existingResult.rows.map((r) => r.id as string);
+
+  const keptIds = variants.map((v) => v.id).filter(Boolean) as string[];
+
+  const toDelete = existingIds.filter((id) => !keptIds.includes(id));
+  for (const id of toDelete) {
+    await db.execute({ sql: "DELETE FROM cart_items  WHERE variantId = ?", args: [id] });
+    await db.execute({ sql: "DELETE FROM order_items WHERE variantId = ?", args: [id] });
+    await db.execute({ sql: "DELETE FROM product_variants WHERE id = ?", args: [id] });
+  }
+
+  for (const v of variants) {
+    if (v.id && existingIds.includes(v.id)) {
+      await db.execute({
+        sql: `UPDATE product_variants
+              SET size = ?, color = ?, colorHex = ?, sku = ?, stock = ?, price = ?, updatedAt = ?
+              WHERE id = ?`,
+        args: [v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, v.id],
+      });
+    } else {
+      await db.execute({
+        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [generateId(), productId, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+      });
+    }
+  }
+}
+
+export async function duplicateProduct(sourceId: string): Promise<string> {
+  const source = await getProductById(sourceId);
+  if (!source) throw new Error("Product not found");
+
+  const newId = generateId();
+  const t     = nowTs();
+
+  const newName = `${source.name} (Copy)`;
+  const newSlug = `${source.slug}-copy-${newId.slice(1, 7)}`;
+  const newSku  = `${source.sku}-COPY-${newId.slice(1, 5).toUpperCase()}`;
+
+  await db.execute({
+    sql: `INSERT INTO products (
+      id, name, slug, sku, description, price, comparePrice, costPerItem,
+      collectionId, status, isNew, isFeatured, isBestSeller, tags,
+      metaTitle, metaDescription, waist, "length", bottom, bgColor, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      newId, newName, newSlug, newSku, source.description,
+      source.price, source.comparePrice, source.costPerItem,
+      source.collectionId, "DRAFT",
+      source.isNew, source.isFeatured, source.isBestSeller,
+      source.tags,
+      source.metaTitle, source.metaDescription,
+      source.waist, source.length, source.bottom, source.bgColor,
+      t, t,
+    ],
+  });
+
+  for (const img of source.images) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), newId, img.url, img.alt, img.isPrimary, img.sortOrder],
+    });
+  }
+
+  for (const v of source.variants) {
+    await db.execute({
+      sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        generateId(), newId, v.size, v.color, v.colorHex,
+        `${v.sku}-C${newId.slice(1, 4).toUpperCase()}`,
+        v.stock, v.price, t, t,
+      ],
+    });
+  }
+
+  return newId;
+}
+
+void tagsToArr;
+void now;
+
+================================================================================
+PATH: admin-panel\src\lib\db\repositories\settings.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now } from "@/lib/db/helpers";
+import type { DbSetting } from "@/lib/db/types";
+
+// ─── Get single setting by key ───────────────────────────
+export async function getSetting(key: string): Promise<string | null> {
+  const result = await db.execute({
+    sql:  "SELECT value FROM settings WHERE key = ? LIMIT 1",
+    args: [key],
+  });
+  if (result.rows.length === 0) return null;
+  return result.rows[0].value as string;
+}
+
+// ─── Get typed setting values ────────────────────────────
+export async function getBoolSetting(key: string, defaultValue = false): Promise<boolean> {
+  const val = await getSetting(key);
+  if (val === null) return defaultValue;
+  return val === "true" || val === "1";
+}
+
+export async function getNumberSetting(key: string, defaultValue = 0): Promise<number> {
+  const val = await getSetting(key);
+  if (val === null) return defaultValue;
+  const num = Number(val);
+  return isNaN(num) ? defaultValue : num;
+}
+
+export async function getStringSetting(key: string, defaultValue = ""): Promise<string> {
+  const val = await getSetting(key);
+  return val ?? defaultValue;
+}
+
+// ─── Get all settings by category ────────────────────────
+export async function getSettingsByCategory(category: string): Promise<Record<string, string>> {
+  const result = await db.execute({
+    sql:  "SELECT key, value FROM settings WHERE category = ?",
+    args: [category],
+  });
+
+  const map: Record<string, string> = {};
+  for (const row of result.rows) {
+    map[row.key as string] = row.value as string;
+  }
+  return map;
+}
+
+// ─── Get ALL settings (grouped by category) ──────────────
+export async function getAllSettings(): Promise<Record<string, Record<string, string>>> {
+  const result = await db.execute("SELECT key, value, category FROM settings ORDER BY category, key");
+
+  const grouped: Record<string, Record<string, string>> = {};
+  for (const row of result.rows) {
+    const cat = row.category as string;
+    if (!grouped[cat]) grouped[cat] = {};
+    grouped[cat][row.key as string] = row.value as string;
+  }
+  return grouped;
+}
+
+// ─── Update or insert a setting ──────────────────────────
+export async function setSetting(key: string, value: string, category = "general"): Promise<void> {
+  const existing = await db.execute({
+    sql:  "SELECT id FROM settings WHERE key = ? LIMIT 1",
+    args: [key],
+  });
+
+  if (existing.rows.length > 0) {
+    await db.execute({
+      sql:  "UPDATE settings SET value = ?, updatedAt = ? WHERE key = ?",
+      args: [value, now(), key],
+    });
+  } else {
+    await db.execute({
+      sql:  "INSERT INTO settings (id, key, value, category, updatedAt) VALUES (?, ?, ?, ?, ?)",
+      args: [generateId(), key, value, category, now()],
+    });
+  }
+}
+
+// ─── Bulk update multiple settings ───────────────────────
+export async function setMultipleSettings(
+  settings: Array<{ key: string; value: string; category?: string }>
+): Promise<void> {
+  for (const s of settings) {
+    await setSetting(s.key, s.value, s.category ?? "general");
+  }
+}
+
+// ─── Helper: Get common feature flags ────────────────────
+export async function getFeatureFlags() {
+  const [abandonedCart, loyalty, birthday] = await Promise.all([
+    getBoolSetting("abandoned_cart_enabled", true),
+    getBoolSetting("loyalty_enabled",        true),
+    getBoolSetting("birthday_enabled",       true),
+  ]);
+
+  return {
+    abandonedCartEnabled: abandonedCart,
+    loyaltyEnabled:       loyalty,
+    birthdayEnabled:      birthday,
+  };
+}
+
+================================================================================
+PATH: admin-panel\src\lib\db\types.ts
+================================================================================
+
+/**
+ * Database table types.
+ * These match the SQL schema exactly.
+ *
+ * Timestamps are Unix epochs (integers) in the DB.
+ * SQLite booleans stored as 0 | 1.
+ */
+
+// ─── Users ───────────────────────────────────────────────
+export interface DbUser {
+  id:            string;
+  name:          string;
+  email:         string;
+  emailVerified: number | null;
+  phone:         string | null;
+  password:      string | null;
+  avatar:        string | null;
+  isActive:      number;
+  birthday:      string | null;
+  loyaltyPoints: number;
+  createdAt:     number;
+  updatedAt:     number;
+}
+
+export interface DbAdmin {
+  id:         string;
+  name:       string;
+  email:      string;
+  password:   string;
+  role:       "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "STAFF";
+  avatar:     string | null;
+  isActive:   number;
+  lastLogin:  number | null;
+  createdAt:  number;
+  updatedAt:  number;
+}
+
+export interface DbAddress {
+  id:          string;
+  userId:      string;
+  label:       string;
+  fullName:    string;
+  phone:       string;
+  street:      string;
+  apartment:   string | null;
+  city:        string;
+  province:    string;
+  postalCode:  string;
+  country:     string;
+  isDefault:   number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+// ─── Collections ─────────────────────────────────────────
+export interface DbCollection {
+  id:              string;
+  name:            string;
+  slug:            string;
+  description:     string;
+  image:           string | null;
+  isActive:        number;
+  sortOrder:       number;
+  metaTitle:       string | null;
+  metaDescription: string | null;
+  createdAt:       number;
+  updatedAt:       number;
+}
+
+// ─── Products ────────────────────────────────────────────
+export type ProductStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export interface DbProduct {
+  id:               string;
+  name:             string;
+  slug:             string;
+  sku:              string;
+  description:      string;
+  shortDescription: string | null;
+  price:            number;
+  comparePrice:     number | null;
+  costPerItem:      number | null;
+  taxRate:          number;
+  status:           ProductStatus;
+  collectionId:     string | null;
+  isNew:            number;
+  isFeatured:       number;
+  isBestSeller:     number;
+  metaTitle:        string | null;
+  metaDescription:  string | null;
+  tags:             string;
+  rating:           number;
+  reviewCount:      number;
+  soldCount:        number;
+  waist:            number | null;   // inches
+  length:           number | null;   // inches
+  bottom:           number | null;   // inches
+  bgColor:          string | null;   // hex e.g. "#f5f0e8" — replaces white product image background via CSS blend
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface DbProductImage {
+  id:        string;
+  productId: string;
+  url:       string;
+  alt:       string;
+  isPrimary: number;
+  sortOrder: number;
+}
+
+export interface DbProductVariant {
+  id:              string;
+  productId:       string;
+  size:            string;
+  color:           string;
+  colorHex:        string;
+  sku:             string;
+  stock:           number;
+  price:           number;
+  compareAtPrice:  number | null;
+  weight:          number | null;
+  createdAt:       number;
+  updatedAt:       number;
+}
+
+// ─── Cart & Wishlist ─────────────────────────────────────
+export interface DbCart {
+  id:           string;
+  userId:       string;
+  lastActivity: number;
+  createdAt:    number;
+  updatedAt:    number;
+}
+
+export interface DbCartItem {
+  id:        string;
+  cartId:    string;
+  productId: string;
+  variantId: string;
+  quantity:  number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface DbWishlist {
+  id:        string;
+  userId:    string;
+  productId: string;
+  createdAt: number;
+}
+
+// ─── Abandoned Cart ──────────────────────────────────────
+export interface DbAbandonedCart {
+  id:               string;
+  userId:           string | null;
+  email:            string | null;
+  phone:            string | null;
+  fullName:         string | null;
+  city:             string | null;
+  itemsJson:        string;
+  itemCount:        number;
+  subtotal:         number;
+  totalValue:       number;
+  reachedCheckout:  number;
+  isContacted:      number;
+  isRecovered:      number;
+  recoveredOrderId: string | null;
+  adminNote:        string | null;
+  lastActivity:     number;
+  abandonedAt:      number;
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface AbandonedCartItem {
+  productId:  string;
+  variantId:  string;
+  name:       string;
+  image:      string;
+  size:       string;
+  color:      string;
+  price:      number;
+  quantity:   number;
+  slug:       string;
+}
+
+// ─── Orders ──────────────────────────────────────────────
+export type OrderStatus =
+  | "PENDING" | "CONFIRMED" | "PROCESSING"
+  | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+
+export type PaymentStatus =
+  | "PENDING" | "PAID" | "FAILED"
+  | "REFUNDED" | "PARTIALLY_REFUNDED";
+
+export type PaymentMethod =
+  | "COD" | "CARD" | "JAZZCASH" | "EASYPAISA" | "BANK_TRANSFER";
+
+export interface DbOrder {
+  id:                   string;
+  orderNumber:          string;
+  userId:               string | null;
+  guestEmail:           string | null;
+  guestName:            string | null;
+  guestPhone:           string | null;
+  subtotal:             number;
+  discount:             number;
+  loyaltyDiscount:      number;
+  loyaltyPointsUsed:    number;
+  loyaltyPointsEarned:  number;
+  birthdayDiscount:     number;
+  isBirthdayOrder:      number;
+  shipping:             number;
+  tax:                  number;
+  total:                number;
+  status:               OrderStatus;
+  paymentStatus:        PaymentStatus;
+  paymentMethod:        PaymentMethod;
+  discountCode:         string | null;
+  discountId:           string | null;
+  addressId:            string | null;
+  shippingAddress:      string | null;
+  shippingMethod:       string;
+  trackingNumber:       string | null;
+  courierName:          string | null;
+  customerNote:         string | null;
+  adminNote:            string | null;
+  confirmedAt:          number | null;
+  shippedAt:            number | null;
+  deliveredAt:          number | null;
+  cancelledAt:          number | null;
+  createdById:          string | null;
+  updatedById:          string | null;
+  createdAt:            number;
+  updatedAt:            number;
+}
+
+export interface DbOrderItem {
+  id:        string;
+  orderId:   string;
+  productId: string;
+  variantId: string;
+  name:      string;
+  image:     string;
+  size:      string;
+  color:     string;
+  sku:       string;
+  price:     number;
+  quantity:  number;
+  subtotal:  number;
+}
+
+// ─── Loyalty ─────────────────────────────────────────────
+export type LoyaltyTransactionType = "EARNED" | "REDEEMED" | "EXPIRED" | "ADJUSTED";
+
+export interface DbLoyaltyTransaction {
+  id:          string;
+  userId:      string;
+  orderId:     string | null;
+  type:        LoyaltyTransactionType;
+  points:      number;
+  balance:     number;
+  description: string | null;
+  createdAt:   number;
+}
+
+// ─── Discounts ───────────────────────────────────────────
+export type DiscountType   = "PERCENTAGE" | "FIXED";
+export type DiscountStatus = "ACTIVE" | "EXPIRED" | "DISABLED";
+
+export interface DbDiscount {
+  id:          string;
+  code:        string;
+  type:        DiscountType;
+  value:       number;
+  minOrder:    number;
+  maxUses:     number;
+  usedCount:   number;
+  status:      DiscountStatus;
+  startsAt:    number;
+  expiresAt:   number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+// ─── Settings ────────────────────────────────────────────
+export interface DbSetting {
+  id:        string;
+  key:       string;
+  value:     string;
+  category:  string;
+  updatedAt: number;
+}
+
+// ─── Others ──────────────────────────────────────────────
+export interface DbReview {
+  id:          string;
+  userId:      string;
+  productId:   string;
+  rating:      number;
+  title:       string | null;
+  comment:     string;
+  isVerified:  number;
+  isApproved:  number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+export interface DbNewsletter {
+  id:            string;
+  email:         string;
+  isSubscribed:  number;
+  source:        string | null;
+  createdAt:     number;
+  updatedAt:     number;
+}
+
+export interface DbContactMessage {
+  id:         string;
+  name:       string;
+  email:      string;
+  phone:      string | null;
+  subject:    string;
+  message:    string;
+  isRead:     number;
+  isReplied:  number;
+  adminNote:  string | null;
+  createdAt:  number;
+  updatedAt:  number;
+}
+
+================================================================================
+PATH: admin-panel\src\lib\adapters.ts
+================================================================================
+
+import type { DbProduct, DbProductImage, DbProductVariant, DbCollection, DbOrder, DbOrderItem, DbUser } from "@/lib/db/types";
+import type { ProductWithRelations } from "@/lib/db/repositories/products";
+import type { AdminProduct, AdminOrder, AdminCustomer, AdminCollection, AdminOrderItem } from "@/types";
+import { tagsToArray } from "@/lib/db/helpers";
+
+// ─── Product ─────────────────────────────────────────────
+export function adaptProduct(p: ProductWithRelations): AdminProduct {
+  const primaryImg = p.images.find((i) => i.isPrimary === 1) || p.images[0];
+  const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+
+  return {
+    id:           p.id,
+    name:         p.name,
+    slug:         p.slug,
+    sku:          p.sku,
+    status:       p.status.toLowerCase() as "published" | "draft" | "archived",
+    price:        p.price / 100,
+    comparePrice: p.comparePrice ? p.comparePrice / 100 : null,
+    collection:   p.collection?.name ?? "",
+    collectionId: p.collectionId ?? "",
+    stock:        totalStock,
+    sold:         p.soldCount,
+    image:        primaryImg?.url ?? "",
+    isNew:        p.isNew === 1,
+    isFeatured:   p.isFeatured === 1,
+    createdAt:    new Date(p.createdAt * 1000).toISOString(),
+    updatedAt:    new Date(p.updatedAt * 1000).toISOString(),
+  };
+}
+
+// ─── Order ───────────────────────────────────────────────
+export function adaptOrder(
+  o: DbOrder & { items: DbOrderItem[]; address?: unknown },
+  customerName  = "",
+  customerEmail = "",
+  customerPhone = ""
+): AdminOrder {
+  return {
+    id:            o.id,
+    orderNumber:   o.orderNumber,
+    customer:      customerName || o.guestName || "Guest",
+    customerEmail: customerEmail || o.guestEmail || "",
+    customerPhone: customerPhone || o.guestPhone || "",
+    items:         o.items.map(adaptOrderItem),
+    status:        o.status.toLowerCase() as AdminOrder["status"],
+    paymentStatus: o.paymentStatus.toLowerCase() as AdminOrder["paymentStatus"],
+    paymentMethod: o.paymentMethod,
+    subtotal:      o.subtotal / 100,
+    discount:      o.discount / 100,
+    shipping:      o.shipping / 100,
+    total:         o.total / 100,
+    city:          "",
+    address:       "",
+    notes:         o.customerNote ?? undefined,
+    trackingNum:   o.trackingNumber ?? undefined,
+    createdAt:     new Date(o.createdAt * 1000).toISOString(),
+    updatedAt:     new Date(o.updatedAt * 1000).toISOString(),
+  };
+}
+
+function adaptOrderItem(item: DbOrderItem): AdminOrderItem {
+  return {
+    id:        item.id,
+    productId: item.productId,
+    name:      item.name,
+    image:     item.image,
+    size:      item.size,
+    color:     item.color,
+    price:     item.price / 100,
+    quantity:  item.quantity,
+    sku:       item.sku,
+  };
+}
+
+// ─── Customer ────────────────────────────────────────────
+// FIX: Accept null OR undefined for optional fields (DB returns null, TS interfaces use undefined)
+export function adaptCustomer(
+  u: DbUser & {
+    totalOrders?: number;
+    totalSpent?:  number;
+    lastOrder?:   string | null;
+    city?:        string | null;
+  }
+): AdminCustomer {
+  return {
+    id:          u.id,
+    name:        u.name,
+    email:       u.email,
+    phone:       u.phone ?? "",
+    city:        u.city ?? "",
+    totalOrders: u.totalOrders ?? 0,
+    totalSpent:  (u.totalSpent ?? 0) / 100,
+    lastOrder:   u.lastOrder ?? new Date(u.createdAt * 1000).toISOString(),
+    isActive:    u.isActive === 1,
+    joinedAt:    new Date(u.createdAt * 1000).toISOString(),
+  };
+}
+
+// ─── Collection ──────────────────────────────────────────
+export function adaptCollection(c: DbCollection & { productCount?: number }): AdminCollection {
+  return {
+    id:           c.id,
+    name:         c.name,
+    slug:         c.slug,
+    description:  c.description,
+    image:        c.image ?? "",
+    productCount: c.productCount ?? 0,
+    isActive:     c.isActive === 1,
+    createdAt:    new Date(c.createdAt * 1000).toISOString(),
+  };
+}
+
+// Silence unused
+void tagsToArray;
+
+================================================================================
+PATH: admin-panel\src\types\index.ts
+================================================================================
+
+// ─── Admin User ───────────────────────────────────────────
+export interface AdminUser {
+  id:        string;
+  name:      string;
+  email:     string;
+  role:      AdminRole;
+  avatar?:   string;
+  lastLogin: string;
+  isActive:  boolean;
+}
+
+export type AdminRole = "super_admin" | "admin" | "manager" | "staff";
+
+// ─── Product ──────────────────────────────────────────────
+export type ProductStatus = "published" | "draft" | "archived";
+
+export interface AdminProduct {
+  id:           string;
+  name:         string;
+  slug:         string;
+  sku:          string;
+  status:       ProductStatus;
+  price:        number;
+  comparePrice: number | null;
+  collection:   string;
+  collectionId: string;
+  stock:        number;
+  sold:         number;
+  image:        string;
+  images?:       string[];  // Multiple image URLs
+  isNew:        boolean;
+  isFeatured:   boolean;
+  createdAt:    string;
+  updatedAt:    string;
+}
+
+// ─── Order ────────────────────────────────────────────────
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+
+export interface AdminOrderItem {
+  id:        string;
+  productId: string;
+  name:      string;
+  image:     string;
+  size:      string;
+  color:     string;
+  price:     number;
+  quantity:  number;
+  sku:       string;
+}
+
+export interface AdminOrder {
+  id:            string;
+  orderNumber:   string;
+  customer:      string;
+  customerEmail: string;
+  customerPhone: string;
+  items:         AdminOrderItem[];
+  status:        OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: string;
+  subtotal:      number;
+  discount:      number;
+  shipping:      number;
+  total:         number;
+  city:          string;
+  address:       string;
+  notes?:        string;
+  trackingNum?:  string;
+  createdAt:     string;
+  updatedAt:     string;
+}
+
+// ─── Customer ─────────────────────────────────────────────
+export interface AdminCustomer {
+  id:          string;
+  name:        string;
+  email:       string;
+  phone:       string;
+  city:        string;
+  totalOrders: number;
+  totalSpent:  number;
+  lastOrder:   string;
+  isActive:    boolean;
+  joinedAt:    string;
+}
+
+// ─── Collection ───────────────────────────────────────────
+export interface AdminCollection {
+  id:           string;
+  name:         string;
+  slug:         string;
+  description:  string;
+  image:        string;
+  productCount: number;
+  isActive:     boolean;
+  createdAt:    string;
+}
+
+// ─── Discount ─────────────────────────────────────────────
+export type DiscountType   = "percentage" | "fixed";
+export type DiscountStatus = "active" | "expired" | "disabled";
+
+export interface AdminDiscount {
+  id:          string;
+  code:        string;
+  type:        DiscountType;
+  value:       number;
+  minOrder:    number;
+  maxUses:     number;
+  usedCount:   number;
+  status:      DiscountStatus;
+  expiresAt:   string;
+  createdAt:   string;
+}
+
+// ─── Analytics ────────────────────────────────────────────
+export interface DashboardStats {
+  totalRevenue:     number;
+  revenueChange:    number;
+  totalOrders:      number;
+  ordersChange:     number;
+  totalCustomers:   number;
+  customersChange:  number;
+  totalProducts:    number;
+  avgOrderValue:    number;
+  conversionRate:   number;
+  pendingOrders:    number;
+  lowStockItems:    number;
+}
+
+export interface RevenueDataPoint {
+  date:    string;
+  revenue: number;
+  orders:  number;
+}
+
+export interface TopProduct {
+  id:       string;
+  name:     string;
+  image:    string;
+  sold:     number;
+  revenue:  number;
+  stock:    number;
+}
+
+// ─── Table ────────────────────────────────────────────────
+export interface TableColumn<T> {
+  key:        keyof T | string;
+  label:      string;
+  sortable?:  boolean;
+  render?:    (value: unknown, row: T) => React.ReactNode;
+  width?:     string;
+}
+
+export interface SortConfig {
+  key:       string;
+  direction: "asc" | "desc";
+}
+
+================================================================================
+PATH: admin-panel\src\lib\priceUtils.ts
+================================================================================
+
+export function paisaToRupees(paisa: number): number { return paisa / 100; }
+export function rupeesToPaisa(rupees: number): number { return Math.round(rupees * 100); }
+
+export function formatPaisa(paisa: number): string {
+  return new Intl.NumberFormat("en-PK", {
+    style: "currency", currency: "PKR",
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(paisa / 100);
+}
+
+================================================================================
+PATH: admin-panel\src\lib\utils.ts
+================================================================================
+
+import { type ClassValue, clsx } from "clsx";
+
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs);
+}
+
+export function formatPrice(amount: number): string {
+  return new Intl.NumberFormat("en-PK", {
+    style:                 "currency",
+    currency:              "PKR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function formatDate(dateString: string): string {
+  return new Intl.DateTimeFormat("en-PK", {
+    year:  "numeric",
+    month: "short",
+    day:   "numeric",
+  }).format(new Date(dateString));
+}
+
+export function formatDateTime(dateString: string): string {
+  return new Intl.DateTimeFormat("en-PK", {
+    year:   "numeric",
+    month:  "short",
+    day:    "numeric",
+    hour:   "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateString));
+}
+
+export function formatNumber(num: number): string {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000)     return `${(num / 1_000).toFixed(1)}K`;
+  return num.toString();
+}
+
+export function formatPercent(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+export function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^\w ]+/g, "").replace(/ +/g, "-");
+}
+
+export function truncate(text: string, length: number): string {
+  if (text.length <= length) return text;
+  return text.slice(0, length) + "...";
+}
+
+export function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+================================================================================
+PATH: admin-panel\src\lib\constants.ts
+================================================================================
+
+export const ADMIN_SITE_NAME  = "Denova PK Admin";
+export const BRAND_NAME       = "Denova PK";
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending:    "Pending",
+  confirmed:  "Confirmed",
+  processing: "Processing",
+  shipped:    "Shipped",
+  delivered:  "Delivered",
+  cancelled:  "Cancelled",
+  refunded:   "Refunded",
+};
+
+export const ORDER_STATUS_COLORS: Record<string, string> = {
+  pending:    "bg-yellow-100 text-yellow-700 border-yellow-200",
+  confirmed:  "bg-blue-100 text-blue-700 border-blue-200",
+  processing: "bg-orange-100 text-orange-700 border-orange-200",
+  shipped:    "bg-indigo-100 text-indigo-700 border-indigo-200",
+  delivered:  "bg-green-100 text-green-700 border-green-200",
+  cancelled:  "bg-red-100 text-red-700 border-red-200",
+  refunded:   "bg-gray-100 text-gray-700 border-gray-200",
+};
+
+export const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending:  "bg-yellow-100 text-yellow-700",
+  paid:     "bg-green-100 text-green-700",
+  failed:   "bg-red-100 text-red-700",
+  refunded: "bg-gray-100 text-gray-700",
+};
+
+export const PRODUCT_STATUS_COLORS: Record<string, string> = {
+  published: "bg-green-100 text-green-700",
+  draft:     "bg-yellow-100 text-yellow-700",
+  archived:  "bg-gray-100 text-gray-700",
+};
+
+export const ITEMS_PER_PAGE = 15;
+
+================================================================================
+PATH: admin-panel\src\components\ui\Badge.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+
+interface BadgeProps {
+  children:  React.ReactNode;
+  className?: string;
+  variant?:  "default" | "success" | "warning" | "danger" | "info" | "gold";
+  size?:     "sm" | "md";
+}
+
+const VARIANTS = {
+  default: "bg-gray-100 text-gray-700",
+  success: "bg-green-100 text-green-700",
+  warning: "bg-yellow-100 text-yellow-700",
+  danger:  "bg-red-100 text-red-700",
+  info:    "bg-blue-100 text-blue-700",
+  gold:    "bg-[#f5f0e8] text-[#c9a96e]",
+};
+
+export function Badge({
+  children, className, variant = "default", size = "sm",
+}: BadgeProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center font-semibold uppercase tracking-wide",
+        size === "sm" ? "text-[10px] px-2 py-0.5" : "text-xs px-2.5 py-1",
+        VARIANTS[variant],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+================================================================================
+PATH: admin-panel\src\components\ui\Button.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?:   "primary" | "secondary" | "outline" | "ghost" | "danger";
+  size?:      "sm" | "md" | "lg" | "icon";
+  isLoading?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = "primary", size = "md", isLoading, disabled, children, ...props }, ref) => {
+    const base = "inline-flex items-center justify-center font-medium tracking-wide transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed gap-2";
+
+    const variants = {
+      primary:   "bg-[#1a1a1a] text-white hover:bg-[#333]",
+      secondary: "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df]",
+      outline:   "border border-[#e5e7eb] text-[#1a1a1a] hover:bg-[#f8f9fa]",
+      ghost:     "text-[#6b7280] hover:bg-[#f8f9fa] hover:text-[#1a1a1a]",
+      danger:    "bg-red-500 text-white hover:bg-red-600",
+    };
+
+    const sizes = {
+      sm:   "text-xs px-3 py-1.5",
+      md:   "text-sm px-4 py-2",
+      lg:   "text-sm px-6 py-3",
+      icon: "text-sm p-2",
+    };
+
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || isLoading}
+        className={cn(base, variants[variant], sizes[size], className)}
+        {...props}
+      >
+        {isLoading ? (
+          <>
+            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            Loading...
+          </>
+        ) : children}
+      </button>
+    );
+  }
+);
+Button.displayName = "Button";
+export { Button };
+
+================================================================================
+PATH: admin-panel\src\components\ui\DataTable.tsx
+================================================================================
+
+"use client";
+import { useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { TableColumn, SortConfig } from "@/types";
+
+interface DataTableProps<T> {
+  columns:      TableColumn<T>[];
+  data:         T[];
+  keyField:     keyof T;
+  isLoading?:   boolean;
+  emptyMessage?: string;
+  onRowClick?:  (row: T) => void;
+  className?:   string;
+}
+
+export function DataTable<T>({
+  columns, data, keyField,
+  isLoading = false, emptyMessage = "No data found",
+  onRowClick, className,
+}: DataTableProps<T>) {
+  const [sort, setSort] = useState<SortConfig | null>(null);
+
+  const handleSort = (col: TableColumn<T>) => {
+    if (!col.sortable) return;
+    const key = col.key as string;
+    if (sort?.key === key) {
+      setSort({ key, direction: sort.direction === "asc" ? "desc" : "asc" });
+    } else {
+      setSort({ key, direction: "asc" });
+    }
+  };
+
+  const sortedData = [...data].sort((a, b) => {
+    if (!sort) return 0;
+    const av = (a as Record<string, unknown>)[sort.key];
+    const bv = (b as Record<string, unknown>)[sort.key];
+    if (av === bv) return 0;
+    const cmp = String(av) < String(bv) ? -1 : 1;
+    return sort.direction === "asc" ? cmp : -cmp;
+  });
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-[#e5e7eb] overflow-hidden">
+        <div className="divide-y divide-[#e5e7eb]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="px-5 py-4 flex gap-4">
+              {columns.map((_, j) => (
+                <div key={j} className="h-4 bg-[#e5e7eb] rounded animate-pulse flex-1" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("bg-white border border-[#e5e7eb] overflow-hidden", className)}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
+              {columns.map((col) => (
+                <th
+                  key={String(col.key)}
+                  onClick={() => handleSort(col)}
+                  className={cn(
+                    "px-4 py-3 text-left text-[11px] font-semibold tracking-[0.1em] uppercase text-[#6b7280] whitespace-nowrap",
+                    col.sortable && "cursor-pointer hover:text-[#1a1a1a] select-none",
+                    col.width && `w-${col.width}`
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {col.label}
+                    {col.sortable && (
+                      <div className="flex flex-col opacity-40">
+                        <ChevronUp size={10} className={sort?.key === col.key && sort.direction === "asc" ? "opacity-100 text-[#c9a96e]" : ""} />
+                        <ChevronDown size={10} className={cn("-mt-1", sort?.key === col.key && sort.direction === "desc" ? "opacity-100 text-[#c9a96e]" : "")} />
+                      </div>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#e5e7eb]">
+            {sortedData.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-12 text-center text-sm text-[#6b7280]">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              sortedData.map((row) => (
+                <tr
+                  key={String(row[keyField])}
+                  onClick={() => onRowClick?.(row)}
+                  className={cn(
+                    "hover:bg-[#fafaf9] transition-colors",
+                    onRowClick && "cursor-pointer"
+                  )}
+                >
+                  {columns.map((col) => (
+                    <td key={String(col.key)} className="px-4 py-3.5 text-[#1a1a1a] whitespace-nowrap">
+                      {col.render
+                        ? col.render(
+                            (row as Record<string, unknown>)[col.key as string],
+                            row
+                          )
+                        : String((row as Record<string, unknown>)[col.key as string] ?? "")}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+PATH: admin-panel\src\lib\data.ts
+================================================================================
+
+import type {
+  AdminProduct, AdminOrder, AdminCustomer,
+  AdminCollection, AdminDiscount,
+  DashboardStats, RevenueDataPoint, TopProduct,
+} from "@/types";
+
+// ─── Dashboard Stats ──────────────────────────────────────
+export const dashboardStats: DashboardStats = {
+  totalRevenue:    2847500,
+  revenueChange:   12.5,
+  totalOrders:     1284,
+  ordersChange:    8.3,
+  totalCustomers:  3421,
+  customersChange: 15.2,
+  totalProducts:   84,
+  avgOrderValue:   2217,
+  conversionRate:  3.4,
+  pendingOrders:   23,
+  lowStockItems:   7,
+};
+
+// ─── Revenue Chart Data ───────────────────────────────────
+export const revenueData: RevenueDataPoint[] = [
+  { date: "Jan", revenue: 180000,  orders: 82  },
+  { date: "Feb", revenue: 220000,  orders: 98  },
+  { date: "Mar", revenue: 195000,  orders: 89  },
+  { date: "Apr", revenue: 280000,  orders: 124 },
+  { date: "May", revenue: 310000,  orders: 142 },
+  { date: "Jun", revenue: 265000,  orders: 118 },
+  { date: "Jul", revenue: 340000,  orders: 157 },
+  { date: "Aug", revenue: 298000,  orders: 134 },
+  { date: "Sep", revenue: 385000,  orders: 173 },
+  { date: "Oct", revenue: 420000,  orders: 189 },
+  { date: "Nov", revenue: 510000,  orders: 226 },
+  { date: "Dec", revenue: 445000,  orders: 201 },
+];
+
+// ─── Top Products ─────────────────────────────────────────
+export const topProducts: TopProduct[] = [
+  { id: "1", name: "Embroidered Lawn Suit",  image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=200&q=80", sold: 312, revenue: 2028000, stock: 8  },
+  { id: "2", name: "Classic Linen Kurta",    image: "https://images.unsplash.com/photo-1604975701397-6365ccbd028a?w=200&q=80", sold: 278, revenue: 973000,  stock: 15 },
+  { id: "3", name: "Cotton Pique Polo",      image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=200&q=80", sold: 241, revenue: 530200,  stock: 32 },
+  { id: "4", name: "Premium Formal Shirt",   image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200&q=80", sold: 198, revenue: 554400,  stock: 21 },
+  { id: "5", name: "Relaxed Chino Trousers", image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&q=80", sold: 167, revenue: 534400,  stock: 18 },
+];
+
+// ─── Products ─────────────────────────────────────────────
+export const adminProducts: AdminProduct[] = [
+  { id: "p1",  name: "Classic Linen Kurta",    slug: "classic-linen-kurta",    sku: "CLK-001", status: "published", price: 3500,  comparePrice: 4500,  collection: "Summer Essentials", collectionId: "col-1", stock: 23,  sold: 278, image: "https://images.unsplash.com/photo-1604975701397-6365ccbd028a?w=200&q=80", isNew: false, isFeatured: true,  createdAt: "2024-03-01", updatedAt: "2024-07-15" },
+  { id: "p2",  name: "Premium Formal Shirt",   slug: "premium-formal-shirt",   sku: "PFS-001", status: "published", price: 2800,  comparePrice: null,  collection: "Formal Edit",       collectionId: "col-2", stock: 18,  sold: 198, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200&q=80", isNew: true,  isFeatured: true,  createdAt: "2024-05-10", updatedAt: "2024-07-10" },
+  { id: "p3",  name: "Relaxed Chino Trousers", slug: "relaxed-chino-trousers", sku: "RCT-001", status: "published", price: 3200,  comparePrice: 3800,  collection: "Casual Comfort",    collectionId: "col-3", stock: 27,  sold: 167, image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=200&q=80", isNew: true,  isFeatured: false, createdAt: "2024-06-01", updatedAt: "2024-07-05" },
+  { id: "p4",  name: "Wool Blend Overcoat",    slug: "wool-blend-overcoat",    sku: "WBO-001", status: "published", price: 12000, comparePrice: 15000, collection: "Winter Luxe",       collectionId: "col-4", stock: 7,   sold: 43,  image: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?w=200&q=80", isNew: false, isFeatured: true,  createdAt: "2024-01-15", updatedAt: "2024-06-20" },
+  { id: "p5",  name: "Embroidered Lawn Suit",  slug: "embroidered-lawn-suit",  sku: "ELS-001", status: "published", price: 6500,  comparePrice: 8000,  collection: "Summer Essentials", collectionId: "col-1", stock: 14,  sold: 312, image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=200&q=80", isNew: true,  isFeatured: true,  createdAt: "2024-05-20", updatedAt: "2024-07-18" },
+  { id: "p6",  name: "Structured Blazer",      slug: "structured-blazer",      sku: "SB-001",  status: "published", price: 8500,  comparePrice: null,  collection: "Formal Edit",       collectionId: "col-2", stock: 12,  sold: 78,  image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=200&q=80", isNew: false, isFeatured: true,  createdAt: "2024-02-28", updatedAt: "2024-07-01" },
+  { id: "p7",  name: "Cotton Pique Polo",      slug: "cotton-pique-polo",      sku: "CPP-001", status: "published", price: 2200,  comparePrice: null,  collection: "Casual Comfort",    collectionId: "col-3", stock: 42,  sold: 241, image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=200&q=80", isNew: true,  isFeatured: false, createdAt: "2024-06-10", updatedAt: "2024-07-12" },
+  { id: "p8",  name: "Cashmere Roll-Neck",     slug: "cashmere-roll-neck",     sku: "CRN-001", status: "published", price: 9800,  comparePrice: 12000, collection: "Winter Luxe",       collectionId: "col-4", stock: 5,   sold: 32,  image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=200&q=80", isNew: false, isFeatured: true,  createdAt: "2024-01-20", updatedAt: "2024-06-18" },
+  { id: "p9",  name: "Silk Evening Kurta",     slug: "silk-evening-kurta",     sku: "SEK-001", status: "draft",     price: 7200,  comparePrice: null,  collection: "Formal Edit",       collectionId: "col-2", stock: 0,   sold: 0,   image: "https://images.unsplash.com/photo-1594938298603-c8148c4b5a20?w=200&q=80", isNew: true,  isFeatured: false, createdAt: "2024-07-20", updatedAt: "2024-07-20" },
+  { id: "p10", name: "Linen Trouser Set",      slug: "linen-trouser-set",      sku: "LTS-001", status: "archived",  price: 4800,  comparePrice: 5500,  collection: "Summer Essentials", collectionId: "col-1", stock: 3,   sold: 54,  image: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=200&q=80", isNew: false, isFeatured: false, createdAt: "2024-02-10", updatedAt: "2024-07-08" },
+];
+
+// ─── Orders ───────────────────────────────────────────────
+export const adminOrders: AdminOrder[] = [
+  { id: "o1",  orderNumber: "DNV00001", customer: "Ayesha Mahmood",  customerEmail: "ayesha@email.com", customerPhone: "+92 300 1111111", items: [{ id: "oi1", productId: "p5", name: "Embroidered Lawn Suit",  image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=100", size: "M",  color: "Mint",  price: 6500,  quantity: 2, sku: "ELS-M-M" }], status: "delivered",  paymentStatus: "paid",    paymentMethod: "JazzCash",  subtotal: 13000, discount: 0,    shipping: 0,   total: 13000, city: "Lahore",    address: "DHA Phase 5, Lahore", createdAt: "2024-06-15", updatedAt: "2024-06-19" },
+  { id: "o2",  orderNumber: "DNV00002", customer: "Usman Tariq",     customerEmail: "usman@email.com",  customerPhone: "+92 301 2222222", items: [{ id: "oi2", productId: "p2", name: "Premium Formal Shirt",   image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=100", size: "L",  color: "Navy",  price: 2800,  quantity: 3, sku: "PFS-L-N" }], status: "shipped",    paymentStatus: "paid",    paymentMethod: "Card",      subtotal: 8400,  discount: 0,    shipping: 250, total: 8650,  city: "Karachi",   address: "Clifton Block 4",     createdAt: "2024-07-10", updatedAt: "2024-07-12" },
+  { id: "o3",  orderNumber: "DNV00003", customer: "Sana Rizvi",      customerEmail: "sana@email.com",   customerPhone: "+92 302 3333333", items: [{ id: "oi3", productId: "p8", name: "Cashmere Roll-Neck",     image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=100", size: "S",  color: "Cream", price: 9800,  quantity: 1, sku: "CRN-S-C" }], status: "processing", paymentStatus: "paid",    paymentMethod: "EasyPaisa", subtotal: 9800,  discount: 0,    shipping: 0,   total: 9800,  city: "Islamabad", address: "F-7/2 Islamabad",     createdAt: "2024-08-01", updatedAt: "2024-08-02" },
+  { id: "o4",  orderNumber: "DNV00004", customer: "Bilal Ahmed",     customerEmail: "bilal@email.com",  customerPhone: "+92 303 4444444", items: [{ id: "oi4", productId: "p4", name: "Wool Blend Overcoat",    image: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?w=100", size: "L",  color: "Camel", price: 12000, quantity: 1, sku: "WBO-L-C" }], status: "confirmed",  paymentStatus: "pending", paymentMethod: "COD",       subtotal: 12000, discount: 500,  shipping: 0,   total: 11500, city: "Rawalpindi", address: "Bahria Town Phase 8", createdAt: "2024-08-05", updatedAt: "2024-08-05" },
+  { id: "o5",  orderNumber: "DNV00005", customer: "Fatima Khan",     customerEmail: "fatima@email.com", customerPhone: "+92 304 5555555", items: [{ id: "oi5", productId: "p1", name: "Classic Linen Kurta",    image: "https://images.unsplash.com/photo-1604975701397-6365ccbd028a?w=100", size: "S",  color: "White", price: 3500,  quantity: 2, sku: "CLK-S-W" }, { id: "oi6", productId: "p7", name: "Cotton Pique Polo", image: "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=100", size: "M", color: "Navy", price: 2200, quantity: 1, sku: "CPP-M-N" }], status: "pending", paymentStatus: "pending", paymentMethod: "COD", subtotal: 9200, discount: 0, shipping: 0, total: 9200, city: "Lahore", address: "Gulberg III, Lahore", createdAt: "2024-08-08", updatedAt: "2024-08-08" },
+  { id: "o6",  orderNumber: "DNV00006", customer: "Hassan Sheikh",   customerEmail: "hassan@email.com", customerPhone: "+92 305 6666666", items: [{ id: "oi7", productId: "p6", name: "Structured Blazer",     image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=100", size: "M",  color: "Charcoal", price: 8500, quantity: 1, sku: "SB-M-C" }], status: "cancelled", paymentStatus: "refunded", paymentMethod: "Card", subtotal: 8500, discount: 0, shipping: 500, total: 9000, city: "Faisalabad", address: "Canal Road Faisalabad", createdAt: "2024-07-25", updatedAt: "2024-07-28" },
+  { id: "o7",  orderNumber: "DNV00007", customer: "Zainab Ahmed",    customerEmail: "zainab@email.com", customerPhone: "+92 306 7777777", items: [{ id: "oi8", productId: "p5", name: "Embroidered Lawn Suit",  image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=100", size: "L",  color: "Peach", price: 6500,  quantity: 1, sku: "ELS-L-P" }], status: "delivered",  paymentStatus: "paid",    paymentMethod: "Bank",      subtotal: 6500,  discount: 650,  shipping: 0,   total: 5850,  city: "Multan",    address: "Gulshan Colony Multan", createdAt: "2024-07-05", updatedAt: "2024-07-09" },
+  { id: "o8",  orderNumber: "DNV00008", customer: "Ali Raza",        customerEmail: "ali@email.com",    customerPhone: "+92 307 8888888", items: [{ id: "oi9", productId: "p3", name: "Relaxed Chino Trousers", image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=100", size: "M",  color: "Khaki", price: 3200,  quantity: 2, sku: "RCT-M-K" }], status: "shipped",    paymentStatus: "paid",    paymentMethod: "JazzCash",  subtotal: 6400,  discount: 0,    shipping: 0,   total: 6400,  city: "Peshawar", address: "University Town Peshawar", createdAt: "2024-08-03", updatedAt: "2024-08-06" },
+];
+
+// ─── Customers ────────────────────────────────────────────
+export const adminCustomers: AdminCustomer[] = [
+  { id: "c1", name: "Ayesha Mahmood",  email: "ayesha@email.com",  phone: "+92 300 1111111", city: "Lahore",     totalOrders: 8,  totalSpent: 72000,  lastOrder: "2024-08-01", isActive: true,  joinedAt: "2024-01-10" },
+  { id: "c2", name: "Usman Tariq",     email: "usman@email.com",   phone: "+92 301 2222222", city: "Karachi",    totalOrders: 5,  totalSpent: 43250,  lastOrder: "2024-07-10", isActive: true,  joinedAt: "2024-02-15" },
+  { id: "c3", name: "Sana Rizvi",      email: "sana@email.com",    phone: "+92 302 3333333", city: "Islamabad",  totalOrders: 12, totalSpent: 118500, lastOrder: "2024-08-05", isActive: true,  joinedAt: "2023-11-20" },
+  { id: "c4", name: "Bilal Ahmed",     email: "bilal@email.com",   phone: "+92 303 4444444", city: "Rawalpindi", totalOrders: 3,  totalSpent: 28000,  lastOrder: "2024-08-05", isActive: true,  joinedAt: "2024-04-08" },
+  { id: "c5", name: "Fatima Khan",     email: "fatima@email.com",  phone: "+92 304 5555555", city: "Lahore",     totalOrders: 15, totalSpent: 142000, lastOrder: "2024-08-08", isActive: true,  joinedAt: "2023-09-05" },
+  { id: "c6", name: "Hassan Sheikh",   email: "hassan@email.com",  phone: "+92 305 6666666", city: "Faisalabad", totalOrders: 2,  totalSpent: 17500,  lastOrder: "2024-07-25", isActive: false, joinedAt: "2024-05-12" },
+  { id: "c7", name: "Zainab Ahmed",    email: "zainab@email.com",  phone: "+92 306 7777777", city: "Multan",     totalOrders: 7,  totalSpent: 58900,  lastOrder: "2024-07-05", isActive: true,  joinedAt: "2024-01-28" },
+  { id: "c8", name: "Ali Raza",        email: "ali@email.com",     phone: "+92 307 8888888", city: "Peshawar",   totalOrders: 4,  totalSpent: 31200,  lastOrder: "2024-08-03", isActive: true,  joinedAt: "2024-03-17" },
+];
+
+// ─── Collections ──────────────────────────────────────────
+export const adminCollections: AdminCollection[] = [
+  { id: "col-1", name: "Summer Essentials", slug: "summer-essentials", description: "Light, breathable pieces for the warm season", image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400", productCount: 24, isActive: true,  createdAt: "2024-01-01" },
+  { id: "col-2", name: "Formal Edit",       slug: "formal-edit",       description: "Sophisticated styles for every occasion",    image: "https://images.unsplash.com/photo-1594938298603-c8148c4b5a20?w=400", productCount: 18, isActive: true,  createdAt: "2024-01-01" },
+  { id: "col-3", name: "Casual Comfort",    slug: "casual-comfort",    description: "Everyday wear without compromise",           image: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400", productCount: 32, isActive: true,  createdAt: "2024-01-01" },
+  { id: "col-4", name: "Winter Luxe",       slug: "winter-luxe",       description: "Warm, refined pieces for cooler days",      image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400", productCount: 20, isActive: true,  createdAt: "2024-01-01" },
+  { id: "col-5", name: "Eid Festive",       slug: "eid-festive",       description: "Exclusive festive collection",              image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400", productCount: 0,  isActive: false, createdAt: "2024-07-01" },
+];
+
+// ─── Discounts ────────────────────────────────────────────
+export const adminDiscounts: AdminDiscount[] = [
+  { id: "d1", code: "DENOVA10",   type: "percentage", value: 10, minOrder: 3000,  maxUses: 500,  usedCount: 284, status: "active",   expiresAt: "2024-12-31", createdAt: "2024-01-01" },
+  { id: "d2", code: "WELCOME500", type: "fixed",      value: 500, minOrder: 2000, maxUses: 200,  usedCount: 198, status: "active",   expiresAt: "2024-09-30", createdAt: "2024-06-01" },
+  { id: "d3", code: "EID2024",    type: "percentage", value: 20, minOrder: 5000,  maxUses: 1000, usedCount: 1000,status: "expired",  expiresAt: "2024-04-15", createdAt: "2024-04-01" },
+  { id: "d4", code: "SUMMER15",   type: "percentage", value: 15, minOrder: 4000,  maxUses: 300,  usedCount: 67,  status: "active",   expiresAt: "2024-10-31", createdAt: "2024-07-01" },
+  { id: "d5", code: "FLAT1000",   type: "fixed",      value: 1000, minOrder: 8000,maxUses: 100,  usedCount: 12,  status: "disabled", expiresAt: "2024-11-30", createdAt: "2024-07-15" },
+];
+
+================================================================================
+SUMMARY
+================================================================================
+Files found:   19
+Folders found: 1
+Missing:       0

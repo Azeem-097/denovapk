@@ -4,15 +4,19 @@ import Image from "next/image";
 import { Package, Heart } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
+import { DiscountBadge } from "./DiscountBadge";
 import { cn } from "@/lib/utils";
 import type { ProductImage as ProductImageType } from "@/types";
 
 interface ProductImagesProps {
-  images:       ProductImageType[];
-  productName:  string;
-  productId:    string;
-  productSlug:  string;
-  productPrice: number;
+  images:           ProductImageType[];
+  productName:      string;
+  productId:        string;
+  productSlug:      string;
+  productPrice:     number;
+  bgColor?:         string | null;
+  discountPercent?: number;   // if > 0, shows ribbon on first image
 }
 
 const PLACEHOLDER: ProductImageType = {
@@ -28,15 +32,15 @@ export function ProductImages({
   productId,
   productSlug,
   productPrice,
+  bgColor,
+  discountPercent,
 }: ProductImagesProps) {
   const safeImages = images && images.length > 0 ? images : [PLACEHOLDER];
 
-  // Sort so primary comes first
   const sortedImages = [...safeImages].sort(
     (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
   );
 
-  // ─── Mobile carousel: track scroll position ─────────
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [mobileIndex, setMobileIndex] = useState(0);
 
@@ -47,14 +51,12 @@ export function ProductImages({
     if (idx !== mobileIndex) setMobileIndex(idx);
   }, [mobileIndex]);
 
-  // Scroll to a specific slide (from dot tap)
   const scrollToSlide = useCallback((idx: number) => {
     const el = scrollerRef.current;
     if (!el) return;
     el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
   }, []);
 
-  // ─── Wishlist ────────────────────────────────────────
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
@@ -71,6 +73,7 @@ export function ProductImages({
       image:     primaryImage.url,
       price:     productPrice,
       slug:      productSlug,
+      bgColor:   bgColor,
     });
     showToast({
       type: "success",
@@ -78,38 +81,47 @@ export function ProductImages({
     });
   };
 
+  const hasDiscount = !!discountPercent && discountPercent > 0;
+
   return (
     <>
-      {/* ═══════════════════════════════════════════════
-          DESKTOP: 2-column grid of all images
-          ═══════════════════════════════════════════════ */}
+      {/* DESKTOP */}
       <div className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3">
         {sortedImages.map((img, i) => (
-          <div
-            key={img.id + i}
-            className="relative aspect-[4/5] bg-[#f4f2ee] overflow-hidden group"
-          >
-            {img.url === PLACEHOLDER.url ? (
-              <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
-                <Package size={48} strokeWidth={1.5} />
-                <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
-                  Image coming soon
-                </p>
-              </div>
-            ) : (
-              <Image
-                src={img.url}
-                alt={img.alt || productName}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 50vw, 45vw"
-                priority={i === 0}
-                loading={i === 0 ? "eager" : "lazy"}
-                unoptimized={img.url.endsWith(".svg")}
-              />
+          <div key={img.id + i} className="relative group">
+            <ProductBgWrapper
+              bgColor={bgColor}
+              className={cn(
+                "aspect-[4/5]",
+                !bgColor && "bg-[#f4f2ee]"
+              )}
+            >
+              {img.url === PLACEHOLDER.url ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                  <Package size={48} strokeWidth={1.5} />
+                  <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                    Image coming soon
+                  </p>
+                </div>
+              ) : (
+                <Image
+                  src={img.url}
+                  alt={img.alt || productName}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 50vw, 45vw"
+                  priority={i === 0}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  unoptimized={img.url.endsWith(".svg")}
+                />
+              )}
+            </ProductBgWrapper>
+
+            {/* Discount ribbon — only on primary image */}
+            {i === 0 && hasDiscount && (
+              <DiscountBadge percent={discountPercent!} />
             )}
 
-            {/* Wishlist heart on first image only, hover-reveal */}
             {i === 0 && (
               <button
                 onClick={handleWishlist}
@@ -133,12 +145,8 @@ export function ProductImages({
         ))}
       </div>
 
-      {/* ═══════════════════════════════════════════════
-          MOBILE: NATIVE SWIPE with CSS scroll-snap
-          ═══════════════════════════════════════════════ */}
+      {/* MOBILE */}
       <div className="sm:hidden">
-
-        {/* Wishlist floats over the scroller */}
         <div className="relative">
           <button
             onClick={handleWishlist}
@@ -154,7 +162,11 @@ export function ProductImages({
             />
           </button>
 
-          {/* Horizontal snap scroller — full native swipe */}
+          {/* Mobile discount ribbon */}
+          {hasDiscount && (
+            <DiscountBadge percent={discountPercent!} />
+          )}
+
           <div
             ref={scrollerRef}
             onScroll={handleScroll}
@@ -164,31 +176,38 @@ export function ProductImages({
             {sortedImages.map((img, i) => (
               <div
                 key={img.id + i}
-                className="relative flex-shrink-0 w-full aspect-[4/5] bg-[#f4f2ee] snap-start"
+                className="flex-shrink-0 w-full snap-start"
               >
-                {img.url === PLACEHOLDER.url ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
-                    <Package size={48} strokeWidth={1.5} />
-                    <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
-                      Image coming soon
-                    </p>
-                  </div>
-                ) : (
-                  <Image
-                    src={img.url}
-                    alt={img.alt || productName}
-                    fill
-                    className="object-cover pointer-events-none"
-                    sizes="100vw"
-                    priority={i === 0}
-                    draggable={false}
-                  />
-                )}
+                <ProductBgWrapper
+                  bgColor={bgColor}
+                  className={cn(
+                    "aspect-[4/5]",
+                    !bgColor && "bg-[#f4f2ee]"
+                  )}
+                >
+                  {img.url === PLACEHOLDER.url ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                      <Package size={48} strokeWidth={1.5} />
+                      <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                        Image coming soon
+                      </p>
+                    </div>
+                  ) : (
+                    <Image
+                      src={img.url}
+                      alt={img.alt || productName}
+                      fill
+                      className="object-cover pointer-events-none"
+                      sizes="100vw"
+                      priority={i === 0}
+                      draggable={false}
+                    />
+                  )}
+                </ProductBgWrapper>
               </div>
             ))}
           </div>
 
-          {/* Image counter (subtle, top-left) — like Instagram */}
           {sortedImages.length > 1 && (
             <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full">
               {mobileIndex + 1} / {sortedImages.length}
@@ -196,7 +215,6 @@ export function ProductImages({
           )}
         </div>
 
-        {/* ── DOTS BELOW image — clickable + prominent ── */}
         {sortedImages.length > 1 && (
           <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
             {sortedImages.map((_, i) => {
@@ -219,7 +237,6 @@ export function ProductImages({
         )}
       </div>
 
-      {/* Hide scrollbar utility (Tailwind doesn't ship it by default) */}
       <style jsx global>{`
         .scrollbar-hide {
           -ms-overflow-style: none;

@@ -7,8 +7,8 @@ import { TextReveal } from "@/components/animations/TextReveal";
 import { getSiteInfo } from "@/lib/siteInfo";
 import { getBoolSetting, getNumberSetting } from "@/lib/db/repositories/settings";
 
-export const dynamic    = "force-dynamic";
-export const revalidate = 0;
+// ISR: 10 min cache. Shipping policy rarely changes.
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "Shipping Policy",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 const SECTIONS = [
   {
     title: "Processing Time",
-    content: "All orders are processed within 1–2 business days after payment confirmation. Orders placed on weekends or public holidays are processed on the next business day. You will receive an email confirmation with tracking details once your order is dispatched.",
+    content: "All orders are processed within 1-2 business days after payment confirmation. Orders placed on weekends or public holidays are processed on the next business day. You will receive an email confirmation with tracking details once your order is dispatched.",
   },
   {
     title: "Tracking Your Order",
@@ -45,26 +45,23 @@ function fmtRs(n: number): string {
 export default async function ShippingPage() {
   const info = await getSiteInfo();
 
-  // Live shipping settings from admin
   const [freeDeliveryAll, baseCost, threshold] = await Promise.all([
     getBoolSetting("free_delivery_all",         false),
     getNumberSetting("shipping_base_cost",      250),
     getNumberSetting("free_shipping_threshold", 5000),
   ]);
 
-  // Effective label for the single delivery method card
   const shippingCostLabel = freeDeliveryAll
     ? "FREE"
     : (threshold > 0
         ? `${fmtRs(baseCost)}`
         : fmtRs(baseCost));
 
-  // Description below the price
   const shippingSubline = freeDeliveryAll
     ? "Enjoy free delivery on every order across Pakistan."
     : (threshold > 0
-        ? `Standard delivery within 3–5 business days across Pakistan. Free on orders above ${fmtRs(threshold)}.`
-        : "Standard delivery within 3–5 business days across Pakistan.");
+        ? `Standard delivery within 3-5 business days across Pakistan. Free on orders above ${fmtRs(threshold)}.`
+        : "Standard delivery within 3-5 business days across Pakistan.");
 
   return (
     <>
@@ -96,9 +93,6 @@ export default async function ShippingPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14 space-y-12">
 
-        {/* ═══════════════════════════════════════════════
-            SINGLE SHIPPING METHOD — dynamic, matches checkout
-            ═══════════════════════════════════════════════ */}
         <section>
           <FadeIn>
             <h2 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#1a1a1a] mb-6">
@@ -110,19 +104,17 @@ export default async function ShippingPage() {
             <div className="border border-[#e5e7eb] bg-white p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
 
-                {/* Icon */}
                 <div className="w-14 h-14 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
                   <Truck size={22} className="text-[#c9a96e]" strokeWidth={1.75} />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-3 flex-wrap mb-1">
                     <h3 className="text-base font-bold text-[#1a1a1a]">
                       Standard Delivery
                     </h3>
                     <span className="text-xs font-semibold text-[#c9a96e] tracking-wide">
-                      3–5 Business Days
+                      3-5 Business Days
                     </span>
                   </div>
                   <p className="text-sm text-[#6b7280] leading-relaxed">
@@ -130,7 +122,6 @@ export default async function ShippingPage() {
                   </p>
                 </div>
 
-                {/* Price */}
                 <div className="sm:text-right sm:pl-4 sm:border-l sm:border-[#e5e7eb]">
                   <p className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-0.5">
                     Delivery Fee
@@ -146,7 +137,6 @@ export default async function ShippingPage() {
           </FadeIn>
         </section>
 
-        {/* Free-shipping banner — only if not already 100% free */}
         {!freeDeliveryAll && threshold > 0 && (
           <FadeIn>
             <div className="bg-[#1a1a1a] text-white p-6 sm:p-8 flex items-center gap-4">
@@ -179,7 +169,6 @@ export default async function ShippingPage() {
           </FadeIn>
         )}
 
-        {/* Detail sections */}
         <section className="space-y-6">
           {SECTIONS.map((section, i) => (
             <FadeIn key={section.title} delay={i * 60}>
@@ -191,7 +180,6 @@ export default async function ShippingPage() {
           ))}
         </section>
 
-        {/* Trust strip */}
         <FadeIn>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="border border-[#e5e7eb] bg-white p-5 text-center">
@@ -212,7 +200,6 @@ export default async function ShippingPage() {
           </div>
         </FadeIn>
 
-        {/* Contact */}
         <FadeIn>
           <div className="bg-[#f5f0e8] border border-[#c9a96e]/30 p-6 flex items-start gap-4">
             <Phone size={18} className="text-[#c9a96e] flex-shrink-0 mt-0.5" />
@@ -221,7 +208,7 @@ export default async function ShippingPage() {
                 Questions about your shipment?
               </p>
               <p className="text-sm text-[#6b7280] mb-1">
-                Our support team is available Monday–Saturday, 10 AM – 8 PM.
+                Our support team is available Monday-Saturday, 10 AM - 8 PM.
               </p>
               <p className="text-xs text-[#6b7280] mb-3">
                 Reach us at{" "}

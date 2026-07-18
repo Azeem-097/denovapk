@@ -1,0 +1,100 @@
+I am working on an e-commerce store for a brand that sells export-quality denim jeans in Pakistan.
+
+I have already shared the project structure (directory tree) and database with you. From now on, I want us to follow a structured workflow whenever we add a new feature, modify an existing one, or reuse functionality from another part of the project.
+
+Workflow
+Never make assumptions or work blindly.
+If a task requires additional context, do not guess how the code is implemented.
+
+Request the required files first.
+Instead of asking me to manually find and copy files, generate a PowerShell (PS) script that will automatically extract the contents of all the files you need for that specific task.
+
+Context before implementation.
+I will run the PowerShell script and send you the extracted code. Only after you have the complete context should you analyze the code and generate the required implementation or modifications.
+
+Return updates as PowerShell scripts.
+When you have finished implementing the feature or making changes, provide the updated code in the form of a PowerShell script that automatically applies the modifications to the appropriate files. This way, I can run the script and all the required files will be updated automatically.
+
+Always verify missing files.
+If you believe a file should exist but it wasn't included in the extracted files, do not assume anything. Ask me whether that file exists, and if necessary, generate another PowerShell script to extract it before continuing.
+
+No blind coding.
+Every implementation must be based on the actual project files and existing codebase. Never generate code without first reviewing the relevant files.
+
+I have already shared the complete project directory tree, so we will use this workflow for every task going forward.
+
+the extraction script should be like this
+
+Extract-Product-Edit-Context.ps1
+$root = "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk"
+$output = Join-Path $root "_product-edit-context.txt"
+
+if (Test-Path $output) { Remove-Item $output -Force }
+
+function Append($text) {
+[System.IO.File]::AppendAllText($output, $text + "rn")
+}
+
+$files = @(
+
+Current Edit page (read-only view we want to replace)
+"admin-panel\src\app(dashboard)\products[id]\page.tsx",
+"admin-panel\src\app(dashboard)\products[id]\EditProductClient.tsx",
+
+text
+
+New Product page (the form template we want to mirror)
+"admin-panel\src\app(dashboard)\products\new\page.tsx",
+"admin-panel\src\app(dashboard)\products\new\NewProductClient.tsx",
+
+Products list page (for context on Duplicate/Delete patterns)
+"admin-panel\src\app(dashboard)\products\page.tsx",
+"admin-panel\src\app(dashboard)\products\ProductsPageClient.tsx",
+
+API routes for product update / delete / duplicate
+"admin-panel\src\app\api\products\route.ts",
+"admin-panel\src\app\api\products[id]\route.ts",
+"admin-panel\src\app\api\products[id]\duplicate\route.ts",
+
+Variant + inventory APIs (for stock updates via Quick Actions)
+"admin-panel\src\app\api\variants[id]\route.ts",
+"admin-panel\src\app\api\inventory[id]\route.ts",
+
+Adapters + helpers used in product pages
+"admin-panel\src\lib\adapters.ts",
+"admin-panel\src\lib\priceUtils.ts",
+"admin-panel\src\lib\constants.ts",
+"admin-panel\src\types\index.ts",
+
+UI components typically used in these pages
+"admin-panel\src\components\ui\Button.tsx",
+"admin-panel\src\components\ui\Badge.tsx",
+"admin-panel\src\components\ui\ImageUploader.tsx",
+"admin-panel\src\components\ui\MultiImageUploader.tsx",
+"admin-panel\src\components\ui\ConfirmDialog.tsx",
+
+Stores used across admin
+"admin-panel\src\store\toastStore.ts",
+"admin-panel\src\store\confirmStore.ts"
+)
+
+Append "================================================================================"
+Append "PRODUCT EDIT PAGE — REBUILD AS FULL EDITABLE FORM WITH QUICK ACTIONS"
+Append "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Append "================================================================================"
+
+foreach ($rel in $files) {
+$full = Join-Path $root $rel
+Append ""
+Append ("=" * 80)
+Append "FILE: $rel"
+Append ("=" * 80)
+Append ""
+if (Test-Path -LiteralPath $full) {
+Append ([System.IO.File]::ReadAllText($full))
+} else {
+Append "<<< FILE NOT FOUND >>>"
+}
+}
+
+Write-Host "Done. Share: $output" -ForegroundColor Green

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { getProducts, createProduct } from "@/lib/db/repositories/products";
 import { rupeesToPaisa } from "@/lib/priceUtils";
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const {
       name, description, sku, price, comparePrice, collectionId,
       status, isNew, isFeatured, isBestSeller, tags, variants,
-      waist, length, bottom,
+      waist, length, bottom, bgColor,
     } = body;
 
     if (!name || !description || !sku || price === undefined) {
@@ -39,6 +39,12 @@ export async function POST(req: Request) {
 
     const waistNumber = waist !== undefined && waist !== "" ? Number(waist) : null;
     const sizeLabel   = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+
+    // Normalize bgColor — treat empty string as null (means: keep original)
+    const bgColorNormalized =
+      bgColor !== undefined && typeof bgColor === "string" && bgColor.trim().length > 0
+        ? bgColor.trim()
+        : null;
 
     const productId = await createProduct({
       name,
@@ -58,6 +64,7 @@ export async function POST(req: Request) {
       waist:        waistNumber,
       length:       length !== undefined && length !== "" ? Number(length) : null,
       bottom:       bottom !== undefined && bottom !== "" ? Number(bottom) : null,
+      bgColor:      bgColorNormalized,
       variants:     variants?.map((v: {
         color: string; colorHex?: string; sku: string; stock: number; price: number;
       }) => ({

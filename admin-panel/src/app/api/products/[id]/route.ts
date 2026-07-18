@@ -32,6 +32,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.length       !== undefined) updates.length       = body.length !== "" && body.length !== null ? Number(body.length) : null;
     if (body.bottom       !== undefined) updates.bottom       = body.bottom !== "" && body.bottom !== null ? Number(body.bottom) : null;
 
+    // bgColor: empty string or null => clear
+    if (body.bgColor !== undefined) {
+      updates.bgColor =
+        typeof body.bgColor === "string" && body.bgColor.trim().length > 0
+          ? body.bgColor.trim()
+          : null;
+    }
+
     if (Object.keys(updates).length > 0) {
       await updateProduct(id, updates);
     }

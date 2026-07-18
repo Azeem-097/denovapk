@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -6,6 +6,7 @@ import { ArrowLeft, Save, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { slugify } from "@/lib/utils";
 import { MultiImageUploader } from "@/components/ui/MultiImageUploader";
+import { BackgroundColorPicker } from "@/components/ui/BackgroundColorPicker";
 import { useToastStore } from "@/store/toastStore";
 
 interface Variant {
@@ -34,11 +35,12 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
     waist:        "",
     length:       "",
     bottom:       "",
+    bgColor:      null as string | null,
   });
   const [variants, setVariants] = useState<Variant[]>([]);
   const [saving,   setSaving]   = useState(false);
 
-  const updateField = (field: string, value: string | boolean) => {
+  const updateField = (field: string, value: string | boolean | null) => {
     setForm((f) => {
       const updated = { ...f, [field]: value };
       if (field === "name" && !f.slug) updated.slug = slugify(value as string);
@@ -85,6 +87,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
           waist:        Number(form.waist),
           length:       form.length !== "" ? Number(form.length) : null,
           bottom:       form.bottom !== "" ? Number(form.bottom) : null,
+          bgColor:      form.bgColor,
           tags:         form.tags.split(",").map((t) => t.trim()).filter(Boolean),
           variants,
         }),
@@ -102,6 +105,8 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
       setSaving(false);
     }
   };
+
+  const previewImage = form.images[0] || form.imageUrl;
 
   return (
     <div className="max-w-6xl space-y-5">
@@ -154,6 +159,17 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
               onChange={(imgs) => setForm((f) => ({ ...f, images: imgs, imageUrl: imgs[0] || "" }))}
               maxImages={8}
               type="product"
+            />
+          </Section>
+
+          <Section title="Image Background">
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Replace the white background of product images with a custom color. The jeans themselves stay unchanged.
+            </p>
+            <BackgroundColorPicker
+              value={form.bgColor}
+              onChange={(v) => updateField("bgColor", v)}
+              previewImage={previewImage}
             />
           </Section>
 

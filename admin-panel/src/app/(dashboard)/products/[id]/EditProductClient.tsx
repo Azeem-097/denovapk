@@ -11,6 +11,7 @@ import { slugify, cn } from "@/lib/utils";
 import { paisaToRupees } from "@/lib/priceUtils";
 import { PRODUCT_STATUS_COLORS } from "@/lib/constants";
 import { MultiImageUploader } from "@/components/ui/MultiImageUploader";
+import { BackgroundColorPicker } from "@/components/ui/BackgroundColorPicker";
 import { useToastStore } from "@/store/toastStore";
 import { confirmAction } from "@/store/confirmStore";
 import type { ProductWithRelations } from "@/lib/db/repositories/products";
@@ -21,7 +22,7 @@ interface Props {
 }
 
 interface VariantForm {
-  id?:      string;   // present = existing variant
+  id?:      string;
   color:    string;
   colorHex: string;
   sku:      string;
@@ -35,7 +36,6 @@ export function EditProductClient({ product, collections }: Props) {
   const router = useRouter();
   const toast  = useToastStore();
 
-  // ─── Form state, initialized from product ──────────────
   const initialImages = useMemo(
     () => product.images
       .slice()
@@ -72,6 +72,7 @@ export function EditProductClient({ product, collections }: Props) {
     waist:        product.waist  != null ? String(product.waist)  : "",
     length:       product.length != null ? String(product.length) : "",
     bottom:       product.bottom != null ? String(product.bottom) : "",
+    bgColor:      product.bgColor ?? null,
   });
 
   const [images,   setImages]   = useState<string[]>(initialImages);
@@ -80,11 +81,10 @@ export function EditProductClient({ product, collections }: Props) {
   const [busy,     setBusy]     = useState(false);
   const [modal,    setModal]    = useState<ModalId>(null);
 
-  const updateField = (field: string, value: string | boolean) => {
+  const updateField = (field: string, value: string | boolean | null) => {
     setForm((f) => ({ ...f, [field]: value }));
   };
 
-  // ─── Variant handlers ─────────────────────────────────
   const addVariant = () => {
     setVariants([...variants, {
       color:    "New Color",
@@ -113,7 +113,6 @@ export function EditProductClient({ product, collections }: Props) {
     setVariants((vs) => vs.filter((_, idx) => idx !== i));
   };
 
-  // ─── Main save (everything at once) ───────────────────
   const handleSave = async () => {
     if (!form.name || !form.description || !form.sku || !form.price) {
       toast.error("Please fill all required fields", "Missing Information");
@@ -149,6 +148,7 @@ export function EditProductClient({ product, collections }: Props) {
           waist:        Number(form.waist),
           length:       form.length !== "" ? Number(form.length) : null,
           bottom:       form.bottom !== "" ? Number(form.bottom) : null,
+          bgColor:      form.bgColor,
           images,
           variants:     variants.map((v) => ({
             id:       v.id,
@@ -175,7 +175,6 @@ export function EditProductClient({ product, collections }: Props) {
     }
   };
 
-  // ─── Header actions ───────────────────────────────────
   const handleDuplicate = async () => {
     const ok = await confirmAction({
       title:       "Duplicate Product",
@@ -217,7 +216,6 @@ export function EditProductClient({ product, collections }: Props) {
     }
   };
 
-  // ─── Quick action helpers (write via same PATCH) ──────
   const patchField = async (updates: Record<string, unknown>): Promise<boolean> => {
     const res = await fetch(`/api/products/${product.id}`, {
       method:  "PATCH",
@@ -268,17 +266,17 @@ export function EditProductClient({ product, collections }: Props) {
       body:    JSON.stringify({ stock: newStock }),
     });
     if (res.ok) {
-      // reflect immediately in local variant state
       setVariants((vs) => vs.map((v) => v.id === variantId ? { ...v, stock: newStock } : v));
       router.refresh();
     }
     return res.ok;
   };
 
+  const previewImage = images[0];
+
   return (
     <div className="max-w-6xl space-y-5">
 
-      {/* ─── Header ──────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Link href="/products" className="p-2 hover:bg-white border border-[#e5e7eb] transition-colors">
@@ -311,10 +309,8 @@ export function EditProductClient({ product, collections }: Props) {
         </div>
       </div>
 
-      {/* ─── Main grid ──────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
 
-        {/* Left column (form sections) */}
         <div className="space-y-5">
 
           <Section title="Basic Information">
@@ -355,6 +351,17 @@ export function EditProductClient({ product, collections }: Props) {
               onChange={setImages}
               maxImages={8}
               type="product"
+            />
+          </Section>
+
+          <Section title="Image Background">
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Replace the white background of product images with a custom color. The jeans themselves stay unchanged.
+            </p>
+            <BackgroundColorPicker
+              value={form.bgColor}
+              onChange={(v) => updateField("bgColor", v)}
+              previewImage={previewImage}
             />
           </Section>
 
@@ -466,7 +473,6 @@ export function EditProductClient({ product, collections }: Props) {
 
         </div>
 
-        {/* Right column (sidebar) */}
         <div className="space-y-5">
 
           <div className="bg-white border border-[#e5e7eb] p-5">
@@ -532,7 +538,6 @@ export function EditProductClient({ product, collections }: Props) {
         </div>
       </div>
 
-      {/* ─── Modals ────────────────────────────────── */}
       {modal === "stock" && (
         <StockModal
           variants={variants.filter((v) => !!v.id).map((v) => ({
@@ -581,10 +586,6 @@ export function EditProductClient({ product, collections }: Props) {
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════
-//  Sub-components
-// ═══════════════════════════════════════════════════════
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

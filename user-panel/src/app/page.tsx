@@ -15,8 +15,9 @@ type HeroBanner = {
   sortOrder: number;
 };
 
-export const dynamic   = "force-dynamic";
-export const revalidate = 0;
+// ISR: Regenerate at most once every 5 minutes.
+// Public homepage rarely changes — safe to cache aggressively.
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [dbCollections, dbNewArrivals, dbBestSellers, heroBannersRaw, heroRotation] = await Promise.all([

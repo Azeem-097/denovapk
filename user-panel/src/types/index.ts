@@ -1,4 +1,4 @@
-﻿// ─── Product Types ───────────────────────────────────────────────
+// ─── Product Types ───────────────────────────────────────────────
 export interface ProductImage {
   id: string;
   url: string;
@@ -37,6 +37,7 @@ export interface Product {
   waist:  number | null;
   length: number | null;
   bottom: number | null;
+  bgColor: string | null;   // hex e.g. "#f5f0e8" or null (keep original white background)
   createdAt: string;
 }
 
@@ -48,8 +49,8 @@ export interface Collection {
   description: string;
   image: string;
   productCount: number;
-  minPrice?: number;   // Lowest product price in this collection (rupees)
-  maxPrice?: number;   // Highest product price in this collection (rupees)
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 // ─── Cart Types ──────────────────────────────────────────────────
@@ -65,6 +66,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   slug: string;
+  bgColor?: string | null;   // optional — captured at add-to-cart time
 }
 
 export interface Cart {
@@ -83,6 +85,7 @@ export interface WishlistItem {
   image: string;
   price: number;
   slug: string;
+  bgColor?: string | null;
 }
 
 // ─── User / Auth Types ───────────────────────────────────────────

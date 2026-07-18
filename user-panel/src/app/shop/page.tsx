@@ -3,8 +3,8 @@ import { getProducts } from "@/lib/db/repositories/products";
 import { adaptProduct } from "@/lib/adapters";
 import { ShopPageClient } from "./ShopPageClient";
 
-export const dynamic   = "force-dynamic";
-export const revalidate = 0;
+// ISR: 60s cache. Products change occasionally; a 1-minute delay is imperceptible.
+export const revalidate = 60;
 
 export default async function ShopPage() {
   const dbProducts = await getProducts({ status: "PUBLISHED", limit: 100 });

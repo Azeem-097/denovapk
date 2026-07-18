@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Database table types.
  * These match the SQL schema exactly.
  *
@@ -95,6 +95,7 @@ export interface DbProduct {
   waist:            number | null;   // inches
   length:           number | null;   // inches
   bottom:           number | null;   // inches
+  bgColor:          string | null;   // hex e.g. "#f5f0e8" — replaces white product image background via CSS blend
   createdAt:        number;
   updatedAt:        number;
 }

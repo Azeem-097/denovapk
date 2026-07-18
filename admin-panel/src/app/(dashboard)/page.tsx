@@ -2,16 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   DollarSign, ShoppingCart, Users, Package,
-  AlertTriangle, Clock, ArrowRight, TrendingUp,
+  AlertTriangle, Clock, ArrowRight, TrendingUp, UserPlus,
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { RevenueAreaChart } from "@/components/analytics/RevenueAreaChart";
 import { getDashboardStats, getRevenueChartData, getTopProducts } from "@/lib/db/repositories/dashboard";
 import { getAllOrders } from "@/lib/db/repositories/orders";
 import { formatPaisa } from "@/lib/priceUtils";
 import { formatDate, cn } from "@/lib/utils";
 import { ORDER_STATUS_COLORS } from "@/lib/constants";
 
-export const dynamic   = "force-dynamic";
+export const dynamic    = "force-dynamic";
 export const revalidate = 0;
 
 export default async function DashboardPage() {
@@ -63,15 +64,15 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Stats grid */}
+      {/* Primary KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Total Revenue" value={formatPaisa(stats.totalRevenue)} change={stats.revenueChange} icon={DollarSign} />
-        <StatsCard title="Total Orders"  value={stats.totalOrders.toLocaleString()} change={stats.ordersChange} icon={ShoppingCart} />
+        <StatsCard title="Total Revenue" value={formatPaisa(stats.totalRevenue)} change={stats.revenueChange}   icon={DollarSign} />
+        <StatsCard title="Total Orders"  value={stats.totalOrders.toLocaleString()}    change={stats.ordersChange}    icon={ShoppingCart} />
         <StatsCard title="Customers"     value={stats.totalCustomers.toLocaleString()} change={stats.customersChange} icon={Users} />
-        <StatsCard title="Products"      value={stats.totalProducts.toString()} icon={Package} />
+        <StatsCard title="Products"      value={stats.totalProducts.toString()}                                        icon={Package} />
       </div>
 
-      {/* Secondary stats */}
+      {/* Secondary stats — all real numbers */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white border border-[#e5e7eb] p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -82,10 +83,10 @@ export default async function DashboardPage() {
         </div>
         <div className="bg-white border border-[#e5e7eb] p-5">
           <div className="flex items-center gap-2 mb-1">
-            <TrendingUp size={15} className="text-[#c9a96e]" />
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Conversion Rate</p>
+            <UserPlus size={15} className="text-[#c9a96e]" />
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">New Customers (30d)</p>
           </div>
-          <p className="text-2xl font-bold text-[#1a1a1a]">{stats.conversionRate}%</p>
+          <p className="text-2xl font-bold text-[#1a1a1a]">{stats.newCustomers30d.toLocaleString()}</p>
         </div>
         <div className="bg-orange-50 border border-orange-200 p-5">
           <div className="flex items-center gap-2 mb-1">
@@ -96,9 +97,20 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Charts + Top Products */}
+      {/* Chart + Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        <RevenueChart data={revenueData} />
+        <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Revenue Overview</h2>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-[#6b7280]">Last 12 months</span>
+              <Link href="/analytics" className="text-xs text-[#c9a96e] hover:underline">
+                Full analytics &rarr;
+              </Link>
+            </div>
+          </div>
+          <RevenueAreaChart data={revenueData} height={220} />
+        </div>
 
         <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
           <div className="flex items-center justify-between mb-5">
@@ -112,10 +124,12 @@ export default async function DashboardPage() {
               {topProducts.map((p, i) => (
                 <div key={p.id} className="flex items-center gap-3">
                   <span className="text-xs font-bold text-[#6b7280] w-4 flex-shrink-0">{i + 1}</span>
-                  {p.image && (
+                  {p.image ? (
                     <div className="relative w-10 h-10 flex-shrink-0 bg-[#fafaf9]">
                       <Image src={p.image} alt={p.name} fill className="object-cover" sizes="40px" />
                     </div>
+                  ) : (
+                    <div className="w-10 h-10 flex-shrink-0 bg-[#fafaf9]" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-[#1a1a1a] truncate">{p.name}</p>
@@ -186,37 +200,6 @@ export default async function DashboardPage() {
             </table>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ── Client component for chart ────────────────────────────
-function RevenueChart({ data }: { data: Array<{ date: string; revenue: number; orders: number }> }) {
-  const max = Math.max(...data.map((d) => d.revenue), 1);
-
-  return (
-    <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Revenue Overview</h2>
-        <span className="text-xs text-[#6b7280]">Last 12 months</span>
-      </div>
-      <div className="flex items-end gap-2 h-40">
-        {data.slice(-6).map((d) => (
-          <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
-            <p className="text-[10px] text-[#6b7280] font-semibold">
-              {d.revenue > 0 ? `${Math.round(d.revenue / 100 / 1000)}K` : "-"}
-            </p>
-            <div className="w-full relative">
-              <div
-                className="w-full bg-[#c9a96e] hover:bg-[#b8955a] transition-colors rounded-sm min-h-[4px]"
-                style={{ height: `${Math.max((d.revenue / max) * 100, 4)}px` }}
-                title={`${d.date}: ${formatPaisa(d.revenue)}`}
-              />
-            </div>
-            <p className="text-[10px] text-[#6b7280]">{d.date}</p>
-          </div>
-        ))}
       </div>
     </div>
   );

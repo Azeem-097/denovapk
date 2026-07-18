@@ -32,6 +32,7 @@ export function adaptProduct(p: ProductWithRelations): Product {
     waist:          p.waist  ?? null,
     length:         p.length ?? null,
     bottom:         p.bottom ?? null,
+    bgColor:        p.bgColor ?? null,
     createdAt:      new Date(p.createdAt * 1000).toISOString(),
   };
 }

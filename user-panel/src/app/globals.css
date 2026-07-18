@@ -80,12 +80,19 @@ img, video { max-width: 100%; height: auto; display: block; }
 @keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
 
+/* ── Live view counter pulse ── */
+@keyframes live-ping {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
 .animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
 .animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
 .animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
 .animate-marquee      { animation: marquee 30s linear infinite; }
 .animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
 .animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
+.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
 
 .shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
 .shimmer-btn::before {
@@ -142,7 +149,6 @@ img, video { max-width: 100%; height: auto; display: block; }
    HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Entrance animations ── */
 @keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
 @keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
 @keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
@@ -163,7 +169,6 @@ img, video { max-width: 100%; height: auto; display: block; }
   to   { opacity: 1; clip-path: inset(0 0 0 0); }
 }
 
-/* ── Continuous loop animations ── */
 @keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 @keyframes hero-pulse-glow {
   0%, 100% { text-shadow: 0 0 8px rgba(201,169,110,0.35), 0 2px 6px rgba(0,0,0,0.35); }
@@ -171,7 +176,6 @@ img, video { max-width: 100%; height: auto; display: block; }
 }
 @keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
-/* ── Decorative accent animations (appear AFTER text) ── */
 @keyframes hero-underline-draw {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
@@ -189,7 +193,6 @@ img, video { max-width: 100%; height: auto; display: block; }
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── Sticker signature animations ── */
 @keyframes hero-sticker-diag {
   0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
   60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }

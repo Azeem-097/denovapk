@@ -4,8 +4,8 @@ import { getProducts } from "@/lib/db/repositories/products";
 import { adaptProduct } from "@/lib/adapters";
 import { CollectionDetailClient } from "./CollectionDetailClient";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR: 60s cache. Collection products refresh every minute.
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ slug: string }>;

@@ -16,7 +16,7 @@ const PRODUCT_COLS = `
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
   p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
-  p.waist, p."length" as lengthInches, p.bottom,
+  p.waist, p."length" as lengthInches, p.bottom, p.bgColor,
   p.createdAt, p.updatedAt
 `;
 

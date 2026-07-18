@@ -6,6 +6,7 @@ import { Heart, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -58,6 +59,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       size: defaultVariant.size, color: defaultVariant.color,
       colorHex: defaultVariant.colorHex, price: product.price,
       quantity: 1, slug: product.slug,
+      bgColor: product.bgColor,
     });
   };
 
@@ -68,6 +70,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       id: product.id, productId: product.id,
       name: product.name, image: primaryImage.url,
       price: product.price, slug: product.slug,
+      bgColor: product.bgColor,
     });
     showToast({
       type: "success",
@@ -83,48 +86,56 @@ export function ProductCard({ product, className }: ProductCardProps) {
     >
       <Link
         href={`/products/${product.slug}`}
-        className="relative block aspect-[4/5] overflow-hidden bg-[#f4f2ee] mb-3 sm:mb-4"
+        className="relative block mb-3 sm:mb-4"
       >
-        {/* Primary image — subtle zoom on hover */}
-        <Image
-          src={primaryImage.url}
-          alt={primaryImage.alt}
-          fill
+        <ProductBgWrapper
+          bgColor={product.bgColor}
           className={cn(
-            "object-cover transition-all duration-[900ms] ease-out",
-            hasSecondary && isHovered ? "opacity-0 scale-105" : "opacity-100 scale-100",
-            !hasSecondary && isHovered && "scale-105"
+            "aspect-[4/5]",
+            !product.bgColor && "bg-[#f4f2ee]"
           )}
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          loading="lazy"
-          unoptimized={primaryImage.url === PLACEHOLDER_URL}
-        />
-
-        {/* Secondary image */}
-        {hasSecondary && (
+        >
+          {/* Primary image — subtle zoom on hover */}
           <Image
-            src={secondaryImage.url}
-            alt={secondaryImage.alt || product.name}
+            src={primaryImage.url}
+            alt={primaryImage.alt}
             fill
             className={cn(
               "object-cover transition-all duration-[900ms] ease-out",
-              isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
+              hasSecondary && isHovered ? "opacity-0 scale-105" : "opacity-100 scale-100",
+              !hasSecondary && isHovered && "scale-105"
             )}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading="lazy"
+            unoptimized={primaryImage.url === PLACEHOLDER_URL}
           />
-        )}
+
+          {/* Secondary image */}
+          {hasSecondary && (
+            <Image
+              src={secondaryImage.url}
+              alt={secondaryImage.alt || product.name}
+              fill
+              className={cn(
+                "object-cover transition-all duration-[900ms] ease-out",
+                isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
+              )}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
+            />
+          )}
+        </ProductBgWrapper>
 
         {/* Corner accents that reveal on hover */}
         <div
           className={cn(
-            "absolute top-2 left-2 w-4 h-4 border-t border-l border-[#c9a96e] transition-all duration-500",
+            "absolute top-2 left-2 w-4 h-4 border-t border-l border-[#c9a96e] transition-all duration-500 pointer-events-none",
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />
         <div
           className={cn(
-            "absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#c9a96e] transition-all duration-500 delay-100",
+            "absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#c9a96e] transition-all duration-500 delay-100 pointer-events-none",
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />

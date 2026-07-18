@@ -6,13 +6,15 @@ import { ProductImages } from "@/components/product/ProductImages";
 import { ColorSelector } from "@/components/product/ColorSelector";
 import { SizeSelector } from "@/components/product/SizeSelector";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
+import { SaleCountdown } from "@/components/product/SaleCountdown";
+import { LiveViewCounter } from "@/components/product/LiveViewCounter";
+import { DiscountInlinePill } from "@/components/product/DiscountBadge";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { useCartStore } from "@/store/cartStore";
 import { useToastStore } from "@/store/toastStore";
-import { cn } from "@/lib/utils";
+import { cn, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/types";
 
-// Editorial PKR formatter — "PKR 6,990"
 function formatPKR(amount: number): string {
   return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
 }
@@ -23,7 +25,6 @@ interface Props {
 }
 
 export function ProductDetailClient({ product, relatedProducts }: Props) {
-  // ─── Unique colors ────────────────────────────────────
   const uniqueColors = useMemo(() =>
     Array.from(
       new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
@@ -38,7 +39,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const [selectedColor, setSelectedColor] = useState(firstInStockColor);
 
-  // ─── Sizes derived from variants of selected color ────
   const sizesForColor = useMemo(() => {
     const variants = product.variants.filter((v) => v.color === selectedColor);
     return Array.from(new Set(variants.map((v) => v.size)));
@@ -57,14 +57,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const [selectedSize, setSelectedSize] = useState(firstInStockSize);
 
-  // Re-sync size when color changes
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
     const firstAvail = product.variants.find((v) => v.color === color && v.stock > 0);
     setSelectedSize(firstAvail?.size ?? "");
   };
 
-  // ─── Quantity + cart ──────────────────────────────────
   const [quantity, setQuantity]         = useState(1);
   const [addedToCart, setAddedToCart]   = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("details");
@@ -78,10 +76,13 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   );
 
   const isOutOfStock = !selectedVariant || selectedVariant.stock === 0;
-  const hasDiscount  = product.compareAtPrice && product.compareAtPrice > product.price;
+  const hasDiscount  = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPercent = hasDiscount
+    ? getDiscountPercent(product.compareAtPrice!, product.price)
+    : 0;
+
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
-  // ─── Fit label + measurements (for accordion content) ─
   const measurements = [
     { label: "Waist",  value: product.waist,  unit: '"' },
     { label: "Length", value: product.length, unit: '"' },
@@ -111,6 +112,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       price:     product.price,
       quantity,
       slug:      product.slug,
+      bgColor:   product.bgColor,
     });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
@@ -126,9 +128,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-14">
 
-            {/* ═══════════════════════════════════════════
-                LEFT: image grid
-                ═══════════════════════════════════════════ */}
             <FadeIn>
               <ProductImages
                 images={product.images}
@@ -136,38 +135,53 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 productId={product.id}
                 productSlug={product.slug}
                 productPrice={product.price}
+                bgColor={product.bgColor}
+                discountPercent={discountPercent}
               />
             </FadeIn>
 
-            {/* ═══════════════════════════════════════════
-                RIGHT: sticky content column
-                ═══════════════════════════════════════════ */}
             <div className="lg:sticky lg:top-24 lg:self-start">
               <FadeIn delay={100}>
 
-                {/* Product name — bold sans uppercase */}
                 <h1 className="text-lg sm:text-xl font-bold tracking-[0.1em] uppercase text-[#1a1a1a] leading-tight mb-2">
                   {product.name}
                 </h1>
 
-                {/* Collection sub-label */}
-                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-5">
+                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-4">
                   {product.collection || "Premium"}
                 </p>
 
-                {/* Price */}
-                <div className="flex items-baseline gap-3 mb-6">
+                {/* Price row + inline discount pill + saved amount */}
+                <div className="flex items-baseline gap-3 flex-wrap mb-3">
                   <span className="text-xl sm:text-2xl font-bold text-[#1a1a1a] tracking-wide">
                     {formatPKR(product.price)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-base text-[#9ca3af] line-through">
-                      {formatPKR(product.compareAtPrice!)}
-                    </span>
+                    <>
+                      <span className="text-base text-[#9ca3af] line-through">
+                        {formatPKR(product.compareAtPrice!)}
+                      </span>
+                      <DiscountInlinePill percent={discountPercent} />
+                    </>
                   )}
                 </div>
 
-                {/* Color selector */}
+                {hasDiscount && (
+                  <p className="text-xs text-[#c9a96e] font-semibold mb-5">
+                    You save {formatPKR(product.compareAtPrice! - product.price)}
+                  </p>
+                )}
+
+                {/* Live view counter */}
+                <div className="mb-4">
+                  <LiveViewCounter productId={product.id} />
+                </div>
+
+                {/* Sale countdown */}
+                <div className="mb-6">
+                  <SaleCountdown productId={product.id} />
+                </div>
+
                 {uniqueColors.length > 0 && (
                   <div className="mb-7">
                     <ColorSelector
@@ -178,7 +192,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </div>
                 )}
 
-                {/* Size selector */}
                 {sizesForColor.length > 0 && (
                   <div className="mb-7">
                     <SizeSelector
@@ -190,7 +203,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </div>
                 )}
 
-                {/* Quantity — compact inline */}
                 <div className="mb-6 flex items-center gap-4">
                   <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
                     Quantity
@@ -221,7 +233,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   )}
                 </div>
 
-                {/* Big ADD TO CART button — Outfitters style */}
                 <button
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
@@ -248,9 +259,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   )}
                 </button>
 
-                {/* ═══════════════════════════════════════
-                    Description
-                    ═══════════════════════════════════════ */}
                 <div className="mt-10">
                   <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">
                     Product Description
@@ -260,12 +268,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </p>
                 </div>
 
-                {/* ═══════════════════════════════════════
-                    Accordions
-                    ═══════════════════════════════════════ */}
                 <div className="mt-8 border-t border-[#e5e7eb]">
-
-                  {/* PRODUCT DETAILS & COMPOSITION */}
                   <AccordionItem
                     id="details"
                     title="Product Details & Composition"
@@ -320,7 +323,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     </div>
                   </AccordionItem>
 
-                  {/* SHIPPING & RETURNS */}
                   <AccordionItem
                     id="shipping"
                     title="Shipping & Returns"
@@ -342,7 +344,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       </div>
                     </div>
                   </AccordionItem>
-
                 </div>
               </FadeIn>
             </div>
@@ -355,9 +356,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ACCORDION ITEM — clean Outfitters style with + / -
-// ═══════════════════════════════════════════════════════════
 function AccordionItem({
   id, title, isOpen, onToggle, children,
 }: {
@@ -409,5 +407,4 @@ function AccordionItem({
   );
 }
 
-// Prevent unused-var errors from Button import (still available if needed later)
 void Button;

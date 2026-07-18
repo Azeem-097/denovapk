@@ -1,17 +1,17 @@
 import { db } from "@/lib/db/client";
 
 export interface DashboardStats {
-  totalRevenue:    number; // in paisa
-  totalOrders:     number;
-  totalCustomers:  number;
-  totalProducts:   number;
-  pendingOrders:   number;
-  lowStockItems:   number;
-  avgOrderValue:   number;
-  conversionRate:  number;
-  revenueChange:   number;
-  ordersChange:    number;
-  customersChange: number;
+  totalRevenue:      number;   // paisa
+  totalOrders:       number;
+  totalCustomers:    number;
+  totalProducts:     number;
+  pendingOrders:     number;
+  lowStockItems:     number;
+  avgOrderValue:     number;   // paisa
+  newCustomers30d:   number;   // Real metric that replaces the mocked "conversionRate"
+  revenueChange:     number;
+  ordersChange:      number;
+  customersChange:   number;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -20,11 +20,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const sixtyDaysAgo  = now - (60 * 60 * 24 * 60);
 
   const [
-    revenue, orders, customers, products, pending, lowStock,
+    revenue, orders, paidOrders, customers, products, pending, lowStock,
     revenue30, revenue60, orders30, orders60, customers30, customers60,
   ] = await Promise.all([
     db.execute("SELECT COALESCE(SUM(total), 0) as v FROM orders WHERE paymentStatus = 'PAID'"),
     db.execute("SELECT COUNT(*) as c FROM orders"),
+    db.execute("SELECT COUNT(*) as c FROM orders WHERE paymentStatus = 'PAID'"),
     db.execute("SELECT COUNT(*) as c FROM users"),
     db.execute("SELECT COUNT(*) as c FROM products WHERE status = 'PUBLISHED'"),
     db.execute("SELECT COUNT(*) as c FROM orders WHERE status = 'PENDING'"),
@@ -37,9 +38,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     db.execute({ sql: "SELECT COUNT(*) as c FROM users WHERE createdAt >= ? AND createdAt < ?", args: [sixtyDaysAgo, thirtyDaysAgo] }),
   ]);
 
-  const totalRevenue   = Number(revenue.rows[0].v);
-  const totalOrders    = Number(orders.rows[0].c);
-  const totalCustomers = Number(customers.rows[0].c);
+  const totalRevenue    = Number(revenue.rows[0].v);
+  const totalOrders     = Number(orders.rows[0].c);
+  const totalPaidOrders = Number(paidOrders.rows[0].c);
+  const totalCustomers  = Number(customers.rows[0].c);
 
   const rev30 = Number(revenue30.rows[0].v);
   const rev60 = Number(revenue60.rows[0].v);
@@ -52,11 +54,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalRevenue,
     totalOrders,
     totalCustomers,
-    totalProducts:  Number(products.rows[0].c),
-    pendingOrders:  Number(pending.rows[0].c),
-    lowStockItems:  Number(lowStock.rows[0].c),
-    avgOrderValue:  totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
-    conversionRate: 3.4, // Mock - would need traffic data
+    totalProducts:   Number(products.rows[0].c),
+    pendingOrders:   Number(pending.rows[0].c),
+    lowStockItems:   Number(lowStock.rows[0].c),
+    avgOrderValue:   totalPaidOrders > 0 ? Math.round(totalRevenue / totalPaidOrders) : 0,
+    newCustomers30d: cus30,
     revenueChange:   percentChange(rev30, rev60),
     ordersChange:    percentChange(ord30, ord60),
     customersChange: percentChange(cus30, cus60),

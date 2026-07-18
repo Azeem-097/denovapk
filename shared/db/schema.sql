@@ -1,4 +1,4 @@
-﻿-- Denova PK - Complete Database Schema
+-- Denova PK - Complete Database Schema
 -- Run this in Turso SQL editor to create all tables
 
 -- ============================================================
@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS products (
   waist             REAL,
   length            REAL,
   bottom            REAL,
+  bgColor           TEXT,
   createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
   updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
 );

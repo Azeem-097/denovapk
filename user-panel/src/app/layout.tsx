@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { inter, playfair, cormorant } from "@/lib/fonts";
 import { ToastContainer }  from "@/components/ui/Toast";
+import { TopProgressBar }  from "@/components/ui/TopProgressBar";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { CartAbandonmentTracker } from "@/components/providers/CartAbandonmentTracker";
 import { ShippingConfigLoader } from "@/components/providers/ShippingConfigLoader";
@@ -64,11 +66,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="thumbnail"              content="https://denovapk.com/og-image.jpg" />
       </head>
       <body className="antialiased bg-white text-[#111111]">
+        {/* Top progress bar — must be wrapped in Suspense (uses useSearchParams) */}
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
+
         <ScrollProgress />
         <SessionProvider>
-          <CartAbandonmentTracker />
           <LayoutShell>{children}</LayoutShell>
           <ToastContainer />
+
+          {/* Background providers - deferred, non-blocking */}
+          <CartAbandonmentTracker />
           <ShippingConfigLoader />
           <PaymentConfigLoader />
         </SessionProvider>

@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import { X, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
+import { ProductBgWrapper } from "@/components/product/ProductBgWrapper";
 import { formatPrice } from "@/lib/utils";
 import type { CartItem as CartItemType } from "@/types";
 
@@ -22,21 +23,25 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
       <Link
         href={`/products/${item.slug}`}
         onClick={onLinkClick}
-        className={`relative flex-shrink-0 bg-[#fafaf9] overflow-hidden ${compact ? "w-20 h-24" : "w-24 h-32 sm:w-28 sm:h-36"}`}
+        className={`flex-shrink-0 ${compact ? "w-20 h-24" : "w-24 h-32 sm:w-28 sm:h-36"}`}
       >
-        <Image
-          src={item.image}
-          alt={item.name}
-          fill
-          className="object-cover"
-          sizes="120px"
-        />
+        <ProductBgWrapper
+          bgColor={item.bgColor}
+          className={`w-full h-full ${!item.bgColor ? "bg-[#fafaf9]" : ""}`}
+        >
+          <Image
+            src={item.image}
+            alt={item.name}
+            fill
+            className="object-cover"
+            sizes="120px"
+          />
+        </ProductBgWrapper>
       </Link>
 
       {/* Details */}
       <div className="flex-1 min-w-0 flex flex-col">
 
-        {/* Top row: name + remove */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <Link
             href={`/products/${item.slug}`}
@@ -54,7 +59,6 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
           </button>
         </div>
 
-        {/* Variant info — color + waist (from item.size which stores the waist value) */}
         <div className="flex items-center gap-3 text-xs text-[#6b7280] mb-2">
           <span className="flex items-center gap-1.5">
             <span
@@ -71,10 +75,8 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
           )}
         </div>
 
-        {/* Bottom row: quantity + price */}
         <div className="mt-auto flex items-end justify-between gap-2">
 
-          {/* Quantity */}
           <div className="inline-flex items-center border border-[#e5e7eb]">
             <button
               onClick={() => updateQty(item.id, item.quantity - 1)}
@@ -95,7 +97,6 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
             </button>
           </div>
 
-          {/* Price */}
           <p className="text-sm font-bold text-[#1a1a1a]">
             {formatPrice(item.price * item.quantity)}
           </p>

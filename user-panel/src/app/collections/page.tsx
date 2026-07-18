@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   description: "Explore all curated collections from Denova PK",
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR: 5 min. Collections rarely change.
+export const revalidate = 300;
 
 export default async function CollectionsPage() {
   const dbCollections = await getCollectionsWithCounts();
