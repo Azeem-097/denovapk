@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
@@ -13,6 +13,14 @@ const collectionsDropdown = [
   { label: "Premium",       href: "/collections/premium" },
   { label: "Super Premium", href: "/collections/super-premium" },
 ];
+
+// ═══════════════════════════════════════════════════════════
+//  Cloudinary logo (transparent, 612 x 408 source)
+// ═══════════════════════════════════════════════════════════
+const LOGO_BASE = "https://res.cloudinary.com/djy5qqco7/image/upload";
+const LOGO_ID   = "v1784388373/denovapk/general/logo-without-bg_1784388368531";
+const LOGO_DESKTOP = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_160/${LOGO_ID}`;
+const LOGO_MOBILE  = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_120/${LOGO_ID}`;
 
 export function Navbar() {
   const [scrolled,     setScrolled]     = useState(false);
@@ -54,23 +62,41 @@ export function Navbar() {
 
   return (
     <>
-      <header className={cn(
-        "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
-        scrolled
-          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-[#e5e7eb]"
-          : "bg-white/90 backdrop-blur-sm"
-      )}>
+      <header
+        className={cn(
+          "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
+          // ── CRITICAL: solid bg always, overflow hidden so nothing bursts out ──
+          "bg-white overflow-hidden",
+          scrolled
+            ? "shadow-sm border-b border-[#e5e7eb]"
+            : "border-b border-transparent"
+        )}
+      >
         <div className="site-container">
 
-          {/* MOBILE */}
-          <div className="lg:hidden flex items-center justify-between h-16">
-            <button onClick={() => setMobileOpen(true)} className="p-2 -ml-2 text-[#1a1a1a] hover:text-[#c9a96e]" aria-label="Open menu">
+          {/* ═══════════════════════════════════════════════════
+              MOBILE — 64px header, logo constrained to 40px
+              ═══════════════════════════════════════════════════ */}
+          <div className="lg:hidden relative flex items-center justify-between h-16">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-2 -ml-2 text-[#1a1a1a] hover:text-[#c9a96e]"
+              aria-label="Open menu"
+            >
               <Menu size={22} />
             </button>
 
-            <Link href="/" className="flex flex-col items-center leading-none">
-              <span className="font-[family-name:var(--font-playfair)] text-xl font-bold tracking-[0.08em] text-[#1a1a1a]">DENOVA</span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#c9a96e] uppercase -mt-0.5">Pakistan</span>
+            {/* Logo container with STRICT height cap */}
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center h-11 pointer-events-auto" aria-label="Denova PK home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={LOGO_MOBILE}
+                alt="Denova PK"
+                className="block h-full w-auto max-h-11 object-contain"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
             </Link>
 
             <div className="flex items-center gap-1">
@@ -88,8 +114,10 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* DESKTOP */}
-          <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[72px] gap-8">
+          {/* ═══════════════════════════════════════════════════
+              DESKTOP — 80px header, logo constrained to 56px
+              ═══════════════════════════════════════════════════ */}
+          <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[88px] gap-8">
 
             {/* Left nav */}
             <nav className="flex items-center justify-start gap-7">
@@ -99,13 +127,16 @@ export function Navbar() {
               </Link>
 
               <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 whitespace-nowrap">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 whitespace-nowrap"
+                >
                   Collections
                   <ChevronDown size={14} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
                 </button>
 
                 <div className={cn(
-                  "absolute top-full left-0 mt-3 w-56 bg-white border border-[#e5e7eb] shadow-lg transition-all duration-200 origin-top",
+                  "absolute top-full left-0 mt-3 w-56 bg-white border border-[#e5e7eb] shadow-lg transition-all duration-200 origin-top z-50",
                   dropdownOpen ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-95 pointer-events-none"
                 )}>
                   <div className="py-2">
@@ -129,9 +160,17 @@ export function Navbar() {
               </Link>
             </nav>
 
-            <Link href="/" className="flex flex-col items-center leading-none flex-shrink-0">
-              <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-[#1a1a1a] hover:text-[#c9a96e] transition-colors duration-300">DENOVA</span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#c9a96e] uppercase -mt-0.5">Pakistan</span>
+            {/* CENTER — logo container with STRICT height cap */}
+            <Link href="/" className="flex items-center h-16 flex-shrink-0 hover:opacity-80 transition-opacity duration-300" aria-label="Denova PK home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={LOGO_DESKTOP}
+                alt="Denova PK"
+                className="block h-full w-auto max-h-11 object-contain"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
             </Link>
 
             <div className="flex items-center justify-end gap-7">

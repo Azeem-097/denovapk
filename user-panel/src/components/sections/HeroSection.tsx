@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
@@ -745,9 +745,10 @@ const STICKER_SIZES: Record<StickerSize, { w: number; wMobile: number }> = {
 function StickerLayer({ sticker, isActive, shouldAnimate, isMobile }: {
   sticker: Sticker; isActive: boolean; shouldAnimate: boolean; isMobile: boolean;
 }) {
+  // Cloudinary CDN URLs — work on both localhost and production
   const src = sticker.kind === "50-off"
-    ? "/uploads/general/50-off.png"
-    : "/uploads/general/free-delivery.png";
+    ? "https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto/v1784388357/denovapk/general/50-off_1784388351902.png"
+    : "https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto/v1784388363/denovapk/general/free-delivery_1784388357255.png";
 
   const width = isMobile ? STICKER_SIZES[sticker.size].wMobile : STICKER_SIZES[sticker.size].w;
   const pos   = (isMobile ? sticker.positionMobile : sticker.positionDesktop) ?? cornerToPosition(sticker.corner);
