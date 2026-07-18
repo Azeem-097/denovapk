@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   Product,
   Collection,
   Testimonial,
@@ -79,6 +79,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-03-01",
   },
   {
@@ -107,6 +108,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-05-10",
   },
   {
@@ -135,6 +137,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-06-01",
   },
   {
@@ -163,6 +166,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-01-15",
   },
   {
@@ -191,6 +195,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-05-20",
   },
   {
@@ -219,6 +224,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-02-28",
   },
   {
@@ -248,6 +254,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-06-10",
   },
   {
@@ -276,6 +283,7 @@ export const products: Product[] = [
     waist: null,
     length: null,
     bottom: null,
+    bgColor: null,
     createdAt: "2024-01-20",
   },
 ];
