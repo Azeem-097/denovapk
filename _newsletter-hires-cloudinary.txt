@@ -1,0 +1,16 @@
+﻿Newsletter HIGH-RES Cloudinary upload
+Generated: 2026-07-18 20:12:25
+
+Source:      newsletter.png (full resolution, no downscale)
+Dimensions:  1915 x 821
+Public ID:   denovapk/general/newsletter_hires_1784387491499
+Version:     v1784387547
+
+Direct URL:
+https://res.cloudinary.com/djy5qqco7/image/upload/v1784387547/denovapk/general/newsletter_hires_1784387491499.png
+
+For code (paste to AI):
+CLOUDINARY_BASE = "https://res.cloudinary.com/djy5qqco7/image/upload"
+IMAGE_ID        = "v1784387547/denovapk/general/newsletter_hires_1784387491499"
+NATIVE_WIDTH    = 1915
+NATIVE_HEIGHT   = 821

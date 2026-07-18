@@ -1,0 +1,6 @@
+﻿Newsletter image Cloudinary URLs
+Generated: 2026-07-18 20:05:00
+
+AVIF: https://res.cloudinary.com/djy5qqco7/image/upload/v1784387048/denovapk/general/ttifl5fjxm17xhhxilxz.jpg
+WebP: https://res.cloudinary.com/djy5qqco7/image/upload/v1784387053/denovapk/general/mosjplxnkoi3mwfgi5iz.jpg
+PNG:  https://res.cloudinary.com/djy5qqco7/image/upload/v1784387102/denovapk/general/rpyqpjbpll6odmfdrcpj.jpg

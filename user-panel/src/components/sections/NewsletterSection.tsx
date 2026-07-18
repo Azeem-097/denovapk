@@ -7,20 +7,43 @@ import { ScaleIn } from "@/components/animations/ScaleIn";
 import { SlideIn } from "@/components/animations/SlideIn";
 import { useToastStore } from "@/store/toastStore";
 
+// ═══════════════════════════════════════════════════════════
+//  Cloudinary — HIGH-RES source (1915 x 821, lossless)
+//
+//  IMPORTANT: We crop off the empty cream floor space at the
+//  bottom of the source image via Cloudinary's c_crop + g_north.
+//  Original: 1915 x 821 → Cropped: 1915 x 720 (top-anchored)
+//
+//  The 720/1915 aspect (~2.66:1) matches the section shape well
+//  and puts the models' shoes right at the bottom edge.
+// ═══════════════════════════════════════════════════════════
+const BASE     = "https://res.cloudinary.com/djy5qqco7/image/upload";
+const IMAGE_ID = "v1784387547/denovapk/general/newsletter_hires_1784387491499";
+
+// c_crop,g_north,h_720 → crop from top, keep 720px height (chops bottom 101px)
+// then c_limit,w_XXX   → responsive width scaling (never upscale)
+const buildUrl = (width: number) =>
+  `${BASE}/c_crop,g_north,h_720/f_auto,q_auto:best,c_limit,w_${width}/${IMAGE_ID}`;
+
+const IMG_640  = buildUrl(640);
+const IMG_900  = buildUrl(900);
+const IMG_1200 = buildUrl(1200);
+const IMG_1600 = buildUrl(1600);
+const IMG_1915 = buildUrl(1915);
+
 /**
  * NewsletterSection — Split layout
  *   Desktop: content LEFT (45%) | hero image RIGHT (55%)
  *   Mobile:  hero image on TOP, content BELOW (single column)
  *
- * The hero image (newsletter.{avif,webp,png}) has 5 male models on the RIGHT half
- * with a clean cream backdrop on the LEFT half — the models occupy their own
- * visual space while our form sits in the cream area.
- *
- * Image loading uses <picture> with AVIF → WebP → PNG fallback for best perf.
+ * Cropping strategy:
+ *   1. Cloudinary crops out the empty cream floor at source (c_crop,g_north,h_720)
+ *   2. CSS uses object-position: right top so any remaining vertical overflow
+ *      keeps the models' faces visible and pushes empty space out the bottom
  */
 export function NewsletterSection() {
-  const [email, setEmail]     = useState("");
-  const [status, setStatus]   = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [email, setEmail]         = useState("");
+  const [status, setStatus]       = useState<"idle" | "loading" | "success" | "error">("idle");
   const [isFocused, setIsFocused] = useState(false);
   const addToast = useToastStore((s) => s.addToast);
 
@@ -38,10 +61,7 @@ export function NewsletterSection() {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Something went wrong");
-      }
+      if (!res.ok) throw new Error(data?.error || "Something went wrong");
 
       setStatus("success");
       setEmail("");
@@ -52,7 +72,6 @@ export function NewsletterSection() {
           : "Welcome to Denova! Check your inbox soon.",
       });
 
-      // Reset after 4s so user can subscribe another email if needed
       setTimeout(() => setStatus("idle"), 4000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to subscribe";
@@ -61,6 +80,14 @@ export function NewsletterSection() {
       setTimeout(() => setStatus("idle"), 3000);
     }
   };
+
+  const srcSet = [
+    `${IMG_640}  640w`,
+    `${IMG_900}  900w`,
+    `${IMG_1200} 1200w`,
+    `${IMG_1600} 1600w`,
+    `${IMG_1915} 1915w`,
+  ].join(", ");
 
   return (
     <section
@@ -71,25 +98,22 @@ export function NewsletterSection() {
           MOBILE LAYOUT (< 1024px): stacked, image on top
           ═══════════════════════════════════════════════════════ */}
       <div className="lg:hidden">
-        {/* Hero image — mobile */}
         <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] overflow-hidden bg-[#f5f0e8]">
-          <picture>
-            <source srcSet="/uploads/general/newsletter.avif" type="image/avif" />
-            <source srcSet="/uploads/general/newsletter.webp" type="image/webp" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/uploads/general/newsletter.png"
-              alt="Five men modeling premium Denova denim jeans against a warm cream backdrop"
-              className="absolute inset-0 w-full h-full object-cover object-right"
-              loading="lazy"
-              decoding="async"
-            />
-          </picture>
-          {/* Subtle bottom fade so text sits comfortably against cream */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={IMG_1200}
+            srcSet={srcSet}
+            sizes="100vw"
+            alt="Five men modeling premium Denova denim jeans against a warm cream backdrop"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: "right top" }}
+            loading="lazy"
+            decoding="async"
+          />
+          {/* Bottom fade so text sits comfortably against cream */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-[#f5f0e8] pointer-events-none" />
         </div>
 
-        {/* Content — mobile */}
         <div className="site-container py-10 sm:py-14">
           <NewsletterContent
             email={email}
@@ -109,21 +133,20 @@ export function NewsletterSection() {
       <div className="hidden lg:block">
         <div className="relative min-h-[560px] xl:min-h-[640px] 2xl:min-h-[700px]">
 
-          {/* Full-width hero image as background — models on right, cream on left */}
-          <picture>
-            <source srcSet="/uploads/general/newsletter.avif" type="image/avif" />
-            <source srcSet="/uploads/general/newsletter.webp" type="image/webp" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/uploads/general/newsletter.png"
-              alt="Five men modeling premium Denova denim jeans against a warm cream backdrop"
-              className="absolute inset-0 w-full h-full object-cover object-right"
-              loading="lazy"
-              decoding="async"
-            />
-          </picture>
+          {/* Full-width hero image — models on right, cream on left */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={IMG_1600}
+            srcSet={srcSet}
+            sizes="100vw"
+            alt="Five men modeling premium Denova denim jeans against a warm cream backdrop"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: "right top" }}
+            loading="lazy"
+            decoding="async"
+          />
 
-          {/* Left-side cream gradient overlay — ensures text has solid contrast even if image shifts */}
+          {/* Left-side cream gradient — ensures text contrast even if image shifts */}
           <div
             className="absolute inset-y-0 left-0 w-[55%] pointer-events-none"
             style={{
@@ -132,7 +155,7 @@ export function NewsletterSection() {
             }}
           />
 
-          {/* Decorative floating circles (kept from original, only on left side) */}
+          {/* Decorative floating circles */}
           <div
             className="absolute top-16 left-16 w-40 h-40 rounded-full bg-[#c9a96e]/8 animate-float-soft pointer-events-none"
             style={{ animationDuration: "8s" }}
@@ -142,7 +165,7 @@ export function NewsletterSection() {
             style={{ animationDuration: "10s", animationDelay: "1s" }}
           />
 
-          {/* Subtle dot pattern — very faint, adds texture */}
+          {/* Subtle dot pattern on left side */}
           <div
             className="absolute inset-y-0 left-0 w-[45%] opacity-[0.04] pointer-events-none"
             style={{
@@ -193,7 +216,6 @@ function NewsletterContent({
   return (
     <div className={`flex flex-col ${flexAlign} ${textAlign}`}>
 
-      {/* Eyebrow — with subtle sparkle icon */}
       <FadeIn>
         <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#c9a96e]">
           <Sparkles size={12} className="opacity-80" />
@@ -201,11 +223,10 @@ function NewsletterContent({
         </span>
       </FadeIn>
 
-      {/* Heading */}
       <TextReveal as="h2" delay={100}>
         <span
           id="newsletter-heading"
-          className={`font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold text-[#1a1a1a] mt-4 block leading-[1.05]`}
+          className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold text-[#1a1a1a] mt-4 block leading-[1.05]"
         >
           Dress the Part.
           <br />
@@ -213,7 +234,6 @@ function NewsletterContent({
         </span>
       </TextReveal>
 
-      {/* Description */}
       <FadeIn delay={200}>
         <p className={`text-[#4a4a4a] text-sm sm:text-base leading-relaxed mt-5 max-w-md ${isLeft ? "" : "mx-auto"}`}>
           Get first access to new denim drops, exclusive member-only pricing,
@@ -221,12 +241,11 @@ function NewsletterContent({
         </p>
       </FadeIn>
 
-      {/* Perks list — only on desktop / left aligned */}
       {isLeft && (
         <SlideIn from="left" distance={20} delay={280} duration={600}>
           <ul className="mt-6 space-y-2.5">
             {[
-              "50% off your per order",
+              "10% off your first order",
               "Early access to limited collections",
               "Insider styling tips & lookbooks",
             ].map((perk) => (
@@ -239,7 +258,6 @@ function NewsletterContent({
         </SlideIn>
       )}
 
-      {/* Form */}
       <ScaleIn from={0.95} delay={350}>
         <form
           onSubmit={onSubmit}
@@ -259,7 +277,6 @@ function NewsletterContent({
               className="input-focus-gold w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none transition-all duration-300 placeholder:text-[#6b7280]/60 rounded-none"
               disabled={status === "loading" || status === "success"}
             />
-            {/* Gold underline that draws on focus */}
             <span
               className="absolute bottom-0 left-0 h-[2px] bg-[#c9a96e] transition-transform duration-500 origin-left w-full"
               style={{ transform: isFocused ? "scaleX(1)" : "scaleX(0)" }}
@@ -291,14 +308,12 @@ function NewsletterContent({
         </form>
       </ScaleIn>
 
-      {/* Success inline message */}
       {status === "success" && (
         <div className={`mt-4 text-sm text-[#c9a96e] font-medium animate-fade-zoom-in ${isLeft ? "" : "text-center"}`}>
           Thank you! You&apos;re now part of the Denova community. 🎉
         </div>
       )}
 
-      {/* Trust line */}
       <FadeIn delay={450}>
         <p className={`mt-5 text-[11px] text-[#6b7280]/80 tracking-wide ${isLeft ? "" : "text-center"}`}>
           No spam, ever. Unsubscribe anytime. By subscribing you agree to our{" "}
