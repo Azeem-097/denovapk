@@ -15,11 +15,11 @@ const MARQUEE_ITEMS = [
   "Premium Denim",
   "Handcrafted in Pakistan",
   "Export Quality",
-  "Free Shipping over PKR 5,000",
+  "Free Shipping all over Pakistan",
   "Selvedge Craftsmanship",
   "Cash on Delivery",
-  "30-Day Returns",
-  "Since 2016",
+  "7-Day Returns",
+  "Since 2026",
 ];
 
 export function Testimonials({ testimonials }: Props) {

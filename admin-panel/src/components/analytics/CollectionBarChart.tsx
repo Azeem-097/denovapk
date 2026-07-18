@@ -53,9 +53,11 @@ export function CollectionBarChart({ data }: Props) {
             background: "#1a1a1a", border: "none", borderRadius: 4,
             fontSize: 12, color: "#fff",
           }}
-          formatter={(value: number, _name, entry) => {
-            const rec = entry.payload as { units: number };
-            return [`${formatPaisa(value * 100)} (${rec.units} units)`, "Revenue"];
+          formatter={(value, _name, entry) => {
+            const num = typeof value === "number" ? value : Number(value) || 0;
+            const rec = (entry?.payload ?? {}) as { units?: number };
+            const units = rec.units ?? 0;
+            return [`${formatPaisa(num * 100)} (${units} units)`, "Revenue"];
           }}
         />
         <Bar dataKey="revenueRupees" fill="#c9a96e" radius={[0, 3, 3, 0]} />

@@ -58,9 +58,10 @@ export function RevenueAreaChart({ data, height = 260 }: Props) {
             color:      "#fff",
           }}
           labelStyle={{ color: "#c9a96e", fontWeight: 600 }}
-          formatter={(value: number, name) => {
-            if (name === "revenueRupees") return [formatPaisa(value * 100), "Revenue"];
-            return [value, name];
+          formatter={(value, name) => {
+            const num = typeof value === "number" ? value : Number(value) || 0;
+            if (name === "revenueRupees") return [formatPaisa(num * 100), "Revenue"];
+            return [String(value ?? ""), String(name ?? "")];
           }}
         />
         <Area

@@ -65,7 +65,10 @@ export function StatusDonut({ data }: Props) {
               background: "#1a1a1a", border: "none", borderRadius: 4,
               fontSize: 12, color: "#fff",
             }}
-            formatter={(value: number, name) => [`${value} order${value === 1 ? "" : "s"}`, name]}
+            formatter={(value, name) => {
+              const num = typeof value === "number" ? value : Number(value) || 0;
+              return [`${num} order${num === 1 ? "" : "s"}`, String(name ?? "")];
+            }}
           />
         </PieChart>
       </ResponsiveContainer>
