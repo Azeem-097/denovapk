@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useState } from "react";
-import { Send, CheckCircle, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Send, CheckCircle, Sparkles, ArrowRight } from "lucide-react";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
 import { ScaleIn } from "@/components/animations/ScaleIn";
@@ -105,34 +106,25 @@ export function NewsletterSection() {
       aria-labelledby="newsletter-heading"
       className="relative bg-[#f5f0e8] overflow-hidden"
     >
-            {/* ═══════════════════════════════════════════════════════
-          MOBILE LAYOUT (< 1024px): image is the BACKGROUND
-          Content overlays it with a cream scrim for readability
+                        {/* ═══════════════════════════════════════════════════════
+          MOBILE LAYOUT (< 1024px): stacked (original version)
+          Image on top, content below
           ═══════════════════════════════════════════════════════ */}
-      <div className="lg:hidden relative min-h-[680px] sm:min-h-[720px] overflow-hidden">
-        {/* Background image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={IMG_MBL_900}
-          srcSet={srcSetMobile}
-          sizes="100vw"
-          alt="Denova denim jeans on premium models"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          loading="lazy"
-          decoding="async"
-        />
+      <div className="lg:hidden">
+        <div className="relative w-full aspect-[1254/1254] overflow-hidden bg-[#f5f0e8]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={IMG_MBL_900}
+            srcSet={srcSetMobile}
+            sizes="100vw"
+            alt="Denova denim jeans on premium models"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
-        {/* Cream scrim from BOTTOM to give content a readable area */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(245,240,232,0) 0%, rgba(245,240,232,0.55) 45%, rgba(245,240,232,0.92) 70%, #f5f0e8 90%)",
-          }}
-        />
-
-        {/* Content on top of scrim, pinned to bottom */}
-        <div className="absolute inset-x-0 bottom-0 site-container pb-10 sm:pb-14 pt-56 sm:pt-64">
+        <div className="site-container py-10 sm:py-14">
           <NewsletterContent
             email={email}
             setEmail={setEmail}
