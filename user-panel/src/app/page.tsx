@@ -10,6 +10,11 @@ import { getProducts }              from "@/lib/db/repositories/products";
 import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
 import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
 
+type HeroBanner = {
+  isActive: true;
+  sortOrder: number;
+};
+
 export const dynamic   = "force-dynamic";
 export const revalidate = 0;
 
@@ -27,13 +32,19 @@ export default async function HomePage() {
   const bestSellers  = dbBestSellers.map(adaptProduct);
   const testimonials = getMockTestimonials();
 
-  let heroBanners: unknown[] = [];
+  let heroBanners: HeroBanner[] = [];
   if (heroBannersRaw) {
     try {
       const all: unknown[] = JSON.parse(heroBannersRaw);
       heroBanners = all
-        .filter((b): b is { isActive: boolean } => typeof b === "object" && b !== null && (b as { isActive?: boolean }).isActive === true)
-        .sort((a, b) => (a as { sortOrder: number }).sortOrder - (b as { sortOrder: number }).sortOrder);
+        .filter(
+          (b): b is HeroBanner =>
+            typeof b === "object" &&
+            b !== null &&
+            (b as { isActive?: boolean }).isActive === true &&
+            typeof (b as { sortOrder?: unknown }).sortOrder === "number"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder);
     } catch { heroBanners = []; }
   }
 
