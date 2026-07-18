@@ -1,4 +1,8 @@
-﻿"use client";
+﻿================================================================
+CURRENT NewsletterSection.tsx
+Total lines: 283
+================================================================
+"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { Send, CheckCircle, Sparkles, ArrowRight } from "lucide-react";
@@ -40,15 +44,12 @@ const IMG_MBL_1200 = buildMblUrl(1200);
 /**
  * NewsletterSection — Split layout
  *
- *   Desktop (≥ 1024px):
- *     - Wide hero image (1915 x 821) with models on right, cream on left
- *     - Image drives section height (no min-height, no gap)
- *     - Content absolutely positioned on left cream area
+ *   Desktop: IMAGE dictates section height (no min-height forced).
+ *            Full uncropped image with shoes visible.
+ *            Content sits absolutely-positioned on the left cream area.
  *
- *   Mobile (< 1024px):
- *     - Square hero image (1254 x 1254)
- *     - "Shop Now" button pinned to bottom-center of image
- *     - Newsletter content flows below on cream background
+ *   Mobile:  Dedicated mobile image (different framing).
+ *            Image stacks on top, content flows below.
  */
 export function NewsletterSection() {
   const [email, setEmail]         = useState("");
@@ -109,13 +110,12 @@ export function NewsletterSection() {
       aria-labelledby="newsletter-heading"
       className="relative bg-[#f5f0e8] overflow-hidden"
     >
-      {/* ═══════════════════════════════════════════════════════
-          MOBILE LAYOUT (< 1024px): stacked
-          Image on top with Shop Now button, content below
+                        {/* ═══════════════════════════════════════════════════════
+          MOBILE LAYOUT (< 1024px): stacked (original version)
+          Image on top, content below
           ═══════════════════════════════════════════════════════ */}
       <div className="lg:hidden">
-        {/* Image container with 1:1 aspect matching source */}
-        <div className="relative w-full aspect-square overflow-hidden bg-[#f5f0e8]">
+        <div className="relative w-full aspect-[1254/1254] overflow-hidden bg-[#f5f0e8]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={IMG_MBL_900}
@@ -127,17 +127,16 @@ export function NewsletterSection() {
             decoding="async"
           />
 
-          {/* Shop Now button — pinned at bottom-center of image */}
+          {/* Shop Now button — pinned at bottom of image */}
           <Link
             href="/shop"
-            className="shimmer-btn absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-xs font-semibold tracking-[0.18em] uppercase hover:bg-[#c9a96e] transition-all duration-300 shadow-2xl"
+            className="absolute bottom-5 sm:bottom-7 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-7 py-3 text-xs font-semibold tracking-[0.15em] uppercase hover:bg-[#c9a96e] transition-all duration-300 shadow-xl shimmer-btn"
           >
             Shop Now
             <ArrowRight size={14} />
           </Link>
         </div>
 
-        {/* Newsletter content below image, on cream background */}
         <div className="site-container py-10 sm:py-14">
           <NewsletterContent
             email={email}
@@ -148,67 +147,6 @@ export function NewsletterSection() {
             onSubmit={handleSubmit}
             align="center"
           />
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════
-          DESKTOP LAYOUT (≥ 1024px): image drives height, content overlays
-          The image is a natural block element with h-auto, so:
-            section height === image height  →  no gap possible
-          ═══════════════════════════════════════════════════════ */}
-      <div className="hidden lg:block relative">
-        {/* Full image, uncropped — shoes visible at bottom */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={IMG_1600}
-          srcSet={srcSet}
-          sizes="100vw"
-          alt="Five men modeling premium Denova denim jeans against a warm cream backdrop"
-          className="block w-full h-auto"
-          loading="lazy"
-          decoding="async"
-        />
-
-        {/* Left-side cream gradient overlay for text contrast */}
-        <div
-          className="absolute inset-y-0 left-0 w-[55%] pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(90deg, #f5f0e8 0%, #f5f0e8 55%, rgba(245,240,232,0.85) 80%, rgba(245,240,232,0) 100%)",
-          }}
-        />
-
-        {/* Decorative floating circles */}
-        <div
-          className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#c9a96e]/8 animate-float-soft pointer-events-none"
-          style={{ animationDuration: "8s" }}
-        />
-        <div
-          className="absolute bottom-[10%] left-[8%] w-32 h-32 rounded-full bg-[#c9a96e]/6 animate-float-soft pointer-events-none"
-          style={{ animationDuration: "10s", animationDelay: "1s" }}
-        />
-
-        {/* Subtle dot pattern on left side */}
-        <div
-          className="absolute inset-y-0 left-0 w-[45%] opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        />
-
-        {/* Content absolutely centered vertically on the left cream area */}
-        <div className="absolute inset-0 site-container flex items-center">
-          <div className="w-full max-w-[560px] lg:pr-8">
-            <NewsletterContent
-              email={email}
-              setEmail={setEmail}
-              status={status}
-              isFocused={isFocused}
-              setIsFocused={setIsFocused}
-              onSubmit={handleSubmit}
-              align="left"
-            />
-          </div>
         </div>
       </div>
     </section>
