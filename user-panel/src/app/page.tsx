@@ -7,18 +7,19 @@ import { GallerySection }       from "@/components/sections/GallerySection";
 import { NewsletterSection }    from "@/components/sections/NewsletterSection";
 import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
 import { getProducts }              from "@/lib/db/repositories/products";
-import { getSetting }               from "@/lib/db/repositories/settings";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
 import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
 
 export const dynamic   = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const [dbCollections, dbNewArrivals, dbBestSellers, heroBannersRaw] = await Promise.all([
+  const [dbCollections, dbNewArrivals, dbBestSellers, heroBannersRaw, heroRotation] = await Promise.all([
     getCollectionsWithCounts(),
     getProducts({ isNew:        true, limit: 8, sortBy: "newest" }),
     getProducts({ isBestSeller: true, limit: 8, sortBy: "bestselling" }),
     getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
   ]);
 
   const collections  = dbCollections.map(adaptCollection);
@@ -26,21 +27,20 @@ export default async function HomePage() {
   const bestSellers  = dbBestSellers.map(adaptProduct);
   const testimonials = getMockTestimonials();
 
-  let heroBanners: HeroBanner[] = [];
+  let heroBanners: unknown[] = [];
   if (heroBannersRaw) {
     try {
-      const all: HeroBanner[] = JSON.parse(heroBannersRaw);
+      const all: unknown[] = JSON.parse(heroBannersRaw);
       heroBanners = all
-        .filter((b) => b.isActive)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-    } catch {
-      heroBanners = [];
-    }
+        .filter((b): b is { isActive: boolean } => typeof b === "object" && b !== null && (b as { isActive?: boolean }).isActive === true)
+        .sort((a, b) => (a as { sortOrder: number }).sortOrder - (b as { sortOrder: number }).sortOrder);
+    } catch { heroBanners = []; }
   }
 
   return (
     <>
-      <HeroSection banners={heroBanners} />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
       <FeaturedCollections collections={collections} />
       <NewArrivals newArrivals={newArrivals} bestSellers={bestSellers} />
       <BrandStory />
@@ -49,19 +49,4 @@ export default async function HomePage() {
       <NewsletterSection />
     </>
   );
-}
-
-interface HeroBanner {
-  id:                   string;
-  image:                string;
-  imageMobile?:         string;
-  title:                string;
-  subtitle:             string;
-  description:          string;
-  buttonLabel:          string;
-  buttonHref:           string;
-  buttonSecondaryLabel: string;
-  buttonSecondaryHref:  string;
-  isActive:             boolean;
-  sortOrder:            number;
 }

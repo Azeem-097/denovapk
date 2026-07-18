@@ -49,7 +49,7 @@ export function CollectionDetailClient({ collection, products }: Props) {
         <Image src={collection.image} alt={collection.name} fill className="object-cover" sizes="100vw" priority quality={85} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
         <div className="absolute inset-0 flex items-end pb-10 sm:pb-14">
-          <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="site-container w-full">
             <FadeIn>
               <Breadcrumb items={[
                 { label: "Home",        href: "/" },
@@ -72,7 +72,7 @@ export function CollectionDetailClient({ collection, products }: Props) {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+      <div className="site-container py-8 lg:py-10">
         <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
           <p className="text-sm text-[#6b7280]">
             <span className="font-medium text-[#1a1a1a]">{sorted.length}</span> products

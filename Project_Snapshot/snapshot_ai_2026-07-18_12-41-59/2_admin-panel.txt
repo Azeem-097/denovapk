@@ -1,8 +1,8 @@
 ================================================================================
 DENOVA PK PROJECT EXTRACT: Admin Panel (src/)
-Generated: 2026-07-17 08:21:45
+Generated: 2026-07-18 12:41:59
 Source: D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\admin-panel\src
-Files: 111
+Files: 113
 ================================================================================
 
 TABLE OF CONTENTS
@@ -50,7 +50,7 @@ TABLE OF CONTENTS
 [Global Styles] (1 files)
   - app\globals.css
 
-[Other] (85 files)
+[Other] (87 files)
   - app\(auth)\login\page.tsx
   - app\(dashboard)\abandoned-carts\AbandonedCartsClient.tsx
   - app\(dashboard)\abandoned-carts\page.tsx
@@ -90,8 +90,10 @@ TABLE OF CONTENTS
   - app\(dashboard)\settings\FirstOrderTab.tsx
   - app\(dashboard)\settings\FooterTab.tsx
   - app\(dashboard)\settings\page.tsx
+  - app\(dashboard)\settings\PaymentMethodsTab.tsx
   - app\(dashboard)\settings\profile\page.tsx
   - app\(dashboard)\settings\SettingsClient.tsx
+  - app\(dashboard)\settings\ShippingTab.tsx
   - app\(dashboard)\staff\page.tsx
   - app\api\abandoned-carts\[id]\route.ts
   - app\api\abandoned-carts\route.ts
@@ -1171,22 +1173,145 @@ main().catch((e) => { console.error(e); process.exit(1); });
 ================================================================================
 FILE: lib\db\client.ts
 CATEGORY: DB Client
-SIZE: 612 B
+SIZE: 6.7 KB
 ================================================================================
 
 import { createClient } from "@libsql/client";
 
 /**
- * Turso database client.
- * Uses TURSO_DATABASE_URL and TURSO_AUTH_TOKEN from .env
+ * Turso database client with hardened startup diagnostic.
+ *
+ * Catches common .env misconfiguration issues:
+ *   - Missing credentials
+ *   - Placeholder text still in .env
+ *   - Wrong URL protocol
+ *   - Leading/trailing quote characters (Windows editor issue)
+ *   - Whitespace or newline characters in credentials
+ *   - Smart/curly quotes from copy-paste
  */
 
-const url       = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
+function validateTursoConfig() {
+  let url       = process.env.TURSO_DATABASE_URL;
+  let authToken = process.env.TURSO_AUTH_TOKEN;
 
-if (!url) {
-  throw new Error("Missing TURSO_DATABASE_URL in environment variables");
+  const errors:   string[] = [];
+  const fixed:    string[] = [];
+
+  // ═══════════════════════════════════════════════════════
+  //  AUTO-CLEAN: strip leftover quotes and whitespace
+  //  (common when .env has malformed quotes on Windows)
+  // ═══════════════════════════════════════════════════════
+  const clean = (v: string | undefined): string | undefined => {
+    if (!v) return v;
+    let x = v.trim();
+
+    // Strip surrounding quotes (both symmetric and asymmetric)
+    if (x.startsWith('"') || x.startsWith("'")) {
+      x = x.slice(1);
+      return clean(x); // recurse in case there are also trailing
+    }
+    if (x.endsWith('"') || x.endsWith("'")) {
+      x = x.slice(0, -1);
+      return clean(x);
+    }
+
+    // Strip smart quotes (U+201C U+201D U+2018 U+2019)
+    x = x.replace(/^[\u201C\u201D\u2018\u2019]+/, "");
+    x = x.replace(/[\u201C\u201D\u2018\u2019]+$/, "");
+
+    return x;
+  };
+
+  const cleanedUrl   = clean(url);
+  const cleanedToken = clean(authToken);
+
+  if (cleanedUrl !== url) {
+    fixed.push("TURSO_DATABASE_URL had leading/trailing quotes — cleaned at runtime");
+    process.env.TURSO_DATABASE_URL = cleanedUrl;
+    url = cleanedUrl;
+  }
+  if (cleanedToken !== authToken) {
+    fixed.push("TURSO_AUTH_TOKEN had leading/trailing quotes — cleaned at runtime");
+    process.env.TURSO_AUTH_TOKEN = cleanedToken;
+    authToken = cleanedToken;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  VALIDATE
+  // ═══════════════════════════════════════════════════════
+  if (!url) {
+    errors.push("TURSO_DATABASE_URL is missing");
+  } else if (url.includes("XXX") || url.includes("your-database")) {
+    errors.push("TURSO_DATABASE_URL still contains placeholder text");
+  } else if (!url.startsWith("libsql://") && !url.startsWith("https://")) {
+    errors.push(`TURSO_DATABASE_URL has invalid protocol. Got: ${url.slice(0, 20)}...`);
+  }
+
+  if (!authToken) {
+    errors.push("TURSO_AUTH_TOKEN is missing");
+  } else if (authToken.includes("XXX") || authToken.includes("your-auth-token")) {
+    errors.push("TURSO_AUTH_TOKEN still contains placeholder text");
+  } else if (authToken.length < 30) {
+    errors.push(`TURSO_AUTH_TOKEN is too short (${authToken.length} chars). Regenerate the token at https://app.turso.tech`);
+  }
+
+  const RED    = "\x1b[31m";
+  const YELLOW = "\x1b[33m";
+  const CYAN   = "\x1b[36m";
+  const BOLD   = "\x1b[1m";
+  const RESET  = "\x1b[0m";
+  const GREEN  = "\x1b[32m";
+
+  // Report auto-fixes (non-blocking warnings)
+  if (fixed.length > 0) {
+    for (const msg of fixed) {
+      console.warn(YELLOW + "[Turso Admin] AUTO-FIXED: " + RESET + msg);
+    }
+    console.warn(YELLOW + "[Turso Admin] Consider fixing your .env file manually — remove the stray quote character." + RESET);
+  }
+
+  // Report blocking errors
+  if (errors.length > 0) {
+    console.error("\n" + RED + BOLD + "═══════════════════════════════════════════════════════════════" + RESET);
+    console.error(RED + BOLD + "  ❌  TURSO DATABASE CONFIGURATION ERROR (ADMIN PANEL)" + RESET);
+    console.error(RED + BOLD + "═══════════════════════════════════════════════════════════════" + RESET + "\n");
+
+    console.error(YELLOW + "  Problems detected:" + RESET);
+    for (const problem of errors) {
+      console.error(RED + "    ✗ " + RESET + problem);
+    }
+
+    console.error("\n" + CYAN + BOLD + "  HOW TO FIX:" + RESET + "\n");
+    console.error(CYAN + "  1. Go to " + BOLD + "https://app.turso.tech" + RESET);
+    console.error(CYAN + "  2. Open your 'denovapk' database" + RESET);
+    console.error(CYAN + "  3. Click " + BOLD + "'+ Create Token'" + RESET + CYAN + " (expiration: Never)" + RESET);
+    console.error(CYAN + "  4. Copy the ENTIRE token (usually 300+ chars, starts with 'eyJ')" + RESET);
+    console.error(CYAN + "  5. Update BOTH .env files with matching quote style:" + RESET);
+    console.error(GREEN + '       TURSO_AUTH_TOKEN="eyJhbGci..."' + RESET);
+    console.error(GREEN + "                        ↑                ↑" + RESET);
+    console.error(GREEN + "                     OPENING         CLOSING QUOTE" + RESET);
+    console.error(CYAN + "  6. " + BOLD + "Restart the dev server" + RESET + CYAN + " (env vars only load on startup)" + RESET + "\n");
+
+    console.error(RED + BOLD + "═══════════════════════════════════════════════════════════════" + RESET + "\n");
+
+    throw new Error("Turso database is not properly configured. See error details above.");
+  }
+
+  // Success
+  if (process.env.NODE_ENV !== "production") {
+    const shortHost = url!.replace(/^(libsql|https):\/\//, "").split(".")[0];
+    console.log(GREEN + "[Turso Admin] ✓ Connected to " + shortHost + RESET);
+  }
 }
+
+validateTursoConfig();
+
+
+// ═══════════════════════════════════════════════════════════
+//  Client initialization
+// ═══════════════════════════════════════════════════════════
+const url       = process.env.TURSO_DATABASE_URL!;
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
 const globalForDb = globalThis as unknown as {
   db: ReturnType<typeof createClient> | undefined;
@@ -3411,7 +3536,7 @@ export async function clearWishlist(userId: string): Promise<void> {
 ================================================================================
 FILE: lib\db\seed.ts
 CATEGORY: DB Seed
-SIZE: 15.1 KB
+SIZE: 19.9 KB
 ================================================================================
 
 /**
@@ -3427,6 +3552,30 @@ import { randomBytes } from "crypto";
 const genId = () => "c" + randomBytes(12).toString("hex");
 const now   = () => Math.floor(Date.now() / 1000);
 
+// ═══════════════════════════════════════════════════════════════════
+//  SAFETY GUARD — prevents accidental data wipe
+// ═══════════════════════════════════════════════════════════════════
+const FORCE_FLAG = process.argv.includes("--force");
+
+if (!FORCE_FLAG) {
+  console.error("\n╔══════════════════════════════════════════════════════════════╗");
+  console.error("║                                                              ║");
+  console.error("║   ⚠️   DANGER: This script will DELETE ALL DATA in your DB   ║");
+  console.error("║                                                              ║");
+  console.error("║   - All products, collections, orders, users will be wiped   ║");
+  console.error("║   - All settings will be reset to defaults                   ║");
+  console.error("║   - This cannot be undone (no backups on Turso Free tier)    ║");
+  console.error("║                                                              ║");
+  console.error("║   To proceed, re-run with the --force flag:                  ║");
+  console.error("║                                                              ║");
+  console.error("║     npm run db:seed -- --force                               ║");
+  console.error("║                                                              ║");
+  console.error("╚══════════════════════════════════════════════════════════════╝\n");
+  process.exit(1);
+}
+
+console.log("[FORCE FLAG DETECTED] Proceeding with database seed...\n");
+
 async function seed() {
   const url       = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -3440,7 +3589,6 @@ async function seed() {
 
   console.log("Seeding database...\n");
 
-  // Clean existing data
   console.log("Cleaning existing data...");
   const tables = [
     "loyalty_transactions", "abandoned_carts",
@@ -3460,7 +3608,6 @@ async function seed() {
   }
   console.log("Cleaned.\n");
 
-  // ─── Admin ───────────────────────────────────────────
   console.log("Creating admin...");
   const adminId       = genId();
   const adminPassword = await bcrypt.hash("admin1234", 10);
@@ -3471,7 +3618,6 @@ async function seed() {
   });
   console.log("Admin: admin@denovapk.com / admin1234\n");
 
-  // ─── User (with birthday for testing) ────────────────
   console.log("Creating test user with birthday...");
   const userId       = genId();
   const userPassword = await bcrypt.hash("demo1234", 10);
@@ -3493,7 +3639,6 @@ async function seed() {
   });
   console.log(`User: ayesha@example.com / demo1234 (birthday: ${testBirthday}, 500 pts)\n`);
 
-  // ─── Collections ─────────────────────────────────────
   console.log("Creating collections...");
   const collections = [
     { id: genId(), name: "Summer Essentials", slug: "summer-essentials", desc: "Light, breathable pieces for the warm season",  img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800" },
@@ -3512,7 +3657,6 @@ async function seed() {
   }
   console.log("");
 
-  // ─── Products ────────────────────────────────────────
   console.log("Creating products...");
   const products = [
     { name: "Classic Linen Kurta",    slug: "classic-linen-kurta",    sku: "CLK-001", price: 350000,  compare: 450000,  coll: 0, sold: 278, stock: 23, isNew: 0, isFeatured: 1, isBestSeller: 1, img: "https://images.unsplash.com/photo-1604975701397-6365ccbd028a?w=800", desc: "A timeless linen kurta crafted for everyday elegance.", tags: "kurta,linen,summer" },
@@ -3555,7 +3699,6 @@ async function seed() {
   }
   console.log("");
 
-  // ─── Discounts ───────────────────────────────────────
   console.log("Creating discounts...");
   const oneYear = now() + 60 * 60 * 24 * 365;
   await db.execute({
@@ -3570,8 +3713,43 @@ async function seed() {
   });
   console.log("2 discount codes\n");
 
-  // ─── SETTINGS (Default configuration) ────────────────
   console.log("Creating default settings...");
+
+  // Footer link columns (JSON arrays serialized as strings)
+  const footerCol1Links = JSON.stringify([
+    { label: "New Arrivals", href: "/shop?filter=new" },
+    { label: "Best Sellers", href: "/shop?filter=bestsellers" },
+    { label: "Sale",         href: "/shop?filter=sale" },
+    { label: "All Products", href: "/shop" },
+  ]);
+
+  const footerCol2Links = JSON.stringify([
+    { label: "Premium",         href: "/collections/premium" },
+    { label: "Super Premium",   href: "/collections/super-premium" },
+    { label: "All Collections", href: "/collections" },
+  ]);
+
+  const footerCol3Links = JSON.stringify([
+    { label: "Track My Order",    href: "/track-order" },
+    { label: "Returns & Refunds", href: "/returns" },
+    { label: "Shipping Policy",   href: "/shipping" },
+    { label: "Size Guide",        href: "/size-guide" },
+    { label: "FAQ",               href: "/faq" },
+    { label: "Contact Us",        href: "/contact" },
+  ]);
+
+  const footerCol4Links = JSON.stringify([
+    { label: "About Denova",     href: "/about" },
+    { label: "Careers",          href: "/careers" },
+    { label: "Privacy Policy",   href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
+  ]);
+
+  const footerBottomLinks = JSON.stringify([
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms",   href: "/terms" },
+    { label: "Sitemap", href: "/sitemap" },
+  ]);
 
   const defaultSettings: Array<[string, string, string]> = [
     ["brand_name",              "Denova PK",                                                      "restaurant"],
@@ -3612,6 +3790,32 @@ async function seed() {
     ["social_facebook",         "https://facebook.com/denovapk",                                   "social"],
     ["social_instagram",        "https://instagram.com/denovapk",                                  "social"],
     ["social_tiktok",           "https://tiktok.com/@denovapk",                                    "social"],
+
+    // ── Shipping ──
+    ["free_delivery_all",       "false",                                                           "shipping"],
+    ["shipping_base_cost",      "250",                                                             "shipping"],
+    ["cod_extra_fee",           "0",                                                               "shipping"],
+
+    // ── Payment Methods — all enabled by default ──
+    ["payment_cod_enabled",       "true",                                                          "payments"],
+    ["payment_card_enabled",      "true",                                                          "payments"],
+    ["payment_jazzcash_enabled",  "true",                                                          "payments"],
+    ["payment_easypaisa_enabled", "true",                                                          "payments"],
+    ["payment_bank_enabled",      "true",                                                          "payments"],
+
+    // ── Footer ──
+    ["footer_brand_description", "Premium clothing crafted for the modern Pakistani.",             "footer"],
+    ["footer_copyright",         "Denova PK. All rights reserved.",                                "footer"],
+    ["footer_payment_methods",   "JazzCash | EasyPaisa | COD | Bank Transfer",                     "footer"],
+    ["footer_col1_title",        "Shop",                                                           "footer"],
+    ["footer_col1_links",        footerCol1Links,                                                  "footer"],
+    ["footer_col2_title",        "Collections",                                                    "footer"],
+    ["footer_col2_links",        footerCol2Links,                                                  "footer"],
+    ["footer_col3_title",        "Help",                                                           "footer"],
+    ["footer_col3_links",        footerCol3Links,                                                  "footer"],
+    ["footer_col4_title",        "Company",                                                        "footer"],
+    ["footer_col4_links",        footerCol4Links,                                                  "footer"],
+    ["footer_bottom_links",      footerBottomLinks,                                                "footer"],
   ];
 
   for (const [key, value, category] of defaultSettings) {
@@ -7722,26 +7926,63 @@ export default async function GalleryPage() {
 ================================================================================
 FILE: app\(dashboard)\hero-banners\HeroBannersClient.tsx
 CATEGORY: Other
-SIZE: 30.2 KB
+SIZE: 58.3 KB
 ================================================================================
 
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import {
-  Image as ImageIcon, Plus, GripVertical, Trash2,
-  Eye, EyeOff, Edit, X, Loader, ExternalLink, Link as LinkIcon,
-  Upload, Info, Monitor, Smartphone,
+  Image as ImageIcon, Plus, GripVertical, Trash2, Eye, EyeOff, Edit, X, Loader,
+  Link as LinkIcon, Upload, Info, Monitor, Smartphone, Clock, Save,
+  Sparkles, Type, MousePointer2, Move,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToastStore }   from "@/store/toastStore";
 import { useConfirmStore } from "@/store/confirmStore";
 
-// ─── Types ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  Types (mirrored from user panel)
+// ═══════════════════════════════════════════════════════════
+type ElementKey = "brand" | "tagline" | "productDesc" | "originalPrice" | "currentPrice";
+
+interface ElementStyle {
+  enabled:       boolean;
+  text:          string;
+  x:             number;
+  y:             number;
+  anchor:        "start" | "center" | "end";
+  fontSize:      number;
+  fontWeight:    number;
+  fontFamily:    "serif" | "sans";
+  color:         string;
+  textAlign:     "left" | "center" | "right";
+  lineHeight:    number;
+  letterSpacing: number;
+  maxWidth:      number;
+  textShadow:    boolean;
+  uppercase:     boolean;
+  strikethrough: boolean;
+  nowPrefix:     boolean;
+}
+
+interface OverlayConfig {
+  brand:         ElementStyle;
+  tagline:       ElementStyle;
+  productDesc:   ElementStyle;
+  originalPrice: ElementStyle;
+  currentPrice:  ElementStyle;
+}
+
+interface OverlayV2 {
+  desktop: OverlayConfig;
+  mobile:  OverlayConfig;
+}
+
 export interface HeroBanner {
   id:                   string;
-  image:                string;   // Desktop
-  imageMobile?:         string;   // Mobile (optional but recommended)
+  image:                string;
+  imageMobile?:         string;
   title:                string;
   subtitle:             string;
   description:          string;
@@ -7751,76 +7992,208 @@ export interface HeroBanner {
   buttonSecondaryHref:  string;
   isActive:             boolean;
   sortOrder:            number;
+
+  overlayV2?:        OverlayV2;
+  overlayDarkness?:  number;
+  countdownEnabled?: boolean;
+  countdownEndsAt?:  string;
+
+  // Legacy
+  brand?:            string;
+  productTitle?:     string;
+  currentPrice?:     string;
+  originalPrice?:    string;
+  discountPercent?:  string;
+  contentPosition?:  string;
+  textTheme?:        "light" | "dark";
 }
 
-function genId(): string {
-  return "b" + Math.random().toString(36).slice(2, 14);
+const ELEMENT_LABELS: Record<ElementKey, string> = {
+  brand:         "Brand Name",
+  tagline:       "Tagline / Headline",
+  productDesc:   "Product Description",
+  originalPrice: "Original Price",
+  currentPrice:  "Current Price",
+};
+
+const ELEMENT_ORDER: ElementKey[] = ["brand", "tagline", "productDesc", "originalPrice", "currentPrice"];
+
+// ═══════════════════════════════════════════════════════════
+//  Defaults & presets
+// ═══════════════════════════════════════════════════════════
+function defaultElementStyle(overrides: Partial<ElementStyle> = {}): ElementStyle {
+  return {
+    enabled:       false, text: "",
+    x:             5, y: 10, anchor: "start",
+    fontSize:      24, fontWeight: 500, fontFamily: "sans",
+    color:         "#1a2b5c",
+    textAlign:     "left", lineHeight: 1.2, letterSpacing: 0, maxWidth: 45,
+    textShadow:    false, uppercase: false, strikethrough: false, nowPrefix: false,
+    ...overrides,
+  };
 }
+
+function emptyOverlayConfig(): OverlayConfig {
+  return {
+    brand:         defaultElementStyle(),
+    tagline:       defaultElementStyle(),
+    productDesc:   defaultElementStyle(),
+    originalPrice: defaultElementStyle({ strikethrough: true }),
+    currentPrice:  defaultElementStyle(),
+  };
+}
+
+function emptyOverlayV2(): OverlayV2 {
+  return { desktop: emptyOverlayConfig(), mobile: emptyOverlayConfig() };
+}
+
+// Guess/J&J reference preset
+function referenceDesignPreset(): OverlayV2 {
+  const NAVY = "#1a2b5c";
+
+  const desktop: OverlayConfig = {
+    brand: defaultElementStyle({
+      enabled: true, text: "GUESS\n(USA)",
+      x: 5, y: 6, anchor: "start",
+      fontSize: 76, fontWeight: 700, fontFamily: "serif",
+      color: NAVY, textAlign: "left", lineHeight: 1.0, maxWidth: 30,
+    }),
+    tagline: defaultElementStyle({
+      enabled: true, text: "Timeless Comfort.\nEffortless Style.",
+      x: 5, y: 40, anchor: "start",
+      fontSize: 92, fontWeight: 700, fontFamily: "serif",
+      color: NAVY, textAlign: "left", lineHeight: 1.0, letterSpacing: -0.01, maxWidth: 55,
+    }),
+    productDesc: defaultElementStyle({
+      enabled: true, text: "Classic Navy — Garment-Dyed Twill — Relaxed Fit Chino.",
+      x: 5, y: 68, anchor: "start",
+      fontSize: 28, fontWeight: 400, fontFamily: "sans",
+      color: NAVY, textAlign: "left", lineHeight: 1.4, maxWidth: 45,
+    }),
+    originalPrice: defaultElementStyle({
+      enabled: true, text: "Rs 5400/-",
+      x: 5, y: 80, anchor: "start",
+      fontSize: 32, fontWeight: 400, fontFamily: "sans",
+      color: NAVY, textAlign: "left", strikethrough: true, maxWidth: 30,
+    }),
+    currentPrice: defaultElementStyle({
+      enabled: true, text: "Rs 2699/-",
+      x: 5, y: 87, anchor: "start",
+      fontSize: 68, fontWeight: 700, fontFamily: "sans",
+      color: NAVY, textAlign: "left", nowPrefix: true, maxWidth: 45,
+    }),
+  };
+
+  const mobile: OverlayConfig = {
+    brand: defaultElementStyle({
+      enabled: true, text: "GUESS\n(USA)",
+      x: 5, y: 3, anchor: "start",
+      fontSize: 44, fontWeight: 700, fontFamily: "serif",
+      color: NAVY, textAlign: "left", lineHeight: 1.0, maxWidth: 45,
+    }),
+    tagline: defaultElementStyle({
+      enabled: true, text: "Timeless\nComfort.\nEffortless\nStyle.",
+      x: 5, y: 32, anchor: "start",
+      fontSize: 56, fontWeight: 700, fontFamily: "serif",
+      color: NAVY, textAlign: "left", lineHeight: 1.0, letterSpacing: -0.01, maxWidth: 55,
+    }),
+    productDesc: defaultElementStyle({
+      enabled: true, text: "Classic Navy — Garment-Dyed Twill — Relaxed Fit Chino.",
+      x: 5, y: 68, anchor: "start",
+      fontSize: 20, fontWeight: 400, fontFamily: "sans",
+      color: NAVY, textAlign: "left", lineHeight: 1.4, maxWidth: 55,
+    }),
+    originalPrice: defaultElementStyle({
+      enabled: true, text: "Rs 5400/-",
+      x: 5, y: 82, anchor: "start",
+      fontSize: 22, fontWeight: 400, fontFamily: "sans",
+      color: NAVY, textAlign: "left", strikethrough: true, maxWidth: 35,
+    }),
+    currentPrice: defaultElementStyle({
+      enabled: true, text: "Rs 2699/-",
+      x: 5, y: 88, anchor: "start",
+      fontSize: 48, fontWeight: 700, fontFamily: "sans",
+      color: NAVY, textAlign: "left", nowPrefix: true, maxWidth: 60,
+    }),
+  };
+
+  return { desktop, mobile };
+}
+
+function genId(): string { return "b" + Math.random().toString(36).slice(2, 14); }
 
 function emptyBanner(): HeroBanner {
   return {
-    id:                   genId(),
-    image:                "",
-    imageMobile:          "",
-    title:                "",
-    subtitle:             "",
-    description:          "",
-    buttonLabel:          "",
-    buttonHref:           "",
-    buttonSecondaryLabel: "",
-    buttonSecondaryHref:  "",
-    isActive:             true,
-    sortOrder:            0,
+    id: genId(),
+    image: "", imageMobile: "",
+    title: "", subtitle: "", description: "",
+    buttonLabel: "", buttonHref: "",
+    buttonSecondaryLabel: "", buttonSecondaryHref: "",
+    isActive: true, sortOrder: 0,
+    overlayV2: emptyOverlayV2(),
+    overlayDarkness: 0,
+    countdownEnabled: false,
+    countdownEndsAt: "",
   };
+}
+
+// Ensure any loaded banner has overlayV2 (migrate old ones)
+function ensureOverlayV2(banner: HeroBanner): HeroBanner {
+  if (banner.overlayV2) return banner;
+  return { ...banner, overlayV2: emptyOverlayV2() };
 }
 
 // ─── Upload helpers ──────────────────────────────────────
 async function uploadImage(file: File): Promise<string | null> {
   const fd = new FormData();
-  fd.append("file", file);
-  fd.append("type", "banner");
+  fd.append("file", file); fd.append("type", "banner");
   const res  = await fetch("/api/upload", { method: "POST", body: fd });
   const data = await res.json();
   return res.ok ? data.image.url : null;
 }
-
 async function uploadImageFromUrl(url: string): Promise<string | null> {
   const res = await fetch("/api/upload", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ url, type: "banner" }),
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, type: "banner" }),
   });
   const data = await res.json();
   return res.ok ? data.image.url : url;
 }
-
 async function saveBanners(banners: HeroBanner[]): Promise<boolean> {
   try {
     const ordered = banners.map((b, i) => ({ ...b, sortOrder: i }));
-    const res  = await fetch("/api/hero-banners", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ banners: ordered }),
+    const res = await fetch("/api/hero-banners", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banners: ordered }),
     });
     return res.ok;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
+}
+async function saveRotationSetting(seconds: number): Promise<boolean> {
+  try {
+    const res = await fetch("/api/settings", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ settings: [{ key: "hero_rotation_seconds", value: String(seconds), category: "hero" }] }),
+    });
+    return res.ok;
+  } catch { return false; }
 }
 
-// ─── Props ───────────────────────────────────────────────
 interface Props {
-  initialBanners: HeroBanner[];
+  initialBanners:  HeroBanner[];
+  initialRotation: number;
 }
 
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 //  MAIN
-// ══════════════════════════════════════════════════════════
-export function HeroBannersClient({ initialBanners }: Props) {
-  const [banners,     setBanners]     = useState<HeroBanner[]>(initialBanners);
-  const [modalOpen,   setModalOpen]   = useState(false);
-  const [editingId,   setEditingId]   = useState<string | null>(null);
-  const [previewUrl,  setPreviewUrl]  = useState<string | null>(null);
+// ═══════════════════════════════════════════════════════════
+export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
+  const [banners,    setBanners]    = useState<HeroBanner[]>(initialBanners.map(ensureOverlayV2));
+  const [rotation,   setRotation]   = useState<number>(initialRotation);
+  const [savingRot,  setSavingRot]  = useState(false);
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const toast   = useToastStore();
   const confirm = useConfirmStore();
@@ -7832,50 +8205,40 @@ export function HeroBannersClient({ initialBanners }: Props) {
     if (!ok) toast.error("Failed to save. Check your connection.");
   };
 
-  const handleAdd = () => {
-    setEditingId(null);
-    setModalOpen(true);
-  };
-
-  const handleEdit = (id: string) => {
-    setEditingId(id);
-    setModalOpen(true);
-  };
+  const handleAdd  = () => { setEditingId(null); setModalOpen(true); };
+  const handleEdit = (id: string) => { setEditingId(id); setModalOpen(true); };
 
   const handleModalSave = async (banner: HeroBanner) => {
-    let next: HeroBanner[];
-    let msg: string;
-    if (editingId) {
-      next = banners.map((b) => b.id === editingId ? banner : b);
-      msg = "Banner updated";
-    } else {
-      next = [...banners, banner];
-      msg = "Banner added";
-    }
+    const next = editingId
+      ? banners.map((b) => b.id === editingId ? banner : b)
+      : [...banners, banner];
     setModalOpen(false);
     setEditingId(null);
-    await persist(next, msg);
+    await persist(next, editingId ? "Banner updated" : "Banner added");
   };
 
   const handleDelete = async (id: string) => {
     const ok = await confirm.confirm({
-      title:       "Delete Banner",
-      message:     "Are you sure you want to delete this banner? This cannot be undone.",
-      confirmText: "Delete",
-      variant:     "danger",
+      title: "Delete Banner", message: "Are you sure? This cannot be undone.",
+      confirmText: "Delete", variant: "danger",
     });
     if (!ok) return;
-    const next = banners.filter((b) => b.id !== id);
-    await persist(next, "Banner deleted");
+    await persist(banners.filter((b) => b.id !== id), "Banner deleted");
   };
 
   const handleToggleActive = async (id: string) => {
-    const banner = banners.find((b) => b.id === id);
-    if (!banner) return;
-    const next = banners.map((b) =>
-      b.id === id ? { ...b, isActive: !b.isActive } : b
-    );
-    await persist(next, banner.isActive ? "Banner hidden from website" : "Banner shown on website");
+    const b = banners.find((x) => x.id === id);
+    if (!b) return;
+    const next = banners.map((x) => x.id === id ? { ...x, isActive: !x.isActive } : x);
+    await persist(next, b.isActive ? "Banner hidden" : "Banner shown");
+  };
+
+  const handleSaveRotation = async () => {
+    setSavingRot(true);
+    const ok = await saveRotationSetting(rotation);
+    setSavingRot(false);
+    if (ok) toast.success("Rotation duration updated");
+    else    toast.error("Failed to save");
   };
 
   const dragIndex = useRef<number | null>(null);
@@ -7895,14 +8258,10 @@ export function HeroBannersClient({ initialBanners }: Props) {
     await persist(banners, "Order updated");
   };
 
-  const editingBanner = editingId
-    ? banners.find((b) => b.id === editingId) ?? null
-    : null;
+  const editingBanner = editingId ? banners.find((b) => b.id === editingId) ?? null : null;
 
   return (
     <div className="space-y-5">
-
-      {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
@@ -7913,50 +8272,69 @@ export function HeroBannersClient({ initialBanners }: Props) {
             Manage the homepage hero slider ({banners.length} banner{banners.length === 1 ? "" : "s"})
           </p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="inline-flex items-center gap-2 bg-[#c9a96e] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#b8955a] transition-colors"
-        >
+        <button onClick={handleAdd}
+          className="inline-flex items-center gap-2 bg-[#c9a96e] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#b8955a] transition-colors">
           <Plus size={16} />Add Banner
         </button>
       </div>
 
-      {/* Info banner */}
+      {/* Rotation setting */}
+      <div className="bg-white border border-[#e5e7eb] p-5">
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
+            <Clock size={18} className="text-[#c9a96e]" />
+          </div>
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-sm font-bold text-[#1a1a1a]">Auto-Rotate Duration</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">How long each banner is shown before switching.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <select value={rotation} onChange={(e) => setRotation(Number(e.target.value))}
+              className="px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none bg-white">
+              <option value={3}>3 seconds</option>
+              <option value={5}>5 seconds</option>
+              <option value={8}>8 seconds (recommended)</option>
+              <option value={10}>10 seconds</option>
+              <option value={15}>15 seconds</option>
+              <option value={20}>20 seconds</option>
+            </select>
+            <button onClick={handleSaveRotation} disabled={savingRot}
+              className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-[#c9a96e] transition-colors disabled:opacity-40">
+              {savingRot ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
         <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
         <div className="text-xs text-blue-900 leading-relaxed">
-          <p className="font-semibold mb-1">Two images per banner (recommended)</p>
+          <p className="font-semibold mb-1">Independent Positioning + Desktop &amp; Mobile Layouts</p>
           <p>
-            Upload separate images for <Monitor size={11} className="inline" /> <strong>desktop</strong> (16:9 wide, 1920&times;1080)
-            and <Smartphone size={11} className="inline" /> <strong>mobile</strong> (4:5 portrait, 1080&times;1350). If mobile is not provided,
-            desktop image will be used but may appear small on phones. <strong>Drag &amp; drop</strong> cards to reorder.
+            Each text element (brand, tagline, prices) has its <strong>own position and styling</strong>.
+            Configure <strong>desktop</strong> and <strong>mobile</strong> layouts separately using the tabs in the editor.
+            Click any element in the preview to select and style it. Drag elements to reposition.
           </p>
         </div>
       </div>
 
-      {/* Empty state */}
       {banners.length === 0 && (
         <div className="bg-white border border-dashed border-[#e5e7eb] p-16 text-center">
           <ImageIcon size={40} className="text-[#e5e7eb] mx-auto mb-4" />
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">No banners yet</p>
-          <p className="text-xs text-[#6b7280] mb-5">Add your first hero banner to get started.</p>
-          <button
-            onClick={handleAdd}
-            className="inline-flex items-center gap-2 bg-[#c9a96e] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#b8955a] transition-colors"
-          >
+          <p className="text-xs text-[#6b7280] mb-5">Add your first hero banner.</p>
+          <button onClick={handleAdd}
+            className="inline-flex items-center gap-2 bg-[#c9a96e] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#b8955a] transition-colors">
             <Plus size={16} />Add First Banner
           </button>
         </div>
       )}
 
-      {/* Card Grid */}
       {banners.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {banners.map((banner, i) => (
-            <BannerCard
-              key={banner.id}
-              banner={banner}
-              index={i}
+            <BannerCard key={banner.id} banner={banner} index={i}
               onEdit={() => handleEdit(banner.id)}
               onDelete={() => handleDelete(banner.id)}
               onToggleActive={() => handleToggleActive(banner.id)}
@@ -7969,7 +8347,6 @@ export function HeroBannersClient({ initialBanners }: Props) {
         </div>
       )}
 
-      {/* Modal */}
       {modalOpen && (
         <BannerModal
           banner={editingBanner}
@@ -7978,177 +8355,117 @@ export function HeroBannersClient({ initialBanners }: Props) {
         />
       )}
 
-      {/* Full-size preview */}
-      {previewUrl && (
-        <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
-      )}
+      {previewUrl && <ImagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />}
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════
-//  BANNER CARD (shows both desktop + mobile thumbnails)
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  BANNER CARD (compact list view)
+// ═══════════════════════════════════════════════════════════
 interface BannerCardProps {
-  banner:         HeroBanner;
-  index:          number;
-  onEdit:         () => void;
-  onDelete:       () => void;
-  onToggleActive: () => void;
-  onView:         () => void;
-  onDragStart:    () => void;
-  onDragOver:     (e: React.DragEvent) => void;
-  onDragEnd:      () => void;
+  banner: HeroBanner; index: number;
+  onEdit: () => void; onDelete: () => void; onToggleActive: () => void; onView: () => void;
+  onDragStart: () => void; onDragOver: (e: React.DragEvent) => void; onDragEnd: () => void;
 }
 
 function BannerCard({
-  banner, index,
-  onEdit, onDelete, onToggleActive, onView,
+  banner, index, onEdit, onDelete, onToggleActive, onView,
   onDragStart, onDragOver, onDragEnd,
 }: BannerCardProps) {
   const hasMobile = !!banner.imageMobile;
+  const v2 = banner.overlayV2;
+  const overlayHint = v2 ? ELEMENT_ORDER.filter((k) => v2.desktop[k].enabled && v2.desktop[k].text).length : 0;
 
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragEnd={onDragEnd}
+    <div draggable onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}
       className={cn(
         "bg-white border border-[#e5e7eb] overflow-hidden transition-shadow hover:shadow-md cursor-move",
         !banner.isActive && "opacity-60"
-      )}
-    >
-      {/* Desktop image (big) */}
-      <div
-        className="relative aspect-[16/9] bg-[#111] overflow-hidden group"
-        onClick={onView}
-      >
+      )}>
+      <div className="relative aspect-[16/9] bg-[#111] overflow-hidden group" onClick={onView}>
         {banner.image ? (
-          <Image
-            src={banner.image}
-            alt={banner.title || "Banner"}
-            fill
+          <Image src={banner.image} alt={banner.title || "Banner"} fill
             className="object-cover cursor-zoom-in"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            unoptimized={banner.image.startsWith("/uploads")}
-          />
+            unoptimized={banner.image.startsWith("/uploads")} />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <ImageIcon size={32} className="text-[#333]" />
           </div>
         )}
 
-        {/* Index badge */}
         <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-2 py-1">
-          <GripVertical size={12} className="opacity-60" />
-          #{index + 1}
+          <GripVertical size={12} className="opacity-60" />#{index + 1}
         </div>
-
-        {/* Desktop label */}
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
           <Monitor size={10} />Desktop
         </div>
 
-        {/* Mobile thumbnail overlay (bottom-right) */}
         {hasMobile && (
-          <div
-            className="absolute bottom-2 right-2 w-14 h-16 border-2 border-white shadow-lg overflow-hidden bg-black"
-            title="Mobile version"
-          >
-            <Image
-              src={banner.imageMobile!}
-              alt="Mobile version"
-              fill
-              className="object-cover"
-              sizes="56px"
-              unoptimized={banner.imageMobile!.startsWith("/uploads")}
-            />
+          <div className="absolute bottom-2 right-2 w-14 h-16 border-2 border-white shadow-lg overflow-hidden bg-black" title="Mobile version">
+            <Image src={banner.imageMobile!} alt="Mobile" fill className="object-cover" sizes="56px"
+              unoptimized={banner.imageMobile!.startsWith("/uploads")} />
             <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] font-bold py-0.5 text-center flex items-center justify-center gap-0.5">
               <Smartphone size={7} />MOBILE
             </div>
           </div>
         )}
 
-        {/* Missing mobile warning */}
-        {!hasMobile && (
-          <div className="absolute bottom-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 flex items-center gap-1">
-            <Smartphone size={10} />No mobile image
-          </div>
-        )}
-
         {!banner.isActive && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <span className="bg-white/90 text-[#1a1a1a] text-xs font-bold uppercase tracking-wider px-3 py-1">
-              Hidden
-            </span>
+            <span className="bg-white/90 text-[#1a1a1a] text-xs font-bold uppercase tracking-wider px-3 py-1">Hidden</span>
           </div>
         )}
       </div>
 
-      {/* Body */}
       <div className="p-4">
         <p className="text-sm font-bold text-[#1a1a1a] truncate mb-1">
-          {banner.title || <span className="text-[#6b7280] font-normal italic">Untitled banner</span>}
+          {banner.title || v2?.desktop.brand.text || <span className="text-[#6b7280] font-normal italic">Untitled banner</span>}
         </p>
+        {overlayHint > 0 && (
+          <p className="text-[10px] text-[#c9a96e] font-semibold tracking-wide mb-1">
+            {overlayHint} overlay element{overlayHint === 1 ? "" : "s"}
+          </p>
+        )}
         <p className="text-xs text-[#6b7280] flex items-center gap-1 truncate">
           {banner.buttonHref ? (
-            <>
-              <LinkIcon size={11} className="flex-shrink-0" />
-              <span className="truncate">{banner.buttonHref}</span>
-            </>
+            <><LinkIcon size={11} className="flex-shrink-0" /><span className="truncate">{banner.buttonHref}</span></>
           ) : (
             <span className="italic">No link</span>
           )}
         </p>
       </div>
 
-      {/* Action bar */}
       <div className="grid grid-cols-3 border-t border-[#e5e7eb]">
-        <button
-          onClick={onView}
-          disabled={!banner.image}
-          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[#c9a96e] hover:bg-[#f5f0e8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
+        <button onClick={onView} disabled={!banner.image}
+          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[#c9a96e] hover:bg-[#f5f0e8] transition-colors disabled:opacity-40">
           <Eye size={13} />View
         </button>
-        <button
-          onClick={onEdit}
-          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[#1a1a1a] border-l border-r border-[#e5e7eb] hover:bg-[#fafaf9] transition-colors"
-        >
+        <button onClick={onEdit}
+          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[#1a1a1a] border-l border-r border-[#e5e7eb] hover:bg-[#fafaf9] transition-colors">
           <Edit size={13} />Edit
         </button>
-        <button
-          onClick={onDelete}
-          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors"
-        >
+        <button onClick={onDelete}
+          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors">
           <Trash2 size={13} />Delete
         </button>
       </div>
 
-      {/* Toggle bar */}
-      <button
-        onClick={onToggleActive}
+      <button onClick={onToggleActive}
         className={cn(
           "w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-t border-[#e5e7eb] transition-colors",
-          banner.isActive
-            ? "text-[#c9a96e] bg-[#f5f0e8]/40 hover:bg-[#f5f0e8]"
-            : "text-[#6b7280] bg-[#fafaf9] hover:bg-[#f0f0f0]"
-        )}
-      >
-        {banner.isActive ? (
-          <><EyeOff size={13} />Hide from Website</>
-        ) : (
-          <><Eye size={13} />Show on Website</>
-        )}
+          banner.isActive ? "text-[#c9a96e] bg-[#f5f0e8]/40 hover:bg-[#f5f0e8]" : "text-[#6b7280] bg-[#fafaf9] hover:bg-[#f0f0f0]"
+        )}>
+        {banner.isActive ? <><EyeOff size={13} />Hide from Website</> : <><Eye size={13} />Show on Website</>}
       </button>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════
-//  BANNER MODAL (Add / Edit) — with dual image upload
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  BANNER MODAL — the big one
+// ═══════════════════════════════════════════════════════════
 interface BannerModalProps {
   banner:  HeroBanner | null;
   onSave:  (banner: HeroBanner) => void;
@@ -8156,14 +8473,14 @@ interface BannerModalProps {
 }
 
 function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
-  const [form, setForm] = useState<HeroBanner>(banner ?? emptyBanner());
-  const [saving,   setSaving]   = useState(false);
+  const [form, setForm]           = useState<HeroBanner>(banner ? ensureOverlayV2(banner) : emptyBanner());
+  const [device, setDevice]       = useState<"desktop" | "mobile">("desktop");
+  const [selectedEl, setSelectedEl] = useState<ElementKey | null>(null);
+  const [saving, setSaving]       = useState(false);
   const toast = useToastStore();
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
@@ -8174,157 +8491,187 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
     return () => { document.body.style.overflow = orig; };
   }, []);
 
+  const overlayV2 = form.overlayV2!;
+  const currentConfig = overlayV2[device];
+
+  const updateElement = useCallback((key: ElementKey, patch: Partial<ElementStyle>) => {
+    setForm((prev) => ({
+      ...prev,
+      overlayV2: {
+        ...prev.overlayV2!,
+        [device]: {
+          ...prev.overlayV2![device],
+          [key]: { ...prev.overlayV2![device][key], ...patch },
+        },
+      },
+    }));
+  }, [device]);
+
   const update = <K extends keyof HeroBanner>(field: K, value: HeroBanner[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async () => {
-    if (!form.image) {
-      toast.error("Please add a desktop banner image");
-      return;
-    }
-    if (!form.imageMobile) {
-      const proceed = confirm(
-        "You haven't uploaded a mobile-optimized image. " +
-        "The desktop image will be used on phones, which may look too small. " +
-        "Continue anyway?"
-      );
-      if (!proceed) return;
-    }
+  const handleSubmit = () => {
+    if (!form.image) { toast.error("Please add a desktop banner image"); return; }
     setSaving(true);
     onSave(form);
+  };
+
+  const handleLoadReference = () => {
+    setForm((prev) => ({ ...prev, overlayV2: referenceDesignPreset() }));
+    toast.success("Reference design loaded for both desktop & mobile");
   };
 
   const isEditing = !!banner;
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-        onClick={onClose}
-      />
-
-      {/* Dialog */}
-      <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white shadow-2xl pointer-events-auto animate-in zoom-in-95 fade-in duration-200 overflow-hidden">
+      <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[95] flex items-center justify-center p-2 sm:p-4 pointer-events-none">
+        <div className="w-full max-w-7xl max-h-[95vh] flex flex-col bg-white shadow-2xl pointer-events-auto overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 bg-[#1a1a1a] text-white flex-shrink-0">
-            <h3 className="text-base font-bold">
-              {isEditing ? "Edit Banner" : "Add New Banner"}
-            </h3>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-white/10 rounded"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-4">
+              <h3 className="text-base font-bold">{isEditing ? "Edit Banner" : "Add New Banner"}</h3>
+              <button type="button" onClick={handleLoadReference}
+                className="inline-flex items-center gap-1.5 bg-[#c9a96e] text-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider hover:bg-[#b8955a] transition-colors">
+                <Sparkles size={12} />Load Reference Design
+              </button>
+            </div>
+            <button onClick={onClose} className="p-1 hover:bg-white/10 rounded"><X size={18} /></button>
           </div>
 
-          {/* Body — scrollable */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Device tabs */}
+          <div className="flex-shrink-0 border-b border-[#e5e7eb] bg-[#fafaf9] px-6 py-2 flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280] mr-2">Editing:</span>
+            <button type="button" onClick={() => { setDevice("desktop"); setSelectedEl(null); }}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-colors",
+                device === "desktop" ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-[#6b7280] border-[#e5e7eb] hover:border-[#1a1a1a]"
+              )}>
+              <Monitor size={13} />Desktop (16:9)
+            </button>
+            <button type="button" onClick={() => { setDevice("mobile"); setSelectedEl(null); }}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-colors",
+                device === "mobile" ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-[#6b7280] border-[#e5e7eb] hover:border-[#1a1a1a]"
+              )}>
+              <Smartphone size={13} />Mobile (4:5)
+            </button>
+            <span className="ml-auto text-[10px] text-[#6b7280] flex items-center gap-1">
+              <MousePointer2 size={10} />Click preview elements to select · <Move size={10} />Drag to reposition
+            </span>
+          </div>
 
-            {/* ── TWO IMAGE SLOTS ─────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ImageSlot
-                label="Desktop Image *"
-                icon={Monitor}
-                helpText="1920 x 1080 (16:9). Shown on tablets & desktops."
-                aspectClass="aspect-[16/9]"
-                value={form.image}
-                required
-                onChange={(url) => update("image", url)}
-              />
-              <ImageSlot
-                label="Mobile Image (recommended)"
-                icon={Smartphone}
-                helpText="1080 x 1350 (4:5) or 1080 x 1920 (9:16). Shown on phones."
-                aspectClass="aspect-[4/5]"
-                value={form.imageMobile ?? ""}
-                onChange={(url) => update("imageMobile", url)}
-              />
+          <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-[minmax(0,42%)_minmax(0,58%)]">
+
+            {/* ═══ LEFT: Form ═══ */}
+            <div className="p-5 space-y-4 border-r border-[#e5e7eb]">
+              {/* Images */}
+              <div className="grid grid-cols-2 gap-3">
+                <ImageSlot label="Desktop *" icon={Monitor} helpText="1920 x 1080 (16:9)" aspectClass="aspect-[16/9]"
+                  value={form.image} required onChange={(url) => update("image", url)} />
+                <ImageSlot label="Mobile" icon={Smartphone} helpText="1080 x 1350 (4:5)" aspectClass="aspect-[4/5]"
+                  value={form.imageMobile ?? ""} onChange={(url) => update("imageMobile", url)} />
+              </div>
+
+              {/* Element cards */}
+              <div className="space-y-2">
+                {ELEMENT_ORDER.map((key) => (
+                  <ElementCard
+                    key={key}
+                    elementKey={key}
+                    style={currentConfig[key]}
+                    isSelected={selectedEl === key}
+                    onToggleSelect={() => setSelectedEl(selectedEl === key ? null : key)}
+                    onUpdate={(patch) => updateElement(key, patch)}
+                  />
+                ))}
+              </div>
+
+              {/* Global settings */}
+              <div className="border border-[#e5e7eb] p-4 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a]">Banner Settings</p>
+
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">
+                    Overlay Darkness: {form.overlayDarkness ?? 0}%
+                  </label>
+                  <input type="range" min={0} max={80} step={5}
+                    value={form.overlayDarkness ?? 0}
+                    onChange={(e) => update("overlayDarkness", Number(e.target.value))}
+                    className="w-full accent-[#c9a96e]" />
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.countdownEnabled ?? false}
+                    onChange={(e) => update("countdownEnabled", e.target.checked)}
+                    className="w-4 h-4 accent-[#c9a96e]" />
+                  <span className="text-xs font-semibold text-[#1a1a1a]">Countdown Timer</span>
+                </label>
+
+                {form.countdownEnabled && (
+                  <input type="datetime-local" value={form.countdownEndsAt ?? ""}
+                    onChange={(e) => update("countdownEndsAt", e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+                )}
+
+                <Field label="Alt Text (SEO)" placeholder="e.g. Summer Collection"
+                  value={form.title} onChange={(v) => update("title", v)} />
+                <Field label="Link URL (whole banner is clickable)" placeholder="/shop or https://..."
+                  value={form.buttonHref} onChange={(v) => update("buttonHref", v)} />
+
+                <label className={cn(
+                  "flex items-center gap-2 p-2 border cursor-pointer transition-colors",
+                  form.isActive ? "bg-[#f5f0e8]/40 border-[#c9a96e]" : "bg-[#fafaf9] border-[#e5e7eb]"
+                )}>
+                  <input type="checkbox" checked={form.isActive}
+                    onChange={(e) => update("isActive", e.target.checked)}
+                    className="w-4 h-4 accent-[#c9a96e]" />
+                  <span className="text-xs font-semibold text-[#1a1a1a]">
+                    {form.isActive ? "Active on website" : "Hidden (draft)"}
+                  </span>
+                </label>
+              </div>
             </div>
 
-            {/* Title / Alt Text */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
-                Banner Title / Alt Text
-              </label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => update("title", e.target.value)}
-                placeholder="e.g. Summer Collection - 30% Off"
-                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
-              />
-              <p className="mt-1 text-[10px] text-[#6b7280]">
-                Shown as the card title and used for search engines / screen readers.
-              </p>
-            </div>
-
-            {/* Link URL */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
-                Link URL (Optional)
-              </label>
-              <input
-                type="text"
-                value={form.buttonHref}
-                onChange={(e) => update("buttonHref", e.target.value)}
-                placeholder="/collections/summer  or  https://example.com/promo"
-                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
-              />
-              <p className="mt-1 text-[10px] text-[#6b7280]">
-                Where to send customers when they click the banner. Leave empty for no link.
-              </p>
-            </div>
-
-            {/* Active toggle */}
-            <label className={cn(
-              "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
-              form.isActive
-                ? "bg-[#f5f0e8]/40 border-[#c9a96e]"
-                : "bg-[#fafaf9] border-[#e5e7eb]"
-            )}>
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => update("isActive", e.target.checked)}
-                className="w-4 h-4 accent-[#c9a96e]"
-              />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
-                  {form.isActive
-                    ? <><Eye size={13} className="text-[#c9a96e]" />Active (show on website)</>
-                    : <><EyeOff size={13} className="text-[#6b7280]" />Hidden (draft)</>
-                  }
+            {/* ═══ RIGHT: Live preview (sticky) ═══ */}
+            <div className="p-5 bg-[#fafaf9] sticky top-0 self-start">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#1a1a1a] flex items-center gap-1.5">
+                  <Eye size={13} className="text-[#c9a96e]" />
+                  Live Preview
+                  <span className="text-[10px] font-normal text-[#6b7280] normal-case">
+                    ({device === "desktop" ? "Desktop 16:9" : "Mobile 4:5"})
+                  </span>
                 </p>
               </div>
-            </label>
+
+              <LivePreview
+                banner={form}
+                device={device}
+                selectedEl={selectedEl}
+                onSelectElement={setSelectedEl}
+                onMoveElement={(key, x, y) => updateElement(key, { x, y })}
+              />
+
+              <p className="text-[10px] text-[#6b7280] mt-3 text-center italic">
+                Click any text element to select it. Drag to reposition. Style controls will open on the left.
+              </p>
+            </div>
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-2 px-6 py-4 bg-[#fafaf9] border-t border-[#e5e7eb] flex-shrink-0">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb] hover:border-[#1a1a1a] transition-colors"
-            >
+            <button onClick={onClose}
+              className="px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb] hover:border-[#1a1a1a] transition-colors">
               Cancel
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={saving || !form.image}
-              className="inline-flex items-center gap-2 bg-[#c9a96e] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:bg-[#b8955a] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <><Loader size={12} className="animate-spin" />Saving...</>
-              ) : isEditing ? (
-                <><Edit size={12} />Update Banner</>
-              ) : (
-                <><Plus size={12} />Add Banner</>
-              )}
+            <button onClick={handleSubmit} disabled={saving || !form.image}
+              className="inline-flex items-center gap-2 bg-[#c9a96e] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:bg-[#b8955a] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              {saving ? <><Loader size={12} className="animate-spin" />Saving...</> :
+                isEditing ? <><Edit size={12} />Update Banner</> : <><Plus size={12} />Add Banner</>}
             </button>
           </div>
         </div>
@@ -8333,22 +8680,446 @@ function BannerModal({ banner, onSave, onClose }: BannerModalProps) {
   );
 }
 
-// ══════════════════════════════════════════════════════════
-//  IMAGE SLOT — reusable component for desktop OR mobile
-// ══════════════════════════════════════════════════════════
-interface ImageSlotProps {
-  label:       string;
-  icon:        typeof Monitor;
-  helpText:    string;
-  aspectClass: string;
-  value:       string;
-  required?:   boolean;
-  onChange:    (url: string) => void;
+// ═══════════════════════════════════════════════════════════
+//  ElementCard — collapsible per-element editor
+// ═══════════════════════════════════════════════════════════
+interface ElementCardProps {
+  elementKey:     ElementKey;
+  style:          ElementStyle;
+  isSelected:     boolean;
+  onToggleSelect: () => void;
+  onUpdate:       (patch: Partial<ElementStyle>) => void;
 }
 
-function ImageSlot({
-  label, icon: Icon, helpText, aspectClass, value, required, onChange,
-}: ImageSlotProps) {
+const COLOR_PRESETS = ["#1a2b5c", "#1a1a1a", "#ffffff", "#c9a96e", "#dc2626", "#059669", "#f59e0b"];
+
+function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }: ElementCardProps) {
+  const isPrice     = elementKey === "currentPrice";
+  const isOriginal  = elementKey === "originalPrice";
+  const isTagline   = elementKey === "tagline";
+
+  return (
+    <div className={cn(
+      "border transition-colors",
+      isSelected ? "border-[#c9a96e] bg-[#f5f0e8]/30 shadow-sm" : "border-[#e5e7eb] bg-white"
+    )}>
+      {/* Header — always visible */}
+      <button type="button" onClick={onToggleSelect}
+        className="w-full flex items-center gap-2 p-3 hover:bg-[#fafaf9] transition-colors">
+        <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" checked={style.enabled}
+            onChange={(e) => onUpdate({ enabled: e.target.checked })}
+            className="w-4 h-4 accent-[#c9a96e]" />
+        </label>
+        <Type size={13} className={style.enabled ? "text-[#c9a96e]" : "text-[#6b7280]"} />
+        <span className={cn(
+          "text-xs font-bold uppercase tracking-wide flex-1 text-left",
+          style.enabled ? "text-[#1a1a1a]" : "text-[#6b7280]"
+        )}>
+          {ELEMENT_LABELS[elementKey]}
+        </span>
+        {style.text && (
+          <span className="text-[10px] text-[#6b7280] italic truncate max-w-[120px]">
+            &ldquo;{style.text.slice(0, 30)}{style.text.length > 30 ? "..." : ""}&rdquo;
+          </span>
+        )}
+        <span className="text-[10px] font-mono text-[#6b7280]">
+          {isSelected ? "▼" : "▶"}
+        </span>
+      </button>
+
+      {isSelected && (
+        <div className="p-3 pt-0 space-y-3 border-t border-[#e5e7eb]">
+          {/* Text */}
+          {isTagline ? (
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">
+                Content (press Enter for line break)
+              </label>
+              <textarea rows={3} value={style.text} onChange={(e) => onUpdate({ text: e.target.value })}
+                placeholder="Timeless Comfort.&#10;Effortless Style."
+                className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none resize-none" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Content</label>
+              <input type="text" value={style.text} onChange={(e) => onUpdate({ text: e.target.value })}
+                placeholder="Enter text..."
+                className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+            </div>
+          )}
+
+          {/* Position: X, Y */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">X: {style.x}%</label>
+              <input type="range" min={0} max={100} step={1} value={style.x}
+                onChange={(e) => onUpdate({ x: Number(e.target.value) })}
+                className="w-full accent-[#c9a96e]" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Y: {style.y}%</label>
+              <input type="range" min={0} max={100} step={1} value={style.y}
+                onChange={(e) => onUpdate({ y: Number(e.target.value) })}
+                className="w-full accent-[#c9a96e]" />
+            </div>
+          </div>
+
+          {/* Anchor */}
+          <div>
+            <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Anchor (X position aligns to...)</label>
+            <div className="grid grid-cols-3 gap-1">
+              {(["start", "center", "end"] as const).map((a) => (
+                <button key={a} type="button" onClick={() => onUpdate({ anchor: a })}
+                  className={cn(
+                    "py-1.5 text-[10px] font-semibold uppercase border transition-colors",
+                    style.anchor === a ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-[#6b7280] border-[#e5e7eb]"
+                  )}>
+                  {a === "start" ? "◀ Left" : a === "center" ? "◀▶ Center" : "Right ▶"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Font size + weight */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Font Size: {style.fontSize}px</label>
+              <input type="range" min={12} max={120} step={2} value={style.fontSize}
+                onChange={(e) => onUpdate({ fontSize: Number(e.target.value) })}
+                className="w-full accent-[#c9a96e]" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Weight</label>
+              <select value={style.fontWeight} onChange={(e) => onUpdate({ fontWeight: Number(e.target.value) })}
+                className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none">
+                <option value={300}>Light (300)</option>
+                <option value={400}>Regular (400)</option>
+                <option value={500}>Medium (500)</option>
+                <option value={600}>Semibold (600)</option>
+                <option value={700}>Bold (700)</option>
+                <option value={800}>Extrabold (800)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Family + color */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Font Family</label>
+              <div className="grid grid-cols-2 gap-1">
+                <button type="button" onClick={() => onUpdate({ fontFamily: "serif" })}
+                  className={cn(
+                    "py-1.5 text-[10px] font-semibold border transition-colors",
+                    style.fontFamily === "serif" ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-[#6b7280] border-[#e5e7eb]"
+                  )} style={{ fontFamily: "Georgia, serif" }}>
+                  Serif
+                </button>
+                <button type="button" onClick={() => onUpdate({ fontFamily: "sans" })}
+                  className={cn(
+                    "py-1.5 text-[10px] font-semibold border transition-colors",
+                    style.fontFamily === "sans" ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-[#6b7280] border-[#e5e7eb]"
+                  )}>
+                  Sans
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Color</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={style.color}
+                  onChange={(e) => onUpdate({ color: e.target.value })}
+                  className="h-8 w-8 cursor-pointer border border-[#e5e7eb]" />
+                <input type="text" value={style.color}
+                  onChange={(e) => onUpdate({ color: e.target.value })}
+                  className="flex-1 min-w-0 px-2 py-1.5 text-[10px] font-mono border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+              </div>
+              <div className="flex gap-1 mt-1">
+                {COLOR_PRESETS.map((c) => (
+                  <button key={c} type="button" onClick={() => onUpdate({ color: c })} title={c}
+                    className={cn(
+                      "w-4 h-4 border transition-transform hover:scale-110",
+                      style.color.toLowerCase() === c.toLowerCase() ? "border-[#1a1a1a] border-2" : "border-[#e5e7eb]"
+                    )}
+                    style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Line height + letter spacing */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Line Height: {style.lineHeight}</label>
+              <input type="range" min={0.8} max={2} step={0.05} value={style.lineHeight}
+                onChange={(e) => onUpdate({ lineHeight: Number(e.target.value) })}
+                className="w-full accent-[#c9a96e]" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Letter Space: {style.letterSpacing.toFixed(2)}em</label>
+              <input type="range" min={-0.05} max={0.2} step={0.01} value={style.letterSpacing}
+                onChange={(e) => onUpdate({ letterSpacing: Number(e.target.value) })}
+                className="w-full accent-[#c9a96e]" />
+            </div>
+          </div>
+
+          {/* Max width + align */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Max Width: {style.maxWidth}%</label>
+              <input type="range" min={10} max={100} step={5} value={style.maxWidth}
+                onChange={(e) => onUpdate({ maxWidth: Number(e.target.value) })}
+                className="w-full accent-[#c9a96e]" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Text Align</label>
+              <div className="grid grid-cols-3 gap-1">
+                {(["left", "center", "right"] as const).map((a) => (
+                  <button key={a} type="button" onClick={() => onUpdate({ textAlign: a })}
+                    className={cn(
+                      "py-1.5 text-[10px] font-semibold uppercase border transition-colors",
+                      style.textAlign === a ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-[#6b7280] border-[#e5e7eb]"
+                    )}>
+                    {a[0].toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Toggles */}
+          <div className="flex flex-wrap gap-2">
+            <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
+              <input type="checkbox" checked={style.textShadow}
+                onChange={(e) => onUpdate({ textShadow: e.target.checked })}
+                className="w-3.5 h-3.5 accent-[#c9a96e]" />Shadow
+            </label>
+            <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
+              <input type="checkbox" checked={style.uppercase}
+                onChange={(e) => onUpdate({ uppercase: e.target.checked })}
+                className="w-3.5 h-3.5 accent-[#c9a96e]" />UPPERCASE
+            </label>
+            {isOriginal && (
+              <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
+                <input type="checkbox" checked={style.strikethrough}
+                  onChange={(e) => onUpdate({ strikethrough: e.target.checked })}
+                  className="w-3.5 h-3.5 accent-[#c9a96e]" />Strikethrough
+              </label>
+            )}
+            {isPrice && (
+              <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
+                <input type="checkbox" checked={style.nowPrefix}
+                  onChange={(e) => onUpdate({ nowPrefix: e.target.checked })}
+                  className="w-3.5 h-3.5 accent-[#c9a96e]" />&ldquo;NOW&rdquo; Prefix
+              </label>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LivePreview — click to select, drag to move
+// ═══════════════════════════════════════════════════════════
+interface LivePreviewProps {
+  banner:          HeroBanner;
+  device:          "desktop" | "mobile";
+  selectedEl:      ElementKey | null;
+  onSelectElement: (key: ElementKey | null) => void;
+  onMoveElement:   (key: ElementKey, x: number, y: number) => void;
+}
+
+function LivePreview({ banner, device, selectedEl, onSelectElement, onMoveElement }: LivePreviewProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<ElementKey | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null);
+
+  const imageUrl = device === "mobile" ? (banner.imageMobile || banner.image) : banner.image;
+  const aspectClass = device === "mobile" ? "aspect-[4/5]" : "aspect-[16/9]";
+  const config = banner.overlayV2?.[device];
+
+  const handleMouseDown = (e: React.MouseEvent, key: ElementKey) => {
+    e.stopPropagation();
+    onSelectElement(key);
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect || !config) return;
+    const el = config[key];
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startX: el.x,
+      startY: el.y,
+    };
+    setDragging(key);
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const onMove = (e: MouseEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const start = dragStartRef.current;
+      if (!rect || !start) return;
+
+      const dxPct = ((e.clientX - start.x) / rect.width) * 100;
+      const dyPct = ((e.clientY - start.y) / rect.height) * 100;
+
+      const newX = Math.max(0, Math.min(100, Math.round((start.startX + dxPct) / 1) * 1));
+      const newY = Math.max(0, Math.min(100, Math.round((start.startY + dyPct) / 1) * 1));
+
+      onMoveElement(dragging, newX, newY);
+    };
+
+    const onUp = () => {
+      setDragging(null);
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [dragging, onMoveElement]);
+
+  if (!imageUrl) {
+    return (
+      <div className={cn("bg-[#1a1a1a] flex items-center justify-center text-[#6b7280] text-xs", aspectClass)}>
+        Upload a {device} image to see the preview
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative overflow-hidden bg-[#111] border border-[#e5e7eb] select-none",
+        aspectClass,
+        dragging && "cursor-grabbing"
+      )}
+      onClick={() => onSelectElement(null)}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" draggable={false} />
+
+      {banner.overlayDarkness !== undefined && banner.overlayDarkness > 0 && (
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundColor: `rgba(0,0,0,${banner.overlayDarkness / 100})` }} />
+      )}
+
+      {config && ELEMENT_ORDER.map((key) => {
+        const el = config[key];
+        if (!el.enabled || !el.text.trim()) return null;
+        return (
+          <PreviewElement
+            key={key}
+            elementKey={key}
+            style={el}
+            isSelected={selectedEl === key}
+            isDragging={dragging === key}
+            onMouseDown={(e) => handleMouseDown(e, key)}
+          />
+        );
+      })}
+
+      {banner.countdownEnabled && (
+        <div className="absolute top-2 right-2 bg-black/60 text-white text-[8px] font-bold px-2 py-1 tracking-wider">
+          [ COUNTDOWN ]
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PreviewElementProps {
+  elementKey:  ElementKey;
+  style:       ElementStyle;
+  isSelected:  boolean;
+  isDragging:  boolean;
+  onMouseDown: (e: React.MouseEvent) => void;
+}
+
+function PreviewElement({ elementKey, style, isSelected, isDragging, onMouseDown }: PreviewElementProps) {
+  const translateX = style.anchor === "center" ? "-50%" : style.anchor === "end" ? "-100%" : "0";
+  const fontVar = style.fontFamily === "serif" ? "Georgia, 'Playfair Display', serif" : "system-ui, sans-serif";
+
+  const isPrice    = elementKey === "currentPrice";
+  const isOriginal = elementKey === "originalPrice";
+
+  // Scale-down for preview (preview is smaller than real banner)
+  // Real banner is 1920px wide; preview is ~600px wide → ~0.31 scale
+  const scale = 0.42;
+
+  const content = isPrice && style.nowPrefix ? (
+    <span className="inline-flex items-baseline gap-2">
+      <span style={{
+        fontSize: `${Math.round(style.fontSize * scale * 0.55)}px`,
+        fontWeight: 600, letterSpacing: "0.15em", opacity: 0.85,
+      }}>NOW</span>
+      <span>{style.text}</span>
+    </span>
+  ) : (
+    style.text
+  );
+
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      className={cn(
+        "absolute whitespace-pre-line cursor-move transition-shadow",
+        isSelected && "outline outline-2 outline-[#c9a96e] outline-offset-4",
+        isDragging && "opacity-80"
+      )}
+      style={{
+        left:           `${style.x}%`,
+        top:            `${style.y}%`,
+        transform:      `translate(${translateX}, 0)`,
+        maxWidth:       `${style.maxWidth}%`,
+        fontSize:       `${Math.round(style.fontSize * scale)}px`,
+        fontWeight:     style.fontWeight,
+        fontFamily:     fontVar,
+        color:          style.color,
+        textAlign:      style.textAlign,
+        lineHeight:     style.lineHeight,
+        letterSpacing:  `${style.letterSpacing}em`,
+        textTransform:  style.uppercase ? "uppercase" : "none",
+        textDecoration: (isOriginal && style.strikethrough) ? "line-through" : "none",
+        textShadow:     style.textShadow ? "0 1px 3px rgba(0,0,0,0.35)" : "none",
+        userSelect:     "none",
+      }}
+    >
+      {content}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Small helpers
+// ═══════════════════════════════════════════════════════════
+function Field({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">{label}</label>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ImageSlot (unchanged from before)
+// ═══════════════════════════════════════════════════════════
+interface ImageSlotProps {
+  label: string; icon: typeof Monitor; helpText: string; aspectClass: string;
+  value: string; required?: boolean; onChange: (url: string) => void;
+}
+function ImageSlot({ label, icon: Icon, helpText, aspectClass, value, required, onChange }: ImageSlotProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver,  setDragOver]  = useState(false);
   const [showUrl,   setShowUrl]   = useState(false);
@@ -8357,18 +9128,10 @@ function ImageSlot({
   const toast   = useToastStore();
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
-      return;
-    }
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
     setUploading(true);
     const url = await uploadImage(file);
-    if (url) {
-      onChange(url);
-      toast.success("Image uploaded");
-    } else {
-      toast.error("Upload failed");
-    }
+    if (url) { onChange(url); toast.success("Image uploaded"); } else toast.error("Upload failed");
     setUploading(false);
   };
 
@@ -8377,196 +9140,104 @@ function ImageSlot({
     if (!url.startsWith("http")) return;
     setUploading(true);
     const optimized = await uploadImageFromUrl(url);
-    if (optimized) {
-      onChange(optimized);
-      setUrlInput("");
-      setShowUrl(false);
-      toast.success("Image loaded from URL");
-    } else {
-      toast.error("Could not load image from URL");
-    }
+    if (optimized) { onChange(optimized); setUrlInput(""); setShowUrl(false); toast.success("Image loaded"); }
+    else toast.error("Could not load image");
     setUploading(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
+    e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
 
   return (
     <div>
-      <label className="text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2 flex items-center gap-1.5">
-        <Icon size={13} className={required ? "text-[#c9a96e]" : "text-[#6b7280]"} />
-        {label}
+      <label className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a] mb-1.5 flex items-center gap-1">
+        <Icon size={11} className={required ? "text-[#c9a96e]" : "text-[#6b7280]"} />{label}
       </label>
 
-      {/* Preview or Upload zone */}
       {value ? (
         <div className={cn("relative border border-[#e5e7eb] overflow-hidden bg-[#111]", aspectClass)}>
-          <Image
-            src={value}
-            alt="Preview"
-            fill
-            className="object-cover"
-            sizes="400px"
-            unoptimized={value.startsWith("/uploads")}
-          />
+          <Image src={value} alt="Preview" fill className="object-cover" sizes="300px"
+            unoptimized={value.startsWith("/uploads")} />
           <div className="absolute top-1 right-1 flex gap-1">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fileRef.current?.click();
-              }}
-              className="bg-white/90 hover:bg-white text-[#1a1a1a] p-1.5 transition-colors"
-              title="Replace"
-            >
-              <Upload size={12} />
+            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); fileRef.current?.click(); }}
+              className="bg-white/90 hover:bg-white text-[#1a1a1a] p-1 transition-colors" title="Replace">
+              <Upload size={10} />
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onChange("");
-              }}
-              className="bg-white/90 hover:bg-red-500 hover:text-white text-[#1a1a1a] p-1.5 transition-colors"
-              title="Remove"
-            >
-              <X size={12} />
+            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(""); }}
+              className="bg-white/90 hover:bg-red-500 hover:text-white text-[#1a1a1a] p-1 transition-colors" title="Remove">
+              <X size={10} />
             </button>
           </div>
         </div>
       ) : (
-        <div
-          className={cn(
-            "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
-            aspectClass,
-            dragOver
-              ? "border-[#c9a96e] bg-[#f5f0e8]/50"
-              : "border-[#e5e7eb] hover:border-[#c9a96e] bg-[#fafaf9]"
-          )}
+        <div className={cn(
+          "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
+          aspectClass,
+          dragOver ? "border-[#c9a96e] bg-[#f5f0e8]/50" : "border-[#e5e7eb] hover:border-[#c9a96e] bg-[#fafaf9]"
+        )}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-        >
+          onDragLeave={() => setDragOver(false)} onDrop={handleDrop}>
           {uploading ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader size={20} className="text-[#c9a96e] animate-spin" />
-              <span className="text-[10px] text-[#6b7280]">Uploading...</span>
-            </div>
+            <Loader size={16} className="text-[#c9a96e] animate-spin" />
           ) : (
-            <div className="flex flex-col items-center gap-2 p-3 text-center">
-              <div className="w-8 h-8 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                <ImageIcon size={14} className="text-[#c9a96e]" />
-              </div>
-              <span className="text-xs font-semibold text-[#1a1a1a]">
-                Click to upload
-              </span>
-              <span className="text-[9px] text-[#6b7280]">or drag &amp; drop</span>
+            <div className="flex flex-col items-center gap-1 p-2 text-center">
+              <ImageIcon size={16} className="text-[#c9a96e]" />
+              <span className="text-[10px] font-semibold text-[#1a1a1a]">Click / drop</span>
             </div>
           )}
         </div>
       )}
 
-      {/* URL toggle + input */}
-      <div className="mt-2">
+      <div className="mt-1">
         {!showUrl ? (
-          <button
-            type="button"
-            onClick={() => setShowUrl(true)}
-            className="text-[10px] text-[#6b7280] hover:text-[#c9a96e] underline"
-          >
-            Or paste image URL
-          </button>
+          <button type="button" onClick={() => setShowUrl(true)}
+            className="text-[9px] text-[#6b7280] hover:text-[#c9a96e] underline">Or paste URL</button>
         ) : (
           <div className="flex gap-1">
-            <input
-              type="url"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://..."
-              className="flex-1 px-2 py-1.5 text-[11px] border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleUrlAdd}
-              disabled={!urlInput.trim() || uploading}
-              className="px-2 py-1.5 text-[10px] font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-40"
-            >
+            <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://..."
+              className="flex-1 min-w-0 px-1.5 py-1 text-[10px] border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+            <button type="button" onClick={handleUrlAdd} disabled={!urlInput.trim() || uploading}
+              className="px-1.5 py-1 text-[9px] font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-40">
               Load
             </button>
-            <button
-              type="button"
-              onClick={() => { setShowUrl(false); setUrlInput(""); }}
-              className="px-1.5 py-1.5 text-[#6b7280] hover:text-[#1a1a1a]"
-            >
-              <X size={10} />
-            </button>
+            <button type="button" onClick={() => { setShowUrl(false); setUrlInput(""); }}
+              className="px-1 py-1 text-[#6b7280]"><X size={9} /></button>
           </div>
         )}
       </div>
 
-      <p className="mt-1.5 text-[9px] text-[#6b7280] leading-snug">
-        {helpText}
-      </p>
+      <p className="mt-1 text-[9px] text-[#6b7280]">{helpText}</p>
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-          e.target.value = "";
-        }}
-      />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════
-//  IMAGE PREVIEW MODAL
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  Image preview modal (unchanged)
+// ═══════════════════════════════════════════════════════════
 function ImagePreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
-      onClick={onClose}
-    >
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
-        aria-label="Close preview"
-      >
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out" onClick={onClose}>
+      <button onClick={onClose}
+        className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors">
         <X size={20} />
       </button>
       <div className="relative w-full max-w-6xl aspect-[21/9]">
-        <Image
-          src={url}
-          alt="Full-size banner preview"
-          fill
-          className="object-contain"
-          sizes="100vw"
-          unoptimized={url.startsWith("/uploads")}
-        />
+        <Image src={url} alt="Full-size preview" fill className="object-contain" sizes="100vw"
+          unoptimized={url.startsWith("/uploads")} />
       </div>
     </div>
   );
@@ -8576,19 +9247,22 @@ function ImagePreviewModal({ url, onClose }: { url: string; onClose: () => void 
 ================================================================================
 FILE: app\(dashboard)\hero-banners\page.tsx
 CATEGORY: Other
-SIZE: 400 B
+SIZE: 524 B
 ================================================================================
 
 import { HeroBannersClient } from "./HeroBannersClient";
-import { getSetting } from "@/lib/db/repositories/settings";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
 
 export const dynamic   = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HeroBannersPage() {
-  const raw     = await getSetting("hero_banners");
+  const [raw, rotation] = await Promise.all([
+    getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
+  ]);
   const banners = raw ? JSON.parse(raw) : [];
-  return <HeroBannersClient initialBanners={banners} />;
+  return <HeroBannersClient initialBanners={banners} initialRotation={rotation} />;
 }
 
 
@@ -11756,6 +12430,158 @@ export default async function SettingsPage() {
 
 
 ================================================================================
+FILE: app\(dashboard)\settings\PaymentMethodsTab.tsx
+CATEGORY: Other
+SIZE: 4.7 KB
+================================================================================
+
+"use client";
+import { CreditCard, Truck, Smartphone, Wallet, Building2, AlertTriangle } from "lucide-react";
+
+interface TabProps {
+  settings: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+}
+
+interface PaymentMethodDef {
+  id:    string;   // key suffix (e.g. "cod")
+  key:   string;   // full setting key (e.g. "payment_cod_enabled")
+  label: string;
+  desc:  string;
+  icon:  typeof CreditCard;
+}
+
+const PAYMENT_METHODS: PaymentMethodDef[] = [
+  {
+    id:    "cod",
+    key:   "payment_cod_enabled",
+    label: "Cash on Delivery (COD)",
+    desc:  "Customer pays cash when the order is delivered",
+    icon:  Truck,
+  },
+  {
+    id:    "card",
+    key:   "payment_card_enabled",
+    label: "Credit / Debit Card",
+    desc:  "Visa, Mastercard, and other cards",
+    icon:  CreditCard,
+  },
+  {
+    id:    "jazzcash",
+    key:   "payment_jazzcash_enabled",
+    label: "JazzCash",
+    desc:  "Pay via JazzCash mobile wallet",
+    icon:  Smartphone,
+  },
+  {
+    id:    "easypaisa",
+    key:   "payment_easypaisa_enabled",
+    label: "Easypaisa",
+    desc:  "Pay via Easypaisa mobile wallet",
+    icon:  Wallet,
+  },
+  {
+    id:    "bank",
+    key:   "payment_bank_enabled",
+    label: "Bank Transfer",
+    desc:  "Direct bank transfer to your account",
+    icon:  Building2,
+  },
+];
+
+export function PaymentMethodsTab({ settings, onChange }: TabProps) {
+
+  const isEnabled = (key: string) => (settings[key] ?? "true") === "true";
+
+  // Count enabled methods for warning banner
+  const enabledCount = PAYMENT_METHODS.filter((m) => isEnabled(m.key)).length;
+
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <CreditCard size={16} className="text-[#c9a96e]" />
+        Payment Methods
+      </h2>
+      <p className="text-xs text-[#6b7280] mb-6">
+        Enable or disable payment methods available to customers at checkout.
+      </p>
+
+      {/* ─── Warning: no methods enabled ─── */}
+      {enabledCount === 0 && (
+        <div className="bg-red-50 border border-red-300 p-4 mb-4 flex items-start gap-3">
+          <AlertTriangle size={16} className="text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs">
+            <p className="font-semibold text-red-900">All payment methods are disabled!</p>
+            <p className="text-red-700 mt-0.5">
+              Customers will not be able to complete checkout. Enable at least one payment method below.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Payment methods list ─── */}
+      <div className="space-y-3">
+        {PAYMENT_METHODS.map((method) => {
+          const Icon = method.icon;
+          const enabled = isEnabled(method.key);
+
+          return (
+            <label
+              key={method.id}
+              className={`flex items-center gap-4 p-4 border cursor-pointer transition-colors ${
+                enabled
+                  ? "border-[#c9a96e] bg-[#f5f0e8]/40"
+                  : "border-[#e5e7eb] bg-[#fafaf9]"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => onChange(method.key, e.target.checked ? "true" : "false")}
+                className="w-4 h-4 accent-[#c9a96e]"
+              />
+
+              <Icon
+                size={22}
+                className={enabled ? "text-[#c9a96e]" : "text-[#6b7280]"}
+                strokeWidth={1.75}
+              />
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#1a1a1a]">{method.label}</p>
+                <p className="text-xs text-[#6b7280] mt-0.5">{method.desc}</p>
+              </div>
+
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 ${
+                  enabled
+                    ? "bg-[#c9a96e] text-white"
+                    : "bg-[#e5e7eb] text-[#6b7280]"
+                }`}
+              >
+                {enabled ? "Active" : "Off"}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+
+      {/* ─── Info box ─── */}
+      <div className="mt-6 bg-[#f5f0e8] border border-[#c9a96e]/30 p-4 text-xs text-[#1a1a1a]">
+        <p className="font-semibold mb-1">How it works</p>
+        <ul className="text-[#6b7280] leading-relaxed space-y-1 list-disc list-inside">
+          <li>Only <strong>enabled</strong> payment methods appear at checkout.</li>
+          <li>Disabled methods are automatically removed from customer view.</li>
+          <li>The <strong>COD handling fee</strong> is configured in the <strong>Shipping</strong> tab.</li>
+          <li>Changes apply immediately after saving.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
 FILE: app\(dashboard)\settings\profile\page.tsx
 CATEGORY: Other
 SIZE: 8.8 KB
@@ -12021,16 +12847,18 @@ void Mail;
 ================================================================================
 FILE: app\(dashboard)\settings\SettingsClient.tsx
 CATEGORY: Other
-SIZE: 25.1 KB
+SIZE: 22.4 KB
 ================================================================================
 
 "use client";
 import { useState } from "react";
 import { FooterTab } from "./FooterTab";
 import { FirstOrderTab } from "./FirstOrderTab";
+import { ShippingTab } from "./ShippingTab";
+import { PaymentMethodsTab } from "./PaymentMethodsTab";
 import {
   Store, Phone, ShoppingBag, Cake, Award,
-  DollarSign, Globe, Save, CheckCircle, MessageCircle,
+  DollarSign, Globe, Save, CheckCircle, MessageCircle, Truck, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -12041,13 +12869,15 @@ interface Props {
 
 type TabId =
   | "restaurant" | "contact" | "abandoned_cart" | "birthday"
-  | "loyalty" | "pricing" | "social" | "first_order" | "footer"
-  | "whatsapp";
+  | "loyalty" | "pricing" | "shipping" | "payments" | "social"
+  | "first_order" | "footer" | "whatsapp";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
   { id: "restaurant",     label: "Brand Information",   icon: Store       },
   { id: "contact",        label: "Contact Information", icon: Phone       },
   { id: "whatsapp",       label: "WhatsApp Widget",     icon: MessageCircle },
+  { id: "shipping",       label: "Shipping & Delivery", icon: Truck       },
+  { id: "payments",       label: "Payment Methods",     icon: CreditCard  },
   { id: "abandoned_cart", label: "Abandoned Cart",      icon: ShoppingBag },
   { id: "birthday",       label: "Birthday Rewards",    icon: Cake        },
   { id: "first_order",    label: "First Order Discount", icon: Award      },
@@ -12074,9 +12904,7 @@ export function SettingsClient({ initialSettings }: Props) {
     setSaving(true);
     const tabSettings = settings[activeTab] ?? {};
 
-    // WhatsApp tab uses a different storage strategy (single JSON blob)
     if (activeTab === "whatsapp") {
-      // Convert flat form fields to JSON structure
       const config = {
         enabled:          (tabSettings.enabled ?? "true") === "true",
         phone:            tabSettings.phone ?? "",
@@ -12093,21 +12921,15 @@ export function SettingsClient({ initialSettings }: Props) {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
-            settings: [
-              { key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }
-            ]
+            settings: [{ key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }]
           }),
         });
-        if (res.ok) {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 2500);
-        }
+        if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
       } catch {}
       setSaving(false);
       return;
     }
 
-    // Other tabs use standard flat key/value structure
     const payload = Object.entries(tabSettings).map(([key, value]) => ({
       key, value, category: activeTab,
     }));
@@ -12118,37 +12940,14 @@ export function SettingsClient({ initialSettings }: Props) {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ settings: payload }),
       });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      }
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
     } catch {}
     setSaving(false);
   };
 
-  // For WhatsApp tab, hydrate form from JSON blob
   const whatsappSettings = (() => {
     if (settings.whatsapp && Object.keys(settings.whatsapp).length > 0) {
       return settings.whatsapp;
-    }
-    // Try to load from whatsapp_widget key (JSON blob)
-    const raw = settings.whatsapp?.whatsapp_widget;
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        return {
-          enabled:          String(parsed.enabled ?? true),
-          phone:            parsed.phone ?? "",
-          communityLink:    parsed.communityLink ?? "",
-          greeting:         parsed.greeting ?? "Hi! I'm interested in Denova PK.",
-          directLabel:      parsed.directLabel ?? "Direct Message",
-          communityLabel:   parsed.communityLabel ?? "Join Community",
-          directSubtext:    parsed.directSubtext ?? "Chat with our support team",
-          communitySubtext: parsed.communitySubtext ?? "Join our WhatsApp community",
-        };
-      } catch {
-        return {};
-      }
     }
     return {};
   })();
@@ -12197,6 +12996,8 @@ export function SettingsClient({ initialSettings }: Props) {
             {activeTab === "restaurant"     && <RestaurantTab     settings={settings.restaurant     ?? {}} onChange={(k, v) => updateSetting("restaurant", k, v)} />}
             {activeTab === "contact"        && <ContactTab        settings={settings.contact        ?? {}} onChange={(k, v) => updateSetting("contact", k, v)} />}
             {activeTab === "whatsapp"       && <WhatsAppTab       settings={whatsappSettings              } onChange={(k, v) => updateSetting("whatsapp", k, v)} />}
+            {activeTab === "shipping"       && <ShippingTab       settings={settings.shipping       ?? {}} onChange={(k, v) => updateSetting("shipping", k, v)} />}
+            {activeTab === "payments"       && <PaymentMethodsTab settings={settings.payments      ?? {}} onChange={(k, v) => updateSetting("payments", k, v)} />}
             {activeTab === "abandoned_cart" && <AbandonedCartTab  settings={settings.abandoned_cart ?? {}} onChange={(k, v) => updateSetting("abandoned_cart", k, v)} />}
             {activeTab === "birthday"       && <BirthdayTab       settings={settings.birthday       ?? {}} onChange={(k, v) => updateSetting("birthday", k, v)} />}
             {activeTab === "first_order"    && <FirstOrderTab     settings={settings.first_order    ?? {}} onChange={(k, v) => updateSetting("first_order", k, v)} />}
@@ -12208,11 +13009,7 @@ export function SettingsClient({ initialSettings }: Props) {
 
           <div className="flex justify-end">
             <Button variant="primary" size="md" onClick={saveCurrentTab} disabled={saving}>
-              {saved ? (
-                <><CheckCircle size={15} />Saved!</>
-              ) : (
-                <><Save size={15} />{saving ? "Saving..." : "Save Changes"}</>
-              )}
+              {saved ? (<><CheckCircle size={15} />Saved!</>) : (<><Save size={15} />{saving ? "Saving..." : "Save Changes"}</>)}
             </Button>
           </div>
         </div>
@@ -12262,8 +13059,20 @@ function RestaurantTab({ settings, onChange }: TabProps) {
         <Field label="Tagline" id="brand_tagline" value={settings.brand_tagline ?? ""} onChange={(v) => onChange("brand_tagline", v)} hint="Short slogan shown across the site" />
         <Field label="Description" id="brand_description" value={settings.brand_description ?? ""} onChange={(v) => onChange("brand_description", v)} rows={3} />
         <Field label="City" id="brand_city" value={settings.brand_city ?? ""} onChange={(v) => onChange("brand_city", v)} />
-        <Field label="Full Address" id="brand_address" value={settings.brand_address ?? ""} onChange={(v) => onChange("brand_address", v)} rows={2} />
+        <Field label="Full Address" id="brand_address" value={settings.brand_address ?? ""} onChange={(v) => onChange("brand_address", v)} rows={2}
+          hint="Shown on Contact page and legal pages (Privacy, Terms)" />
         <Field label="Established Year" id="brand_year" value={settings.brand_year ?? ""} onChange={(v) => onChange("brand_year", v)} />
+
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Legal Pages</h3>
+          <Field
+            label="Last Updated Date"
+            id="legal_last_updated"
+            value={settings.legal_last_updated ?? "July 2026"}
+            onChange={(v) => onChange("legal_last_updated", v)}
+            hint="Shown at top of Privacy Policy and Terms of Service. e.g. 'July 2026'. Update whenever you revise the policies."
+          />
+        </div>
       </div>
     </div>
   );
@@ -12276,8 +13085,11 @@ function ContactTab({ settings, onChange }: TabProps) {
         <Phone size={16} className="text-[#c9a96e]" />
         Contact Information
       </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        These details are shown on the Contact page, legal pages (Privacy, Terms, Shipping), and in the footer.
+      </p>
       <div className="space-y-4">
-        <Field label="Primary Phone" id="contact_phone_primary" value={settings.contact_phone_primary ?? ""} onChange={(v) => onChange("contact_phone_primary", v)} type="tel" />
+        <Field label="Primary Phone" id="contact_phone_primary" value={settings.contact_phone_primary ?? ""} onChange={(v) => onChange("contact_phone_primary", v)} type="tel" hint="Shown across the site. e.g. +92 300 123 4567" />
         <Field label="Secondary Phone" id="contact_phone_secondary" value={settings.contact_phone_secondary ?? ""} onChange={(v) => onChange("contact_phone_secondary", v)} type="tel" />
         <Field label="Email" id="contact_email" value={settings.contact_email ?? ""} onChange={(v) => onChange("contact_email", v)} type="email" />
         <Field label="WhatsApp Number" id="contact_whatsapp" value={settings.contact_whatsapp ?? ""} onChange={(v) => onChange("contact_whatsapp", v)} type="tel" hint="Include country code, no spaces. e.g. +923001234567" />
@@ -12294,9 +13106,7 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
         <MessageCircle size={16} className="text-[#c9a96e]" />
         WhatsApp Floating Widget
       </h2>
-
       <div className="space-y-4">
-        {/* Enable toggle */}
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("enabled", e.target.checked ? "true" : "false")}
@@ -12307,52 +13117,21 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
           </div>
         </label>
 
-        {/* Preview */}
-        <div className="bg-[#f5f0e8]/30 border border-[#c9a96e]/30 p-4 flex items-start gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center flex-shrink-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.14 1.545 5.873L.057 23.997l6.306-1.654A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.017-1.376l-.36-.214-3.733.979 1-3.646-.234-.374A9.818 9.818 0 0 1 12 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/>
-            </svg>
-          </div>
-          <div className="flex-1 text-xs text-[#1a1a1a] leading-relaxed">
-            <p className="font-semibold mb-1">How it works</p>
-            <p>Customers click the floating WhatsApp icon in the bottom-right corner. A menu pops up with two options: <strong>Direct Message</strong> (opens chat with your number) and <strong>Join Community</strong> (opens your WhatsApp group/community link).</p>
-          </div>
-        </div>
-
         <div className="pt-2">
           <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Direct Message Option</h3>
           <div className="space-y-4">
-            <Field
-              label="WhatsApp Phone Number"
-              id="phone"
-              value={settings.phone ?? ""}
-              onChange={(v) => onChange("phone", v)}
-              type="tel"
-              hint="Include country code, e.g. +923001234567 (spaces/dashes are OK - will be cleaned)"
-            />
-            <Field
-              label="Greeting Message (pre-filled in chat)"
-              id="greeting"
+            <Field label="WhatsApp Phone Number" id="phone"
+              value={settings.phone ?? ""} onChange={(v) => onChange("phone", v)} type="tel" />
+            <Field label="Greeting Message (pre-filled in chat)" id="greeting"
               value={settings.greeting ?? "Hi! I'm interested in Denova PK."}
-              onChange={(v) => onChange("greeting", v)}
-              hint="This text appears when customer clicks Direct Message"
-              rows={2}
-            />
+              onChange={(v) => onChange("greeting", v)} rows={2} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Button Label"
-                id="directLabel"
+              <Field label="Button Label" id="directLabel"
                 value={settings.directLabel ?? "Direct Message"}
-                onChange={(v) => onChange("directLabel", v)}
-              />
-              <Field
-                label="Button Subtext"
-                id="directSubtext"
+                onChange={(v) => onChange("directLabel", v)} />
+              <Field label="Button Subtext" id="directSubtext"
                 value={settings.directSubtext ?? "Chat with our support team"}
-                onChange={(v) => onChange("directSubtext", v)}
-              />
+                onChange={(v) => onChange("directSubtext", v)} />
             </div>
           </div>
         </div>
@@ -12360,27 +13139,16 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
         <div className="pt-4 border-t border-[#e5e7eb]">
           <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">Community Option</h3>
           <div className="space-y-4">
-            <Field
-              label="Community / Group Invite Link"
-              id="communityLink"
+            <Field label="Community / Group Invite Link" id="communityLink"
               value={settings.communityLink ?? ""}
-              onChange={(v) => onChange("communityLink", v)}
-              type="url"
-              hint="Full WhatsApp community/group invite URL, e.g. https://chat.whatsapp.com/xxx"
-            />
+              onChange={(v) => onChange("communityLink", v)} type="url" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field
-                label="Button Label"
-                id="communityLabel"
+              <Field label="Button Label" id="communityLabel"
                 value={settings.communityLabel ?? "Join Community"}
-                onChange={(v) => onChange("communityLabel", v)}
-              />
-              <Field
-                label="Button Subtext"
-                id="communitySubtext"
+                onChange={(v) => onChange("communityLabel", v)} />
+              <Field label="Button Subtext" id="communitySubtext"
                 value={settings.communitySubtext ?? "Join our WhatsApp community"}
-                onChange={(v) => onChange("communitySubtext", v)}
-              />
+                onChange={(v) => onChange("communitySubtext", v)} />
             </div>
           </div>
         </div>
@@ -12412,7 +13180,7 @@ function AbandonedCartTab({ settings, onChange }: TabProps) {
           type="number" hint="After this many minutes of inactivity, the cart is marked as abandoned" />
         <Field label="WhatsApp Follow-up Message" id="abandoned_cart_wa_message"
           value={settings.abandoned_cart_wa_message ?? ""} onChange={(v) => onChange("abandoned_cart_wa_message", v)}
-          rows={6} hint="Available tokens: {{name}} - customer name, {{amount}} - cart total in PKR" />
+          rows={6} hint="Available tokens: {{name}}, {{amount}}" />
       </div>
     </div>
   );
@@ -12441,11 +13209,11 @@ function BirthdayTab({ settings, onChange }: TabProps) {
           <Field label="Fixed Discount Amount (Rs.)" id="birthday_fixed_amount" value={settings.birthday_fixed_amount ?? "0"} onChange={(v) => onChange("birthday_fixed_amount", v)} type="number" hint="Use instead of %. Set 0 to disable" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Minimum Order (Rs.)" id="birthday_min_order" value={settings.birthday_min_order ?? "3000"} onChange={(v) => onChange("birthday_min_order", v)} type="number" hint="Minimum cart total to redeem" />
-          <Field label="Offer Validity (Days)" id="birthday_validity_days" value={settings.birthday_validity_days ?? "7"} onChange={(v) => onChange("birthday_validity_days", v)} type="number" hint="Days after birthday the offer is valid" />
+          <Field label="Minimum Order (Rs.)" id="birthday_min_order" value={settings.birthday_min_order ?? "3000"} onChange={(v) => onChange("birthday_min_order", v)} type="number" />
+          <Field label="Offer Validity (Days)" id="birthday_validity_days" value={settings.birthday_validity_days ?? "7"} onChange={(v) => onChange("birthday_validity_days", v)} type="number" />
         </div>
-        <Field label="Reminder Period (Days)" id="birthday_reminder_days" value={settings.birthday_reminder_days ?? "7"} onChange={(v) => onChange("birthday_reminder_days", v)} type="number" hint="Show upcoming birthdays this many days ahead" />
-        <Field label="Free Gift Description (optional)" id="birthday_free_gift" value={settings.birthday_free_gift ?? ""} onChange={(v) => onChange("birthday_free_gift", v)} hint="e.g. Free Denim Care Kit - mentioned in WhatsApp message" />
+        <Field label="Reminder Period (Days)" id="birthday_reminder_days" value={settings.birthday_reminder_days ?? "7"} onChange={(v) => onChange("birthday_reminder_days", v)} type="number" />
+        <Field label="Free Gift Description (optional)" id="birthday_free_gift" value={settings.birthday_free_gift ?? ""} onChange={(v) => onChange("birthday_free_gift", v)} />
         <Field label="WhatsApp Message Template" id="birthday_wa_message" value={settings.birthday_wa_message ?? ""} onChange={(v) => onChange("birthday_wa_message", v)} rows={6} hint="Tokens: {{name}} {{discount}} {{minOrder}} {{days}}" />
       </div>
     </div>
@@ -12472,12 +13240,12 @@ function LoyaltyTab({ settings, onChange }: TabProps) {
         </label>
         <Field label="Program Name" id="loyalty_program_name" value={settings.loyalty_program_name ?? "Denova Rewards"} onChange={(v) => onChange("loyalty_program_name", v)} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Earning Rate (%)" id="loyalty_earning_rate" value={settings.loyalty_earning_rate ?? "5"} onChange={(v) => onChange("loyalty_earning_rate", v)} type="number" hint="% of order value earned as points" />
-          <Field label="Point Value (Rs. per point)" id="loyalty_point_value" value={settings.loyalty_point_value ?? "1"} onChange={(v) => onChange("loyalty_point_value", v)} type="number" hint="1 point = X Rs when redeemed" />
+          <Field label="Earning Rate (%)" id="loyalty_earning_rate" value={settings.loyalty_earning_rate ?? "5"} onChange={(v) => onChange("loyalty_earning_rate", v)} type="number" />
+          <Field label="Point Value (Rs. per point)" id="loyalty_point_value" value={settings.loyalty_point_value ?? "1"} onChange={(v) => onChange("loyalty_point_value", v)} type="number" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Minimum Points to Redeem" id="loyalty_min_redemption" value={settings.loyalty_min_redemption ?? "100"} onChange={(v) => onChange("loyalty_min_redemption", v)} type="number" hint="Customer needs at least this many points" />
-          <Field label="Max Redemption % per Order" id="loyalty_max_redemption_pct" value={settings.loyalty_max_redemption_pct ?? "20"} onChange={(v) => onChange("loyalty_max_redemption_pct", v)} type="number" hint="Max % of order that can be paid with points" />
+          <Field label="Minimum Points to Redeem" id="loyalty_min_redemption" value={settings.loyalty_min_redemption ?? "100"} onChange={(v) => onChange("loyalty_min_redemption", v)} type="number" />
+          <Field label="Max Redemption % per Order" id="loyalty_max_redemption_pct" value={settings.loyalty_max_redemption_pct ?? "20"} onChange={(v) => onChange("loyalty_max_redemption_pct", v)} type="number" />
         </div>
       </div>
     </div>
@@ -12491,11 +13259,12 @@ function PricingTab({ settings, onChange }: TabProps) {
         <DollarSign size={16} className="text-[#c9a96e]" />
         Pricing &amp; Tax
       </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        Shipping costs are managed in the Shipping tab. Payment methods are managed in the Payment Methods tab.
+      </p>
       <div className="space-y-4">
         <Field label="Tax Percentage (%)" id="tax_percentage" value={settings.tax_percentage ?? "0"} onChange={(v) => onChange("tax_percentage", v)} type="number" />
         <Field label="Currency Symbol" id="currency_symbol" value={settings.currency_symbol ?? "Rs."} onChange={(v) => onChange("currency_symbol", v)} />
-        <Field label="Free Shipping Threshold (Rs.)" id="free_shipping_threshold" value={settings.free_shipping_threshold ?? "5000"} onChange={(v) => onChange("free_shipping_threshold", v)} type="number" />
-        <Field label="Default Shipping Cost (Rs.)" id="shipping_cost_default" value={settings.shipping_cost_default ?? "250"} onChange={(v) => onChange("shipping_cost_default", v)} type="number" />
       </div>
     </div>
   );
@@ -12512,6 +13281,199 @@ function SocialTab({ settings, onChange }: TabProps) {
         <Field label="Facebook URL" id="social_facebook" value={settings.social_facebook ?? ""} onChange={(v) => onChange("social_facebook", v)} type="url" />
         <Field label="Instagram URL" id="social_instagram" value={settings.social_instagram ?? ""} onChange={(v) => onChange("social_instagram", v)} type="url" />
         <Field label="TikTok URL" id="social_tiktok" value={settings.social_tiktok ?? ""} onChange={(v) => onChange("social_tiktok", v)} type="url" />
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: app\(dashboard)\settings\ShippingTab.tsx
+CATEGORY: Other
+SIZE: 8.1 KB
+================================================================================
+
+"use client";
+import { Truck, Info } from "lucide-react";
+
+interface TabProps {
+  settings: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+}
+
+function Field({
+  label, id, value, onChange, type = "text", hint, prefix, disabled,
+}: {
+  label: string; id: string; value: string;
+  onChange: (v: string) => void;
+  type?: string; hint?: string; prefix?: string; disabled?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold tracking-wide uppercase text-[#1a1a1a] mb-1.5">
+        {label}
+      </label>
+      <div className="flex">
+        {prefix && (
+          <span className="inline-flex items-center px-3 bg-[#fafaf9] border border-r-0 border-[#e5e7eb] text-xs font-semibold text-[#6b7280]">
+            {prefix}
+          </span>
+        )}
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          className="flex-1 w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none disabled:bg-[#fafaf9] disabled:text-[#9ca3af] disabled:cursor-not-allowed"
+        />
+      </div>
+      {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
+    </div>
+  );
+}
+
+function fmt(rupees: number): string {
+  return `Rs. ${Math.round(rupees).toLocaleString("en-PK")}`;
+}
+
+export function ShippingTab({ settings, onChange }: TabProps) {
+  const freeDelivery = settings.free_delivery_all === "true";
+  const baseCost     = Number(settings.shipping_base_cost ?? "250") || 0;
+  const threshold    = Number(settings.free_shipping_threshold ?? "5000") || 0;
+  const codFee       = Number(settings.cod_extra_fee ?? "0") || 0;
+
+  const previewOrders = [
+    { subtotal: 1500,  label: "Small order" },
+    { subtotal: 4000,  label: "Medium order" },
+    { subtotal: 7500,  label: "Large order" },
+  ];
+
+  const calcShipping = (subtotal: number) => {
+    if (freeDelivery) return 0;
+    if (threshold > 0 && subtotal >= threshold) return 0;
+    return baseCost;
+  };
+
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Truck size={16} className="text-[#c9a96e]" />
+        Shipping & Delivery
+      </h2>
+      <p className="text-xs text-[#6b7280] mb-6">
+        Configure how shipping costs are calculated at checkout.
+      </p>
+
+      <div className="space-y-4">
+
+        {/* MASTER TOGGLE */}
+        <label className={`flex items-center gap-3 p-4 border cursor-pointer transition-colors ${
+          freeDelivery ? "border-[#c9a96e] bg-[#f5f0e8]/40" : "border-[#e5e7eb] bg-[#fafaf9]"
+        }`}>
+          <input type="checkbox" checked={freeDelivery}
+            onChange={(e) => onChange("free_delivery_all", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#c9a96e]" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Free Delivery on All Orders</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">
+              Master switch — when enabled, all orders ship free regardless of order value
+            </p>
+          </div>
+          {freeDelivery && (
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#c9a96e] text-white px-2 py-1">
+              Active
+            </span>
+          )}
+        </label>
+
+        {/* SHIPPING COST FIELDS */}
+        <div className={freeDelivery ? "opacity-50 pointer-events-none" : ""}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Base Shipping Cost" id="shipping_base_cost"
+              value={settings.shipping_base_cost ?? "250"}
+              onChange={(v) => onChange("shipping_base_cost", v)}
+              type="number" prefix="Rs." disabled={freeDelivery}
+              hint="Charged on orders below the free-shipping threshold" />
+            <Field label="Free Shipping Threshold" id="free_shipping_threshold"
+              value={settings.free_shipping_threshold ?? "5000"}
+              onChange={(v) => onChange("free_shipping_threshold", v)}
+              type="number" prefix="Rs." disabled={freeDelivery}
+              hint="Orders at or above this amount ship free. Set 0 to disable" />
+          </div>
+        </div>
+
+        {/* COD FEE (toggle moved to Payment Methods tab) */}
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">
+            COD Handling Fee
+          </h3>
+          <p className="text-xs text-[#6b7280] mb-3">
+            Enable/disable Cash on Delivery in the <strong>Payment Methods</strong> tab.
+            This fee is added when a customer chooses COD.
+          </p>
+          <Field label="COD Extra Fee (optional)" id="cod_extra_fee"
+            value={settings.cod_extra_fee ?? "0"}
+            onChange={(v) => onChange("cod_extra_fee", v)}
+            type="number" prefix="Rs."
+            hint="Additional fee added when customer chooses COD. Set 0 to disable" />
+        </div>
+
+        {/* LIVE PREVIEW */}
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <div className="flex items-center gap-2 mb-3">
+            <Info size={14} className="text-[#c9a96e]" />
+            <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e]">Customer Preview</h3>
+          </div>
+          <p className="text-xs text-[#6b7280] mb-4">This is what customers will see at checkout for different order sizes:</p>
+
+          <div className="border border-[#e5e7eb] divide-y divide-[#e5e7eb]">
+            {previewOrders.map((order) => {
+              const ship  = calcShipping(order.subtotal);
+              const total = order.subtotal + ship;
+              return (
+                <div key={order.subtotal} className="p-3 bg-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide">{order.label}</span>
+                    <span className="text-xs text-[#6b7280]">{fmt(order.subtotal)}</span>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#6b7280]">Subtotal</span>
+                      <span className="text-[#1a1a1a]">{fmt(order.subtotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#6b7280]">Shipping</span>
+                      <span className={ship === 0 ? "text-green-600 font-semibold" : "text-[#1a1a1a]"}>
+                        {ship === 0 ? "FREE" : fmt(ship)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-[#e5e7eb] font-semibold">
+                      <span className="text-[#1a1a1a]">Total</span>
+                      <span className="text-[#1a1a1a]">{fmt(total)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {codFee > 0 && (
+            <p className="mt-3 text-[11px] text-[#6b7280]">
+              Note: An additional {fmt(codFee)} COD fee is added when customer selects Cash on Delivery (if COD is enabled in Payment Methods).
+            </p>
+          )}
+        </div>
+
+        <div className="bg-[#f5f0e8] border border-[#c9a96e]/30 p-4 text-xs text-[#1a1a1a]">
+          <p className="font-semibold mb-1">How it works</p>
+          <ul className="text-[#6b7280] leading-relaxed space-y-1 list-disc list-inside">
+            <li><strong>Free Delivery Master Switch</strong> overrides everything — all orders ship free.</li>
+            <li>Otherwise, orders above the threshold ship free; below it, the base cost applies.</li>
+            <li>Setting threshold to <strong>0</strong> disables free shipping (all orders pay base cost).</li>
+            <li>COD fee is only added if COD is enabled in the <strong>Payment Methods</strong> tab.</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

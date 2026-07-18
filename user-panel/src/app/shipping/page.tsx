@@ -68,7 +68,7 @@ export default async function ShippingPage() {
 
   return (
     <>
-      <div className="pt-28 pb-10 sm:pt-32 sm:pb-14 bg-[#fafaf9] border-b border-[#e5e7eb]">
+      <div className="pt-28 pb-10 sm:pt-32 sm:pb-14 bg-brand-surface border-b border-[#e5e7eb]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn>
             <Breadcrumb

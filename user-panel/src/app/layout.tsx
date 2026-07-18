@@ -6,6 +6,7 @@ import { CartAbandonmentTracker } from "@/components/providers/CartAbandonmentTr
 import { ShippingConfigLoader } from "@/components/providers/ShippingConfigLoader";
 import { PaymentConfigLoader } from "@/components/providers/PaymentConfigLoader";
 import { LayoutShell } from "@/components/layout/LayoutShell";
+import { ScrollProgress } from "@/components/animations/ScrollProgress";
 import "./globals.css";
 
 const SITE_URL         = "https://denovapk.com";
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="thumbnail"              content="https://denovapk.com/og-image.jpg" />
       </head>
       <body className="antialiased bg-white text-[#111111]">
+        <ScrollProgress />
         <SessionProvider>
           <CartAbandonmentTracker />
           <LayoutShell>{children}</LayoutShell>

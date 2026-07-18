@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -17,19 +17,16 @@ interface Props {
 export function ShopPageClient({ products }: Props) {
   const searchParams = useSearchParams();
   const filterParam  = searchParams.get("filter");
+  const waistParam   = searchParams.get("waist");   // e.g. "32" or "32,33,34"
 
-  // ─── Compute REAL price bounds from actual catalog ────
   const { catalogMin, catalogMax } = useMemo(() => {
     if (products.length === 0) return { catalogMin: 0, catalogMax: 0 };
-
     let min = Infinity;
     let max = 0;
     for (const p of products) {
       if (p.price < min) min = p.price;
       if (p.price > max) max = p.price;
     }
-
-    // Floor min to nearest 100 down, ceil max to nearest 100 up (nicer slider stops)
     return {
       catalogMin: Math.max(0, Math.floor(min / 100) * 100),
       catalogMax: Math.ceil(max / 100) * 100,
@@ -46,17 +43,13 @@ export function ShopPageClient({ products }: Props) {
   const [columns,       setColumns]       = useState<2 | 3 | 4>(4);
   const [isLoading,     setIsLoading]     = useState(false);
 
-  // Sync price filter to catalog bounds whenever catalog changes
-  // (only if user hasn't touched them yet — keep current if they've been modified)
   useEffect(() => {
     setFilters((prev) => {
-      // If price filter still at defaults (untouched), sync to new catalog bounds
       const untouched = prev.priceMin === 0 || prev.priceMax === 20000 ||
                         prev.priceMin === catalogMin || prev.priceMax === catalogMax;
       if (untouched) {
         return { ...prev, priceMin: catalogMin, priceMax: catalogMax };
       }
-      // Otherwise clamp existing values to new bounds
       return {
         ...prev,
         priceMin: Math.max(catalogMin, Math.min(prev.priceMin, catalogMax)),
@@ -71,7 +64,24 @@ export function ShopPageClient({ products }: Props) {
     else if (filterParam === "bestsellers") setFilters((f) => ({ ...f, sortBy: "bestselling" }));
   }, [filterParam]);
 
-  // ─── Dynamic filter options ──────────────────────────
+  // ─── Preselect waist filters from ?waist=32,33 URL ────
+  useEffect(() => {
+    if (!waistParam) return;
+    const parsed = waistParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (parsed.length === 0) return;
+
+    setFilters((prev) => {
+      // Merge: keep any existing sizes, add ones from URL, dedupe
+      const merged = Array.from(new Set([...prev.sizes, ...parsed]));
+      return { ...prev, sizes: merged };
+    });
+    // Only run once when the URL waist param changes
+  }, [waistParam]);
+
   const availableSizes = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => {
@@ -138,7 +148,6 @@ export function ShopPageClient({ products }: Props) {
     return result;
   }, [filters, filterParam, products]);
 
-  // Active price filter = user narrowed the range from the catalog bounds
   const priceFilterActive =
     filters.priceMin > catalogMin || filters.priceMax < catalogMax;
 
@@ -156,7 +165,7 @@ export function ShopPageClient({ products }: Props) {
   return (
     <>
       <div className="pt-28 pb-8 sm:pt-32 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="site-container">
           <FadeIn>
             <Breadcrumb items={[{ label: "Home", href: "/" }, { label: pageTitle }]} className="mb-4" />
           </FadeIn>
@@ -171,9 +180,9 @@ export function ShopPageClient({ products }: Props) {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+      <div className="site-container py-8 lg:py-10">
         <div className="flex gap-8 lg:gap-10">
-          <aside className="hidden lg:block w-56 flex-shrink-0">
+          <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0">
             <div className="sticky top-24">
               <ProductFilters
                 filters={filters}

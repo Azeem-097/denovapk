@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Tag } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
 import { SlideUp } from "@/components/animations/SlideUp";
@@ -11,40 +11,20 @@ interface Props {
   collections: Collection[];
 }
 
-// ─── Format price range string ───────────────────────────
-function formatPriceRange(collection: Collection): string {
-  const min = collection.minPrice;
-  const max = collection.maxPrice;
-
-  if (min == null || max == null || collection.productCount === 0) {
-    return "";
-  }
-
-  const fmt = (n: number) => `${Math.round(n).toLocaleString("en-PK")} PKR`;
-
-  if (min === max) {
-    return fmt(min);
-  }
-
-  return `${fmt(min)}  -  ${fmt(max)}`;
-}
-
 export function FeaturedCollections({ collections }: Props) {
   if (collections.length === 0) return null;
 
-  // Dynamic grid layout based on count
   const count = collections.length;
   const gridClass =
-    count === 1 ? "grid-cols-1 max-w-xl mx-auto" :
+    count === 1 ? "grid-cols-1" :
     count === 2 ? "grid-cols-1 sm:grid-cols-2" :
     count === 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
     "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <section className="py-14 sm:py-20 lg:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ── Section header ────────────────────────── */}
+      <div className="site-container">
         <div className="text-center mb-10 sm:mb-14 lg:mb-16">
           <FadeIn>
             <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#c9a96e]">
@@ -62,109 +42,82 @@ export function FeaturedCollections({ collections }: Props) {
             </p>
           </FadeIn>
         </div>
+      </div>
 
-        {/* ── Collections grid ──────────────────────── */}
-        <div className={`grid ${gridClass} gap-5 sm:gap-6 lg:gap-7`}>
-          {collections.map((collection, i) => (
-            <SlideUp key={collection.id} stagger={100} index={i}>
-              <CollectionCard collection={collection} />
-            </SlideUp>
-          ))}
-        </div>
+      {/* Grid — full bleed, no gaps */}
+      <div className={`grid ${gridClass} gap-0 w-full`}>
+        {collections.map((collection, i) => (
+          <SlideUp key={collection.id} stagger={140} index={i}>
+            <CollectionCard collection={collection} />
+          </SlideUp>
+        ))}
+      </div>
 
-        {/* ── View all link ─────────────────────────── */}
+      <div className="site-container">
         <FadeIn delay={500}>
           <div className="text-center mt-10 sm:mt-14 lg:mt-16">
             <Link
               href="/shop"
-              className="group inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] hover:text-[#c9a96e] transition-colors duration-200"
+              className="group relative inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] hover:text-[#c9a96e] transition-colors duration-200 whitespace-nowrap pb-1"
             >
-              View All Collections
+              <span>View All Collections</span>
               <ArrowRight
                 size={14}
-                className="sm:w-4 sm:h-4 transition-transform duration-200 group-hover:translate-x-1"
+                className="sm:w-4 sm:h-4 transition-transform duration-300 group-hover:translate-x-1.5 flex-shrink-0"
               />
+              {/* Animated underline */}
+              <span className="absolute left-0 right-0 bottom-0 h-px bg-[#c9a96e] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-400" />
             </Link>
           </div>
         </FadeIn>
-
       </div>
+
     </section>
   );
 }
 
-// ══════════════════════════════════════════════════════════
-//  COLLECTION CARD (Premium design)
-// ══════════════════════════════════════════════════════════
 function CollectionCard({ collection }: { collection: Collection }) {
-  const priceRange = formatPriceRange(collection);
-  const categoryLabel = collection.name.toUpperCase();
-
   return (
     <Link
       href={`/collections/${collection.slug}`}
-      className="group relative block aspect-[3/4] sm:aspect-[4/5] overflow-hidden bg-[#111] shadow-lg hover:shadow-2xl transition-shadow duration-500"
+      className="group relative block aspect-square overflow-hidden bg-[#111]"
     >
-      {/* ── Background image ───────────────────────── */}
       {collection.image && (
         <Image
           src={collection.image}
           alt={collection.name}
           fill
-          className="object-cover transition-transform duration-[1200ms] group-hover:scale-110"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-110"
+          sizes="(max-width: 640px) 100vw, 50vw"
           loading="lazy"
           unoptimized={collection.image.startsWith("/uploads")}
         />
       )}
 
-      {/* ── Dark overlay — strong at bottom, subtle at top ── */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10 transition-opacity duration-500 group-hover:from-black/95" />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+      {/* Overlay — darkens on hover */}
+      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-700" />
 
-      {/* ── Content ────────────────────────────────── */}
-      <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-7 lg:p-8">
+      {/* Radial vignette that reveals on hover */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+        style={{
+          background: "radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.4) 100%)",
+        }}
+      />
 
-        {/* Category label with divider */}
-        <div className="flex items-center gap-3 mb-3 sm:mb-4">
-          <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.25em] uppercase text-[#c9a96e]">
-            {categoryLabel}
-          </span>
-          <span className="flex-1 h-px bg-gradient-to-r from-[#c9a96e]/60 to-transparent max-w-[60px]" />
-        </div>
-
-        {/* Title (big serif) */}
-        <h3 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 leading-[1.05] tracking-tight">
-          {collection.name}
-        </h3>
-
-        {/* Description */}
-        {collection.description && (
-          <p className="text-white/85 text-sm sm:text-[15px] leading-relaxed mb-5 sm:mb-6 line-clamp-2 max-w-md">
-            {collection.description}
-          </p>
-        )}
-
-        {/* Explore button */}
-        <div className="mb-4 sm:mb-5">
-          <span className="inline-flex items-center justify-between gap-4 w-full sm:w-auto sm:min-w-[240px] border border-[#c9a96e]/60 group-hover:border-[#c9a96e] bg-transparent group-hover:bg-[#c9a96e] text-[#c9a96e] group-hover:text-white px-6 py-3 sm:py-3.5 text-xs sm:text-[13px] font-semibold tracking-[0.2em] uppercase transition-all duration-300">
-            Explore Collection
-            <ArrowRight
-              size={16}
-              className="transition-transform duration-300 group-hover:translate-x-1"
+      {/* Collection name — subtle lift + gold underline draws in on hover */}
+      <div className="absolute inset-0 flex items-center justify-center px-6">
+        <div className="relative">
+          <h3 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white text-center leading-none tracking-tight drop-shadow-2xl transition-all duration-700 group-hover:-translate-y-2">
+            {collection.name}
+          </h3>
+          {/* Gold underline — draws from center on hover */}
+          <div className="mt-3 flex justify-center">
+            <span
+              className="block h-[2px] w-[60px] bg-[#c9a96e] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-700"
             />
-          </span>
-        </div>
-
-        {/* Price range (bottom info) */}
-        {priceRange && (
-          <div className="flex items-center gap-2 text-[#c9a96e]">
-            <Tag size={13} className="flex-shrink-0" strokeWidth={2} />
-            <span className="text-[11px] sm:text-xs font-semibold tracking-[0.2em] uppercase">
-              PRICE: {priceRange}
-            </span>
           </div>
-        )}
+        </div>
       </div>
     </Link>
   );

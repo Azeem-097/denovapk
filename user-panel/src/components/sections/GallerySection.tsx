@@ -1,9 +1,10 @@
-﻿"use client";
-import { useEffect, useState } from "react";
+"use client";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
 import { cn } from "@/lib/utils";
 
 interface GallerySlot {
@@ -48,9 +49,8 @@ export function GallerySection() {
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Section header */}
+      <div className="site-container">
         <div className="text-center mb-10 lg:mb-14">
           {config.sectionLabel && (
             <FadeIn>
@@ -74,57 +74,52 @@ export function GallerySection() {
             </FadeIn>
           )}
         </div>
+      </div>
 
-        {/*
-          LAYOUT — using CSS Grid with aspect-square rows via padding hack.
-
-          Structure:
-            - Desktop:  4 columns, 2 rows
-            - Center slot spans 2 cols x 2 rows  ->  ends up naturally SQUARE
-              because 2col-wide = 2row-tall (rows sized by the square cells)
-            - Corner slots are 1 col x 1 row (auto square)
-
-          The trick: we use `grid-cols-4` with `aspect-square` on each individual
-          corner cell. The center cell being 2x2 becomes a big square that
-          matches the height of two stacked corner cells.
-
-          On mobile: 2 cols. Center spans full width but stays square.
-        */}
-        <FadeIn delay={300}>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-
-            {/* Top-left (slot 1) */}
-            <GalleryCell slot={s1} className="aspect-square" />
-
-            {/* Center (slot 3) - spans 2 cols on both mobile & desktop, 2 rows on desktop only */}
-            <GalleryCell
-              slot={s3}
-              className="col-span-2 sm:col-span-2 sm:row-span-2 aspect-square"
-            />
-
-            {/* Top-right (slot 4) */}
-            <GalleryCell slot={s4} className="aspect-square" />
-
-            {/* Bottom-left (slot 2) */}
-            <GalleryCell slot={s2} className="aspect-square" />
-
-            {/* Bottom-right (slot 5) */}
-            <GalleryCell slot={s5} className="aspect-square" />
-          </div>
-        </FadeIn>
+      {/* Image grid — full bleed */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 w-full">
+        <GalleryCell slot={s1} className="aspect-square" delay={0} />
+        <GalleryCell
+          slot={s3}
+          className="col-span-2 sm:col-span-2 sm:row-span-2 aspect-square"
+          delay={100}
+        />
+        <GalleryCell slot={s4} className="aspect-square" delay={200} />
+        <GalleryCell slot={s2} className="aspect-square" delay={300} />
+        <GalleryCell slot={s5} className="aspect-square" delay={400} />
       </div>
     </section>
   );
 }
 
-// ─── Gallery Cell ────────────────────────────────────────
-function GalleryCell({
-  slot, className,
-}: {
-  slot: GallerySlot | undefined;
+interface GalleryCellProps {
+  slot:      GallerySlot | undefined;
   className?: string;
-}) {
-  // Empty or hidden slot — render placeholder to preserve grid
+  delay?:    number;
+}
+
+function GalleryCell({ slot, className, delay = 0 }: GalleryCellProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
   if (!slot || !slot.isActive || !slot.image) {
     return <div className={cn("bg-[#fafaf9]", className)} aria-hidden="true" />;
   }
@@ -135,13 +130,15 @@ function GalleryCell({
         src={slot.image}
         alt=""
         fill
-        className="object-cover transition-transform duration-500 group-hover:scale-105"
-        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
         loading="lazy"
         unoptimized={slot.image.startsWith("/uploads")}
       />
-      {/* Subtle hover overlay */}
-      <div className="absolute inset-0 bg-[#1a1a1a]/0 group-hover:bg-[#1a1a1a]/15 transition-colors duration-300" />
+      <div className="absolute inset-0 bg-[#1a1a1a]/0 group-hover:bg-[#1a1a1a]/20 transition-colors duration-500" />
+      {/* Corner accent that fades in */}
+      <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[#c9a96e] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[#c9a96e] opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" />
     </>
   );
 
@@ -150,26 +147,38 @@ function GalleryCell({
     className
   );
 
+  const revealStyle = {
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? "scale(1) rotate(0)" : "scale(0.94) rotate(-1deg)",
+    transition: shouldAnimate
+      ? `opacity 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+      : "none",
+    transitionDelay: `${delay}ms`,
+  };
+
   if (slot.link) {
     const isExternal = slot.link.startsWith("http");
     if (isExternal) {
       return (
-        <a
-          href={slot.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={commonClass}
-        >
-          {content}
-        </a>
+        <div ref={ref} style={revealStyle}>
+          <a href={slot.link} target="_blank" rel="noopener noreferrer" className={commonClass}>
+            {content}
+          </a>
+        </div>
       );
     }
     return (
-      <Link href={slot.link} className={commonClass}>
-        {content}
-      </Link>
+      <div ref={ref} style={revealStyle}>
+        <Link href={slot.link} className={commonClass}>
+          {content}
+        </Link>
+      </div>
     );
   }
 
-  return <div className={commonClass}>{content}</div>;
+  return (
+    <div ref={ref} style={revealStyle}>
+      <div className={commonClass}>{content}</div>
+    </div>
+  );
 }

@@ -1,4 +1,4 @@
-﻿import type { NextConfig } from "next";
+import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "plus.unsplash.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "http",  hostname: "localhost" },
+      { protocol: "https", hostname: "denovapk.com" },
+      { protocol: "https", hostname: "*.hostonme.dev" },
     ],
   },
 };

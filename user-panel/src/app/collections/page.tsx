@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
@@ -22,7 +22,7 @@ export default async function CollectionsPage() {
     <>
       {/* Page header */}
       <div className="pt-10 pb-8 sm:pt-12 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="site-container">
           <FadeIn>
             <Breadcrumb
               items={[{ label: "Home", href: "/" }, { label: "Collections" }]}

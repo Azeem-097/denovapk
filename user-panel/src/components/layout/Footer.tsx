@@ -35,10 +35,6 @@ interface FooterData {
   bottomLinks: FooterLink[];
 }
 
-// ═══════════════════════════════════════════════════════════
-// FALLBACK — used when admin hasn't configured footer links,
-// or before the API responds. Ships good defaults out of the box.
-// ═══════════════════════════════════════════════════════════
 const FALLBACK: FooterData = {
   brand: {
     name:        "Denova PK",
@@ -89,21 +85,11 @@ const FALLBACK: FooterData = {
   ],
 };
 
-/**
- * Smart merge: use API data when present, fall back per-column
- * if the admin hasn't configured that specific column's links.
- */
 function mergeWithFallback(api: FooterData): FooterData {
-  // Merge columns individually — API column wins if it has ANY links,
-  // otherwise use the fallback column at that index.
   const mergedColumns: FooterColumn[] = FALLBACK.columns.map((fbCol, i) => {
     const apiCol = api.columns[i];
-    // Use API column if it has links; else use fallback
     if (apiCol && apiCol.links && apiCol.links.length > 0) {
-      return {
-        title: apiCol.title || fbCol.title,
-        links: apiCol.links,
-      };
+      return { title: apiCol.title || fbCol.title, links: apiCol.links };
     }
     return fbCol;
   });
@@ -141,14 +127,9 @@ export function Footer() {
     fetch("/api/footer")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
-        if (d && !d.error) {
-          // Merge smartly — never show empty columns
-          setData(mergeWithFallback(d));
-        }
+        if (d && !d.error) setData(mergeWithFallback(d));
       })
-      .catch(() => {
-        // Keep FALLBACK — already loaded
-      });
+      .catch(() => {});
   }, []);
 
   const socialLinks = [
@@ -196,14 +177,11 @@ export function Footer() {
   return (
     <footer className="bg-[#1a1a1a] text-white">
 
-      {/* Top accent */}
       <div className="h-px bg-gradient-to-r from-transparent via-[#c9a96e] to-transparent" />
 
-      {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
+      <div className="site-container py-14 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 lg:gap-8">
 
-          {/* Brand column */}
           <div className="sm:col-span-2 lg:col-span-2">
             <Link href="/" className="inline-flex flex-col leading-none mb-5">
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-white">
@@ -218,7 +196,6 @@ export function Footer() {
               {data.brand.description}
             </p>
 
-            {/* Contact info */}
             <div className="flex flex-col gap-3 mb-6">
               {data.contact.phone && (
                 <a href={`tel:${data.contact.phone}`}
@@ -242,7 +219,6 @@ export function Footer() {
               )}
             </div>
 
-            {/* Social links */}
             <div className="flex items-center gap-3">
               {socialLinks.map((social) => (
                 <a
@@ -259,7 +235,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Dynamic link columns — never empty thanks to smart merge */}
           {data.columns.map((col, i) => (
             <div key={i} className="lg:col-span-1">
               <h4 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#c9a96e] mb-4">
@@ -281,9 +256,8 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="site-container py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-white/40 text-center sm:text-left">
               &copy; {year} {data.brand.copyright}
@@ -300,6 +274,23 @@ export function Footer() {
               {data.brand.payment}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ─── Developer credit ─── */}
+      <div className="border-t border-white/5 bg-black/40">
+        <div className="site-container py-3">
+          <p className="text-[11px] text-white/40 text-center tracking-wide">
+            Developed by{" "}
+            <a
+              href="https://devnixstudios.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#c9a96e] hover:text-white transition-colors duration-200"
+            >
+              Devnix Studios
+            </a>
+          </p>
         </div>
       </div>
 

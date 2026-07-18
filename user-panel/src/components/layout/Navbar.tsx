@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
@@ -54,20 +54,13 @@ export function Navbar() {
 
   return (
     <>
-      {/*
-        Changed from `fixed top-0` to `sticky top-0`.
-        - sticky = stays visible on scroll (same UX as fixed)
-        - BUT it also takes up space in normal flow
-        - So content below (hero, etc.) starts AFTER the navbar
-        - No overlap. No layout hacks. Clean.
-      */}
       <header className={cn(
         "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
         scrolled
           ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-[#e5e7eb]"
           : "bg-white/90 backdrop-blur-sm"
       )}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="site-container">
 
           {/* MOBILE */}
           <div className="lg:hidden flex items-center justify-between h-16">
@@ -136,13 +129,11 @@ export function Navbar() {
               </Link>
             </nav>
 
-            {/* Logo */}
             <Link href="/" className="flex flex-col items-center leading-none flex-shrink-0">
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-[#1a1a1a] hover:text-[#c9a96e] transition-colors duration-300">DENOVA</span>
               <span className="text-[9px] font-medium tracking-[0.35em] text-[#c9a96e] uppercase -mt-0.5">Pakistan</span>
             </Link>
 
-            {/* Right */}
             <div className="flex items-center justify-end gap-7">
               <Link href="/shop?filter=sale" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 relative group whitespace-nowrap">
                 Sale

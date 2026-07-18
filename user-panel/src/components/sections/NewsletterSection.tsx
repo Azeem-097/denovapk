@@ -1,32 +1,30 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { Send, CheckCircle } from "lucide-react";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { ScaleIn } from "@/components/animations/ScaleIn";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setStatus("loading");
-
-    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1200));
     setStatus("success");
     setEmail("");
-
-    // Reset after 4 seconds
     setTimeout(() => setStatus("idle"), 4000);
   };
 
   return (
     <section className="relative py-16 sm:py-20 lg:py-24 bg-[#f5f0e8] overflow-hidden">
 
-      {/* Subtle pattern overlay */}
+      {/* Subtle decorative pattern */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -34,7 +32,11 @@ export function NewsletterSection() {
         }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Floating decorative circles */}
+      <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-[#c9a96e]/5 animate-float-soft hidden lg:block" style={{ animationDuration: "8s" }} />
+      <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-[#c9a96e]/5 animate-float-soft hidden lg:block" style={{ animationDuration: "10s", animationDelay: "1s" }} />
+
+      <div className="relative site-container">
         <div className="max-w-2xl mx-auto text-center">
 
           <FadeIn>
@@ -58,8 +60,7 @@ export function NewsletterSection() {
             </p>
           </FadeIn>
 
-          {/* Form */}
-          <FadeIn delay={300}>
+          <ScaleIn from={0.9} delay={300}>
             <form
               onSubmit={handleSubmit}
               className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
@@ -69,17 +70,27 @@ export function NewsletterSection() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
                   placeholder="Enter your email address"
                   required
-                  className="w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none transition-colors duration-200 placeholder:text-[#6b7280]/60"
+                  className="input-focus-gold w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none transition-all duration-300 placeholder:text-[#6b7280]/60"
                   disabled={status === "loading" || status === "success"}
+                />
+                {/* Gold underline that draws on focus */}
+                <span
+                  className="absolute bottom-0 left-0 h-[2px] bg-[#c9a96e] transition-all duration-500 origin-left"
+                  style={{
+                    width: "100%",
+                    transform: isFocused ? "scaleX(1)" : "scaleX(0)",
+                  }}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={status === "loading" || status === "success"}
-                className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0"
+                className="shimmer-btn inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 hover-lift"
               >
                 {status === "loading" ? (
                   <>
@@ -88,7 +99,7 @@ export function NewsletterSection() {
                   </>
                 ) : status === "success" ? (
                   <>
-                    <CheckCircle size={16} />
+                    <CheckCircle size={16} className="animate-fade-zoom-in" />
                     Subscribed!
                   </>
                 ) : (
@@ -99,16 +110,14 @@ export function NewsletterSection() {
                 )}
               </button>
             </form>
-          </FadeIn>
+          </ScaleIn>
 
-          {/* Success message */}
           {status === "success" && (
-            <div className="mt-4 text-sm text-[#c9a96e] font-medium">
+            <div className="mt-4 text-sm text-[#c9a96e] font-medium animate-fade-zoom-in">
               Thank you! You&apos;re now part of the Denova community. 🎉
             </div>
           )}
 
-          {/* Trust line */}
           <FadeIn delay={400}>
             <p className="mt-5 text-[11px] text-[#6b7280]/70 tracking-wide">
               No spam, ever. Unsubscribe anytime.

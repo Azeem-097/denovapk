@@ -1,5 +1,17 @@
+================================================================================
+REPLAY BUTTON NOT WORKING — DEBUG EXTRACT
+Symptom: clicking Replay does nothing; animations don't re-run
+Suspect: animVersion is being passed but child key isn't remounting,
+         OR the CSS animation isn't re-firing on remount.
+Generated: 2026-07-18 13:28:32
+================================================================================
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\hero-banners\HeroBannersClient.tsx
+================================================================================
+
 "use client";
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import {
   Image as ImageIcon, Plus, GripVertical, Trash2, Eye, EyeOff, Edit, X, Loader,
@@ -704,20 +716,6 @@ function BannerModal({ banner, onSave, onClose }: {
   const [animVersion, setAnimVersion] = useState(0);  // bump to replay animations
   const toast = useToastStore();
 
-  // Auto-scroll to the corresponding card when an element/sticker
-  // is selected via a preview click.
-  useEffect(() => {
-    if (selectedEl === null) return;
-    const el = document.getElementById(`hero-element-card-${selectedEl}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [selectedEl]);
-
-  useEffect(() => {
-    if (selectedSticker === null) return;
-    const el = document.getElementById(`hero-sticker-card-${selectedSticker}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [selectedSticker]);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
@@ -842,7 +840,6 @@ function BannerModal({ banner, onSave, onClose }: {
                   {(form.stickers ?? []).map((s, i) => (
                     <StickerCard
                       key={i}
-                      index={i}
                       sticker={normalizeSticker(s)}
                       device={device}
                       isSelected={selectedSticker === i}
@@ -950,22 +947,20 @@ function BannerModal({ banner, onSave, onClose }: {
 // ═══════════════════════════════════════════════════════════
 //  Sticker card (in the form)
 // ═══════════════════════════════════════════════════════════
-function StickerCard({ sticker, index, device, isSelected, onToggleSelect, onUpdate, onUpdatePosition }: {
+function StickerCard({ sticker, device, isSelected, onToggleSelect, onUpdate, onUpdatePosition }: {
   sticker: Sticker;
-  index: number;
   device: "desktop" | "mobile";
   isSelected: boolean;
   onToggleSelect: () => void;
   onUpdate: (patch: Partial<Sticker>) => void;
   onUpdatePosition: (pos: Partial<StickerPosition>) => void;
 }) {
-  const cardId = `hero-sticker-card-${index}`;
   const kind = STICKER_KINDS.find((k) => k.value === sticker.kind)!;
   const pos  = (device === "desktop" ? sticker.positionDesktop : sticker.positionMobile) ?? cornerToPosition(sticker.corner);
 
   return (
-    <div id={cardId} className={cn(
-      "border transition-colors scroll-mt-4",
+    <div className={cn(
+      "border transition-colors",
       isSelected ? "border-[#c9a96e] bg-[#f5f0e8]/30" : "border-[#e5e7eb] bg-white"
     )}>
       <div className="flex items-center gap-3 p-3">
@@ -1063,7 +1058,6 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
   onToggleSelect: () => void;
   onUpdate: (key: ElementKey, patch: Partial<ElementStyle & CountdownStyle>, isAnimChange?: boolean) => void;
 }) {
-  const cardId = `hero-element-card-${elementKey}`;
   const isPrice     = elementKey === "currentPrice";
   const isOriginal  = elementKey === "originalPrice";
   const isTagline   = elementKey === "tagline";
@@ -1073,8 +1067,8 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
   const patch = (p: Partial<ElementStyle & CountdownStyle>, isAnim = false) => onUpdate(elementKey, p, isAnim);
 
   return (
-    <div id={cardId} className={cn(
-      "border transition-colors scroll-mt-4",
+    <div className={cn(
+      "border transition-colors",
       isSelected ? "border-[#c9a96e] bg-[#f5f0e8]/30 shadow-sm" : "border-[#e5e7eb] bg-white"
     )}>
       <button type="button" onClick={onToggleSelect}
@@ -1459,34 +1453,23 @@ void ANIMATION_FIELDS;
 // ═══════════════════════════════════════════════════════════
 //  Live preview — natural aspect + LIVE animations + movable stickers
 // ═══════════════════════════════════════════════════════════
-function animationCSS(anim: AnimationConfig | undefined, replaySeed = 0): {
+function animationCSS(anim: AnimationConfig | undefined): {
   entranceStyle: React.CSSProperties;
   decoDelay:     number;
 } {
   const a = anim ?? defaultAnimation();
-  const durMs = SPEED_MS[a.speed] + (replaySeed % 2);
-  const delMs = DELAY_MS[a.delay];
-  const hasEntrance = a.entrance !== "none";
-  const hasLoop     = a.loop     !== "none";
-
-  const parts: string[] = [];
-  if (hasEntrance) {
-    parts.push(`hero-${a.entrance} ${durMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delMs}ms both`);
-  }
-  if (hasLoop) {
-    const loopDur = a.loop === "float-soft" ? 4 : 3;
-    const loopDelay = hasEntrance ? delMs + durMs : 0;
-    parts.push(`hero-${a.loop} ${loopDur}s ease-in-out infinite ${loopDelay}ms`);
-  }
-
-  if (parts.length === 0) {
+  if (a.entrance === "none") {
     return { entranceStyle: {}, decoDelay: 0 };
   }
-
-  return {
-    entranceStyle: { animation: parts.join(", ") },
-    decoDelay:     hasEntrance ? delMs + durMs + 100 : 0,
+  const durMs = SPEED_MS[a.speed];
+  const delMs = DELAY_MS[a.delay];
+  const entrance: React.CSSProperties = {
+    animation: `hero-${a.entrance} ${durMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delMs}ms both`,
   };
+  const withLoop: React.CSSProperties = a.loop === "none" ? entrance : {
+    animation: `${entrance.animation}, hero-${a.loop} ${a.loop === "float-soft" ? 4 : 3}s ease-in-out infinite ${delMs + durMs}ms`,
+  };
+  return { entranceStyle: withLoop, decoDelay: delMs + durMs + 100 };
 }
 
 function LivePreview({
@@ -1623,26 +1606,24 @@ function LivePreview({
         if (key === "countdown") {
           return (
             <PreviewCountdown
-              key="cd"
+              key={`cd-${animVersion}`}
               style={el as CountdownStyle}
               scale={scale}
               isSelected={selectedEl === "countdown"}
               isDragging={dragging?.kind === "el" && dragging.key === "countdown"}
               onMouseDown={(e) => startDrag(e, { kind: "el", key: "countdown" })}
-              animVersion={animVersion}
             />
           );
         }
         return (
           <PreviewElement
-            key={key}
+            key={`${key}-${animVersion}`}
             elementKey={key}
             style={el}
             scale={scale}
             isSelected={selectedEl === key}
             isDragging={dragging?.kind === "el" && dragging.key === key}
             onMouseDown={(e) => startDrag(e, { kind: "el", key })}
-            animVersion={animVersion}
           />
         );
       })}
@@ -1653,14 +1634,13 @@ function LivePreview({
         if (!s.enabled) return null;
         return (
           <PreviewSticker
-            key={`sticker-${i}`}
+            key={`sticker-${i}-${animVersion}`}
             sticker={s}
             device={device}
             scale={scale}
             isSelected={selectedSticker === i}
             isDragging={dragging?.kind === "sticker" && dragging.index === i}
             onMouseDown={(e) => startDrag(e, { kind: "sticker", index: i })}
-            animVersion={animVersion}
           />
         );
       })}
@@ -1668,84 +1648,19 @@ function LivePreview({
   );
 }
 // ─── Preview element ──────────────────────────────────────
-function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMouseDown, animVersion }: {
+function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMouseDown }: {
   elementKey: ElementKey; style: ElementStyle; scale: number;
   isSelected: boolean; isDragging: boolean;
   onMouseDown: (e: React.MouseEvent) => void;
-  animVersion: number;
 }) {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const decoRefs = useRef<Array<HTMLElement | null>>([]);
-
   const translateX = style.anchor === "center" ? "-50%" : style.anchor === "end" ? "-100%" : "0";
   const fontVar = style.fontFamily === "serif" ? "Georgia, 'Playfair Display', serif" : "system-ui, sans-serif";
   const isPrice    = elementKey === "currentPrice";
   const isOriginal = elementKey === "originalPrice";
-  const { decoDelay } = animationCSS(style.animation);
+  const { entranceStyle, decoDelay } = animationCSS(style.animation);
   const deco = style.animation?.decorative ?? "none";
 
-  // Build animation string WITHOUT applying it via React style.
-  // We apply it purely imperatively so browser sees a real "reset".
-  const anim = style.animation ?? defaultAnimation();
-  const durMs = SPEED_MS[anim.speed];
-  const delMs = DELAY_MS[anim.delay];
-  const hasEntrance = anim.entrance !== "none";
-  const hasLoop     = anim.loop     !== "none";
-
-  const animParts: string[] = [];
-  if (hasEntrance) {
-    animParts.push(`hero-${anim.entrance} ${durMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delMs}ms both`);
-  }
-  if (hasLoop) {
-    const loopDur   = anim.loop === "float-soft" ? 4 : 3;
-    const loopDelay = hasEntrance ? delMs + durMs : 0;
-    animParts.push(`hero-${anim.loop} ${loopDur}s ease-in-out infinite ${loopDelay}ms`);
-  }
-  const animCss = animParts.join(", ");
-
   const scaled = Math.max(6, Math.round(style.fontSize * scale));
-
-  // ── Apply animation imperatively on mount + every animVersion change ──
-  // We do NOT put `animation` in React's style prop. That way React never
-  // re-renders it, and we have full control over restart.
-  useEffect(() => {
-    if (!outerRef.current) return;
-    const el = outerRef.current;
-
-    if (!animCss) {
-      el.style.animation = "";
-      return;
-    }
-
-    // Kill any running animation
-    el.style.animation = "none";
-    // Force reflow (browser MUST commit the "none" before we reapply)
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    void el.offsetWidth;
-    // Reapply in the next frame so browser treats it as a fresh animation
-    const rafId = requestAnimationFrame(() => {
-      if (el) el.style.animation = animCss;
-    });
-
-    return () => cancelAnimationFrame(rafId);
-  }, [animVersion, animCss]);
-
-  // ── Same treatment for decorative accents ──
-  useEffect(() => {
-    decoRefs.current.forEach((d) => {
-      if (!d) return;
-      const computed = window.getComputedStyle(d);
-      const currentAnim = computed.animation;
-      if (!currentAnim || currentAnim === "none") return;
-      d.style.animation = "none";
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      void d.offsetWidth;
-      requestAnimationFrame(() => {
-        // Clear inline so the stylesheet/element-level animation from JSX takes over again
-        d.style.animation = "";
-      });
-    });
-  }, [animVersion, deco]);
 
   const content = isPrice && style.nowPrefix ? (
     <span className="inline-flex items-baseline gap-2">
@@ -1753,21 +1668,12 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
         fontSize: `${Math.round(scaled * 0.55)}px`, fontWeight: 600,
         letterSpacing: "0.15em", opacity: 0.85,
       }}>NOW</span>
-      <span style={{
-        textDecoration: (isOriginal && style.strikethrough) ? "line-through" : "none",
-        textDecorationThickness: (isOriginal && style.strikethrough) ? "0.1em" : undefined,
-      }}>{style.text}</span>
+      <span>{style.text}</span>
     </span>
-  ) : (
-    <span style={{
-      textDecoration: (isOriginal && style.strikethrough) ? "line-through" : "none",
-      textDecorationThickness: (isOriginal && style.strikethrough) ? "0.1em" : undefined,
-    }}>{style.text}</span>
-  );
+  ) : style.text;
 
   return (
     <div
-      ref={outerRef}
       onMouseDown={onMouseDown}
       className={cn(
         "absolute whitespace-pre-line cursor-move",
@@ -1783,49 +1689,38 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
         color: style.color, textAlign: style.textAlign,
         lineHeight: style.lineHeight, letterSpacing: `${style.letterSpacing}em`,
         textTransform: style.uppercase ? "uppercase" : "none",
+        textDecoration: (isOriginal && style.strikethrough) ? "line-through" : "none",
         textShadow: style.textShadow ? "0 2px 6px rgba(0,0,0,0.4)" : "none",
         userSelect: "none",
-        // NOTE: animation is intentionally NOT set here.
-        // It is applied imperatively via useEffect above so that Replay works.
+        ...entranceStyle,
       }}
     >
       <span style={{ position: "relative", display: "inline-block" }}>
         {content}
         {deco === "underline-draw" && (
-          <span
-            ref={(el) => { decoRefs.current[0] = el; }}
-            aria-hidden="true"
-            style={{
-              position: "absolute", left: 0, right: 0, bottom: "-0.15em",
-              height: "3px", background: style.color, borderRadius: "2px",
-              transformOrigin: "left center",
-              animation: `hero-underline-draw 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both`,
-            }}
-          />
+          <span aria-hidden="true" style={{
+            position: "absolute", left: 0, right: 0, bottom: "-0.15em",
+            height: "3px", background: style.color, borderRadius: "2px",
+            transformOrigin: "left center",
+            animation: `hero-underline-draw 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both`,
+          }} />
         )}
         {deco === "accent-bar-left" && (
-          <span
-            ref={(el) => { decoRefs.current[1] = el; }}
-            aria-hidden="true"
-            style={{
-              position: "absolute", left: "-0.5em", top: 0, bottom: 0,
-              width: "3px", background: "#c9a96e", borderRadius: "2px",
-              transformOrigin: "top center",
-              animation: `hero-accent-bar-draw 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both`,
-            }}
-          />
+          <span aria-hidden="true" style={{
+            position: "absolute", left: "-0.5em", top: 0, bottom: 0,
+            width: "3px", background: "#c9a96e", borderRadius: "2px",
+            transformOrigin: "top center",
+            animation: `hero-accent-bar-draw 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both`,
+          }} />
         )}
         {deco === "shimmer-sweep" && (
           <span aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-            <span
-              ref={(el) => { decoRefs.current[2] = el; }}
-              style={{
-                position: "absolute", top: 0, left: 0, width: "40%", height: "100%",
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)",
-                animation: `hero-shimmer-sweep 1600ms ease-in-out ${decoDelay}ms both`,
-                mixBlendMode: "overlay",
-              }}
-            />
+            <span style={{
+              position: "absolute", top: 0, left: 0, width: "40%", height: "100%",
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)",
+              animation: `hero-shimmer-sweep 1600ms ease-in-out ${decoDelay}ms both`,
+              mixBlendMode: "overlay",
+            }} />
           </span>
         )}
         {deco === "accent-dots" && (
@@ -1833,15 +1728,11 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
             display: "inline-flex", gap: "0.35em", marginLeft: "0.5em", verticalAlign: "middle",
           }}>
             {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                ref={(el) => { decoRefs.current[3 + i] = el; }}
-                style={{
-                  display: "inline-block", width: "0.35em", height: "0.35em",
-                  borderRadius: "9999px", background: "#c9a96e",
-                  animation: `hero-dot-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${decoDelay + i * 150}ms both`,
-                }}
-              />
+              <span key={i} style={{
+                display: "inline-block", width: "0.35em", height: "0.35em",
+                borderRadius: "9999px", background: "#c9a96e",
+                animation: `hero-dot-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${decoDelay + i * 150}ms both`,
+              }} />
             ))}
           </span>
         )}
@@ -1851,45 +1742,17 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
 }
 
 // ─── Preview countdown ────────────────────────────────────
-function PreviewCountdown({ style, scale, isSelected, isDragging, onMouseDown, animVersion }: {
+function PreviewCountdown({ style, scale, isSelected, isDragging, onMouseDown }: {
   style: CountdownStyle; scale: number; isSelected: boolean; isDragging: boolean;
   onMouseDown: (e: React.MouseEvent) => void;
-  animVersion: number;
 }) {
-  const cdRef = useRef<HTMLDivElement>(null);
-  const anim = style.animation ?? defaultAnimation();
-  const durMs = SPEED_MS[anim.speed];
-  const delMs = DELAY_MS[anim.delay];
-  const hasEntrance = anim.entrance !== "none";
-  const hasLoop     = anim.loop     !== "none";
-  const animParts: string[] = [];
-  if (hasEntrance) {
-    animParts.push(`hero-${anim.entrance} ${durMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delMs}ms both`);
-  }
-  if (hasLoop) {
-    const loopDur   = anim.loop === "float-soft" ? 4 : 3;
-    const loopDelay = hasEntrance ? delMs + durMs : 0;
-    animParts.push(`hero-${anim.loop} ${loopDur}s ease-in-out infinite ${loopDelay}ms`);
-  }
-  const cdAnimStr = animParts.join(", ");
-
-  useEffect(() => {
-    if (!cdRef.current) return;
-    const el = cdRef.current;
-    if (!cdAnimStr) { el.style.animation = ""; return; }
-    el.style.animation = "none";
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    void el.offsetWidth;
-    const rafId = requestAnimationFrame(() => { if (el) el.style.animation = cdAnimStr; });
-    return () => cancelAnimationFrame(rafId);
-  }, [animVersion, cdAnimStr]);
   const translateX = style.anchor === "center" ? "-50%" : style.anchor === "end" ? "-100%" : "0";
-  // entranceStyle removed — animation now imperative
+  const { entranceStyle } = animationCSS(style.animation);
   const bg = style.bgColor ? hexToRgba(style.bgColor, ((style.bgOpacity ?? 60) / 100)) : "transparent";
   const scaled = Math.max(8, Math.round(style.fontSize * scale));
 
   return (
-    <div ref={cdRef} onMouseDown={onMouseDown}
+    <div onMouseDown={onMouseDown}
       className={cn(
         "absolute cursor-move",
         isSelected && "outline outline-2 outline-[#c9a96e] outline-offset-2",
@@ -1907,7 +1770,7 @@ function PreviewCountdown({ style, scale, isSelected, isDragging, onMouseDown, a
         display: "inline-flex", alignItems: "center",
         gap: `${Math.max(2, scaled * 0.15)}px`,
         userSelect: "none",
-        // animation intentionally omitted — applied imperatively via useEffect
+        ...entranceStyle,
       }}
     >
       <span style={{ fontVariantNumeric: "tabular-nums" }}>00 : 00 : 00 : 00</span>
@@ -1916,13 +1779,11 @@ function PreviewCountdown({ style, scale, isSelected, isDragging, onMouseDown, a
 }
 
 // ─── Preview sticker ──────────────────────────────────────
-function PreviewSticker({ sticker, device, scale, isSelected, isDragging, onMouseDown, animVersion }: {
+function PreviewSticker({ sticker, device, scale, isSelected, isDragging, onMouseDown }: {
   sticker: Sticker; device: "desktop" | "mobile"; scale: number;
   isSelected: boolean; isDragging: boolean;
   onMouseDown: (e: React.MouseEvent) => void;
-  animVersion: number;
 }) {
-  const stickerImgRef = useRef<HTMLImageElement>(null);
   const kind = STICKER_KINDS.find((k) => k.value === sticker.kind)!;
   const pos  = (device === "desktop" ? sticker.positionDesktop : sticker.positionMobile)!;
   const translateX = pos.anchor === "center" ? "-50%" : pos.anchor === "end" ? "-100%" : "0";
@@ -1953,55 +1814,21 @@ function PreviewSticker({ sticker, device, scale, isSelected, isDragging, onMous
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <StickerImg
-        ref={stickerImgRef}
+      <img
         src={kind.src}
         alt={kind.label}
-        animName={animName}
-        transformOrigin={pos.y < 50 ? "top center" : "bottom center"}
-        animVersion={animVersion}
+        draggable={false}
+        style={{
+          width: "100%", height: "auto", display: "block",
+          animation: `${animName} 900ms cubic-bezier(0.34, 1.56, 0.64, 1) 400ms both`,
+          transformOrigin: pos.y < 50 ? "top center" : "bottom center",
+          filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.25))",
+          pointerEvents: "none",
+        }}
       />
     </div>
   );
 }
-
-// Helper: sticker image with restartable animation
-const StickerImg = React.forwardRef<HTMLImageElement, {
-  src: string; alt: string; animName: string;
-  transformOrigin: string; animVersion: number;
-}>(function StickerImg({ src, alt, animName, transformOrigin, animVersion }, ref) {
-  const localRef = useRef<HTMLImageElement>(null);
-  const combinedRef = (el: HTMLImageElement | null) => {
-    localRef.current = el;
-    if (typeof ref === "function") ref(el);
-    else if (ref) (ref as React.MutableRefObject<HTMLImageElement | null>).current = el;
-  };
-  const animCss = `${animName} 900ms cubic-bezier(0.34, 1.56, 0.64, 1) 400ms both`;
-  useEffect(() => {
-    if (!localRef.current) return;
-    const el = localRef.current;
-    el.style.animation = "none";
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    void el.offsetWidth;
-    requestAnimationFrame(() => { el.style.animation = animCss; });
-  }, [animVersion, animCss]);
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      ref={combinedRef}
-      src={src}
-      alt={alt}
-      draggable={false}
-      style={{
-        width: "100%", height: "auto", display: "block",
-        animation: animCss,
-        transformOrigin,
-        filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.25))",
-        pointerEvents: "none",
-      }}
-    />
-  );
-});
 
 // ═══════════════════════════════════════════════════════════
 //  Helpers

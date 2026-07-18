@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
@@ -78,7 +78,7 @@ export function AnnouncementBar() {
       className="w-full text-xs tracking-widest uppercase"
       style={{ backgroundColor: config.bgColor, color: config.textColor }}
     >
-      <div className="max-w-7xl mx-auto px-4 h-9 flex items-center justify-center gap-4 relative">
+      <div className="site-container h-9 flex items-center justify-center gap-4 relative">
         {message.link ? (
           <Link
             href={message.link}

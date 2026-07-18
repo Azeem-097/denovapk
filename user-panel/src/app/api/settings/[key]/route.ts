@@ -17,6 +17,7 @@ const PUBLIC_KEYS = [
   "currency_symbol",
   "tax_percentage",
   "brand_name",
+  "hero_rotation_seconds",
 ];
 
 export async function GET(_: Request, { params }: { params: Promise<{ key: string }> }) {

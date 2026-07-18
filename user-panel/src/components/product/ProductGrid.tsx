@@ -12,7 +12,7 @@ interface ProductGridProps {
 const colClasses = {
   2: "grid-cols-2",
   3: "grid-cols-2 md:grid-cols-3",
-  4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+  4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6",
 };
 
 export function ProductGrid({
@@ -24,7 +24,7 @@ export function ProductGrid({
   if (isLoading) {
     return (
       <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 12 }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
       </div>
@@ -58,7 +58,7 @@ export function ProductGrid({
   return (
     <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
       {products.map((product, i) => (
-        <SlideUp key={product.id} stagger={60} index={i % 8}>
+        <SlideUp key={product.id} stagger={60} index={i % 12}>
           <ProductCard product={product} />
         </SlideUp>
       ))}
