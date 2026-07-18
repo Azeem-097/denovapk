@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
@@ -177,9 +177,17 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
             )}
           >
             {displayProducts.slice(0, 12).map((product, i) => (
-              <SlideUp key={product.id} stagger={70} index={i}>
-                <ProductCard product={product} />
-              </SlideUp>
+              <div
+                key={product.id}
+                className={cn(
+                  // Mobile shows only first 4; sm and up shows all
+                  i >= 4 && "hidden sm:block"
+                )}
+              >
+                <SlideUp stagger={70} index={i}>
+                  <ProductCard product={product} />
+                </SlideUp>
+              </div>
             ))}
           </div>
         ) : (

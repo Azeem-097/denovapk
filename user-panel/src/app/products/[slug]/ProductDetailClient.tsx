@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo } from "react";
 import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -8,7 +8,7 @@ import { SizeSelector } from "@/components/product/SizeSelector";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { SaleCountdown } from "@/components/product/SaleCountdown";
 import { LiveViewCounter } from "@/components/product/LiveViewCounter";
-import { DiscountInlinePill } from "@/components/product/DiscountBadge";
+// DiscountInlinePill import removed — replaced with focused savings badge inline
 import { FadeIn } from "@/components/animations/FadeIn";
 import { useCartStore } from "@/store/cartStore";
 import { useToastStore } from "@/store/toastStore";
@@ -81,6 +81,10 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     ? getDiscountPercent(product.compareAtPrice!, product.price)
     : 0;
 
+  const savedAmount = hasDiscount
+    ? product.compareAtPrice! - product.price
+    : 0;
+
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
   const measurements = [
@@ -125,8 +129,8 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   return (
     <>
       <div className="pt-24 sm:pt-28 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-14">
+        <div className="site-container">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_460px] 2xl:grid-cols-[1fr_500px] gap-8 lg:gap-12 xl:gap-16">
 
             <FadeIn>
               <ProductImages
@@ -151,25 +155,34 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   {product.collection || "Premium"}
                 </p>
 
-                {/* Price row + inline discount pill + saved amount */}
-                <div className="flex items-baseline gap-3 flex-wrap mb-3">
-                  <span className="text-xl sm:text-2xl font-bold text-[#1a1a1a] tracking-wide">
+                {/* Price row — bold, elegant, with clear strikethrough */}
+                <div className="flex items-end gap-3 flex-wrap mb-2">
+                  <span className="text-3xl sm:text-[38px] font-bold text-[#1a1a1a] tracking-tight leading-none">
                     {formatPKR(product.price)}
                   </span>
                   {hasDiscount && (
-                    <>
-                      <span className="text-base text-[#9ca3af] line-through">
-                        {formatPKR(product.compareAtPrice!)}
-                      </span>
-                      <DiscountInlinePill percent={discountPercent} />
-                    </>
+                    <span className="text-lg sm:text-xl text-[#9ca3af] line-through decoration-[#9ca3af]/70 decoration-[1.5px] font-medium leading-none pb-1">
+                      {formatPKR(product.compareAtPrice!)}
+                    </span>
                   )}
                 </div>
 
+                {/* Single focused savings line — the ONE loud element */}
                 {hasDiscount && (
-                  <p className="text-xs text-[#c9a96e] font-semibold mb-5">
-                    You save {formatPKR(product.compareAtPrice! - product.price)}
-                  </p>
+                  <div className="mb-6 inline-flex items-center gap-3 pl-3 pr-5 py-2.5 bg-[#1a1a1a] shadow-[0_10px_30px_-15px_rgba(201,169,110,0.6)]">
+                    <span className="font-[family-name:var(--font-playfair)] text-2xl sm:text-[28px] font-bold text-[#c9a96e] leading-none tabular-nums">
+                      {discountPercent}% OFF
+                    </span>
+                    <span className="h-8 w-px bg-white/20" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/60">
+                        You Save
+                      </span>
+                      <span className="text-sm font-bold text-white tracking-wide">
+                        {formatPKR(savedAmount)}
+                      </span>
+                    </div>
+                  </div>
                 )}
 
                 {/* Live view counter */}

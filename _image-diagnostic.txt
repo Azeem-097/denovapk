@@ -1,0 +1,224 @@
+﻿IMAGE PERFORMANCE DIAGNOSTIC
+Generated: 07/18/2026 21:38:20
+
+SUMMARY
+  Total unique images:   208
+  Optimized:             4
+  Not optimized:         204
+  Total weight:          1975.4 KB
+  Slow (>1s):            1
+  Huge (>500KB):         0
+
+═══ ALL IMAGES (detailed) ═══
+
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274775%2Fdenovapk%2Fproducts%2Fpit7p76xe0ga1hy5928g.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274793%2Fdenovapk%2Fproducts%2Fu9ndiohyzk7q9kr5qj5n.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274903%2Fdenovapk%2Fproducts%2Fzlah0xcizpxwzelmabzn.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784274932%2Fdenovapk%2Fproducts%2Fvthcr853irspmscn0fiz.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275265%2Fdenovapk%2Fproducts%2Fscbufllrc0nkgxnrecyw.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275299%2Fdenovapk%2Fproducts%2Fy1pa00h1spjr2eaninbz.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275367%2Fdenovapk%2Fproducts%2Fiiezskp8pmjmhqtqzaqy.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275378%2Fdenovapk%2Fproducts%2Fpiqr2two9wqevpugzfev.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275535%2Fdenovapk%2Fproducts%2Fb79sakadnr34phhoczue.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784275608%2Fdenovapk%2Fproducts%2Fmhzjlvzjls8ad2ir1nek.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277323%2Fdenovapk%2Fproducts%2Fj82ucmrek3z7hzzgckay.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277330%2Fdenovapk%2Fproducts%2Frpbzqsaqsvpqqq2ctgvz.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277334%2Fdenovapk%2Fproducts%2Fwayb6c7ewhpqp7h3bzww.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277337%2Fdenovapk%2Fproducts%2Fe9zywut9ng7hemamq1zn.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=256&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277341%2Fdenovapk%2Fproducts%2Fttsfodxauh2shr6jhc7g.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277344%2Fdenovapk%2Fproducts%2Fcomy2pfujdmbksfhk3gl.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277351%2Fdenovapk%2Fproducts%2Frjc5nyohjfx3yzyc1f03.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784277358%2Fdenovapk%2Fproducts%2Fdf90plnn6rvxhzkhu6w9.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784351901%2Fdenovapk%2Fproducts%2Faqi7lyqtgbbcr9zfexbl.jpg&amp;w=828&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=1080&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=1200&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=1920&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=2048&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=384&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=3840&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=640&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=750&amp;q=75
+SLOW    HEAD-FAIL  0ms  /_next/image?url=https%3A%2F%2Fres.cloudinary.com%2Fdjy5qqco7%2Fimage%2Fupload%2Fv1784352052%2Fdenovapk%2Fproducts%2Fqc0ldytxnlt2tn4igtme.jpg&amp;w=828&amp;q=75
+OK         9.1 KB  811ms  https://res.cloudinary.com/djy5qqco7/image/upload/e_trim:10/f_auto,q_auto,c_limit,h_120/v1784388373/denovapk/general/logo-without-bg_1784388368531
+OK        14.8 KB  526ms  https://res.cloudinary.com/djy5qqco7/image/upload/e_trim:10/f_auto,q_auto,c_limit,h_160/v1784388373/denovapk/general/logo-without-bg_1784388368531
+SLOW    HEAD-FAIL  0ms  https://res.cloudinary.com/djy5qqco7/image/upload/f_auto
+OK       134.8 KB  650ms  https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto:best,c_limit,w_1600/v1784387547/denovapk/general/newsletter_hires_1784387491499
+OK       131.6 KB  150ms  https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto:best,c_limit,w_900/v1784389913/denovapk/general/newsletter-mbl_1784389867961
+SLOW     157.7 KB  209ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784232629/denovapk/general/txvavizawdhvvo7y2oln.jpg
+SLOW     169.6 KB  1040ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390255/denovapk/banners/xztm3nifgrqkc9r5tm6s.jpg
+SLOW     180.2 KB  742ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390262/denovapk/banners/rguysbbd2mkyibsenszt.jpg
+SLOW     178.9 KB  657ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390281/denovapk/banners/sp9gkux1vyw6vjpdtzlg.jpg
+SLOW     155.6 KB  132ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390325/denovapk/banners/c6orwic7plijagipsyh1.jpg
+SLOW       122 KB  787ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390416/denovapk/banners/ossmmjbuovsfet1utzcg.jpg
+SLOW       166 KB  449ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390418/denovapk/banners/u1ymr4yapxzaroqixbwo.jpg
+SLOW     157.4 KB  122ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390479/denovapk/banners/cg28tvwkfxg94lj1vtta.jpg
+SLOW     107.5 KB  102ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390504/denovapk/banners/hwlrpr596eqcoayt6vnh.jpg
+SLOW     170.8 KB  191ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390521/denovapk/banners/hobczrri1bk6xrkpxemi.jpg
+SLOW     119.4 KB  122ms  https://res.cloudinary.com/djy5qqco7/image/upload/v1784390527/denovapk/banners/av2gn903kqzryjgdguvt.jpg
+
+═══ SLOW IMAGES (>1s) ═══
+1040ms - 169.6 KB - https://res.cloudinary.com/djy5qqco7/image/upload/v1784390255/denovapk/banners/xztm3nifgrqkc9r5tm6s.jpg

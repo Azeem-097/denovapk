@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Package, Heart, Plus } from "lucide-react";
+import { Package, Heart } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
 import { ProductBgWrapper } from "./ProductBgWrapper";
@@ -140,29 +140,7 @@ export function ProductImages({
                 )}
               </ProductBgWrapper>
 
-              {/* Hover overlay: dark scrim + circular "+" icon */}
-              {!isPlaceholder(img.url) && (
-                <>
-                  {/* Dark scrim */}
-                  <div
-                    className={cn(
-                      "absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-400 pointer-events-none"
-                    )}
-                  />
-                  {/* Circular + icon */}
-                  <div
-                    className={cn(
-                      "absolute inset-0 flex items-center justify-center pointer-events-none",
-                      "opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100",
-                      "transition-all duration-400 ease-out"
-                    )}
-                  >
-                    <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center">
-                      <Plus size={24} className="text-[#1a1a1a]" strokeWidth={1.75} />
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Hover overlay removed — image click still opens lightbox via the parent button */}
             </button>
 
             {/* Discount ribbon — only on primary image */}
