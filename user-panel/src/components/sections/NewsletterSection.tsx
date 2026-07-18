@@ -111,10 +111,10 @@ export function NewsletterSection() {
     >
       {/* ═══════════════════════════════════════════════════════
           MOBILE LAYOUT (< 1024px): stacked
-          Image on top with Shop Now button, content below
+          Image → Shop Now button (below) → Newsletter content
           ═══════════════════════════════════════════════════════ */}
       <div className="lg:hidden">
-        {/* Image container with 1:1 aspect matching source */}
+        {/* Image container — clean, no overlay */}
         <div className="relative w-full aspect-square overflow-hidden bg-[#f5f0e8]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -126,19 +126,21 @@ export function NewsletterSection() {
             loading="lazy"
             decoding="async"
           />
+        </div>
 
-          {/* Shop Now button — pinned at bottom-center of image */}
+        {/* Shop Now button — sits centered on cream, between image and content */}
+        <div className="site-container flex justify-center pt-8 sm:pt-10">
           <Link
             href="/shop"
-            className="shimmer-btn absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-xs font-semibold tracking-[0.18em] uppercase hover:bg-[#c9a96e] transition-all duration-300 shadow-2xl"
+            className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#c9a96e] transition-all duration-300 shadow-md"
           >
             Shop Now
             <ArrowRight size={14} />
           </Link>
         </div>
 
-        {/* Newsletter content below image, on cream background */}
-        <div className="site-container py-10 sm:py-14">
+        {/* Newsletter content below button, on cream background */}
+        <div className="site-container pt-10 pb-10 sm:pt-14 sm:pb-14">
           <NewsletterContent
             email={email}
             setEmail={setEmail}
