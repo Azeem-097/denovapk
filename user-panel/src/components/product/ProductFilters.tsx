@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -221,26 +221,6 @@ export function ProductFilters({
           </div>
         </Accordion>
 
-        {availableSizes.length > 0 && (
-          <Accordion title="Waist Size">
-            <div className="flex flex-wrap gap-2">
-              {availableSizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => toggle("sizes", size)}
-                  className={cn(
-                    "w-10 h-10 text-xs font-medium border transition-all duration-150",
-                    filters.sizes.includes(size)
-                      ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
-                  )}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </Accordion>
-        )}
 
         {availableColors.length > 0 && (
           <Accordion title="Color">

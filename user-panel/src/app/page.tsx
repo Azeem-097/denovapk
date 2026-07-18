@@ -21,17 +21,20 @@ type HeroBanner = {
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [dbCollections, dbNewArrivals, dbBestSellers, heroBannersRaw, heroRotation] = await Promise.all([
+  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
     getCollectionsWithCounts(),
-    getProducts({ isNew:        true, limit: 8, sortBy: "newest" }),
-    getProducts({ isBestSeller: true, limit: 8, sortBy: "bestselling" }),
+    getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
     getSetting("hero_banners"),
     getNumberSetting("hero_rotation_seconds", 8),
   ]);
 
   const collections  = dbCollections.map(adaptCollection);
-  const newArrivals  = dbNewArrivals.map(adaptProduct);
-  const bestSellers  = dbBestSellers.map(adaptProduct);
+  const allProducts  = dbAllProducts.map(adaptProduct);
+
+  // Split products by collection name for the two tabs
+  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
+  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+
   const testimonials = getMockTestimonials();
 
   let heroBanners: HeroBanner[] = [];
@@ -62,21 +65,10 @@ export default async function HomePage() {
 
       {/* ═══════════════════════════════════════════════════════
           REVEAL LAYER — slides up over the fixed hero on scroll.
-          Contains SaleCountdown → Collections, all inside the
-          rounded-top white sheet so the reveal effect wraps
-          both sections cleanly.
+          Contains only SaleCountdown now (Collections moved down).
           ═══════════════════════════════════════════════════════ */}
       <div className="relative z-10 bg-white rounded-t-[32px] sm:rounded-t-[44px] lg:rounded-t-[56px] overflow-hidden shadow-[0_-30px_60px_-20px_rgba(0,0,0,0.3)]">
-        {/* Sale countdown — creates urgency right after the hero */}
         <SaleCountdown />
-
-        {/* Divider between countdown and collections */}
-        <div className="mx-auto w-full max-w-[1400px] px-6 sm:px-8">
-          <div className="h-px bg-gradient-to-r from-transparent via-[#e5e7eb] to-transparent" />
-        </div>
-
-        {/* Collections grid */}
-        <FeaturedCollections collections={collections} />
       </div>
 
       {/* ═══════════════════════════════════════════════════════
@@ -87,10 +79,26 @@ export default async function HomePage() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════
+          SHOP BY WAIST — now with Premium / Super Premium tabs
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white">
+        <NewArrivals
+          newArrivals={premiumProducts}
+          bestSellers={superPremiumProducts}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          OUR COLLECTIONS — moved to appear AFTER Shop by Waist
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10">
+        <FeaturedCollections collections={collections} />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
           Remaining sections
           ═══════════════════════════════════════════════════════ */}
       <div className="relative z-10 bg-white">
-        <NewArrivals newArrivals={newArrivals} bestSellers={bestSellers} />
         <BrandStory />
         <Testimonials testimonials={testimonials} />
         <GallerySection />

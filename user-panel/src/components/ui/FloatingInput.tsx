@@ -1,6 +1,19 @@
-"use client";
-import { forwardRef, useState, useEffect, useRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+﻿"use client";
+import { forwardRef, useState, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
+
+/**
+ * FloatingInput — uses pure CSS `:placeholder-shown` to detect empty state.
+ * This works reliably with:
+ *   - Browser autofill
+ *   - react-hook-form's ref-based value setting
+ *   - Programmatic value changes
+ *   - Manual typing
+ *
+ * Key trick: the input has a placeholder of " " (single space).
+ * When the input is empty, :placeholder-shown is true → label sits inside.
+ * When the input has any content, :placeholder-shown is false → label floats.
+ */
 
 // ─── FloatingInput ────────────────────────────────────────
 interface FloatingInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -9,67 +22,17 @@ interface FloatingInputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
-  ({ label, error, className, id, value, defaultValue, onFocus, onBlur, ...props }, ref) => {
+  ({ label, error, className, id, onFocus, onBlur, ...props }, ref) => {
     const [focused, setFocused] = useState(false);
-    const [hasVal, setHasVal]   = useState<boolean>(
-      Boolean(value !== undefined ? String(value).length : (defaultValue ? String(defaultValue).length : 0))
-    );
-    const inputRef = useRef<HTMLInputElement | null>(null);
     const inputId = id || props.name;
-
-    // Sync local hasVal from actual DOM (needed for react-hook-form reset())
-    useEffect(() => {
-      const el = inputRef.current;
-      if (!el) return;
-      const check = () => setHasVal(el.value.length > 0);
-      check();
-
-      // MutationObserver picks up programmatic value changes
-      const observer = new MutationObserver(check);
-      observer.observe(el, { attributes: true, attributeFilter: ["value"] });
-
-      // Poll briefly on mount for react-hook-form's reset() timing
-      const interval = setInterval(check, 100);
-      const timeout = setTimeout(() => clearInterval(interval), 1000);
-
-      return () => {
-        observer.disconnect();
-        clearInterval(interval);
-        clearTimeout(timeout);
-      };
-    }, [value, defaultValue]);
-
-    // Also react when controlled value changes
-    useEffect(() => {
-      if (value !== undefined) setHasVal(String(value).length > 0);
-    }, [value]);
-
-    const isFloating = focused || hasVal || Boolean(value);
-
-    // Combine external ref with internal ref
-    const setRefs = (el: HTMLInputElement | null) => {
-      inputRef.current = el;
-      if (typeof ref === "function") ref(el);
-      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
-    };
 
     return (
       <div className="relative">
         <input
-          ref={setRefs}
+          ref={ref}
           id={inputId}
-          value={value}
-          defaultValue={defaultValue}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
-          onBlur={(e) => {
-            setFocused(false);
-            setHasVal(e.target.value.length > 0);
-            onBlur?.(e);
-          }}
-          onChange={(e) => {
-            setHasVal(e.target.value.length > 0);
-            props.onChange?.(e);
-          }}
+          onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           className={cn(
             "peer w-full rounded-md border bg-white px-3.5 pt-5 pb-2 text-sm text-[#1a1a1a] transition-colors duration-150 focus:outline-none",
             error
@@ -83,11 +46,12 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
         <label
           htmlFor={inputId}
           className={cn(
-            "pointer-events-none absolute left-3.5 transition-all duration-150 bg-white",
-            isFloating
-              ? "top-1.5 text-[10px] tracking-wide px-0"
-              : "top-1/2 -translate-y-1/2 text-sm",
-            error ? "text-red-500" : (isFloating ? "text-[#6b7280]" : "text-[#9ca3af]")
+            "pointer-events-none absolute left-3.5 bg-white transition-all duration-150",
+            // Base float position (used when input has value OR is focused)
+            "top-1.5 text-[10px] tracking-wide px-0",
+            // Move DOWN to inside the input when: not focused AND placeholder shown (empty)
+            !focused && "peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-sm",
+            error ? "text-red-500" : (focused ? "text-[#6b7280]" : "text-[#9ca3af] peer-[:not(:placeholder-shown)]:text-[#6b7280]")
           )}
         >
           {label}
@@ -109,53 +73,17 @@ interface FloatingTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaEleme
 }
 
 export const FloatingTextarea = forwardRef<HTMLTextAreaElement, FloatingTextareaProps>(
-  ({ label, error, className, id, value, defaultValue, onFocus, onBlur, ...props }, ref) => {
+  ({ label, error, className, id, onFocus, onBlur, ...props }, ref) => {
     const [focused, setFocused] = useState(false);
-    const [hasVal, setHasVal]   = useState<boolean>(
-      Boolean(value !== undefined ? String(value).length : (defaultValue ? String(defaultValue).length : 0))
-    );
-    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const inputId = id || props.name;
-
-    useEffect(() => {
-      const el = textareaRef.current;
-      if (!el) return;
-      const check = () => setHasVal(el.value.length > 0);
-      check();
-      const interval = setInterval(check, 100);
-      const timeout = setTimeout(() => clearInterval(interval), 1000);
-      return () => { clearInterval(interval); clearTimeout(timeout); };
-    }, [value, defaultValue]);
-
-    useEffect(() => {
-      if (value !== undefined) setHasVal(String(value).length > 0);
-    }, [value]);
-
-    const isFloating = focused || hasVal || Boolean(value);
-
-    const setRefs = (el: HTMLTextAreaElement | null) => {
-      textareaRef.current = el;
-      if (typeof ref === "function") ref(el);
-      else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
-    };
 
     return (
       <div className="relative">
         <textarea
-          ref={setRefs}
+          ref={ref}
           id={inputId}
-          value={value}
-          defaultValue={defaultValue}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
-          onBlur={(e) => {
-            setFocused(false);
-            setHasVal(e.target.value.length > 0);
-            onBlur?.(e);
-          }}
-          onChange={(e) => {
-            setHasVal(e.target.value.length > 0);
-            props.onChange?.(e);
-          }}
+          onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           className={cn(
             "peer w-full rounded-md border bg-white px-3.5 pt-6 pb-2.5 text-sm text-[#1a1a1a] transition-colors duration-150 focus:outline-none resize-y min-h-[90px]",
             error
@@ -169,11 +97,10 @@ export const FloatingTextarea = forwardRef<HTMLTextAreaElement, FloatingTextarea
         <label
           htmlFor={inputId}
           className={cn(
-            "pointer-events-none absolute left-3.5 transition-all duration-150 bg-white",
-            isFloating
-              ? "top-2 text-[10px] tracking-wide"
-              : "top-4 text-sm",
-            error ? "text-red-500" : (isFloating ? "text-[#6b7280]" : "text-[#9ca3af]")
+            "pointer-events-none absolute left-3.5 bg-white transition-all duration-150",
+            "top-2 text-[10px] tracking-wide",
+            !focused && "peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm",
+            error ? "text-red-500" : (focused ? "text-[#6b7280]" : "text-[#9ca3af] peer-[:not(:placeholder-shown)]:text-[#6b7280]")
           )}
         >
           {label}
@@ -189,7 +116,8 @@ FloatingTextarea.displayName = "FloatingTextarea";
 
 
 // ═══════════════════════════════════════════════════════════
-//  FloatingSelect — FIXED: label always floats when value is set
+//  FloatingSelect — for select we still need JS since
+//  :placeholder-shown does not apply to <select>
 // ═══════════════════════════════════════════════════════════
 interface FloatingSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label:   string;
@@ -200,51 +128,31 @@ interface FloatingSelectProps extends React.SelectHTMLAttributes<HTMLSelectEleme
 export const FloatingSelect = forwardRef<HTMLSelectElement, FloatingSelectProps>(
   ({ label, error, className, id, options, value, defaultValue, onFocus, onBlur, ...props }, ref) => {
     const [focused, setFocused] = useState(false);
-    const [currentVal, setCurrentVal] = useState<string>(
-      value !== undefined ? String(value) : (defaultValue !== undefined ? String(defaultValue) : "")
-    );
-    const selectRef = useRef<HTMLSelectElement | null>(null);
+    // For select, we watch attribute changes via the parent's value/defaultValue
+    // AND we use a data attribute to flag if the visual value is present
     const inputId = id || props.name;
 
-    // Sync local state from actual DOM value (handles react-hook-form reset)
-    useEffect(() => {
-      const el = selectRef.current;
-      if (!el) return;
-      const check = () => setCurrentVal(el.value);
-      check();
-      const interval = setInterval(check, 100);
-      const timeout = setTimeout(() => clearInterval(interval), 1000);
-      return () => { clearInterval(interval); clearTimeout(timeout); };
-    }, [value, defaultValue]);
+    // Determine if select has a value (works for both controlled + uncontrolled)
+    const hasValue = value !== undefined
+      ? String(value).length > 0
+      : defaultValue !== undefined
+        ? String(defaultValue).length > 0
+        : false;
 
-    useEffect(() => {
-      if (value !== undefined) setCurrentVal(String(value));
-    }, [value]);
-
-    const isFloating = focused || currentVal.length > 0;
-
-    const setRefs = (el: HTMLSelectElement | null) => {
-      selectRef.current = el;
-      if (typeof ref === "function") ref(el);
-      else if (ref) (ref as React.MutableRefObject<HTMLSelectElement | null>).current = el;
-    };
+    const isFloating = focused || hasValue;
 
     return (
       <div className="relative">
         <select
-          ref={setRefs}
+          ref={ref}
           id={inputId}
           value={value}
           defaultValue={defaultValue}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
-          onChange={(e) => {
-            setCurrentVal(e.target.value);
-            props.onChange?.(e);
-          }}
           className={cn(
             "peer w-full rounded-md border bg-white px-3.5 pt-5 pb-2 text-sm text-[#1a1a1a] transition-colors duration-150 focus:outline-none appearance-none pr-10",
-            !currentVal && "text-transparent",  // Hide the placeholder-like empty option text
+            !hasValue && !focused && "text-transparent",
             error
               ? "border-red-400 focus:border-red-500"
               : "border-[#d1d5db] focus:border-[#1a1a1a]",

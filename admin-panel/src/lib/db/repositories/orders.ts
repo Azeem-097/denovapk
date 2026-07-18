@@ -1,4 +1,4 @@
-import { db } from "@/lib/db/client";
+﻿import { db } from "@/lib/db/client";
 import { generateId, now, generateOrderNumber } from "@/lib/db/helpers";
 import type {
   DbOrder, DbOrderItem, DbAddress, OrderStatus, PaymentStatus, PaymentMethod,
@@ -114,7 +114,20 @@ export interface CreateOrderInput {
 
 export async function createOrder(input: CreateOrderInput): Promise<OrderWithItems> {
   const orderId    = generateId();
-  const orderNum   = generateOrderNumber();
+  // Generate unique order number (retry up to 10 times on collision)
+  let orderNum = generateOrderNumber();
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const existing = await db.execute({
+      sql:  "SELECT id FROM orders WHERE orderNumber = ? LIMIT 1",
+      args: [orderNum],
+    });
+    if (existing.rows.length === 0) break; // unique
+    orderNum = generateOrderNumber();
+    if (attempt === 9) {
+      // Last resort: append random suffix
+      orderNum = `${orderNum}-${Math.floor(Math.random() * 100)}`;
+    }
+  }
   const t          = now();
 
   // Insert order

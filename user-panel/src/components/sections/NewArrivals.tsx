@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
@@ -60,11 +60,12 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
 
   const viewAllHref = useMemo(() => {
     const params = new URLSearchParams();
-    params.set("filter", activeTab === "new" ? "new" : "bestsellers");
     if (selectedWaists.length > 0) {
       params.set("waist", [...selectedWaists].sort((a, b) => a - b).join(","));
     }
-    return `/shop?${params.toString()}`;
+    const collectionSlug = activeTab === "new" ? "premium" : "super-premium";
+    const query = params.toString();
+    return query ? `/collections/${collectionSlug}?${query}` : `/collections/${collectionSlug}`;
   }, [activeTab, selectedWaists]);
 
   const waistLabel = selectedWaists.length > 0
@@ -97,9 +98,7 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
                     ? "border-[#c9a96e] text-[#1a1a1a]"
                     : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
                 )}
-              >
-                New Arrivals
-              </button>
+              >Premium</button>
               <button
                 onClick={() => setActiveTab("bestsellers")}
                 className={cn(
@@ -108,9 +107,7 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
                     ? "border-[#c9a96e] text-[#1a1a1a]"
                     : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
                 )}
-              >
-                Best Sellers
-              </button>
+              >Super Premium</button>
             </div>
           </FadeIn>
         </div>
@@ -216,7 +213,7 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
                 href={viewAllHref}
                 className="shimmer-btn group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-all duration-300 hover-lift"
               >
-                <span>View All {activeTab === "new" ? "New Arrivals" : "Best Sellers"}</span>
+                <span>View All {activeTab === "new" ? "Premium" : "Super Premium"}</span>
                 {waistLabel && (
                   <span className="text-[#c9a96e] group-hover:text-white transition-colors">
                     {waistLabel}

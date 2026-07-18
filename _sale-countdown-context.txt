@@ -1,3 +1,11 @@
+================================================================================
+SALE COUNTDOWN component (used in product page sidebar)
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\product\SaleCountdown.tsx
+================================================================================
+
 "use client";
 import { useEffect, useState } from "react";
 import { Zap } from "lucide-react";
@@ -102,12 +110,12 @@ export function SaleCountdown({ productId, className }: Props) {
     return (
       <div
         className={cn(
-          "border border-[#e5e7eb] bg-[#fafaf9] p-2 sm:p-2.5",
+          "border border-[#e5e7eb] bg-[#fafaf9] p-3 sm:p-4",
           className
         )}
         aria-hidden
       >
-        <div className="h-[32px]" />
+        <div className="h-[46px]" />
       </div>
     );
   }
@@ -122,13 +130,13 @@ export function SaleCountdown({ productId, className }: Props) {
   return (
     <div
       className={cn(
-        "w-fit border border-[#c9a96e]/30 bg-gradient-to-br from-[#faf7f2] via-white to-[#f9f4ec] p-2 sm:p-2.5",
+        "border border-[#c9a96e]/30 bg-gradient-to-br from-[#faf7f2] via-white to-[#f9f4ec] p-3 sm:p-4",
         className
       )}
     >
-      <div className="flex items-center gap-1.5 mb-1.5">
+      <div className="flex items-center gap-2 mb-2.5">
         <Zap
-          size={10}
+          size={12}
           strokeWidth={2.25}
           className="text-[#c9a96e] fill-[#c9a96e]/20"
         />
@@ -140,16 +148,16 @@ export function SaleCountdown({ productId, className }: Props) {
       <div className="flex items-center gap-1.5 sm:gap-2">
         {cells.map((cell, i) => (
           <div key={cell.label} className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex flex-col items-center min-w-[30px] sm:min-w-[34px]">
-              <span className="font-[family-name:var(--font-playfair)] text-sm sm:text-base font-bold text-[#1a1a1a] leading-none tabular-nums">
+            <div className="flex flex-col items-center min-w-[38px] sm:min-w-[44px]">
+              <span className="font-[family-name:var(--font-playfair)] text-lg sm:text-xl font-bold text-[#1a1a1a] leading-none tabular-nums">
                 {String(cell.value).padStart(2, "0")}
               </span>
-              <span className="text-[8px] font-medium tracking-wider uppercase text-[#6b7280] mt-0.5">
+              <span className="text-[8px] sm:text-[9px] font-medium tracking-wider uppercase text-[#6b7280] mt-1">
                 {cell.label}
               </span>
             </div>
             {i < cells.length - 1 && (
-              <span className="text-[#c9a96e] text-sm font-light leading-none pb-2">
+              <span className="text-[#c9a96e] text-lg font-light leading-none pb-3">
                 :
               </span>
             )}

@@ -1,3 +1,236 @@
+================================================================================
+SITE CONTAINER — check .site-container width + padding
+Generated: 2026-07-18 23:16:10
+================================================================================
+
+================================================================================
+FILE: user-panel\src\app\globals.css
+================================================================================
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary:    #1a1a1a;
+  --color-brand-secondary:  #c9a96e;
+  --color-brand-accent:     #f5f0e8;
+  --color-brand-surface:    #fafaf9;
+  --color-brand-muted:      #6b7280;
+  --color-brand-border:     #e5e7eb;
+
+  --font-sans:      var(--font-inter);
+  --font-serif:     var(--font-playfair);
+  --font-cormorant: var(--font-cormorant);
+
+  --breakpoint-3xl: 1920px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+::selection { background-color: #c9a96e; color: #ffffff; }
+img, video { max-width: 100%; height: auto; display: block; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #fafaf9; }
+::-webkit-scrollbar-thumb { background: #c9a96e; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #b8955a; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.site-container {
+  width: 100%; margin-left: auto; margin-right: auto;
+  padding-left: 12px; padding-right: 12px;
+}
+@media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
+@media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
+@media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
+@media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+
+/* ═══════════════════════════════════════════════════════════
+   Existing animation keyframes
+   ═══════════════════════════════════════════════════════════ */
+@keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+@keyframes float-soft    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes pulse-gold    { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 169, 110, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(201, 169, 110, 0); } }
+@keyframes marquee       { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes ken-burns     { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-1%, -1%); } }
+@keyframes letter-drop   { 0% { opacity: 0; transform: translateY(0.5em) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
+@keyframes draw-line     { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes tile-reveal   { 0% { opacity: 0; transform: scale(0.94) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes focus-ring    { 0% { box-shadow: 0 0 0 0 rgba(201, 169, 110, 0.35); } 100% { box-shadow: 0 0 0 5px rgba(201, 169, 110, 0); } }
+@keyframes fade-zoom-in  { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── Live view counter pulse ── */
+@keyframes live-ping {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
+.animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
+.animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
+.animate-marquee      { animation: marquee 30s linear infinite; }
+.animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
+.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+.shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
+.shimmer-btn::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 800ms ease;
+  pointer-events: none; z-index: 1;
+}
+.shimmer-btn:hover::before { transform: translateX(200%); }
+.shimmer-btn > * { position: relative; z-index: 2; }
+
+.hover-lift {
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.hover-lift:hover { transform: translateY(-4px); }
+
+.gold-underline { position: relative; display: inline-block; }
+.gold-underline::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+  background-color: #c9a96e;
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gold-underline:hover::after { transform: scaleX(1); }
+
+.input-focus-gold:focus { animation: focus-ring 1.4s ease-out; border-color: #c9a96e; }
+
+.product-image-frame { overflow: hidden; }
+.product-image-frame img {
+  transition: transform 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.product-image-frame:hover img { transform: scale(1.06); }
+
+.marquee-track {
+  display: flex; width: max-content;
+  animation: marquee 30s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }
+
+.tilt-3d { transform-style: preserve-3d; perspective: 1000px; }
+
+.section-veil { position: relative; }
+.section-veil::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fafaf9 0%, transparent 15%, transparent 85%, #fafaf9 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
+@keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-left    { from { opacity: 0; transform: translateX(-40px); }    to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-slide-right   { from { opacity: 0; transform: translateX(40px); }     to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-scale-in      { from { opacity: 0; transform: scale(0.85); }          to { opacity: 1; transform: scale(1); } }
+@keyframes hero-scale-bounce  {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hero-blur-in {
+  from { opacity: 0; filter: blur(12px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+@keyframes hero-mask-reveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes hero-pulse-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(201,169,110,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+  50%      { text-shadow: 0 0 20px rgba(201,169,110,0.75), 0 2px 6px rgba(0,0,0,0.35); }
+}
+@keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+@keyframes hero-underline-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes hero-accent-bar-draw {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes hero-shimmer-sweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%)  skewX(-20deg); }
+}
+@keyframes hero-dot-pop {
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-sticker-diag {
+  0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1); }
+}
+@keyframes hero-sticker-diag-tl {
+  0%   { opacity: 0; transform: translate(-30%, -30%) rotate(-45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1); }
+}
+@keyframes hero-sticker-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes hero-sticker-slide-up {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hero-sticker-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-2deg); }
+  75%      { transform: rotate(2deg); }
+}
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\ProductDetailClient.tsx
+================================================================================
+
 "use client";
 import { useState, useMemo } from "react";
 import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown } from "lucide-react";
@@ -129,8 +362,8 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   return (
     <>
       <div className="pt-24 sm:pt-28 pb-16">
-        <div className="w-full lg:max-w-[80%] mx-auto px-3 sm:px-4 lg:px-0">
-          <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-8 lg:gap-8 xl:gap-10">
+        <div className="site-container">
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-8 xl:gap-10">
 
             <FadeIn>
               <div className="w-full">
@@ -188,12 +421,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 )}
 
                 {/* Live view counter */}
-                <div className="mb-4 max-w-md">
+                <div className="mb-4">
                   <LiveViewCounter productId={product.id} />
                 </div>
 
                 {/* Sale countdown */}
-                <div className="mb-6 max-w-md">
+                <div className="mb-6">
                   <SaleCountdown productId={product.id} />
                 </div>
 
@@ -252,7 +485,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
                   className={cn(
-                    "w-full max-w-md h-11 flex items-center justify-between px-5 text-xs font-bold tracking-[0.15em] uppercase transition-all duration-200",
+                    "w-full h-14 flex items-center justify-between px-6 text-sm font-bold tracking-[0.15em] uppercase transition-all duration-200",
                     isOutOfStock
                       ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
                       : addedToCart
@@ -268,9 +501,9 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       : "Add to Cart"}
                   </span>
                   {addedToCart ? (
-                    <CheckCircle size={16} strokeWidth={2} />
+                    <CheckCircle size={18} strokeWidth={2} />
                   ) : (
-                    <ShoppingBag size={16} strokeWidth={1.75} />
+                    <ShoppingBag size={18} strokeWidth={1.75} />
                   )}
                 </button>
 
@@ -423,3 +656,100 @@ function AccordionItem({
 }
 
 void Button;
+
+================================================================================
+GREP: All references to 'site-container'
+================================================================================
+
+[user-panel\src\app\collections\[slug]\CollectionDetailClient.tsx : line 52]
+  <div className="site-container w-full">
+
+[user-panel\src\app\collections\[slug]\CollectionDetailClient.tsx : line 75]
+  <div className="site-container py-8 lg:py-10">
+
+[user-panel\src\app\collections\[slug]\loading.tsx : line 8]
+  <div className="site-container py-8 lg:py-10">
+
+[user-panel\src\app\collections\loading.tsx : line 7]
+  <div className="site-container">
+
+[user-panel\src\app\collections\page.tsx : line 25]
+  <div className="site-container">
+
+[user-panel\src\app\products\[slug]\ProductDetailClient.tsx : line 132]
+  <div className="site-container">
+
+[user-panel\src\app\shop\loading.tsx : line 8]
+  <div className="site-container">
+
+[user-panel\src\app\shop\loading.tsx : line 16]
+  <div className="site-container py-8 lg:py-10">
+
+[user-panel\src\app\shop\ShopPageClient.tsx : line 168]
+  <div className="site-container">
+
+[user-panel\src\app\shop\ShopPageClient.tsx : line 183]
+  <div className="site-container py-8 lg:py-10">
+
+[user-panel\src\app\globals.css : line 57]
+  .site-container {
+
+[user-panel\src\app\globals.css : line 61]
+  @media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
+
+[user-panel\src\app\globals.css : line 62]
+  @media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
+
+[user-panel\src\app\globals.css : line 63]
+  @media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
+
+[user-panel\src\app\globals.css : line 64]
+  @media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
+
+[user-panel\src\app\globals.css : line 65]
+  @media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+
+[user-panel\src\components\layout\AnnouncementBar.tsx : line 81]
+  <div className="site-container h-9 flex items-center justify-center gap-4 relative">
+
+[user-panel\src\components\layout\Footer.tsx : line 182]
+  <div className="site-container py-14 lg:py-16">
+
+[user-panel\src\components\layout\Footer.tsx : line 260]
+  <div className="site-container py-5">
+
+[user-panel\src\components\layout\Footer.tsx : line 282]
+  <div className="site-container py-3">
+
+[user-panel\src\components\layout\Navbar.tsx : line 75]
+  <div className="site-container">
+
+[user-panel\src\components\sections\BrandStory.tsx : line 32]
+  <div className="site-container">
+
+[user-panel\src\components\sections\FeaturedCollections.tsx : line 27]
+  <div className="site-container">
+
+[user-panel\src\components\sections\FeaturedCollections.tsx : line 56]
+  <div className="site-container">
+
+[user-panel\src\components\sections\GallerySection.tsx : line 53]
+  <div className="site-container">
+
+[user-panel\src\components\sections\NewArrivals.tsx : line 76]
+  <div className="site-container">
+
+[user-panel\src\components\sections\NewsletterSection.tsx : line 132]
+  <div className="site-container flex justify-center pt-8 sm:pt-10">
+
+[user-panel\src\components\sections\NewsletterSection.tsx : line 143]
+  <div className="site-container pt-10 pb-10 sm:pt-14 sm:pb-14">
+
+[user-panel\src\components\sections\NewsletterSection.tsx : line 202]
+  <div className="absolute inset-0 site-container flex items-center">
+
+[user-panel\src\components\sections\SaleCountdown.tsx : line 70]
+  <div className="site-container">
+
+[user-panel\src\components\sections\Testimonials.tsx : line 61]
+  <div className="site-container">

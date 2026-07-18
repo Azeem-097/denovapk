@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -262,6 +262,46 @@ export function CheckoutForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
 
+      {/* ─── GUEST PROMOTIONAL BANNER ─────────────────────
+          Encourages non-logged-in visitors to create an account
+          to join loyalty program and get discounts. */}
+      {mounted && !isLoggedIn && (
+        <div className="relative overflow-hidden rounded-md border border-[#c9a96e]/30 bg-gradient-to-br from-[#f5f0e8] via-white to-[#faf7f2] p-4 sm:p-5">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#c9a96e]/15 border border-[#c9a96e]/30 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 15l-2 5l9-9l-9-9l2 5l-7 4z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#c9a96e] mb-1">
+                Members-Only Rewards
+              </p>
+              <p className="text-sm text-[#1a1a1a] leading-snug">
+                Create your account to enroll in our <span className="font-semibold">Loyalty Program</span> and enjoy exclusive discounts on upcoming orders.
+              </p>
+              <div className="mt-3 flex items-center gap-3 flex-wrap">
+                <Link
+                  href={`/account/register?redirect=${encodeURIComponent("/checkout")}`}
+                  className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white text-xs font-semibold tracking-wide uppercase px-4 py-2 rounded hover:bg-[#c9a96e] transition-colors duration-200"
+                >
+                  Create Account
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </Link>
+                <Link
+                  href={`/account/login?redirect=${encodeURIComponent("/checkout")}`}
+                  className="text-xs text-[#6b7280] hover:text-[#1a1a1a] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#c9a96e] transition-colors"
+                >
+                  Already a member? Sign in
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CONTACT */}
       <section>
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
@@ -270,7 +310,7 @@ export function CheckoutForm() {
           {mounted && !isLoggedIn && (
             <Link
               href={`/account/login?redirect=${encodeURIComponent("/checkout")}`}
-              className="text-sm text-blue-600 underline underline-offset-4 hover:text-blue-700"
+              className="text-xs text-[#6b7280] hover:text-[#c9a96e] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#c9a96e] transition-colors"
             >
               Sign in
             </Link>

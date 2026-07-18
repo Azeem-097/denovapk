@@ -160,14 +160,14 @@ export function ShopPageClient({ products }: Props) {
   const pageTitle = filterParam === "new"         ? "New Arrivals" :
                     filterParam === "bestsellers" ? "Best Sellers" :
                     filterParam === "sale"        ? "Sale" :
-                    "All Products";
+                    "International Branded Jeans";
 
   return (
     <>
-      <div className="pt-28 pb-8 sm:pt-32 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
+      <div className="pt-20 pb-4 sm:pt-20 sm:pb-5 bg-[#fafaf9] border-b border-[#e5e7eb]">
         <div className="site-container">
           <FadeIn>
-            <Breadcrumb items={[{ label: "Home", href: "/" }, { label: pageTitle }]} className="mb-4" />
+            <Breadcrumb items={[{ label: "Home", href: "/" }, { label: pageTitle }]} className="mb-2" />
           </FadeIn>
           <TextReveal as="h1">
             <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a]">
@@ -175,7 +175,7 @@ export function ShopPageClient({ products }: Props) {
             </span>
           </TextReveal>
           <FadeIn delay={100}>
-            <p className="text-[#6b7280] text-sm mt-2">{filteredProducts.length} products</p>
+            <p className="text-[#6b7280] text-sm mt-1">{filteredProducts.length} products</p>
           </FadeIn>
         </div>
       </div>
@@ -196,7 +196,8 @@ export function ShopPageClient({ products }: Props) {
           </aside>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
+            {/* ══════ Toolbar (mobile only) ══════ */}
+            <div className="md:hidden flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
               <button
                 onClick={() => setMobileFilters(true)}
                 className="lg:hidden flex items-center gap-2 text-sm font-medium text-[#1a1a1a] border border-[#e5e7eb] px-4 py-2 hover:border-[#1a1a1a] transition-colors"
@@ -208,49 +209,6 @@ export function ShopPageClient({ products }: Props) {
                   </span>
                 )}
               </button>
-
-              <div className="hidden sm:flex flex-1 flex-wrap gap-2">
-                {filters.collections.map((c) => (
-                  <FilterTag
-                    key={c}
-                    label={c}
-                    onRemove={() => handleFilterChange({
-                      ...filters,
-                      collections: filters.collections.filter((x) => x !== c),
-                    })}
-                  />
-                ))}
-                {filters.sizes.map((s) => (
-                  <FilterTag
-                    key={s}
-                    label={`Waist: ${s}"`}
-                    onRemove={() => handleFilterChange({
-                      ...filters,
-                      sizes: filters.sizes.filter((x) => x !== s),
-                    })}
-                  />
-                ))}
-                {filters.colors.map((c) => (
-                  <FilterTag
-                    key={c}
-                    label={c}
-                    onRemove={() => handleFilterChange({
-                      ...filters,
-                      colors: filters.colors.filter((x) => x !== c),
-                    })}
-                  />
-                ))}
-                {priceFilterActive && (
-                  <FilterTag
-                    label={`PKR ${filters.priceMin.toLocaleString()} - ${filters.priceMax.toLocaleString()}`}
-                    onRemove={() => handleFilterChange({
-                      ...filters,
-                      priceMin: catalogMin,
-                      priceMax: catalogMax,
-                    })}
-                  />
-                )}
-              </div>
 
               <div className="flex items-center gap-1 ml-auto">
                 <button
@@ -269,6 +227,78 @@ export function ShopPageClient({ products }: Props) {
                 </button>
               </div>
             </div>
+
+            {/* ══════ Waist + Grid (desktop, 2 rows) ══════ */}
+            {availableSizes.length > 0 && (
+              <div className="hidden md:block mb-6 pb-4 border-b border-[#e5e7eb]">
+                {/* Row 1 */}
+                <div className="text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                  Filter by Waist
+                </div>
+
+                {/* Row 2 */}
+                <div className="mt-3 flex items-center gap-4">
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((size) => {
+                      const isActive = filters.sizes.includes(size);
+                      return (
+                        <button
+                          key={size}
+                          onClick={() =>
+                            handleFilterChange({
+                              ...filters,
+                              sizes: isActive
+                                ? filters.sizes.filter((s) => s !== size)
+                                : [...filters.sizes, size],
+                            })
+                          }
+                          className={cn(
+                            "min-w-[44px] h-10 px-3.5 text-sm font-semibold border transition-all duration-150",
+                            isActive
+                              ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                              : "border-[#e5e7eb] text-[#1a1a1a] bg-white hover:border-[#1a1a1a]"
+                          )}
+                          aria-pressed={isActive}
+                          aria-label={`Filter by waist ${size} inches`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+
+                    {filters.sizes.length > 0 && (
+                      <button
+                        onClick={() => handleFilterChange({ ...filters, sizes: [] })}
+                        className="text-xs text-[#6b7280] hover:text-[#c9a96e] underline transition-colors ml-2"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  {/* line */}
+                  <div className="flex-1 h-px bg-[#e5e7eb]" />
+
+                  {/* Grid buttons (right side) */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setColumns(2)}
+                      className={cn("p-1.5 transition-colors", columns === 2 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")}
+                      aria-label="2 columns"
+                    >
+                      <Grid2x2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => setColumns(4)}
+                      className={cn("p-1.5 transition-colors", columns === 4 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")}
+                      aria-label="4 columns"
+                    >
+                      <Grid3x3 size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <ProductGrid products={filteredProducts} isLoading={isLoading} columns={columns} />
           </div>

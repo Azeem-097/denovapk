@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+﻿import { randomBytes } from "crypto";
 
 /**
  * Generate a unique ID (like cuid).
@@ -60,9 +60,14 @@ export function safeJsonParse<T>(json: string | null): T | null {
 
 /**
  * Generate a unique order number
- * Format: DNV + 8 digits
+ * Format: DN-XXXX (e.g. DN-4837)
+ *
+ * NOTE: This uses 4 random digits (1000-9999). With ~9000 combinations,
+ * collisions become likely after ~50-100 orders exist. If you expect
+ * more than a few dozen orders, the createOrder function should check
+ * for duplicates and regenerate on collision (see repositories/orders.ts).
  */
 export function generateOrderNumber(): string {
-  const timestamp = Date.now().toString().slice(-8);
-  return `DNV${timestamp}`;
+  const digits = Math.floor(1000 + Math.random() * 9000); // 1000-9999
+  return `DN-${digits}`;
 }

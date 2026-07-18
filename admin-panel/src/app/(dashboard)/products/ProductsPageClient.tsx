@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import React from "react";
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -211,7 +212,18 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
 
 function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; isSelected: boolean; onToggle: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openUp, setOpenUp]     = useState(false);
+  const btnRef = React.useRef<HTMLButtonElement>(null);
   const stockStatus = product.stock === 0 ? "out" : product.stock < 10 ? "low" : "ok";
+
+  const handleMenuToggle = () => {
+    if (!menuOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUp(spaceBelow < 120);
+    }
+    setMenuOpen(!menuOpen);
+  };
 
   return (
     <tr className={cn("hover:bg-[#fafaf9] transition-colors", isSelected && "bg-[#f5f0e8]/30")}>
@@ -250,14 +262,17 @@ function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; 
       </td>
       <td className="px-4 py-3 text-xs text-[#6b7280]">{formatDate(product.updatedAt)}</td>
       <td className="px-4 py-3 relative">
-        <button onClick={() => setMenuOpen(!menuOpen)} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
+        <button ref={btnRef} onClick={handleMenuToggle} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
           <MoreVertical size={16} />
         </button>
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-4 top-full mt-1 w-40 bg-white border border-[#e5e7eb] shadow-lg z-20 py-1">
-              <Link href={`/products/${product.id}`} className="flex items-center gap-2 px-3 py-2 text-xs text-[#1a1a1a] hover:bg-[#fafaf9]">
+            <div className={cn(
+              "absolute right-4 w-40 bg-white border border-[#e5e7eb] shadow-lg z-20 py-1",
+              openUp ? "bottom-full mb-1" : "top-full mt-1"
+            )}>
+              <Link href={`/products/${product.id}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-xs text-[#1a1a1a] hover:bg-[#fafaf9]">
                 <Edit size={12} />Edit
               </Link>
             </div>

@@ -157,7 +157,7 @@ export default function LoginPage() {
 
       <div className="relative hidden lg:block">
         <Image
-          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=85"
+          src="https://res.cloudinary.com/djy5qqco7/image/upload/v1784396631/denovapk/general/signin_1784396626556.png"
           alt="Denova PK fashion" fill className="object-cover" sizes="50vw" priority
         />
         <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/20 to-transparent" />

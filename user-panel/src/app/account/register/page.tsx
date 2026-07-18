@@ -48,7 +48,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="relative hidden lg:block order-2 lg:order-1">
-        <Image src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&q=85"
+        <Image src="https://res.cloudinary.com/djy5qqco7/image/upload/v1784396664/denovapk/general/signup_1784396631376.png"
           alt="Denova PK fashion" fill className="object-cover" sizes="50vw" priority />
         <div className="absolute inset-0 bg-gradient-to-tr from-black/50 via-black/20 to-transparent" />
         <div className="absolute bottom-16 left-16 right-16">
@@ -90,8 +90,8 @@ export default function RegisterPage() {
           <FadeIn delay={200}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <Input label="First Name" required placeholder="John" {...register("firstName")} error={errors.firstName?.message} />
-                <Input label="Last Name" required placeholder="Doe" {...register("lastName")} error={errors.lastName?.message} />
+                <Input label="First Name" required placeholder="Muhammad" {...register("firstName")} error={errors.firstName?.message} />
+                <Input label="Last Name" required placeholder="Ahmad" {...register("lastName")} error={errors.lastName?.message} />
               </div>
               <Input label="Email" required type="email" placeholder="you@example.com" autoComplete="email" {...register("email")} error={errors.email?.message} />
               <Input label="Phone" required type="tel" placeholder="+92 300 1234567" {...register("phone")} error={errors.phone?.message} />

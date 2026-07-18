@@ -1,0 +1,906 @@
+================================================================================
+PRODUCT DETAIL LAYOUT — Adjust image width to 85%
+Generated: 2026-07-18 22:49:23
+================================================================================
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\page.tsx
+================================================================================
+
+import { notFound } from "next/navigation";
+import { getProductBySlug, getRelatedProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ProductDetailClient } from "./ProductDetailClient";
+
+// ISR: 60s cache. Stock levels update within 1 minute for browsing users.
+// (Real stock validation happens at checkout — this is safe.)
+export const revalidate = 60;
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+// Placeholder image shown when a product has no images uploaded yet
+const PLACEHOLDER_IMAGE = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
+export default async function ProductDetailPage({ params }: Props) {
+  const { slug } = await params;
+
+  let dbProduct;
+  try {
+    dbProduct = await getProductBySlug(slug);
+  } catch (err) {
+    console.error("Failed to load product:", err);
+    notFound();
+  }
+
+  if (!dbProduct) notFound();
+
+  const product = adaptProduct(dbProduct);
+
+  // Ensure we always have at least one image so the UI never crashes
+  if (product.images.length === 0) {
+    product.images = [PLACEHOLDER_IMAGE];
+  }
+
+  let relatedProducts: ReturnType<typeof adaptProduct>[] = [];
+  try {
+    if (dbProduct.collectionId) {
+      const dbRelated = await getRelatedProducts(dbProduct.id, dbProduct.collectionId, 4);
+      relatedProducts = dbRelated.map((p) => {
+        const adapted = adaptProduct({ ...p, collection: dbProduct.collection });
+        if (adapted.images.length === 0) adapted.images = [PLACEHOLDER_IMAGE];
+        return adapted;
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load related products:", err);
+  }
+
+  return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;
+}
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\ProductDetailClient.tsx
+================================================================================
+
+"use client";
+import { useState, useMemo } from "react";
+import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { ProductImages } from "@/components/product/ProductImages";
+import { ColorSelector } from "@/components/product/ColorSelector";
+import { SizeSelector } from "@/components/product/SizeSelector";
+import { RelatedProducts } from "@/components/product/RelatedProducts";
+import { SaleCountdown } from "@/components/product/SaleCountdown";
+import { LiveViewCounter } from "@/components/product/LiveViewCounter";
+// DiscountInlinePill import removed — replaced with focused savings badge inline
+import { FadeIn } from "@/components/animations/FadeIn";
+import { useCartStore } from "@/store/cartStore";
+import { useToastStore } from "@/store/toastStore";
+import { cn, getDiscountPercent } from "@/lib/utils";
+import type { Product } from "@/types";
+
+function formatPKR(amount: number): string {
+  return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
+}
+
+interface Props {
+  product:         Product;
+  relatedProducts: Product[];
+}
+
+export function ProductDetailClient({ product, relatedProducts }: Props) {
+  const uniqueColors = useMemo(() =>
+    Array.from(
+      new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
+    ),
+    [product.variants]
+  );
+
+  const firstInStockColor = useMemo(() => {
+    const inStock = product.variants.find((v) => v.stock > 0);
+    return inStock?.color ?? uniqueColors[0]?.name ?? "";
+  }, [product.variants, uniqueColors]);
+
+  const [selectedColor, setSelectedColor] = useState(firstInStockColor);
+
+  const sizesForColor = useMemo(() => {
+    const variants = product.variants.filter((v) => v.color === selectedColor);
+    return Array.from(new Set(variants.map((v) => v.size)));
+  }, [product.variants, selectedColor]);
+
+  const outOfStockSizes = useMemo(() => {
+    return product.variants
+      .filter((v) => v.color === selectedColor && v.stock === 0)
+      .map((v) => v.size);
+  }, [product.variants, selectedColor]);
+
+  const firstInStockSize = useMemo(() => {
+    const v = product.variants.find((x) => x.color === selectedColor && x.stock > 0);
+    return v?.size ?? sizesForColor[0] ?? "";
+  }, [product.variants, selectedColor, sizesForColor]);
+
+  const [selectedSize, setSelectedSize] = useState(firstInStockSize);
+
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    const firstAvail = product.variants.find((v) => v.color === color && v.stock > 0);
+    setSelectedSize(firstAvail?.size ?? "");
+  };
+
+  const [quantity, setQuantity]         = useState(1);
+  const [addedToCart, setAddedToCart]   = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("details");
+
+  const addToCart = useCartStore((s) => s.addItem);
+  const showToast = useToastStore((s) => s.addToast);
+
+  const selectedVariant = useMemo(() =>
+    product.variants.find((v) => v.color === selectedColor && v.size === selectedSize),
+    [product.variants, selectedColor, selectedSize]
+  );
+
+  const isOutOfStock = !selectedVariant || selectedVariant.stock === 0;
+  const hasDiscount  = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPercent = hasDiscount
+    ? getDiscountPercent(product.compareAtPrice!, product.price)
+    : 0;
+
+  const savedAmount = hasDiscount
+    ? product.compareAtPrice! - product.price
+    : 0;
+
+  const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+
+  const measurements = [
+    { label: "Waist",  value: product.waist,  unit: '"' },
+    { label: "Length", value: product.length, unit: '"' },
+    { label: "Bottom", value: product.bottom, unit: '"' },
+  ].filter((m) => m.value != null);
+
+  const fitLabel = useMemo(() => {
+    if (product.waist === null || product.waist === undefined) return null;
+    const w = `${product.waist}W`;
+    const l = product.length !== null && product.length !== undefined ? ` x ${product.length}L` : "";
+    return `${w}${l}`;
+  }, [product.waist, product.length]);
+
+  const handleAddToCart = () => {
+    if (!selectedVariant) {
+      showToast({ type: "error", message: "Please select a size" });
+      return;
+    }
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant.id,
+      name:      product.name,
+      image:     primaryImage.url,
+      size:      selectedVariant.size,
+      color:     selectedColor,
+      colorHex:  selectedVariant.colorHex,
+      price:     product.price,
+      quantity,
+      slug:      product.slug,
+      bgColor:   product.bgColor,
+    });
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2500);
+  };
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordion((prev) => (prev === key ? null : key));
+  };
+
+  return (
+    <>
+      <div className="pt-24 sm:pt-28 pb-16">
+        <div className="site-container">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_460px] 2xl:grid-cols-[1fr_500px] gap-8 lg:gap-12 xl:gap-16">
+
+            <FadeIn>
+              <ProductImages
+                images={product.images}
+                productName={product.name}
+                productId={product.id}
+                productSlug={product.slug}
+                productPrice={product.price}
+                bgColor={product.bgColor}
+                discountPercent={discountPercent}
+              />
+            </FadeIn>
+
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <FadeIn delay={100}>
+
+                <h1 className="text-lg sm:text-xl font-bold tracking-[0.1em] uppercase text-[#1a1a1a] leading-tight mb-2">
+                  {product.name}
+                </h1>
+
+                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-4">
+                  {product.collection || "Premium"}
+                </p>
+
+                {/* Price row — bold, elegant, with clear strikethrough */}
+                <div className="flex items-end gap-3 flex-wrap mb-2">
+                  <span className="text-3xl sm:text-[38px] font-bold text-[#1a1a1a] tracking-tight leading-none">
+                    {formatPKR(product.price)}
+                  </span>
+                  {hasDiscount && (
+                    <span className="text-lg sm:text-xl text-[#9ca3af] line-through decoration-[#9ca3af]/70 decoration-[1.5px] font-medium leading-none pb-1">
+                      {formatPKR(product.compareAtPrice!)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Single focused savings line — the ONE loud element */}
+                {hasDiscount && (
+                  <div className="mb-6 inline-flex items-center gap-3 pl-3 pr-5 py-2.5 bg-[#1a1a1a] shadow-[0_10px_30px_-15px_rgba(201,169,110,0.6)]">
+                    <span className="font-[family-name:var(--font-playfair)] text-2xl sm:text-[28px] font-bold text-[#c9a96e] leading-none tabular-nums">
+                      {discountPercent}% OFF
+                    </span>
+                    <span className="h-8 w-px bg-white/20" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/60">
+                        You Save
+                      </span>
+                      <span className="text-sm font-bold text-white tracking-wide">
+                        {formatPKR(savedAmount)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Live view counter */}
+                <div className="mb-4">
+                  <LiveViewCounter productId={product.id} />
+                </div>
+
+                {/* Sale countdown */}
+                <div className="mb-6">
+                  <SaleCountdown productId={product.id} />
+                </div>
+
+                {uniqueColors.length > 0 && (
+                  <div className="mb-7">
+                    <ColorSelector
+                      colors={uniqueColors}
+                      selectedColor={selectedColor}
+                      onSelect={handleColorChange}
+                    />
+                  </div>
+                )}
+
+                {sizesForColor.length > 0 && (
+                  <div className="mb-7">
+                    <SizeSelector
+                      sizes={sizesForColor}
+                      selectedSize={selectedSize}
+                      onSelect={setSelectedSize}
+                      outOfStock={outOfStockSizes}
+                    />
+                  </div>
+                )}
+
+                <div className="mb-6 flex items-center gap-4">
+                  <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                    Quantity
+                  </span>
+                  <div className="flex items-center border border-[#d1d5db]">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-10 text-center text-sm font-medium text-[#1a1a1a]">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity((q) => Math.min(selectedVariant?.stock ?? 10, q + 1))}
+                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
+                    <span className="text-xs text-[#c9a96e] font-medium">
+                      Only {selectedVariant.stock} left
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className={cn(
+                    "w-full h-14 flex items-center justify-between px-6 text-sm font-bold tracking-[0.15em] uppercase transition-all duration-200",
+                    isOutOfStock
+                      ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                      : addedToCart
+                      ? "bg-[#c9a96e] text-white"
+                      : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
+                  )}
+                >
+                  <span>
+                    {addedToCart
+                      ? "Added to Cart"
+                      : isOutOfStock
+                      ? "Out of Stock"
+                      : "Add to Cart"}
+                  </span>
+                  {addedToCart ? (
+                    <CheckCircle size={18} strokeWidth={2} />
+                  ) : (
+                    <ShoppingBag size={18} strokeWidth={1.75} />
+                  )}
+                </button>
+
+                <div className="mt-10">
+                  <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">
+                    Product Description
+                  </h3>
+                  <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                    {product.description}
+                  </p>
+                </div>
+
+                <div className="mt-8 border-t border-[#e5e7eb]">
+                  <AccordionItem
+                    id="details"
+                    title="Product Details & Composition"
+                    isOpen={openAccordion === "details"}
+                    onToggle={() => toggleAccordion("details")}
+                  >
+                    <div className="space-y-4">
+                      {fitLabel && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-[#6b7280] font-medium">Fit:</span>
+                          <span className="text-[#1a1a1a] font-semibold">{fitLabel}</span>
+                        </div>
+                      )}
+
+                      {measurements.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Measurements
+                          </p>
+                          <div className="divide-y divide-[#e5e7eb] border border-[#e5e7eb]">
+                            {measurements.map((m) => (
+                              <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
+                                <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">
+                                  {m.label}
+                                </span>
+                                <span className="text-sm font-semibold text-[#1a1a1a]">
+                                  {m.value}{m.unit}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {product.tags.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Style Tags
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {product.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionItem>
+
+                  <AccordionItem
+                    id="shipping"
+                    title="Shipping & Returns"
+                    isOpen={openAccordion === "shipping"}
+                    onToggle={() => toggleAccordion("shipping")}
+                  >
+                    <div className="space-y-3 text-sm text-[#6b7280] leading-relaxed">
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Free Shipping</span>
+                        <span> on every order across Pakistan. Standard delivery within 3-5 business days.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Easy Returns</span>
+                        <span> within 7 days of delivery. Items must be unworn with original tags.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Authentic Quality</span>
+                        <span> - 100% guaranteed. Every piece is quality-inspected before shipping.</span>
+                      </div>
+                    </div>
+                  </AccordionItem>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <RelatedProducts products={relatedProducts} currentProductId={product.id} />
+    </>
+  );
+}
+
+function AccordionItem({
+  id, title, isOpen, onToggle, children,
+}: {
+  id:       string;
+  title:    string;
+  isOpen:   boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-[#e5e7eb]">
+      <button
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`accordion-${id}`}
+        className="w-full flex items-center justify-between py-4 text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-[#1a1a1a] text-lg font-light w-4">
+            {isOpen ? "-" : "+"}
+          </span>
+          <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] group-hover:text-[#c9a96e] transition-colors">
+            {title}
+          </span>
+        </div>
+        <ChevronDown
+          size={14}
+          className={cn(
+            "text-[#6b7280] transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+
+      <div
+        id={`accordion-${id}`}
+        className={cn(
+          "grid transition-all duration-300 ease-out",
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-5 pl-7">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+void Button;
+
+================================================================================
+FILE: user-panel\src\components\product\ProductImages.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
+import { Package, Heart } from "lucide-react";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
+import { DiscountBadge } from "./DiscountBadge";
+import { ImageLightbox } from "./ImageLightbox";
+import { cn } from "@/lib/utils";
+import type { ProductImage as ProductImageType } from "@/types";
+
+interface ProductImagesProps {
+  images:           ProductImageType[];
+  productName:      string;
+  productId:        string;
+  productSlug:      string;
+  productPrice:     number;
+  bgColor?:         string | null;
+  discountPercent?: number;
+}
+
+const PLACEHOLDER: ProductImageType = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
+export function ProductImages({
+  images,
+  productName,
+  productId,
+  productSlug,
+  productPrice,
+  bgColor,
+  discountPercent,
+}: ProductImagesProps) {
+  const safeImages = images && images.length > 0 ? images : [PLACEHOLDER];
+
+  const sortedImages = [...safeImages].sort(
+    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+  );
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [mobileIndex, setMobileIndex] = useState(0);
+
+  // ─── Lightbox state ──────────────────────────────────────
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx,  setLightboxIdx]  = useState(0);
+
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIdx(idx);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== mobileIndex) setMobileIndex(idx);
+  }, [mobileIndex]);
+
+  const scrollToSlide = useCallback((idx: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  }, []);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const isInWishlist   = useWishlistStore((s) => s.isInWishlist(productId));
+  const showToast      = useToastStore((s) => s.addToast);
+
+  const primaryImage = sortedImages[0];
+
+  const handleWishlist = () => {
+    toggleWishlist({
+      id:        productId,
+      productId: productId,
+      name:      productName,
+      image:     primaryImage.url,
+      price:     productPrice,
+      slug:      productSlug,
+      bgColor:   bgColor,
+    });
+    showToast({
+      type: "success",
+      message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+    });
+  };
+
+  const hasDiscount = !!discountPercent && discountPercent > 0;
+  const isPlaceholder = (url: string) => url === PLACEHOLDER.url;
+
+  return (
+    <>
+      {/* DESKTOP — 2x2 grid, click any image to open lightbox */}
+      <div className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3">
+        {sortedImages.map((img, i) => (
+          <div key={img.id + i} className="relative group">
+            <button
+              type="button"
+              onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+              disabled={isPlaceholder(img.url)}
+              className={cn(
+                "block w-full relative cursor-zoom-in disabled:cursor-default rounded-xl lg:rounded-2xl overflow-hidden",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-2"
+              )}
+              aria-label={`View image ${i + 1} in full screen`}
+            >
+              <ProductBgWrapper
+                bgColor={bgColor}
+                className={cn(
+                  "aspect-[4/5]",
+                  !bgColor && "bg-[#f4f2ee]"
+                )}
+              >
+                {isPlaceholder(img.url) ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                    <Package size={48} strokeWidth={1.5} />
+                    <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                      Image coming soon
+                    </p>
+                  </div>
+                ) : (
+                  <Image
+                    src={img.url}
+                    alt={img.alt || productName}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 45vw"
+                    priority={i === 0}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    unoptimized={img.url.endsWith(".svg")}
+                  />
+                )}
+              </ProductBgWrapper>
+
+              {/* Hover overlay removed — image click still opens lightbox via the parent button */}
+            </button>
+
+            {/* Discount ribbon — only on primary image */}
+            {i === 0 && hasDiscount && (
+              <DiscountBadge percent={discountPercent!} />
+            )}
+
+            {i === 0 && (
+              <button
+                onClick={handleWishlist}
+                aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                className={cn(
+                  "absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300",
+                  "opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0",
+                  mounted && isInWishlist && "opacity-100 translate-x-0"
+                )}
+              >
+                <Heart
+                  size={16}
+                  className={cn(
+                    "transition-colors",
+                    mounted && isInWishlist ? "text-[#c9a96e] fill-[#c9a96e]" : "text-[#1a1a1a]"
+                  )}
+                />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* MOBILE — swipeable carousel; tap image to open lightbox */}
+      <div className="sm:hidden">
+        <div className="relative">
+          <button
+            onClick={handleWishlist}
+            aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm"
+          >
+            <Heart
+              size={16}
+              className={cn(
+                "transition-colors",
+                mounted && isInWishlist ? "text-[#c9a96e] fill-[#c9a96e]" : "text-[#1a1a1a]"
+              )}
+            />
+          </button>
+
+          {/* Mobile discount ribbon */}
+          {hasDiscount && (
+            <DiscountBadge percent={discountPercent!} />
+          )}
+
+          <div
+            ref={scrollerRef}
+            onScroll={handleScroll}
+            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x"
+            style={{ scrollBehavior: "auto" }}
+          >
+            {sortedImages.map((img, i) => (
+              <button
+                key={img.id + i}
+                type="button"
+                onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+                disabled={isPlaceholder(img.url)}
+                className="flex-shrink-0 w-full snap-start cursor-zoom-in disabled:cursor-default"
+                aria-label={`View image ${i + 1} in full screen`}
+              >
+                <ProductBgWrapper
+                  bgColor={bgColor}
+                  className={cn(
+                    "aspect-[4/5] rounded-xl",
+                    !bgColor && "bg-[#f4f2ee]"
+                  )}
+                >
+                  {isPlaceholder(img.url) ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                      <Package size={48} strokeWidth={1.5} />
+                      <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                        Image coming soon
+                      </p>
+                    </div>
+                  ) : (
+                    <Image
+                      src={img.url}
+                      alt={img.alt || productName}
+                      fill
+                      className="object-cover pointer-events-none"
+                      sizes="100vw"
+                      priority={i === 0}
+                      draggable={false}
+                    />
+                  )}
+                </ProductBgWrapper>
+              </button>
+            ))}
+          </div>
+
+          {sortedImages.length > 1 && (
+            <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full">
+              {mobileIndex + 1} / {sortedImages.length}
+            </div>
+          )}
+        </div>
+
+        {sortedImages.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
+            {sortedImages.map((_, i) => {
+              const isActive = i === mobileIndex;
+              return (
+                <button
+                  key={i}
+                  onClick={() => scrollToSlide(i)}
+                  aria-label={`Go to image ${i + 1}`}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    isActive
+                      ? "w-6 bg-[#1a1a1a]"
+                      : "w-1.5 bg-[#d1d5db] hover:bg-[#9ca3af]"
+                  )}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ═══ LIGHTBOX ═══════════════════════════════════════ */}
+      <ImageLightbox
+        images={sortedImages.filter((img) => !isPlaceholder(img.url))}
+        initialIdx={lightboxIdx}
+        productName={productName}
+        isOpen={lightboxOpen}
+        onClose={closeLightbox}
+      />
+
+      <style jsx global>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\layout\LayoutShell.tsx
+================================================================================
+
+"use client";
+import { usePathname } from "next/navigation";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
+import { Navbar }          from "@/components/layout/Navbar";
+import { Footer }          from "@/components/layout/Footer";
+import { CartDrawer }      from "@/components/cart/CartDrawer";
+import { SearchModal }     from "@/components/layout/SearchModal";
+import { WhatsAppWidget }  from "@/components/layout/WhatsAppWidget";
+
+// Routes that should render WITHOUT the site chrome
+// (their own minimal header lives inside the page)
+//
+// NOTE: /checkout intentionally excluded — customers should still see
+// the full navbar (to escape) and footer (for legal links, etc).
+const MINIMAL_ROUTES: string[] = [
+  // Add routes here if we need to strip chrome in the future
+];
+
+export function LayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? "";
+  const isMinimal = MINIMAL_ROUTES.some((r) =>
+    pathname === r || pathname.startsWith(r + "/")
+  );
+
+  if (isMinimal) {
+    return <main className="min-h-screen">{children}</main>;
+  }
+
+  return (
+    <>
+      <AnnouncementBar />
+      <Navbar />
+      <main className="min-h-screen">{children}</main>
+      <Footer />
+      <CartDrawer />
+      <SearchModal />
+      <WhatsAppWidget />
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductGrid.tsx
+================================================================================
+
+import { ProductCard }       from "./ProductCard";
+import { ProductCardSkeleton } from "@/components/ui/Skeleton";
+import { SlideUp }            from "@/components/animations/SlideUp";
+import type { Product }       from "@/types";
+
+interface ProductGridProps {
+  products:  Product[];
+  isLoading?: boolean;
+  columns?:  2 | 3 | 4;
+}
+
+const colClasses = {
+  2: "grid-cols-2",
+  3: "grid-cols-2 md:grid-cols-3",
+  4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6",
+};
+
+export function ProductGrid({
+  products,
+  isLoading = false,
+  columns = 4,
+}: ProductGridProps) {
+
+  if (isLoading) {
+    return (
+      <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-16 h-16 bg-[#f5f0e8] rounded-full flex items-center justify-center mb-4">
+          <svg
+            className="w-8 h-8 text-[#c9a96e]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </div>
+        <h3 className="text-base font-semibold text-[#1a1a1a] mb-1">
+          No products found
+        </h3>
+        <p className="text-sm text-[#6b7280]">
+          Try adjusting your filters or search terms.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
+      {products.map((product, i) => (
+        <SlideUp key={product.id} stagger={60} index={i % 12}>
+          <ProductCard product={product} />
+        </SlideUp>
+      ))}
+    </div>
+  );
+}
