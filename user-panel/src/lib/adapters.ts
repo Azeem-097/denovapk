@@ -34,6 +34,7 @@ export function adaptProduct(p: ProductWithRelations): Product {
     bottom:         p.bottom ?? null,
     bgColor:        p.bgColor ?? null,
     brand:          p.brand ?? null,
+    sku:            p.sku,
     createdAt:      new Date(p.createdAt * 1000).toISOString(),
   };
 }

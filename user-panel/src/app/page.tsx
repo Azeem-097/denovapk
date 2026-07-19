@@ -31,7 +31,6 @@ export default async function HomePage() {
   const collections  = dbCollections.map(adaptCollection);
   const allProducts  = dbAllProducts.map(adaptProduct);
 
-  // Split products by collection name for the two tabs
   const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
   const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
 
@@ -55,54 +54,36 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════════════
-          HERO — position:fixed, cannot move
-          ═══════════════════════════════════════════════════════ */}
+      {/* LAYER 1 — HERO */}
       <FixedHeroBackground>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
       </FixedHeroBackground>
 
-      {/* ═══════════════════════════════════════════════════════
-          REVEAL LAYER — slides up over the fixed hero on scroll.
-          Contains only SaleCountdown now (Collections moved down).
-          ═══════════════════════════════════════════════════════ */}
-      <div className="relative z-10 bg-white rounded-t-[32px] sm:rounded-t-[44px] lg:rounded-t-[56px] overflow-hidden shadow-[0_-30px_60px_-20px_rgba(0,0,0,0.3)]">
+      {/* LAYER 2 — CONTENT SHELL
+          - overflow-hidden clips the square backgrounds of Sale & Newsletter.
+          - Because this wrapper is BELOW the header, overflow-hidden here 
+            does NOT break the sticky header! */}
+      <div
+        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden"
+        style={{
+          boxShadow: "0 -12px 40px -20px rgba(0, 0, 0, 0.15)",
+        }}
+      >
         <SaleCountdown />
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════
-          BRAND TICKER — international brand collaborations
-          ═══════════════════════════════════════════════════════ */}
-      <div className="relative z-10">
         <BrandTicker />
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════
-          SHOP BY WAIST — now with Premium / Super Premium tabs
-          ═══════════════════════════════════════════════════════ */}
-      <div className="relative z-10 bg-white">
         <NewArrivals
           newArrivals={premiumProducts}
           bestSellers={superPremiumProducts}
         />
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════
-          OUR COLLECTIONS — moved to appear AFTER Shop by Waist
-          ═══════════════════════════════════════════════════════ */}
-      <div className="relative z-10">
         <FeaturedCollections collections={collections} />
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════
-          Remaining sections
-          ═══════════════════════════════════════════════════════ */}
-      <div className="relative z-10 bg-white">
         <BrandStory />
         <Testimonials testimonials={testimonials} />
         <GallerySection />
-        <NewsletterSection />
+
+        <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">
+          <NewsletterSection />
+        </div>
       </div>
     </>
   );

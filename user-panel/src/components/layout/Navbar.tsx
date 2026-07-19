@@ -23,11 +23,13 @@ const LOGO_DESKTOP = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_160/${LOGO_
 const LOGO_MOBILE  = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_120/${LOGO_ID}`;
 
 export function Navbar() {
-  const [scrolled,     setScrolled]     = useState(false);
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted,      setMounted]      = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const headerRef   = useRef<HTMLElement>(null);
+  const dividerRef  = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef<boolean>(false);
 
   const cartCount     = useCartStore((s) => s.getItemCount());
   const wishlistCount = useWishlistStore((s) => s.items.length);
@@ -37,10 +39,41 @@ export function Navbar() {
 
   useEffect(() => setMounted(true), []);
 
+  // ─── SCROLL — ZERO React re-renders ───────────────────
+  // Only mutates DOM class + divider opacity when scroll
+  // ACTUALLY crosses the 20px threshold (not every frame)
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    let rafId = 0;
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const isScrolled = window.scrollY > 20;
+        if (isScrolled !== scrolledRef.current) {
+          scrolledRef.current = isScrolled;
+          const header = headerRef.current;
+          const div    = dividerRef.current;
+          if (header) {
+            if (isScrolled) {
+              header.classList.add("shadow-sm", "border-[#e5e7eb]");
+              header.classList.remove("border-transparent");
+            } else {
+              header.classList.remove("shadow-sm", "border-[#e5e7eb]");
+              header.classList.add("border-transparent");
+            }
+          }
+          if (div) div.style.opacity = isScrolled ? "1" : "0";
+        }
+        rafId = 0;
+      });
+    };
+
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   useEffect(() => {
@@ -63,19 +96,17 @@ export function Navbar() {
   return (
     <>
       <header
+        ref={headerRef}
         className={cn(
           "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
-          // ── CRITICAL: solid bg always, overflow hidden so nothing bursts out ──
           "bg-white overflow-hidden",
-          scrolled
-            ? "shadow-sm border-b border-[#e5e7eb]"
-            : "border-b border-transparent"
+          "border-b border-transparent"
         )}
       >
         <div className="site-container">
 
           {/* ═══════════════════════════════════════════════════
-              MOBILE — 64px header, logo constrained to 40px
+              MOBILE
               ═══════════════════════════════════════════════════ */}
           <div className="lg:hidden relative flex items-center justify-between h-16">
             <button
@@ -86,7 +117,6 @@ export function Navbar() {
               <Menu size={22} />
             </button>
 
-            {/* Logo container with STRICT height cap */}
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center h-11 pointer-events-auto" aria-label="Denova PK home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -115,11 +145,10 @@ export function Navbar() {
           </div>
 
           {/* ═══════════════════════════════════════════════════
-              DESKTOP — 80px header, logo constrained to 56px
+              DESKTOP
               ═══════════════════════════════════════════════════ */}
           <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[88px] gap-8">
 
-            {/* Left nav */}
             <nav className="flex items-center justify-start gap-7">
               <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 Shop
@@ -160,7 +189,6 @@ export function Navbar() {
               </Link>
             </nav>
 
-            {/* CENTER — logo container with STRICT height cap */}
             <Link href="/" className="flex items-center h-16 flex-shrink-0 hover:opacity-80 transition-opacity duration-300" aria-label="Denova PK home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -214,10 +242,12 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className={cn(
-          "h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300",
-          scrolled ? "opacity-100" : "opacity-0"
-        )} />
+        {/* Divider - opacity controlled directly via ref */}
+        <div
+          ref={dividerRef}
+          className="h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300"
+          style={{ opacity: 0 }}
+        />
       </header>
 
       <NavbarMobile isOpen={mobileOpen} onClose={() => setMobileOpen(false)} cartCount={cartCount} />

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Package, FolderOpen, BarChart3,
   ShoppingCart, Users, Tag, Settings, LogOut, ChevronRight,
   Layers, Star, ShoppingBag, Cake, Award, LayoutTemplate, Megaphone,
-  LayoutGrid, MessageSquare,
+  LayoutGrid, MessageSquare, Ruler,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
@@ -36,6 +36,7 @@ const NAV_SECTIONS = [
     { href: "/hero-banners",      label: "Hero Banners",      icon: LayoutTemplate },
     { href: "/announcement-bar",  label: "Announcement Bar",  icon: Megaphone },
     { href: "/gallery",           label: "Gallery",           icon: LayoutGrid },
+    { href: "/size-chart",     label: "Size Chart",      icon: Ruler },
   ]},
   { label: "Store", items: [
     { href: "/settings", label: "Settings", icon: Settings },

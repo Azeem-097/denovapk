@@ -28,6 +28,7 @@ SUBFOLDERS:
 .\app\(dashboard)\products\new
 .\app\(dashboard)\settings
 .\app\(dashboard)\settings\profile
+.\app\(dashboard)\size-chart
 .\app\(dashboard)\staff
 .\app\api
 .\app\api\abandoned-carts
@@ -53,6 +54,7 @@ SUBFOLDERS:
 .\app\api\products\[id]
 .\app\api\products\[id]\duplicate
 .\app\api\settings
+.\app\api\size-chart
 .\app\api\upload
 .\app\api\variants
 .\app\api\variants\[id]
@@ -118,6 +120,8 @@ FILES:
 .\app\(dashboard)\settings\profile\page.tsx
 .\app\(dashboard)\settings\SettingsClient.tsx
 .\app\(dashboard)\settings\ShippingTab.tsx
+.\app\(dashboard)\size-chart\page.tsx
+.\app\(dashboard)\size-chart\SizeChartClient.tsx
 .\app\(dashboard)\staff\page.tsx
 .\app\api\abandoned-carts\[id]\route.ts
 .\app\api\abandoned-carts\route.ts
@@ -139,6 +143,7 @@ FILES:
 .\app\api\products\[id]\route.ts
 .\app\api\products\route.ts
 .\app\api\settings\route.ts
+.\app\api\size-chart\route.ts
 .\app\api\upload\route.ts
 .\app\api\variants\[id]\route.ts
 .\app\favicon.ico
@@ -170,6 +175,7 @@ FILES:
 .\lib\constants.ts
 .\lib\data.ts
 .\lib\db\add-bgcolor-column.ts
+.\lib\db\add-brand-column.ts
 .\lib\db\client.ts
 .\lib\db\helpers.ts
 .\lib\db\migrate-images-to-cloudinary.ts
@@ -259,6 +265,7 @@ SUBFOLDERS:
 .\app\api\shop
 .\app\api\shop\collections
 .\app\api\site-info
+.\app\api\size-chart
 .\app\api\track-order
 .\app\api\whatsapp-widget
 .\app\careers
@@ -340,6 +347,7 @@ FILES:
 .\app\api\shipping-config\route.ts
 .\app\api\shop\collections\route.ts
 .\app\api\site-info\route.ts
+.\app\api\size-chart\route.ts
 .\app\api\track-order\route.ts
 .\app\api\whatsapp-widget\route.ts
 .\app\careers\page.tsx
@@ -395,12 +403,15 @@ FILES:
 .\components\checkout\OrderSummary.tsx
 .\components\checkout\PromotionBanner.tsx
 .\components\layout\AnnouncementBar.tsx
+.\components\layout\FixedFooterReveal.tsx
+.\components\layout\FixedSectionBackground.tsx
 .\components\layout\Footer.tsx
 .\components\layout\LayoutShell.tsx
 .\components\layout\Navbar.tsx
 .\components\layout\NavbarMobile.tsx
 .\components\layout\SearchModal.tsx
 .\components\layout\WhatsAppWidget.tsx
+.\components\product\BundleSelector.tsx
 .\components\product\ColorSelector.tsx
 .\components\product\DiscountBadge.tsx
 .\components\product\ImageLightbox.tsx
@@ -412,6 +423,7 @@ FILES:
 .\components\product\ProductImages.tsx
 .\components\product\RelatedProducts.tsx
 .\components\product\SaleCountdown.tsx
+.\components\product\SizeChartModal.tsx
 .\components\product\SizeSelector.tsx
 .\components\providers\CartAbandonmentTracker.tsx
 .\components\providers\PaymentConfigLoader.tsx

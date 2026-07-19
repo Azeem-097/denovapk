@@ -2,92 +2,94 @@
 import { useEffect, useRef, useState } from "react";
 
 export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const [heroHeight,    setHeroHeight]    = useState<number>(0);
-  const [headerBottom,  setHeaderBottom]  = useState<number>(0);
-  const [isHeroVisible, setIsHeroVisible] = useState(true);
-  const [isReady,       setIsReady]       = useState(false); // NEW: prevents glitch on load
+  const heroRef    = useRef<HTMLDivElement>(null);
+  const spacerRef  = useRef<HTMLDivElement>(null);
 
+  // Height state (used only to size the spacer)
+  const [heroHeight, setHeroHeight] = useState<number>(0);
+
+  // Internal refs — used by scroll handler (no re-renders)
+  const heroHeightRef = useRef<number>(0);
+  const isReadyRef    = useRef<boolean>(false);
+  const lastBottomRef = useRef<number>(-1);
+  const lastVisibleRef = useRef<boolean>(true);
+
+  // Keep heroHeightRef in sync with state
   useEffect(() => {
-    let rafId = 0;
+    heroHeightRef.current = heroHeight;
+  }, [heroHeight]);
 
-    const updateHeaderBottom = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        const header = document.querySelector("header");
-        if (header) {
-          const rect = header.getBoundingClientRect();
-          const bottom = Math.max(0, rect.bottom);
-          setHeaderBottom(bottom);
-          if (bottom > 0) setIsReady(true); // Only reveal once header is measured
-        }
-        rafId = 0;
-      });
-    };
-
-    updateHeaderBottom();
-
-    window.addEventListener("scroll", updateHeaderBottom, { passive: true });
-    window.addEventListener("resize", updateHeaderBottom, { passive: true });
-
-    const header = document.querySelector("header");
-    const ro = new ResizeObserver(updateHeaderBottom);
-    if (header) ro.observe(header);
-    ro.observe(document.body);
-
-    return () => {
-      window.removeEventListener("scroll", updateHeaderBottom);
-      window.removeEventListener("resize", updateHeaderBottom);
-      ro.disconnect();
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
-
+  // Measure hero height for spacer
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
 
-    const updateHeight = () => {
+    const measure = () => {
       const h = el.offsetHeight;
-      if (h > 0) setHeroHeight(h);
+      if (h > 0) {
+        setHeroHeight((prev) => (prev !== h ? h : prev));
+      }
     };
 
-    updateHeight();
-
-    const ro = new ResizeObserver(updateHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-
-    const images = el.querySelectorAll("img");
-    images.forEach((img) => {
-      if (!img.complete) img.addEventListener("load", updateHeight);
-    });
-
-    return () => {
-      ro.disconnect();
-      images.forEach((img) => img.removeEventListener("load", updateHeight));
-    };
+    return () => ro.disconnect();
   }, []);
 
+  // High-performance scroll tracking (mounted ONCE, uses refs)
   useEffect(() => {
-    if (heroHeight === 0) return;
     let rafId = 0;
 
-    const handleScroll = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        const shouldShow = window.scrollY < heroHeight * 1.2;
-        setIsHeroVisible((prev) => prev !== shouldShow ? shouldShow : prev);
-        rafId = 0;
-      });
+    const update = () => {
+      const hero = heroRef.current;
+      if (!hero) { rafId = 0; return; }
+
+      // 1. Sync top with header (fixes white gap when announcement bar scrolls away)
+      const header = document.querySelector("header");
+      if (header) {
+        const bottom = Math.max(0, header.getBoundingClientRect().bottom);
+        if (bottom !== lastBottomRef.current) {
+          lastBottomRef.current = bottom;
+          hero.style.top = `${bottom}px`;
+
+          if (bottom > 0 && !isReadyRef.current) {
+            isReadyRef.current = true;
+            hero.style.opacity    = "1";
+            hero.style.visibility = "visible";
+          }
+        }
+      }
+
+      // 2. Hide when scrolled past hero (fixes bleeding into footer area)
+      const h = heroHeightRef.current;
+      if (h > 0) {
+        const shouldShow = window.scrollY < h * 1.5;
+        if (shouldShow !== lastVisibleRef.current) {
+          lastVisibleRef.current = shouldShow;
+          hero.style.visibility = shouldShow ? "visible" : "hidden";
+          hero.style.opacity    = shouldShow ? "1" : "0";
+        }
+      }
+
+      rafId = 0;
     };
 
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(update);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [heroHeight]);
+  }, []); // ← EMPTY. Mounts once, uses refs to read latest values.
 
   return (
     <>
@@ -95,18 +97,19 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
         ref={heroRef}
         className="fixed left-0 w-full z-0 overflow-hidden"
         style={{
-          top:        `${headerBottom}px`,
-          // ── Fade in only once header measurement is complete ──
-          visibility: (isHeroVisible && isReady) ? "visible" : "hidden",
-          opacity:    (isHeroVisible && isReady) ? 1 : 0,
-          transition: "opacity 250ms ease",
-          willChange: "top",
+          top:        "0px",
+          opacity:    0,
+          visibility: "hidden",
+          transition: "opacity 200ms ease",
+          transform:  "translateZ(0)",
+          willChange: "transform",
         }}
       >
         {children}
       </div>
 
       <div
+        ref={spacerRef}
         aria-hidden="true"
         className="w-full pointer-events-none"
         style={{ height: heroHeight > 0 ? `${heroHeight}px` : "100vh" }}

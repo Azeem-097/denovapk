@@ -6,25 +6,30 @@ interface SizeSelectorProps {
   selectedSize:  string;
   onSelect:      (size: string) => void;
   outOfStock?:   string[];
+  label?:        string;  // "Waist" / "Size" / etc.
 }
 
+/**
+ * ELO-style size selector: rectangular labeled buttons.
+ */
 export function SizeSelector({
   sizes,
   selectedSize,
   onSelect,
   outOfStock = [],
+  label = "Waist",
 }: SizeSelectorProps) {
   if (sizes.length === 0) return null;
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-3">
         <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
-          Select Size
+          {label}
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-3">
+      <div className="flex flex-wrap gap-2.5">
         {sizes.map((size) => {
           const oos = outOfStock.includes(size);
           const isSelected = selectedSize === size;
@@ -35,28 +40,20 @@ export function SizeSelector({
               onClick={() => !oos && onSelect(size)}
               disabled={oos}
               className={cn(
-                "text-sm font-medium tracking-wide transition-all duration-150 relative",
+                "min-w-[60px] px-4 py-2.5 text-[11px] font-bold tracking-[0.12em] uppercase transition-all duration-150 rounded-lg",
                 oos
-                  ? "text-[#d1d5db] cursor-not-allowed line-through"
+                  ? "border border-[#e5e7eb] bg-[#fafaf9] text-[#d1d5db] cursor-not-allowed line-through"
                   : isSelected
-                  ? "text-[#1a1a1a] font-bold"
-                  : "text-[#6b7280] hover:text-[#1a1a1a]"
+                  ? "border-2 border-[#1a1a1a] bg-white text-[#1a1a1a]"
+                  : "border border-[#d1d5db] bg-white text-[#1a1a1a] hover:border-[#1a1a1a]"
               )}
+              aria-pressed={isSelected}
             >
               {size}
-              {isSelected && !oos && (
-                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#1a1a1a]" />
-              )}
             </button>
           );
         })}
       </div>
-
-      {selectedSize && (
-        <p className="mt-3 text-[11px] text-[#6b7280] tracking-wide">
-          Selected: <span className="text-[#1a1a1a] font-semibold">{selectedSize}</span>
-        </p>
-      )}
     </div>
   );
 }

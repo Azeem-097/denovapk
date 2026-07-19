@@ -6,15 +6,9 @@ import { Footer }          from "@/components/layout/Footer";
 import { CartDrawer }      from "@/components/cart/CartDrawer";
 import { SearchModal }     from "@/components/layout/SearchModal";
 import { WhatsAppWidget }  from "@/components/layout/WhatsAppWidget";
+import { FixedFooterReveal } from "@/components/layout/FixedFooterReveal";
 
-// Routes that should render WITHOUT the site chrome
-// (their own minimal header lives inside the page)
-//
-// NOTE: /checkout intentionally excluded — customers should still see
-// the full navbar (to escape) and footer (for legal links, etc).
-const MINIMAL_ROUTES: string[] = [
-  // Add routes here if we need to strip chrome in the future
-];
+const MINIMAL_ROUTES: string[] = [];
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
@@ -28,10 +22,12 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <AnnouncementBar />
-      <Navbar />
-      <main className="min-h-screen">{children}</main>
-      <Footer />
+      <FixedFooterReveal footer={<Footer />}>
+        <AnnouncementBar />
+        <Navbar />
+        <main className="min-h-screen">{children}</main>
+      </FixedFooterReveal>
+
       <CartDrawer />
       <SearchModal />
       <WhatsAppWidget />

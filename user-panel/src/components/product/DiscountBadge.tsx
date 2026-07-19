@@ -22,7 +22,7 @@ export function DiscountBadge({ percent, className }: Props) {
       className={cn(
         "absolute top-3 left-3 z-20 pointer-events-none",
         "bg-[#e32c52] text-white",
-        "px-3 py-1.5 shadow-md",
+        "px-3 py-1.5 shadow-md rounded-lg",
         "text-[11px] font-bold tracking-[0.2em] uppercase",
         className
       )}
@@ -42,7 +42,7 @@ export function DiscountInlinePill({ percent, className }: { percent: number; cl
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-1",
+        "inline-flex items-center px-2.5 py-1 rounded-md",
         "bg-[#e32c52] text-white",
         "text-[10px] font-bold tracking-[0.16em] uppercase",
         className

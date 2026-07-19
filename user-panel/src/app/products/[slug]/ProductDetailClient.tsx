@@ -1,13 +1,15 @@
 "use client";
-import { useState, useMemo } from "react";
-import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown, Flame, Globe } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ShoppingBag, CheckCircle, ChevronDown, Plus, Minus, Truck,
+} from "lucide-react";
 import { ProductImages } from "@/components/product/ProductImages";
 import { ColorSelector } from "@/components/product/ColorSelector";
 import { SizeSelector } from "@/components/product/SizeSelector";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
-import { SaleCountdown } from "@/components/product/SaleCountdown";
 import { LiveViewCounter } from "@/components/product/LiveViewCounter";
+
 import { FadeIn } from "@/components/animations/FadeIn";
 import { useCartStore } from "@/store/cartStore";
 import { useToastStore } from "@/store/toastStore";
@@ -23,7 +25,128 @@ interface Props {
   relatedProducts: Product[];
 }
 
+// ══════════════════════════════════════════════════════════
+//  RECENTLY VIEWED
+// ══════════════════════════════════════════════════════════
+const RECENTLY_VIEWED_KEY = "denova_recently_viewed_v1";
+const MAX_RECENT = 8;
+
+function pushRecentlyViewed(product: Product) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(RECENTLY_VIEWED_KEY);
+    const list: Product[] = raw ? JSON.parse(raw) : [];
+    const filtered = list.filter((p) => p.id !== product.id);
+    filtered.unshift(product);
+    window.localStorage.setItem(
+      RECENTLY_VIEWED_KEY,
+      JSON.stringify(filtered.slice(0, MAX_RECENT))
+    );
+  } catch {}
+}
+
+// ══════════════════════════════════════════════════════════
+//  ELO-STYLE COUNTDOWN — clean centered plain numbers
+// ══════════════════════════════════════════════════════════
+const COUNTDOWN_MIN_HOURS = 24;
+const COUNTDOWN_MAX_HOURS = 72;
+
+function getSaleDeadline(productId: string): number {
+  if (typeof window === "undefined") return Date.now() + COUNTDOWN_MIN_HOURS * 3_600_000;
+  const key = "denova_sale_expires_" + productId;
+  const stored = window.localStorage.getItem(key);
+  if (stored) {
+    const ts = Number(stored);
+    if (!isNaN(ts) && ts > Date.now()) return ts;
+  }
+  const hours = COUNTDOWN_MIN_HOURS + Math.random() * (COUNTDOWN_MAX_HOURS - COUNTDOWN_MIN_HOURS);
+  const deadline = Date.now() + hours * 3_600_000;
+  window.localStorage.setItem(key, String(deadline));
+  return deadline;
+}
+
+interface Parts { d: number; h: number; m: number; s: number; expired: boolean }
+
+function computeTime(deadline: number): Parts {
+  const diff = deadline - Date.now();
+  if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, expired: true };
+  return {
+    d: Math.floor(diff / 86_400_000),
+    h: Math.floor((diff % 86_400_000) / 3_600_000),
+    m: Math.floor((diff % 3_600_000) / 60_000),
+    s: Math.floor((diff % 60_000) / 1000),
+    expired: false,
+  };
+}
+
+function EloCountdown({ productId }: { productId: string }) {
+  const [mounted, setMounted] = useState(false);
+  const [dl, setDl] = useState(0);
+  const [t, setT] = useState<Parts>({ d: 0, h: 0, m: 0, s: 0, expired: false });
+
+  useEffect(() => {
+    setMounted(true);
+    setDl(getSaleDeadline(productId));
+  }, [productId]);
+
+  useEffect(() => {
+    if (!dl) return;
+    const tick = () => {
+      const next = computeTime(dl);
+      if (next.expired) {
+        const fresh = Date.now() + (COUNTDOWN_MIN_HOURS + Math.random() * (COUNTDOWN_MAX_HOURS - COUNTDOWN_MIN_HOURS)) * 3_600_000;
+        window.localStorage.setItem("denova_sale_expires_" + productId, String(fresh));
+        setDl(fresh);
+        setT(computeTime(fresh));
+      } else {
+        setT(next);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [dl, productId]);
+
+  if (!mounted) return <div className="h-[120px]" aria-hidden />;
+
+  const cells = [
+    { label: "Days",    v: t.d },
+    { label: "Hours",   v: t.h },
+    { label: "Minutes", v: t.m },
+    { label: "Seconds", v: t.s },
+  ];
+
+  return (
+    <div className="text-center py-4">
+      <h2 className="text-2xl sm:text-3xl font-semibold text-[#1a1a1a] mb-5 tracking-tight">
+        Sale ends in
+      </h2>
+      <div className="flex items-start justify-center gap-6 sm:gap-10">
+        {cells.map((c) => (
+          <div key={c.label} className="flex flex-col items-center">
+            <span className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] leading-none tabular-nums">
+              {String(c.v).padStart(2, "0")}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.2em] uppercase text-[#6b7280] mt-2">
+              {c.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  MAIN
+// ══════════════════════════════════════════════════════════
 export function ProductDetailClient({ product, relatedProducts }: Props) {
+  const router = useRouter();
+
+  useEffect(() => {
+    pushRecentlyViewed(product);
+  }, [product]);
+
   const uniqueColors = useMemo(() =>
     Array.from(
       new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
@@ -62,9 +185,10 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     setSelectedSize(firstAvail?.size ?? "");
   };
 
-  const [quantity, setQuantity]         = useState(1);
-  const [addedToCart, setAddedToCart]   = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string | null>("details");
+  const [quantity, setQuantity]           = useState(1);
+  const [addedToCart, setAddedToCart]     = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("description");
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
 
   const addToCart = useCartStore((s) => s.addItem);
   const showToast = useToastStore((s) => s.addToast);
@@ -74,18 +198,21 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     [product.variants, selectedColor, selectedSize]
   );
 
-  const isOutOfStock = !selectedVariant || selectedVariant.stock === 0;
-  const hasDiscount  = !!product.compareAtPrice && product.compareAtPrice > product.price;
-  const discountPercent = hasDiscount
-    ? getDiscountPercent(product.compareAtPrice!, product.price)
-    : 0;
+  const isOutOfStock    = !selectedVariant || selectedVariant.stock === 0;
+  const maxQty          = selectedVariant?.stock ?? 1;
+  const hasDiscount     = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPercent = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
 
-  // Brand line — prefer explicit brand, fallback to collection
+  useEffect(() => {
+    if (quantity > maxQty) setQuantity(Math.max(1, maxQty));
+  }, [maxQty, quantity]);
+
   const brandLine = (product.brand && product.brand.trim().length > 0)
     ? product.brand.trim()
     : (product.collection || "Denova");
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+  const displaySku = product.sku || selectedVariant?.sku || "";
 
   const measurements = [
     { label: "Waist",  value: product.waist,  unit: '"' },
@@ -93,19 +220,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     { label: "Bottom", value: product.bottom, unit: '"' },
   ].filter((m) => m.value != null);
 
-  const fitLabel = useMemo(() => {
-    if (product.waist === null || product.waist === undefined) return null;
-    const w = `${product.waist}W`;
-    const l = product.length !== null && product.length !== undefined ? ` x ${product.length}L` : "";
-    return `${w}${l}`;
-  }, [product.waist, product.length]);
-
-  const handleAddToCart = () => {
+  const doAddToCart = async () => {
     if (!selectedVariant) {
       showToast({ type: "error", message: "Please select a size" });
-      return;
+      return false;
     }
-    addToCart({
+    await addToCart({
       productId: product.id,
       variantId: selectedVariant.id,
       name:      product.name,
@@ -118,8 +238,20 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       slug:      product.slug,
       bgColor:   product.bgColor,
     });
+    return true;
+  };
+
+  const handleAddToCart = async () => {
+    const ok = await doAddToCart();
+    if (!ok) return;
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
+  };
+
+  const handleBuyNow = async () => {
+    const ok = await doAddToCart();
+    if (!ok) return;
+    router.push("/checkout");
   };
 
   const toggleAccordion = (key: string) => {
@@ -128,10 +260,11 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   return (
     <>
-      <div className="pt-24 sm:pt-28 pb-16">
-        <div className="w-full lg:max-w-[80%] mx-auto px-3 sm:px-4 lg:px-0">
-          <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-8 lg:gap-8 xl:gap-10">
+      <div className="pt-6 sm:pt-8 pb-16 border-t border-[#e5e7eb]">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+          <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-8 lg:gap-20 xl:gap-28 2xl:gap-32">
 
+            {/* ═══ LEFT: Image gallery ══════════════════════ */}
             <FadeIn>
               <div className="w-full">
                 <ProductImages
@@ -146,66 +279,68 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
               </div>
             </FadeIn>
 
+            {/* ═══ RIGHT: Info column ═══════════════════════ */}
             <div className="lg:sticky lg:top-24 lg:self-start">
               <FadeIn delay={100}>
 
-                {/* 1. Sale Ends In Countdown */}
+                {/* 1. COUNTDOWN — clean, centered, plain numbers (ELO exact) */}
                 {hasDiscount && (
-                  <div className="mb-4">
-                    <SaleCountdown productId={product.id} className="mb-0 max-w-md" />
+                  <div className="pb-6 mb-6 border-b border-[#e5e7eb]">
+                    <EloCountdown productId={product.id} />
                   </div>
                 )}
 
-                {/* 2. Product Name */}
-                <h1 className="text-xl sm:text-2xl font-bold tracking-[0.05em] uppercase text-[#1a1a1a] leading-tight mb-4">
+                {/* 2. PRODUCT NAME — simple sentence-case, no letter-spacing */}
+                <h1 className="text-2xl sm:text-[26px] font-semibold text-[#1a1a1a] leading-tight mb-3">
                   {product.name}
                 </h1>
 
-                {/* 3. Badges: 50% OFF + Free Delivery */}
-                <div className="flex flex-wrap items-center gap-2 mb-5">
+                {/* 3. DEAL PILLS — orange "{discountPercent}% OFF" + green "Bundle Offer" (ELO exact) */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
                   {hasDiscount && (
-                    <span className="inline-flex items-center gap-1.5 bg-[#e32c52] text-white px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] uppercase shadow-sm">
-                      <Flame size={12} fill="currentColor" />
+                    <span className="inline-flex items-center bg-[#ff6a1a] text-white px-3 py-1 text-[11px] font-bold tracking-wide rounded-sm">
                       {discountPercent}% OFF
                     </span>
                   )}
-                  <span className="inline-flex items-center bg-[#1a1a1a] text-white px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] uppercase shadow-sm">
+                  <span className="inline-flex items-center bg-[#12b76a] text-white px-3 py-1 text-[11px] font-bold tracking-wide rounded-sm">
                     Free Delivery
                   </span>
                 </div>
 
-                {/* 4. Brand Information: Brand Name | International Brand */}
-                <div className="flex items-center gap-2.5 mb-6">
-                  <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#c9a96e]">
+                {/* 4. BRAND — subtle brand line under pills */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#3b5f8f]">
                     {brandLine}
-                  </span>
-                  <span className="text-[#e5e7eb] font-light">|</span>
-                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#1a1a1a] bg-[#f5f0e8] px-2 py-1 flex items-center gap-1.5 border border-[#c9a96e]/30">
-                    <Globe size={10} strokeWidth={2.5} className="text-[#c9a96e]" />
-                    International Brand
                   </span>
                 </div>
 
-                {/* 5. Product Price */}
-                <div className="flex items-end gap-3 flex-wrap mb-5 border-t border-[#e5e7eb] pt-6">
-                  <span className="text-4xl sm:text-[42px] font-extrabold text-[#1a1a1a] tracking-tight leading-none">
+                {/* 5. REAL SKU — plain gray text like ELO */}
+                {displaySku && (
+                  <p className="text-sm text-[#1a1a1a] mb-3">
+                    SKU: <span className="text-[#1a1a1a]">{displaySku}</span>
+                  </p>
+                )}
+
+                {/* 6. PRICE — current + strikethrough + small black "Save X%" chip */}
+                <div className="flex items-center gap-2.5 flex-wrap mb-6">
+                  <span className="text-xl sm:text-2xl font-semibold text-[#1a1a1a] leading-none">
                     {formatPKR(product.price)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-xl sm:text-2xl text-[#9ca3af] line-through decoration-[#e32c52]/70 decoration-[2.5px] font-semibold leading-none pb-1">
-                      {formatPKR(product.compareAtPrice!)}
-                    </span>
+                    <>
+                      <span className="text-base sm:text-lg text-[#9ca3af] line-through leading-none">
+                        {formatPKR(product.compareAtPrice!)}
+                      </span>
+                      <span className="inline-flex items-center bg-[#1a1a1a] text-white text-[11px] font-semibold px-2 py-1 leading-none rounded-sm">
+                        Save {discountPercent}%
+                      </span>
+                    </>
                   )}
                 </div>
 
-                {/* 6. Product Views */}
-                <div className="mb-7">
-                  <LiveViewCounter productId={product.id} />
-                </div>
-
-                {/* 7. Color Selection */}
+                {/* 7. COLOR SELECTOR — rectangular labeled buttons */}
                 {uniqueColors.length > 0 && (
-                  <div className="mb-7">
+                  <div className="mb-6">
                     <ColorSelector
                       colors={uniqueColors}
                       selectedColor={selectedColor}
@@ -214,101 +349,130 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </div>
                 )}
 
-                {/* 8. Size Selection */}
+                {/* 8. WAIST SELECTOR — rectangular labeled buttons */}
                 {sizesForColor.length > 0 && (
-                  <div className="mb-7">
+                  <div className="mb-4">
                     <SizeSelector
                       sizes={sizesForColor}
                       selectedSize={selectedSize}
                       onSelect={setSelectedSize}
                       outOfStock={outOfStockSizes}
+                      label="Waist"
                     />
                   </div>
                 )}
 
-                {/* 9. Quantity Selector */}
-                <div className="mb-6 flex items-center gap-4">
-                  <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
-                    Quantity
-                  </span>
-                  <div className="flex items-center border border-[#d1d5db]">
-                    <button
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <span className="w-10 text-center text-sm font-medium text-[#1a1a1a]">
-                      {quantity}
+
+
+                {/* 10. QUANTITY STEPPER */}
+                <div className="mb-5">
+                  <div className="mb-3">
+                    <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                      Quantity
                     </span>
-                    <button
-                      onClick={() => setQuantity((q) => Math.min(selectedVariant?.stock ?? 10, q + 1))}
-                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus size={14} />
-                    </button>
                   </div>
-                  {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
-                    <span className="text-xs text-[#e32c52] font-bold">
-                      Only {selectedVariant.stock} left
-                    </span>
-                  )}
+                  <div className="flex items-center gap-4">
+                    <div className="inline-flex items-center border border-[#1a1a1a] rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        disabled={quantity <= 1 || isOutOfStock}
+                        className="w-11 h-11 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={14} strokeWidth={2} />
+                      </button>
+                      <span className="w-14 h-11 flex items-center justify-center text-sm font-bold text-[#1a1a1a] border-x border-[#1a1a1a] tabular-nums">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                        disabled={quantity >= maxQty || isOutOfStock}
+                        className="w-11 h-11 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={14} strokeWidth={2} />
+                      </button>
+                    </div>
+                    {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
+                      <span className="text-xs text-[#e32c52] font-bold whitespace-nowrap">
+                        Only {selectedVariant.stock} left
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* 10. Add to Cart Button */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isOutOfStock}
-                  className={cn(
-                    "w-full max-w-md h-12 flex items-center justify-between px-6 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200",
-                    isOutOfStock
-                      ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
-                      : addedToCart
-                      ? "bg-[#3b5f8f] text-white"
-                      : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
-                  )}
-                >
-                  <span>
-                    {addedToCart
-                      ? "Added to Cart"
-                      : isOutOfStock
-                      ? "Out of Stock"
-                      : "Add to Cart"}
-                  </span>
-                  {addedToCart ? (
-                    <CheckCircle size={18} strokeWidth={2} />
-                  ) : (
-                    <ShoppingBag size={18} strokeWidth={1.75} />
-                  )}
-                </button>
+                {/* 11 + 12. ADD TO CART + BUY IT NOW */}
+                <div className="space-y-2.5 mb-5">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isOutOfStock}
+                    className={cn(
+                      "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
+                      isOutOfStock
+                        ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                        : addedToCart
+                        ? "bg-[#1a1a1a] text-white"
+                        : "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] active:scale-[0.99]"
+                    )}
+                  >
+                    {addedToCart ? (
+                      <>
+                        <CheckCircle size={17} strokeWidth={2.25} />
+                        <span>Added to Cart</span>
+                      </>
+                    ) : isOutOfStock ? (
+                      <span>Out of Stock</span>
+                    ) : (
+                      <>
+                        <ShoppingBag size={17} strokeWidth={1.75} />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
+                  </button>
 
-                {/* 11. Product Description */}
-                <div className="mt-10">
-                  <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3 border-b border-[#1a1a1a] inline-block pb-1">
-                    Product Description
-                  </h3>
-                  <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line mt-2">
-                    {product.description}
-                  </p>
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isOutOfStock}
+                    className={cn(
+                      "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
+                      isOutOfStock
+                        ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                        : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
+                    )}
+                  >
+                    Buy It Now
+                  </button>
                 </div>
 
-                <div className="mt-8 border-t border-[#e5e7eb]">
+                {/* 13. LIVE VIEWERS */}
+                <div className="mb-6 flex items-center justify-between gap-3 py-3 border-t border-b border-[#e5e7eb]">
+                  <LiveViewCounter productId={product.id} />
+                </div>
+
+
+
+
+
+                {/* 15. ACCORDIONS */}
+                <div className="border-t border-[#e5e7eb]">
+                  <AccordionItem
+                    id="description"
+                    title="Description"
+                    isOpen={openAccordion === "description"}
+                    onToggle={() => toggleAccordion("description")}
+                  >
+                    <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                      {product.description}
+                    </p>
+                  </AccordionItem>
+
                   <AccordionItem
                     id="details"
-                    title="Product Details & Composition"
+                    title="Product Details"
                     isOpen={openAccordion === "details"}
                     onToggle={() => toggleAccordion("details")}
                   >
                     <div className="space-y-4">
-                      {fitLabel && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-[#6b7280] font-medium">Fit:</span>
-                          <span className="text-[#1a1a1a] font-semibold">{fitLabel}</span>
-                        </div>
-                      )}
-
                       {measurements.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
@@ -351,14 +515,14 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
                   <AccordionItem
                     id="shipping"
-                    title="Shipping & Returns"
+                    title="Delivery Details"
                     isOpen={openAccordion === "shipping"}
                     onToggle={() => toggleAccordion("shipping")}
                   >
                     <div className="space-y-3 text-sm text-[#6b7280] leading-relaxed">
                       <div>
                         <span className="text-[#1a1a1a] font-semibold">Free Shipping</span>
-                        <span> on every order across Pakistan. Standard delivery within 3-5 business days.</span>
+                        <span> across Pakistan. Standard delivery within 3-5 business days.</span>
                       </div>
                       <div>
                         <span className="text-[#1a1a1a] font-semibold">Easy Returns</span>
@@ -371,6 +535,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     </div>
                   </AccordionItem>
                 </div>
+
               </FadeIn>
             </div>
           </div>
@@ -378,6 +543,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       </div>
 
       <RelatedProducts products={relatedProducts} currentProductId={product.id} />
+      
     </>
   );
 }
@@ -399,16 +565,11 @@ function AccordionItem({
         aria-controls={`accordion-${id}`}
         className="w-full flex items-center justify-between py-4 text-left group"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-[#1a1a1a] text-lg font-light w-4">
-            {isOpen ? "-" : "+"}
-          </span>
-          <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors">
-            {title}
-          </span>
-        </div>
+        <span className="text-sm font-semibold text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors">
+          {title}
+        </span>
         <ChevronDown
-          size={14}
+          size={16}
           className={cn(
             "text-[#6b7280] transition-transform duration-200",
             isOpen && "rotate-180"
@@ -424,7 +585,7 @@ function AccordionItem({
         )}
       >
         <div className="overflow-hidden">
-          <div className="pb-5 pl-7">
+          <div className="pb-5 pr-2">
             {children}
           </div>
         </div>
@@ -432,5 +593,3 @@ function AccordionItem({
     </div>
   );
 }
-
-void Button;

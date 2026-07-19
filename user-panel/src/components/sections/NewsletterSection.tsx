@@ -9,17 +9,12 @@ import { SlideIn } from "@/components/animations/SlideIn";
 import { useToastStore } from "@/store/toastStore";
 
 // ═══════════════════════════════════════════════════════════
-//  Cloudinary — DESKTOP: 1915 x 821 (models on right, cream on left)
-//  Cloudinary — MOBILE:  1254 x 1254 (dedicated mobile framing)
-//
-//  Both use f_auto,q_auto:best,c_limit for automatic format,
-//  quality, and no-upscale delivery.
+//  Cloudinary hero images
 // ═══════════════════════════════════════════════════════════
 const BASE            = "https://res.cloudinary.com/djy5qqco7/image/upload";
 const IMAGE_ID        = "v1784387547/denovapk/general/newsletter_hires_1784387491499";
 const IMAGE_ID_MOBILE = "v1784389913/denovapk/general/newsletter-mbl_1784389867961";
 
-// Desktop URLs (5-tier responsive srcset)
 const buildUrl = (width: number) =>
   `${BASE}/f_auto,q_auto:best,c_limit,w_${width}/${IMAGE_ID}`;
 
@@ -29,7 +24,6 @@ const IMG_1200 = buildUrl(1200);
 const IMG_1600 = buildUrl(1600);
 const IMG_1915 = buildUrl(1915);
 
-// Mobile URLs (3-tier srcset — enough for phone screens up to 3x DPR)
 const buildMblUrl = (width: number) =>
   `${BASE}/f_auto,q_auto:best,c_limit,w_${width}/${IMAGE_ID_MOBILE}`;
 
@@ -37,19 +31,6 @@ const IMG_MBL_640  = buildMblUrl(640);
 const IMG_MBL_900  = buildMblUrl(900);
 const IMG_MBL_1200 = buildMblUrl(1200);
 
-/**
- * NewsletterSection — Split layout
- *
- *   Desktop (≥ 1024px):
- *     - Wide hero image (1915 x 821) with models on right, cream on left
- *     - Image drives section height (no min-height, no gap)
- *     - Content absolutely positioned on left cream area
- *
- *   Mobile (< 1024px):
- *     - Square hero image (1254 x 1254)
- *     - "Shop Now" button pinned to bottom-center of image
- *     - Newsletter content flows below on cream background
- */
 export function NewsletterSection() {
   const [email, setEmail]         = useState("");
   const [status, setStatus]       = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -109,12 +90,8 @@ export function NewsletterSection() {
       aria-labelledby="newsletter-heading"
       className="relative bg-[#f5f0e8] overflow-hidden"
     >
-      {/* ═══════════════════════════════════════════════════════
-          MOBILE LAYOUT (< 1024px): stacked
-          Image → Shop Now button (below) → Newsletter content
-          ═══════════════════════════════════════════════════════ */}
+      {/* MOBILE LAYOUT */}
       <div className="lg:hidden">
-        {/* Image container — clean, no overlay */}
         <div className="relative w-full aspect-square overflow-hidden bg-[#f5f0e8]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -128,8 +105,7 @@ export function NewsletterSection() {
           />
         </div>
 
-        {/* Shop Now button — sits centered on cream, between image and content */}
-        <div className="site-container flex justify-center pt-8 sm:pt-10">
+        <div className="site-container flex justify-center pt-6 sm:pt-8">
           <Link
             href="/shop"
             className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#3b5f8f] transition-all duration-300 shadow-md"
@@ -139,8 +115,7 @@ export function NewsletterSection() {
           </Link>
         </div>
 
-        {/* Newsletter content below button, on cream background */}
-        <div className="site-container pt-10 pb-10 sm:pt-14 sm:pb-14">
+        <div className="site-container pt-8 pb-6 sm:pt-10 sm:pb-8">
           <NewsletterContent
             email={email}
             setEmail={setEmail}
@@ -153,13 +128,8 @@ export function NewsletterSection() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════
-          DESKTOP LAYOUT (≥ 1024px): image drives height, content overlays
-          The image is a natural block element with h-auto, so:
-            section height === image height  →  no gap possible
-          ═══════════════════════════════════════════════════════ */}
+      {/* DESKTOP LAYOUT */}
       <div className="hidden lg:block relative">
-        {/* Full image, uncropped — shoes visible at bottom */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={IMG_1600}
@@ -171,7 +141,6 @@ export function NewsletterSection() {
           decoding="async"
         />
 
-        {/* Left-side cream gradient overlay for text contrast */}
         <div
           className="absolute inset-y-0 left-0 w-[55%] pointer-events-none"
           style={{
@@ -180,7 +149,6 @@ export function NewsletterSection() {
           }}
         />
 
-        {/* Decorative floating circles */}
         <div
           className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#3b5f8f]/8 animate-float-soft pointer-events-none"
           style={{ animationDuration: "8s" }}
@@ -190,7 +158,6 @@ export function NewsletterSection() {
           style={{ animationDuration: "10s", animationDelay: "1s" }}
         />
 
-        {/* Subtle dot pattern on left side */}
         <div
           className="absolute inset-y-0 left-0 w-[45%] opacity-[0.04] pointer-events-none"
           style={{
@@ -198,7 +165,6 @@ export function NewsletterSection() {
           }}
         />
 
-        {/* Content absolutely centered vertically on the left cream area */}
         <div className="absolute inset-0 site-container flex items-center">
           <div className="w-full max-w-[560px] lg:pr-8">
             <NewsletterContent
@@ -217,9 +183,6 @@ export function NewsletterSection() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Shared content block
-// ═══════════════════════════════════════════════════════════
 interface NewsletterContentProps {
   email:        string;
   setEmail:     (v: string) => void;
