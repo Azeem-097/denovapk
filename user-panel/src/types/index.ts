@@ -38,6 +38,7 @@ export interface Product {
   length: number | null;
   bottom: number | null;
   bgColor: string | null;   // hex e.g. "#f5f0e8" or null (keep original white background)
+  brand?: string | null;   // brand name (e.g. "Denova"), or null to fall back to collection
   createdAt: string;
 }
 

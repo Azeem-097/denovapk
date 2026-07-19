@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, ArrowRight, Shield } from "lucide-react";
-import { useAdminAuthStore, DEMO_ADMIN_CREDENTIALS } from "@/store/adminAuthStore";
+import { useAdminAuthStore } from "@/store/adminAuthStore";
 
 export default function AdminLoginPage() {
   const router     = useRouter();
@@ -36,13 +36,7 @@ export default function AdminLoginPage() {
       setLoading(false);
     }
   };
-
-  const fillDemo = () => {
-    setEmail(DEMO_ADMIN_CREDENTIALS.email);
-    setPassword(DEMO_ADMIN_CREDENTIALS.password);
-  };
-
-  return (
+return (
     <div className="min-h-screen bg-[#111111] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
 
@@ -58,20 +52,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="bg-white p-8">
-          <div className="mb-6 p-3 bg-[#f5f0e8] border border-[#3b5f8f]/30">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-[10px] font-bold text-[#3b5f8f] uppercase tracking-wider">Demo Credentials</p>
-                <p className="text-xs text-[#1a1a1a] mt-1">{DEMO_ADMIN_CREDENTIALS.email}</p>
-                <p className="text-xs text-[#6b7280]">{DEMO_ADMIN_CREDENTIALS.password}</p>
-              </div>
-              <button type="button" onClick={fillDemo} className="text-xs font-bold text-[#3b5f8f] hover:text-[#2d4a72] underline flex-shrink-0">
-                Fill
-              </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+<form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">Email Address</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="admin@denovapk.com"

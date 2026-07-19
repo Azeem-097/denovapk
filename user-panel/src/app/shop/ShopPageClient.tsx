@@ -17,7 +17,7 @@ interface Props {
 export function ShopPageClient({ products }: Props) {
   const searchParams = useSearchParams();
   const filterParam  = searchParams.get("filter");
-  const waistParam   = searchParams.get("waist");   // e.g. "32" or "32,33,34"
+  const waistParam   = searchParams.get("waist");
 
   const { catalogMin, catalogMax } = useMemo(() => {
     if (products.length === 0) return { catalogMin: 0, catalogMax: 0 };
@@ -34,7 +34,7 @@ export function ShopPageClient({ products }: Props) {
   }, [products]);
 
   const DEFAULT_FILTERS: FilterState = useMemo(() => ({
-    collections: [], sizes: [], colors: [],
+    collections: [], brands: [], sizes: [], colors: [],
     priceMin: catalogMin, priceMax: catalogMax, sortBy: "newest",
   }), [catalogMin, catalogMax]);
 
@@ -64,22 +64,14 @@ export function ShopPageClient({ products }: Props) {
     else if (filterParam === "bestsellers") setFilters((f) => ({ ...f, sortBy: "bestselling" }));
   }, [filterParam]);
 
-  // ─── Preselect waist filters from ?waist=32,33 URL ────
   useEffect(() => {
     if (!waistParam) return;
-    const parsed = waistParam
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
+    const parsed = waistParam.split(",").map((s) => s.trim()).filter(Boolean);
     if (parsed.length === 0) return;
-
     setFilters((prev) => {
-      // Merge: keep any existing sizes, add ones from URL, dedupe
       const merged = Array.from(new Set([...prev.sizes, ...parsed]));
       return { ...prev, sizes: merged };
     });
-    // Only run once when the URL waist param changes
   }, [waistParam]);
 
   const availableSizes = useMemo(() => {
@@ -102,6 +94,15 @@ export function ShopPageClient({ products }: Props) {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [products]);
 
+  const availableBrands = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => {
+      const brand = p.brand?.trim();
+      if (brand && brand.length > 0) set.add(brand);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [products]);
+
   const handleFilterChange = (newFilters: FilterState) => {
     setIsLoading(true);
     setFilters(newFilters);
@@ -113,6 +114,13 @@ export function ShopPageClient({ products }: Props) {
 
     if (filters.collections.length > 0) {
       result = result.filter((p) => filters.collections.includes(p.collection));
+    }
+
+    if (filters.brands.length > 0) {
+      result = result.filter((p) => {
+        const brand = p.brand?.trim();
+        return brand && filters.brands.includes(brand);
+      });
     }
 
     if (filters.sizes.length > 0) {
@@ -153,6 +161,7 @@ export function ShopPageClient({ products }: Props) {
 
   const activeCount =
     filters.collections.length +
+    filters.brands.length +
     filters.sizes.length +
     filters.colors.length +
     (priceFilterActive ? 1 : 0);
@@ -189,6 +198,7 @@ export function ShopPageClient({ products }: Props) {
                 onChange={handleFilterChange}
                 availableSizes={availableSizes}
                 availableColors={availableColors}
+                availableBrands={availableBrands}
                 catalogMin={catalogMin}
                 catalogMax={catalogMax}
               />
@@ -196,7 +206,6 @@ export function ShopPageClient({ products }: Props) {
           </aside>
 
           <div className="flex-1 min-w-0">
-            {/* ══════ Toolbar (mobile only) ══════ */}
             <div className="md:hidden flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
               <button
                 onClick={() => setMobileFilters(true)}
@@ -228,15 +237,11 @@ export function ShopPageClient({ products }: Props) {
               </div>
             </div>
 
-            {/* ══════ Waist + Grid (desktop, 2 rows) ══════ */}
             {availableSizes.length > 0 && (
               <div className="hidden md:block mb-6 pb-4 border-b border-[#e5e7eb]">
-                {/* Row 1 */}
                 <div className="text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
                   Filter by Waist
                 </div>
-
-                {/* Row 2 */}
                 <div className="mt-3 flex items-center gap-4">
                   <div className="flex flex-wrap gap-2">
                     {availableSizes.map((size) => {
@@ -265,7 +270,6 @@ export function ShopPageClient({ products }: Props) {
                         </button>
                       );
                     })}
-
                     {filters.sizes.length > 0 && (
                       <button
                         onClick={() => handleFilterChange({ ...filters, sizes: [] })}
@@ -275,11 +279,7 @@ export function ShopPageClient({ products }: Props) {
                       </button>
                     )}
                   </div>
-
-                  {/* line */}
                   <div className="flex-1 h-px bg-[#e5e7eb]" />
-
-                  {/* Grid buttons (right side) */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setColumns(2)}
@@ -317,6 +317,7 @@ export function ShopPageClient({ products }: Props) {
               onChange={handleFilterChange}
               availableSizes={availableSizes}
               availableColors={availableColors}
+              availableBrands={availableBrands}
               catalogMin={catalogMin}
               catalogMax={catalogMax}
               isMobile

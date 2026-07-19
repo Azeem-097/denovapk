@@ -2,64 +2,40 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Small ribbon badge hanging from the TOP-LEFT edge of the image.
- * Pointed tail at the bottom, subtle fold shadow at the top-right.
+ * Simple square SALE badge — sits at the top-left of the primary product image.
+ *
+ * Design: bold red square, white "SALE" text, high contrast, no ornament.
+ * Renders NOTHING when percent <= 0 (so it's safe to always mount).
  */
 interface Props {
   percent: number;
   className?: string;
+  /** kept for backwards compatibility — both variants render the same SALE square now */
   variant?: "corner" | "floating";
 }
 
-export function DiscountBadge({ percent, className, variant = "corner" }: Props) {
+export function DiscountBadge({ percent, className }: Props) {
   if (!percent || percent <= 0) return null;
-
-  if (variant === "floating") {
-    return (
-      <div
-        className={cn(
-          "absolute top-3 left-3 z-20 bg-[#e32c52] text-white shadow-md",
-          "text-[9px] font-bold tracking-[0.15em] uppercase px-2 py-1",
-          className
-        )}
-      >
-        {percent}% OFF
-      </div>
-    );
-  }
 
   return (
     <div
       className={cn(
-        "absolute top-0 left-4 z-30 pointer-events-none",
+        "absolute top-3 left-3 z-20 pointer-events-none",
+        "bg-[#e32c52] text-white",
+        "px-3 py-1.5 shadow-md",
+        "text-[11px] font-bold tracking-[0.2em] uppercase",
         className
       )}
+      aria-label={`On sale - ${percent}% off`}
     >
-      <div className="flex flex-col items-stretch w-[52px]">
-        {/* Ribbon body — starts flush at the very top */}
-        <div className="bg-[#e32c52] text-white flex flex-col items-center justify-center pt-2.5 pb-2 px-1 shadow-lg">
-          <span className="text-[18px] font-extrabold leading-none tabular-nums">
-            {percent}%
-          </span>
-          <span className="text-[7px] font-bold tracking-[0.2em] uppercase mt-0.5">
-            OFF
-          </span>
-        </div>
-
-        {/* Pointed tail at bottom */}
-        <svg
-          className="w-[52px] h-[14px]"
-          viewBox="0 0 52 14"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <polygon points="0,0 52,0 26,14" fill="#e32c52" />
-        </svg>
-      </div>
+      SALE
     </div>
   );
 }
 
+/**
+ * Legacy inline pill kept for anywhere it was already used (e.g. product cards).
+ */
 export function DiscountInlinePill({ percent, className }: { percent: number; className?: string }) {
   if (!percent || percent <= 0) return null;
 

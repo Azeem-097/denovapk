@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 export interface FilterState {
   collections: string[];
+  brands:      string[];
   sizes:       string[];
   colors:      string[];
   priceMin:    number;
@@ -22,8 +23,9 @@ interface ProductFiltersProps {
   onChange:        (filters: FilterState) => void;
   availableSizes:  string[];
   availableColors: ColorOption[];
-  catalogMin:      number;   // Real minimum price in catalog
-  catalogMax:      number;   // Real maximum price in catalog
+  availableBrands: string[];
+  catalogMin:      number;
+  catalogMax:      number;
   isMobile?:       boolean;
   onClose?:        () => void;
 }
@@ -61,7 +63,7 @@ function Accordion({ title, children, defaultOpen = true }: {
 
 export function ProductFilters({
   filters, onChange,
-  availableSizes, availableColors,
+  availableSizes, availableColors, availableBrands,
   catalogMin, catalogMax,
   isMobile = false, onClose,
 }: ProductFiltersProps) {
@@ -78,7 +80,7 @@ export function ProductFilters({
       .catch(() => {});
   }, []);
 
-  const toggle = <K extends "collections" | "sizes" | "colors">(key: K, value: string) => {
+  const toggle = <K extends "collections" | "brands" | "sizes" | "colors">(key: K, value: string) => {
     const arr = filters[key] as string[];
     onChange({
       ...filters,
@@ -88,7 +90,7 @@ export function ProductFilters({
 
   const clearAll = () => {
     onChange({
-      collections: [], sizes: [], colors: [],
+      collections: [], brands: [], sizes: [], colors: [],
       priceMin: catalogMin, priceMax: catalogMax, sortBy: "newest",
     });
   };
@@ -98,24 +100,21 @@ export function ProductFilters({
 
   const activeCount =
     filters.collections.length +
+    filters.brands.length +
     filters.sizes.length +
     filters.colors.length +
     (priceFilterActive ? 1 : 0);
 
-  // ─── Handle price slider changes ─────────────────────
   const handleMinChange = (value: number) => {
-    // Min can't exceed max
     const newMin = Math.min(value, filters.priceMax);
     onChange({ ...filters, priceMin: newMin });
   };
 
   const handleMaxChange = (value: number) => {
-    // Max can't go below min
     const newMax = Math.max(value, filters.priceMin);
     onChange({ ...filters, priceMax: newMax });
   };
 
-  // Smart step: 100 for ranges under 5k, 250 for 5k-20k, 500 for larger
   const range = catalogMax - catalogMin;
   const step  = range < 5000 ? 100 : range < 20000 ? 250 : 500;
 
@@ -221,6 +220,38 @@ export function ProductFilters({
           </div>
         </Accordion>
 
+        {/* ── Brand Filter ── */}
+        {availableBrands.length >= 2 && (
+          <Accordion title="Brand">
+            <div className="flex flex-col gap-2">
+              {availableBrands.map((brand) => (
+                <label key={brand} className="flex items-center gap-2.5 cursor-pointer group">
+                  <div
+                    className={cn(
+                      "w-4 h-4 border-2 transition-all duration-150 flex-shrink-0 flex items-center justify-center",
+                      filters.brands.includes(brand)
+                        ? "border-[#3b5f8f] bg-[#3b5f8f]"
+                        : "border-[#e5e7eb] group-hover:border-[#3b5f8f]"
+                    )}
+                    onClick={() => toggle("brands", brand)}
+                  >
+                    {filters.brands.includes(brand) && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  <span
+                    className="text-sm text-[#6b7280] group-hover:text-[#1a1a1a] transition-colors cursor-pointer"
+                    onClick={() => toggle("brands", brand)}
+                  >
+                    {brand}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </Accordion>
+        )}
 
         {availableColors.length > 0 && (
           <Accordion title="Color">
@@ -243,12 +274,9 @@ export function ProductFilters({
           </Accordion>
         )}
 
-        {/* ── Price Range — DUAL HANDLE, dynamic bounds ── */}
         {catalogMax > catalogMin && (
           <Accordion title="Price Range">
             <div className="px-1 pb-1">
-
-              {/* Current selected range */}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold text-[#1a1a1a]">
                   PKR {filters.priceMin.toLocaleString()}
@@ -259,7 +287,6 @@ export function ProductFilters({
                 </span>
               </div>
 
-              {/* Dual-handle slider */}
               <DualRangeSlider
                 min={catalogMin}
                 max={catalogMax}
@@ -270,13 +297,11 @@ export function ProductFilters({
                 onMaxChange={handleMaxChange}
               />
 
-              {/* Catalog bounds hint */}
               <div className="flex items-center justify-between mt-2 text-[10px] text-[#6b7280]">
                 <span>Min: PKR {catalogMin.toLocaleString()}</span>
                 <span>Max: PKR {catalogMax.toLocaleString()}</span>
               </div>
 
-              {/* Reset button if narrowed */}
               {priceFilterActive && (
                 <button
                   onClick={() => onChange({ ...filters, priceMin: catalogMin, priceMax: catalogMax })}
@@ -313,7 +338,7 @@ export function ProductFilters({
 }
 
 // ══════════════════════════════════════════════════════════
-//  DUAL RANGE SLIDER (min + max handles)
+//  DUAL RANGE SLIDER
 // ══════════════════════════════════════════════════════════
 interface DualRangeSliderProps {
   min:         number;
@@ -328,7 +353,6 @@ interface DualRangeSliderProps {
 function DualRangeSlider({
   min, max, step, valueMin, valueMax, onMinChange, onMaxChange,
 }: DualRangeSliderProps) {
-  // Prevent divide by zero
   if (max <= min) {
     return (
       <div className="w-full h-1.5 bg-[#e5e7eb] relative rounded-full">
@@ -343,20 +367,11 @@ function DualRangeSlider({
 
   return (
     <div className="relative h-6 flex items-center">
-
-      {/* Track background */}
       <div className="absolute left-0 right-0 h-1 bg-[#e5e7eb] rounded-full pointer-events-none" />
-
-      {/* Filled portion */}
       <div
         className="absolute h-1 bg-[#3b5f8f] rounded-full pointer-events-none"
-        style={{
-          left:  `${leftPct}%`,
-          right: `${100 - rightPct}%`,
-        }}
+        style={{ left: `${leftPct}%`, right: `${100 - rightPct}%` }}
       />
-
-      {/* Min handle */}
       <input
         type="range"
         min={min} max={max} step={step}
@@ -365,8 +380,6 @@ function DualRangeSlider({
         className="dual-range absolute inset-0 w-full appearance-none bg-transparent pointer-events-none"
         style={{ zIndex: valueMin > max - (max - min) * 0.1 ? 5 : 3 }}
       />
-
-      {/* Max handle */}
       <input
         type="range"
         min={min} max={max} step={step}
@@ -375,7 +388,6 @@ function DualRangeSlider({
         className="dual-range absolute inset-0 w-full appearance-none bg-transparent pointer-events-none"
         style={{ zIndex: 4 }}
       />
-
       <style jsx>{`
         .dual-range {
           -webkit-appearance: none;

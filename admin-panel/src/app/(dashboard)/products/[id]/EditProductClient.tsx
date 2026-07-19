@@ -73,6 +73,7 @@ export function EditProductClient({ product, collections }: Props) {
     length:       product.length != null ? String(product.length) : "",
     bottom:       product.bottom != null ? String(product.bottom) : "",
     bgColor:      product.bgColor ?? null,
+    brand:        product.brand ?? "",
   });
 
   const [images,   setImages]   = useState<string[]>(initialImages);
@@ -149,6 +150,7 @@ export function EditProductClient({ product, collections }: Props) {
           length:       form.length !== "" ? Number(form.length) : null,
           bottom:       form.bottom !== "" ? Number(form.bottom) : null,
           bgColor:      form.bgColor,
+          brand:        (form.brand as string)?.trim() || null,
           images,
           variants:     variants.map((v) => ({
             id:       v.id,
@@ -319,6 +321,13 @@ export function EditProductClient({ product, collections }: Props) {
                 onChange={(e) => updateField("name", e.target.value)}
                 className="input" />
             </FormField>
+
+            <FormField label="Brand Name" hint="e.g. Zara, Levi's, Denova (shown on product page above price)">
+              <input type="text" value={form.brand as string}
+                onChange={(e) => updateField("brand", e.target.value)}
+                placeholder="Zara" className="input" />
+            </FormField>
+
             <FormField label="Description" required>
               <textarea rows={4} value={form.description}
                 onChange={(e) => updateField("description", e.target.value)}

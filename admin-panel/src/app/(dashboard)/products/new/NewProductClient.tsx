@@ -20,6 +20,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
   const [form, setForm] = useState({
     name:         "",
     slug:         "",
+    brand:        "",
     sku:          "",
     description:  "",
     price:        "",
@@ -88,6 +89,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
           length:       form.length !== "" ? Number(form.length) : null,
           bottom:       form.bottom !== "" ? Number(form.bottom) : null,
           bgColor:      form.bgColor,
+          brand:        form.brand.trim() || null,
           tags:         form.tags.split(",").map((t) => t.trim()).filter(Boolean),
           variants,
         }),
@@ -137,6 +139,13 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
               <input type="text" value={form.name} onChange={(e) => updateField("name", e.target.value)}
                 placeholder="e.g. Slim Fit Selvedge Jeans" className="input" />
             </FormField>
+
+            <FormField label="Brand Name" hint="e.g. Zara, Levi's, Denova (shown on product page above price)">
+              <input type="text" value={form.brand}
+                onChange={(e) => updateField("brand", e.target.value)}
+                placeholder="Zara" className="input" />
+            </FormField>
+
             <FormField label="Description" required>
               <textarea rows={4} value={form.description} onChange={(e) => updateField("description", e.target.value)}
                 placeholder="Describe the product..." className="input resize-y" />

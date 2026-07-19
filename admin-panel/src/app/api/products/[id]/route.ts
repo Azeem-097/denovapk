@@ -32,6 +32,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.length       !== undefined) updates.length       = body.length !== "" && body.length !== null ? Number(body.length) : null;
     if (body.bottom       !== undefined) updates.bottom       = body.bottom !== "" && body.bottom !== null ? Number(body.bottom) : null;
 
+    if (body.brand !== undefined) {
+      updates.brand = typeof body.brand === "string" && body.brand.trim().length > 0 ? body.brand.trim() : null;
+    }
+
     // bgColor: empty string or null => clear
     if (body.bgColor !== undefined) {
       updates.bgColor =

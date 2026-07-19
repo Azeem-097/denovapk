@@ -1,0 +1,3263 @@
+================================================================================
+ADD rand FIELD TO PRODUCTS — CONTEXT
+Purpose:
+  1. Add nullable TEXT rand column to products table
+  2. Update DbProduct + Product types
+  3. Update createProduct + updateProduct repositories
+  4. Add brand input to NewProductClient + EditProductClient forms
+  5. Update admin API routes to accept brand
+  6. Update user-panel adapter to pass brand through
+  7. Create migration script (add-brand-column.ts) following bgColor pattern
+Generated: 2026-07-19 12:10:50
+================================================================================
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\new\page.tsx
+================================================================================
+
+import { getAllCollections } from "@/lib/db/repositories/collections";
+import { NewProductClient } from "./NewProductClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function NewProductPage() {
+  const collections = await getAllCollections(false);
+  return <NewProductClient collections={collections.map((c) => ({ id: c.id, name: c.name }))} />;
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\new\NewProductClient.tsx
+================================================================================
+
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Save, X, Plus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { slugify } from "@/lib/utils";
+import { MultiImageUploader } from "@/components/ui/MultiImageUploader";
+import { BackgroundColorPicker } from "@/components/ui/BackgroundColorPicker";
+import { useToastStore } from "@/store/toastStore";
+
+interface Variant {
+  color: string; colorHex: string; sku: string; stock: number; price: number;
+}
+
+export function NewProductClient({ collections }: { collections: Array<{ id: string; name: string }> }) {
+  const router = useRouter();
+  const toast  = useToastStore();
+
+  const [form, setForm] = useState({
+    name:         "",
+    slug:         "",
+    sku:          "",
+    description:  "",
+    price:        "",
+    comparePrice: "",
+    collectionId: "",
+    status:       "draft",
+    isNew:        false,
+    isFeatured:   false,
+    isBestSeller: false,
+    tags:         "",
+    imageUrl:     "",
+    images:       [] as string[],
+    waist:        "",
+    length:       "",
+    bottom:       "",
+    bgColor:      null as string | null,
+  });
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [saving,   setSaving]   = useState(false);
+
+  const updateField = (field: string, value: string | boolean | null) => {
+    setForm((f) => {
+      const updated = { ...f, [field]: value };
+      if (field === "name" && !f.slug) updated.slug = slugify(value as string);
+      return updated;
+    });
+  };
+
+  const addVariant = () => {
+    setVariants([...variants, {
+      color: "Dark Blue", colorHex: "#1e3a5f",
+      sku: `${form.sku || "SKU"}-DB`, stock: 10,
+      price: Number(form.price) || 0,
+    }]);
+  };
+
+  const updateVariant = (i: number, field: keyof Variant, value: string | number) => {
+    setVariants((vs) => vs.map((v, idx) => idx === i ? { ...v, [field]: value } : v));
+  };
+
+  const removeVariant = (i: number) => setVariants((vs) => vs.filter((_, idx) => idx !== i));
+
+  const handleSave = async () => {
+    if (!form.name || !form.description || !form.sku || !form.price) {
+      toast.error("Please fill all required fields", "Missing Information");
+      return;
+    }
+    if (!form.waist) {
+      toast.error("Waist measurement is required for denim products", "Missing Waist");
+      return;
+    }
+    if (variants.length === 0) {
+      toast.error("Add at least one color variant", "No Variants");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/products", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          ...form,
+          price:        Number(form.price),
+          comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
+          waist:        Number(form.waist),
+          length:       form.length !== "" ? Number(form.length) : null,
+          bottom:       form.bottom !== "" ? Number(form.bottom) : null,
+          bgColor:      form.bgColor,
+          tags:         form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          variants,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to save product", "Save Failed");
+        setSaving(false);
+        return;
+      }
+      toast.success(`${form.name} has been added to your catalog.`, "Product Created");
+      setTimeout(() => router.push("/products"), 800);
+    } catch {
+      toast.error("Unable to connect to the server. Please try again.", "Network Error");
+      setSaving(false);
+    }
+  };
+
+  const previewImage = form.images[0] || form.imageUrl;
+
+  return (
+    <div className="max-w-6xl space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Link href="/products" className="p-2 hover:bg-white border border-[#e5e7eb] transition-colors">
+            <ArrowLeft size={16} className="text-[#6b7280]" />
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold text-[#1a1a1a]">Add New Product</h1>
+            <p className="text-xs text-[#6b7280] mt-0.5">Create a new denim product</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => router.push("/products")}>Cancel</Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            <Save size={14} />
+            {saving ? "Saving..." : "Save Product"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+        <div className="space-y-5">
+
+          <Section title="Basic Information">
+            <FormField label="Product Name" required>
+              <input type="text" value={form.name} onChange={(e) => updateField("name", e.target.value)}
+                placeholder="e.g. Slim Fit Selvedge Jeans" className="input" />
+            </FormField>
+            <FormField label="Description" required>
+              <textarea rows={4} value={form.description} onChange={(e) => updateField("description", e.target.value)}
+                placeholder="Describe the product..." className="input resize-y" />
+            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="SKU" required>
+                <input type="text" value={form.sku} onChange={(e) => updateField("sku", e.target.value.toUpperCase())}
+                  placeholder="DNM-001" className="input font-mono" />
+              </FormField>
+              <FormField label="Slug" required>
+                <input type="text" value={form.slug} onChange={(e) => updateField("slug", e.target.value)}
+                  placeholder="slim-fit-selvedge-jeans" className="input font-mono" />
+              </FormField>
+            </div>
+          </Section>
+
+          <Section title="Product Images">
+            <MultiImageUploader
+              images={form.images}
+              onChange={(imgs) => setForm((f) => ({ ...f, images: imgs, imageUrl: imgs[0] || "" }))}
+              maxImages={8}
+              type="product"
+            />
+          </Section>
+
+          <Section title="Image Background">
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Replace the white background of product images with a custom color. The jeans themselves stay unchanged.
+            </p>
+            <BackgroundColorPicker
+              value={form.bgColor}
+              onChange={(v) => updateField("bgColor", v)}
+              previewImage={previewImage}
+            />
+          </Section>
+
+          <Section title="Pricing">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Price (PKR)" required>
+                <input type="number" value={form.price} onChange={(e) => updateField("price", e.target.value)}
+                  placeholder="3500" className="input" />
+              </FormField>
+              <FormField label="Compare Price (PKR)" hint="Original price for showing discount">
+                <input type="number" value={form.comparePrice} onChange={(e) => updateField("comparePrice", e.target.value)}
+                  placeholder="4500" className="input" />
+              </FormField>
+            </div>
+          </Section>
+
+          <Section title="Measurements (inches)">
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Each product is one specific waist x length combo. Customers select only color.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Waist" required hint="e.g. 32">
+                <input type="number" step="0.5" min="0" value={form.waist}
+                  onChange={(e) => updateField("waist", e.target.value)} placeholder="32" className="input" />
+              </FormField>
+              <FormField label="Length" hint="e.g. 32">
+                <input type="number" step="0.5" min="0" value={form.length}
+                  onChange={(e) => updateField("length", e.target.value)} placeholder="32" className="input" />
+              </FormField>
+              <FormField label="Bottom" hint="Leg opening, e.g. 14">
+                <input type="number" step="0.5" min="0" value={form.bottom}
+                  onChange={(e) => updateField("bottom", e.target.value)} placeholder="14" className="input" />
+              </FormField>
+            </div>
+          </Section>
+
+          <Section title={`Color Variants (${variants.length})`}>
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Add each wash/color this product comes in. Each has its own stock and SKU.
+            </p>
+            <div className="space-y-3">
+              {variants.map((v, i) => (
+                <div key={i} className="bg-[#fafaf9] p-3 border border-[#e5e7eb] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#1a1a1a]">Variant {i + 1}</span>
+                    <button onClick={() => removeVariant(i)} className="text-red-500 hover:text-red-700">
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <FieldRow label="Color Name">
+                      <input type="text" value={v.color}
+                        onChange={(e) => updateVariant(i, "color", e.target.value)}
+                        placeholder="e.g. Dark Indigo" className="input text-xs" />
+                    </FieldRow>
+
+                    <FieldRow label="Color Swatch">
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={v.colorHex}
+                          onChange={(e) => updateVariant(i, "colorHex", e.target.value)}
+                          className="w-10 h-8 border border-[#e5e7eb] cursor-pointer" />
+                        <input type="text" value={v.colorHex}
+                          onChange={(e) => updateVariant(i, "colorHex", e.target.value)}
+                          className="input text-xs font-mono flex-1" />
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow label="SKU">
+                      <input type="text" value={v.sku}
+                        onChange={(e) => updateVariant(i, "sku", e.target.value.toUpperCase())}
+                        placeholder="DNM-001-DB" className="input text-xs font-mono" />
+                    </FieldRow>
+
+                    <FieldRow label="Stock">
+                      <input type="number" value={v.stock}
+                        onChange={(e) => updateVariant(i, "stock", Number(e.target.value))}
+                        placeholder="10" className="input text-xs" />
+                    </FieldRow>
+
+                    <FieldRow label="Price (PKR)" className="sm:col-span-2">
+                      <input type="number" value={v.price}
+                        onChange={(e) => updateVariant(i, "price", Number(e.target.value))}
+                        placeholder="3500" className="input text-xs" />
+                    </FieldRow>
+                  </div>
+                </div>
+              ))}
+              <button onClick={addVariant}
+                className="w-full py-2.5 text-xs font-medium text-[#3b5f8f] hover:text-[#2d4a72] border border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors flex items-center justify-center gap-1">
+                <Plus size={14} />Add Color Variant
+              </button>
+            </div>
+          </Section>
+
+        </div>
+
+        <div className="space-y-5">
+          <Section title="Status">
+            <div className="space-y-2">
+              {[
+                { val: "draft",     label: "Draft",     desc: "Not visible to customers" },
+                { val: "published", label: "Published", desc: "Visible on your store" },
+              ].map((opt) => (
+                <label key={opt.val} className="flex items-start gap-2 cursor-pointer">
+                  <input type="radio" name="status" checked={form.status === opt.val}
+                    onChange={() => updateField("status", opt.val)} className="accent-[#3b5f8f] mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
+                    <p className="text-[11px] text-[#6b7280]">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Organization">
+            <FormField label="Collection">
+              <select value={form.collectionId} onChange={(e) => updateField("collectionId", e.target.value)} className="input">
+                <option value="">No collection</option>
+                {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </FormField>
+            <FormField label="Tags" hint="Comma separated">
+              <input type="text" value={form.tags} onChange={(e) => updateField("tags", e.target.value)}
+                placeholder="denim, slim, casual" className="input" />
+            </FormField>
+          </Section>
+
+          <Section title="Product Flags">
+            <div className="space-y-2">
+              {[
+                { key: "isNew",        label: "Mark as New Arrival" },
+                { key: "isFeatured",   label: "Feature on Homepage" },
+                { key: "isBestSeller", label: "Best Seller" },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox"
+                    checked={form[key as keyof typeof form] as boolean}
+                    onChange={(e) => updateField(key, e.target.checked)}
+                    className="accent-[#3b5f8f]" />
+                  <span className="text-sm text-[#1a1a1a]">{label}</span>
+                </label>
+              ))}
+            </div>
+          </Section>
+        </div>
+      </div>
+
+      <style jsx>{`
+        :global(.input) {
+          width: 100%;
+          padding: 0.625rem 0.75rem;
+          font-size: 0.875rem;
+          border: 1px solid #e5e7eb;
+          background: white;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        :global(.input:focus) { border-color: #3b5f8f; }
+      `}</style>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-[#e5e7eb]">
+      <div className="px-5 py-3 border-b border-[#e5e7eb]">
+        <h2 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">{title}</h2>
+      </div>
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function FormField({ label, required, hint, children }: {
+  label: string; required?: boolean; hint?: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">
+        {label}{required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
+      </label>
+      {children}
+      {hint && <p className="mt-1 text-[10px] text-[#6b7280]">{hint}</p>}
+    </div>
+  );
+}
+
+function FieldRow({ label, children, className }: {
+  label: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wide mb-1">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\[id]\page.tsx
+================================================================================
+
+import { notFound } from "next/navigation";
+import { getProductById } from "@/lib/db/repositories/products";
+import { getAllCollections } from "@/lib/db/repositories/collections";
+import { EditProductClient } from "./EditProductClient";
+
+export const dynamic = "force-dynamic";
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditProductPage({ params }: Props) {
+  const { id } = await params;
+  const dbProduct = await getProductById(id);
+  if (!dbProduct) notFound();
+
+  const collections = await getAllCollections(false);
+
+  // Turso returns Row objects (with methods), which cannot cross the
+  // server -> client boundary. JSON round-trip serializes them into
+  // plain objects that React can safely pass.
+  const plainProduct     = JSON.parse(JSON.stringify(dbProduct));
+  const plainCollections = collections.map((c) => ({ id: c.id, name: c.name }));
+
+  return (
+    <EditProductClient
+      product={plainProduct}
+      collections={plainCollections}
+    />
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\[id]\EditProductClient.tsx
+================================================================================
+
+"use client";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft, ExternalLink, Trash, Copy, Save, Plus, X,
+  Package, Layers, Percent, Tag, ChevronRight, Check,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { slugify, cn } from "@/lib/utils";
+import { paisaToRupees } from "@/lib/priceUtils";
+import { PRODUCT_STATUS_COLORS } from "@/lib/constants";
+import { MultiImageUploader } from "@/components/ui/MultiImageUploader";
+import { BackgroundColorPicker } from "@/components/ui/BackgroundColorPicker";
+import { useToastStore } from "@/store/toastStore";
+import { confirmAction } from "@/store/confirmStore";
+import type { ProductWithRelations } from "@/lib/db/repositories/products";
+
+interface Props {
+  product:     ProductWithRelations;
+  collections: Array<{ id: string; name: string }>;
+}
+
+interface VariantForm {
+  id?:      string;
+  color:    string;
+  colorHex: string;
+  sku:      string;
+  stock:    number;
+  price:    number;
+}
+
+type ModalId = null | "stock" | "collection" | "discount" | "status";
+
+export function EditProductClient({ product, collections }: Props) {
+  const router = useRouter();
+  const toast  = useToastStore();
+
+  const initialImages = useMemo(
+    () => product.images
+      .slice()
+      .sort((a, b) => (b.isPrimary - a.isPrimary) || (a.sortOrder - b.sortOrder))
+      .map((i) => i.url),
+    [product.images]
+  );
+
+  const initialVariants: VariantForm[] = useMemo(
+    () => product.variants.map((v) => ({
+      id:       v.id,
+      color:    v.color,
+      colorHex: v.colorHex,
+      sku:      v.sku,
+      stock:    v.stock,
+      price:    paisaToRupees(v.price),
+    })),
+    [product.variants]
+  );
+
+  const [form, setForm] = useState({
+    name:         product.name,
+    slug:         product.slug,
+    sku:          product.sku,
+    description:  product.description,
+    price:        paisaToRupees(product.price).toString(),
+    comparePrice: product.comparePrice ? paisaToRupees(product.comparePrice).toString() : "",
+    collectionId: product.collectionId ?? "",
+    status:       product.status.toLowerCase(),
+    isNew:        product.isNew === 1,
+    isFeatured:   product.isFeatured === 1,
+    isBestSeller: product.isBestSeller === 1,
+    tags:         product.tags ?? "",
+    waist:        product.waist  != null ? String(product.waist)  : "",
+    length:       product.length != null ? String(product.length) : "",
+    bottom:       product.bottom != null ? String(product.bottom) : "",
+    bgColor:      product.bgColor ?? null,
+  });
+
+  const [images,   setImages]   = useState<string[]>(initialImages);
+  const [variants, setVariants] = useState<VariantForm[]>(initialVariants);
+  const [saving,   setSaving]   = useState(false);
+  const [busy,     setBusy]     = useState(false);
+  const [modal,    setModal]    = useState<ModalId>(null);
+
+  const updateField = (field: string, value: string | boolean | null) => {
+    setForm((f) => ({ ...f, [field]: value }));
+  };
+
+  const addVariant = () => {
+    setVariants([...variants, {
+      color:    "New Color",
+      colorHex: "#1e3a5f",
+      sku:      `${form.sku || "SKU"}-NEW`,
+      stock:    0,
+      price:    Number(form.price) || 0,
+    }]);
+  };
+
+  const updateVariant = (i: number, field: keyof VariantForm, value: string | number) => {
+    setVariants((vs) => vs.map((v, idx) => idx === i ? { ...v, [field]: value } : v));
+  };
+
+  const removeVariant = async (i: number) => {
+    const v = variants[i];
+    if (v.id) {
+      const ok = await confirmAction({
+        title:       "Remove Variant",
+        message:     `Remove "${v.color}" variant? It will be permanently deleted when you save.`,
+        confirmText: "Remove",
+        variant:     "warning",
+      });
+      if (!ok) return;
+    }
+    setVariants((vs) => vs.filter((_, idx) => idx !== i));
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.description || !form.sku || !form.price) {
+      toast.error("Please fill all required fields", "Missing Information");
+      return;
+    }
+    if (!form.waist) {
+      toast.error("Waist measurement is required for denim products", "Missing Waist");
+      return;
+    }
+    if (variants.length === 0) {
+      toast.error("Add at least one color variant", "No Variants");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          name:         form.name,
+          slug:         form.slug,
+          sku:          form.sku,
+          description:  form.description,
+          price:        Number(form.price),
+          comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
+          collectionId: form.collectionId || null,
+          status:       form.status,
+          isNew:        form.isNew,
+          isFeatured:   form.isFeatured,
+          isBestSeller: form.isBestSeller,
+          tags:         typeof form.tags === "string" ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : form.tags,
+          waist:        Number(form.waist),
+          length:       form.length !== "" ? Number(form.length) : null,
+          bottom:       form.bottom !== "" ? Number(form.bottom) : null,
+          bgColor:      form.bgColor,
+          images,
+          variants:     variants.map((v) => ({
+            id:       v.id,
+            color:    v.color,
+            colorHex: v.colorHex,
+            sku:      v.sku,
+            stock:    Number(v.stock),
+            price:    Number(v.price),
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to save changes", "Save Failed");
+        setSaving(false);
+        return;
+      }
+      toast.success("Product updated successfully.", "Saved");
+      setSaving(false);
+      router.refresh();
+    } catch {
+      toast.error("Unable to connect to the server. Please try again.", "Network Error");
+      setSaving(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    const ok = await confirmAction({
+      title:       "Duplicate Product",
+      message:     `Create a copy of "${product.name}"? The duplicate will be saved as Draft.`,
+      confirmText: "Duplicate",
+      variant:     "info",
+    });
+    if (!ok) return;
+
+    setBusy(true);
+    const res  = await fetch(`/api/products/${product.id}/duplicate`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.error || "Failed to duplicate product.", "Duplicate Failed");
+      setBusy(false);
+      return;
+    }
+    toast.success("Product duplicated as a new draft.", "Duplicated");
+    router.push(`/products/${data.productId}`);
+  };
+
+  const handleDelete = async () => {
+    const ok = await confirmAction({
+      title:       "Delete Product",
+      message:     `Permanently delete "${product.name}"? This will remove all variants and images. This action cannot be undone.`,
+      confirmText: "Delete",
+      variant:     "danger",
+    });
+    if (!ok) return;
+
+    setBusy(true);
+    const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success(`"${product.name}" has been removed.`, "Deleted");
+      setTimeout(() => router.push("/products"), 600);
+    } else {
+      toast.error("Failed to delete product.", "Delete Failed");
+      setBusy(false);
+    }
+  };
+
+  const patchField = async (updates: Record<string, unknown>): Promise<boolean> => {
+    const res = await fetch(`/api/products/${product.id}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(updates),
+    });
+    return res.ok;
+  };
+
+  const handleCollectionChange = async (collectionId: string) => {
+    setBusy(true);
+    const ok = await patchField({ collectionId: collectionId || null });
+    if (ok) {
+      setForm((f) => ({ ...f, collectionId }));
+      toast.success("Collection updated.", "Saved");
+      router.refresh();
+    } else toast.error("Failed to update collection.", "Update Failed");
+    setBusy(false); setModal(null);
+  };
+
+  const handleDiscountChange = async (comparePricePaisa: number | null) => {
+    setBusy(true);
+    const rupees = comparePricePaisa ? comparePricePaisa / 100 : null;
+    const ok = await patchField({ comparePrice: rupees });
+    if (ok) {
+      setForm((f) => ({ ...f, comparePrice: rupees ? rupees.toString() : "" }));
+      toast.success(comparePricePaisa ? "Discount set." : "Discount removed.", "Saved");
+      router.refresh();
+    } else toast.error("Failed to update discount.", "Update Failed");
+    setBusy(false); setModal(null);
+  };
+
+  const handleStatusChange = async (status: string) => {
+    setBusy(true);
+    const ok = await patchField({ status });
+    if (ok) {
+      setForm((f) => ({ ...f, status: status.toLowerCase() }));
+      toast.success(`Status changed to ${status.toLowerCase()}.`, "Saved");
+      router.refresh();
+    } else toast.error("Failed to update status.", "Update Failed");
+    setBusy(false); setModal(null);
+  };
+
+  const handleVariantStockUpdate = async (variantId: string, newStock: number): Promise<boolean> => {
+    const res = await fetch(`/api/variants/${variantId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ stock: newStock }),
+    });
+    if (res.ok) {
+      setVariants((vs) => vs.map((v) => v.id === variantId ? { ...v, stock: newStock } : v));
+      router.refresh();
+    }
+    return res.ok;
+  };
+
+  const previewImage = images[0];
+
+  return (
+    <div className="max-w-6xl space-y-5">
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Link href="/products" className="p-2 hover:bg-white border border-[#e5e7eb] transition-colors">
+            <ArrowLeft size={16} className="text-[#6b7280]" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-[#1a1a1a]">{product.name}</h1>
+              <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide capitalize",
+                PRODUCT_STATUS_COLORS[form.status])}>
+                {form.status}
+              </span>
+            </div>
+            <p className="text-xs text-[#6b7280] mt-0.5 font-mono">{product.sku}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={busy || saving}>
+            <Copy size={13} />Duplicate
+          </Button>
+          <a href={`http://localhost:3000/products/${product.slug}`} target="_blank" rel="noopener noreferrer">
+            <Button variant="ghost" size="sm"><ExternalLink size={13} />Preview</Button>
+          </a>
+          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving || busy}>
+            <Save size={13} />{saving ? "Saving..." : "Save Changes"}
+          </Button>
+          <Button variant="danger" size="sm" onClick={handleDelete} disabled={busy || saving}>
+            <Trash size={13} />Delete
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+
+        <div className="space-y-5">
+
+          <Section title="Basic Information">
+            <FormField label="Product Name" required>
+              <input type="text" value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                className="input" />
+            </FormField>
+            <FormField label="Description" required>
+              <textarea rows={4} value={form.description}
+                onChange={(e) => updateField("description", e.target.value)}
+                className="input resize-y" />
+            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="SKU" required>
+                <input type="text" value={form.sku}
+                  onChange={(e) => updateField("sku", e.target.value.toUpperCase())}
+                  className="input font-mono" />
+              </FormField>
+              <FormField label="Slug" required hint="Used in product URL">
+                <div className="flex gap-2">
+                  <input type="text" value={form.slug}
+                    onChange={(e) => updateField("slug", e.target.value)}
+                    className="input font-mono" />
+                  <button type="button"
+                    onClick={() => updateField("slug", slugify(form.name))}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-[#3b5f8f] hover:text-[#2d4a72] px-2 border border-[#e5e7eb] hover:border-[#3b5f8f]">
+                    Auto
+                  </button>
+                </div>
+              </FormField>
+            </div>
+          </Section>
+
+          <Section title="Product Images">
+            <MultiImageUploader
+              images={images}
+              onChange={setImages}
+              maxImages={8}
+              type="product"
+            />
+          </Section>
+
+          <Section title="Image Background">
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Replace the white background of product images with a custom color. The jeans themselves stay unchanged.
+            </p>
+            <BackgroundColorPicker
+              value={form.bgColor}
+              onChange={(v) => updateField("bgColor", v)}
+              previewImage={previewImage}
+            />
+          </Section>
+
+          <Section title="Pricing">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Price (PKR)" required>
+                <input type="number" value={form.price}
+                  onChange={(e) => updateField("price", e.target.value)}
+                  className="input" />
+              </FormField>
+              <FormField label="Compare Price (PKR)" hint="Original price for showing discount">
+                <input type="number" value={form.comparePrice}
+                  onChange={(e) => updateField("comparePrice", e.target.value)}
+                  className="input" />
+              </FormField>
+            </div>
+          </Section>
+
+          <Section title="Measurements (inches)">
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Each product is one specific waist x length combo. Customers select only color.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Waist" required hint="e.g. 32">
+                <input type="number" step="0.5" min="0" value={form.waist}
+                  onChange={(e) => updateField("waist", e.target.value)} className="input" />
+              </FormField>
+              <FormField label="Length" hint="e.g. 32">
+                <input type="number" step="0.5" min="0" value={form.length}
+                  onChange={(e) => updateField("length", e.target.value)} className="input" />
+              </FormField>
+              <FormField label="Bottom" hint="Leg opening, e.g. 14">
+                <input type="number" step="0.5" min="0" value={form.bottom}
+                  onChange={(e) => updateField("bottom", e.target.value)} className="input" />
+              </FormField>
+            </div>
+          </Section>
+
+          <Section title={`Color Variants (${variants.length})`}>
+            <p className="text-xs text-[#6b7280] -mt-2">
+              Add each wash/color this product comes in. Each has its own stock and SKU.
+            </p>
+            <div className="space-y-3">
+              {variants.map((v, i) => (
+                <div key={v.id ?? `new-${i}`} className="bg-[#fafaf9] p-3 border border-[#e5e7eb] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-[#1a1a1a]">Variant {i + 1}</span>
+                      {v.id && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 font-semibold uppercase tracking-wider">
+                          Saved
+                        </span>
+                      )}
+                      {!v.id && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-[#f5f0e8] text-[#3b5f8f] font-semibold uppercase tracking-wider">
+                          New
+                        </span>
+                      )}
+                    </div>
+                    <button onClick={() => removeVariant(i)} className="text-red-500 hover:text-red-700">
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <FieldRow label="Color Name">
+                      <input type="text" value={v.color}
+                        onChange={(e) => updateVariant(i, "color", e.target.value)}
+                        className="input text-xs" />
+                    </FieldRow>
+
+                    <FieldRow label="Color Swatch">
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={v.colorHex}
+                          onChange={(e) => updateVariant(i, "colorHex", e.target.value)}
+                          className="w-10 h-8 border border-[#e5e7eb] cursor-pointer" />
+                        <input type="text" value={v.colorHex}
+                          onChange={(e) => updateVariant(i, "colorHex", e.target.value)}
+                          className="input text-xs font-mono flex-1" />
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow label="SKU">
+                      <input type="text" value={v.sku}
+                        onChange={(e) => updateVariant(i, "sku", e.target.value.toUpperCase())}
+                        className="input text-xs font-mono" />
+                    </FieldRow>
+
+                    <FieldRow label="Stock">
+                      <input type="number" value={v.stock}
+                        onChange={(e) => updateVariant(i, "stock", Number(e.target.value))}
+                        className="input text-xs" />
+                    </FieldRow>
+
+                    <FieldRow label="Price (PKR)" className="sm:col-span-2">
+                      <input type="number" value={v.price}
+                        onChange={(e) => updateVariant(i, "price", Number(e.target.value))}
+                        className="input text-xs" />
+                    </FieldRow>
+                  </div>
+                </div>
+              ))}
+              <button onClick={addVariant}
+                className="w-full py-2.5 text-xs font-medium text-[#3b5f8f] hover:text-[#2d4a72] border border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors flex items-center justify-center gap-1">
+                <Plus size={14} />Add Color Variant
+              </button>
+            </div>
+          </Section>
+
+        </div>
+
+        <div className="space-y-5">
+
+          <div className="bg-white border border-[#e5e7eb] p-5">
+            <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">Quick Actions</h3>
+            <div className="space-y-1">
+              <QuickAction icon={Package}  label="Update Stock"      onClick={() => setModal("stock")}      />
+              <QuickAction icon={Layers}   label="Change Collection" onClick={() => setModal("collection")} />
+              <QuickAction icon={Percent}  label="Set Discount"      onClick={() => setModal("discount")}   />
+              <QuickAction icon={Tag}      label="Change Status"     onClick={() => setModal("status")}     />
+            </div>
+          </div>
+
+          <Section title="Status">
+            <div className="space-y-2">
+              {[
+                { val: "draft",     label: "Draft",     desc: "Not visible to customers" },
+                { val: "published", label: "Published", desc: "Visible on your store" },
+                { val: "archived",  label: "Archived",  desc: "Hidden and read-only" },
+              ].map((opt) => (
+                <label key={opt.val} className="flex items-start gap-2 cursor-pointer">
+                  <input type="radio" name="status" checked={form.status === opt.val}
+                    onChange={() => updateField("status", opt.val)} className="accent-[#3b5f8f] mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
+                    <p className="text-[11px] text-[#6b7280]">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Organization">
+            <FormField label="Collection">
+              <select value={form.collectionId} onChange={(e) => updateField("collectionId", e.target.value)} className="input">
+                <option value="">No collection</option>
+                {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </FormField>
+            <FormField label="Tags" hint="Comma separated">
+              <input type="text" value={form.tags} onChange={(e) => updateField("tags", e.target.value)}
+                placeholder="denim, slim, casual" className="input" />
+            </FormField>
+          </Section>
+
+          <Section title="Product Flags">
+            <div className="space-y-2">
+              {[
+                { key: "isNew",        label: "Mark as New Arrival" },
+                { key: "isFeatured",   label: "Feature on Homepage" },
+                { key: "isBestSeller", label: "Best Seller" },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox"
+                    checked={form[key as keyof typeof form] as boolean}
+                    onChange={(e) => updateField(key, e.target.checked)}
+                    className="accent-[#3b5f8f]" />
+                  <span className="text-sm text-[#1a1a1a]">{label}</span>
+                </label>
+              ))}
+            </div>
+          </Section>
+
+        </div>
+      </div>
+
+      {modal === "stock" && (
+        <StockModal
+          variants={variants.filter((v) => !!v.id).map((v) => ({
+            id: v.id!, sku: v.sku, color: v.color, colorHex: v.colorHex, stock: v.stock,
+          }))}
+          onClose={() => setModal(null)}
+          onSave={handleVariantStockUpdate}
+        />
+      )}
+      {modal === "collection" && (
+        <CollectionModal
+          currentId={form.collectionId}
+          collections={collections}
+          onClose={() => setModal(null)}
+          onSave={handleCollectionChange}
+        />
+      )}
+      {modal === "discount" && (
+        <DiscountModal
+          currentPricePaisa={product.price}
+          currentCompareAtPaisa={product.comparePrice}
+          onClose={() => setModal(null)}
+          onSave={handleDiscountChange}
+        />
+      )}
+      {modal === "status" && (
+        <StatusModal
+          currentStatus={form.status.toUpperCase()}
+          onClose={() => setModal(null)}
+          onSave={handleStatusChange}
+        />
+      )}
+
+      <style jsx>{`
+        :global(.input) {
+          width: 100%;
+          padding: 0.625rem 0.75rem;
+          font-size: 0.875rem;
+          border: 1px solid #e5e7eb;
+          background: white;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        :global(.input:focus) { border-color: #3b5f8f; }
+      `}</style>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-[#e5e7eb]">
+      <div className="px-5 py-3 border-b border-[#e5e7eb]">
+        <h2 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">{title}</h2>
+      </div>
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function FormField({ label, required, hint, children }: {
+  label: string; required?: boolean; hint?: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">
+        {label}{required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
+      </label>
+      {children}
+      {hint && <p className="mt-1 text-[10px] text-[#6b7280]">{hint}</p>}
+    </div>
+  );
+}
+
+function FieldRow({ label, children, className }: {
+  label: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-[10px] font-medium text-[#6b7280] uppercase tracking-wide mb-1">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function QuickAction({
+  icon: Icon, label, onClick,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#fafaf9] hover:text-[#3b5f8f] transition-colors group"
+    >
+      <Icon size={14} className="text-[#3b5f8f]" />
+      <span className="flex-1 text-left">{label}</span>
+      <ChevronRight size={14} className="text-[#3b5f8f] opacity-0 group-hover:opacity-100 transition-opacity" />
+    </button>
+  );
+}
+
+function ModalShell({
+  title, onClose, children,
+}: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-md bg-white shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+            <h3 className="text-base font-bold text-[#1a1a1a]">{title}</h3>
+            <button onClick={onClose} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
+              <X size={18} />
+            </button>
+          </div>
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function StockModal({
+  variants, onClose, onSave,
+}: {
+  variants: Array<{ id: string; sku: string; color: string; colorHex: string; stock: number }>;
+  onClose:  () => void;
+  onSave:   (variantId: string, stock: number) => Promise<boolean>;
+}) {
+  const [values, setValues] = useState<Record<string, number>>(
+    Object.fromEntries(variants.map((v) => [v.id, v.stock]))
+  );
+  const [saving,  setSaving]  = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const toast  = useToastStore();
+
+  const saveOne = async (variantId: string) => {
+    setSaving(true);
+    const ok = await onSave(variantId, values[variantId]);
+    if (ok) {
+      setSavedId(variantId);
+      toast.success("Stock updated.", "Saved");
+      setTimeout(() => setSavedId(null), 1500);
+    } else {
+      toast.error("Failed to update stock.", "Save Failed");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <ModalShell title="Update Stock" onClose={onClose}>
+      <div className="p-5 space-y-3">
+        {variants.length === 0 && (
+          <p className="text-xs text-[#6b7280] py-4 text-center">
+            No saved variants yet. Save the product first, then update stock here.
+          </p>
+        )}
+        {variants.map((v) => (
+          <div key={v.id} className="flex items-center gap-3 py-2">
+            <span className="w-4 h-4 rounded-full border border-[#e5e7eb] flex-shrink-0" style={{ backgroundColor: v.colorHex }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-[#1a1a1a]">{v.color}</p>
+              <p className="text-[10px] text-[#6b7280] font-mono">{v.sku}</p>
+            </div>
+            <input
+              type="number"
+              value={values[v.id]}
+              onChange={(e) => setValues((s) => ({ ...s, [v.id]: Number(e.target.value) }))}
+              min={0}
+              className="w-20 px-2 py-1.5 text-sm text-center border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+            />
+            {savedId === v.id ? (
+              <span className="text-xs text-green-600 flex items-center gap-1 w-14 justify-center">
+                <Check size={12} /> Saved
+              </span>
+            ) : (
+              <button
+                onClick={() => saveOne(v.id)}
+                disabled={saving || values[v.id] === v.stock}
+                className="text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline w-14 text-center disabled:opacity-30 disabled:no-underline"
+              >
+                Save
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </ModalShell>
+  );
+}
+
+function CollectionModal({
+  currentId, collections, onClose, onSave,
+}: {
+  currentId:   string;
+  collections: Array<{ id: string; name: string }>;
+  onClose:     () => void;
+  onSave:      (id: string) => void;
+}) {
+  const [value, setValue] = useState(currentId);
+  return (
+    <ModalShell title="Change Collection" onClose={onClose}>
+      <div className="p-5 space-y-4">
+        <select
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+        >
+          <option value="">No collection</option>
+          {collections.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
+        <div className="flex gap-2 pt-2 border-t border-[#e5e7eb]">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb]">
+            Cancel
+          </button>
+          <button onClick={() => onSave(value)}
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors flex items-center justify-center gap-2">
+            <Save size={12} />Save
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function DiscountModal({
+  currentPricePaisa, currentCompareAtPaisa, onClose, onSave,
+}: {
+  currentPricePaisa:     number;
+  currentCompareAtPaisa: number | null;
+  onClose:               () => void;
+  onSave:                (comparePricePaisa: number | null) => void;
+}) {
+  const priceRupees = currentPricePaisa / 100;
+  const [mode,    setMode]    = useState<"none" | "percent" | "custom">(currentCompareAtPaisa ? "custom" : "none");
+  const [percent, setPercent] = useState(currentCompareAtPaisa ? Math.round((1 - currentPricePaisa / currentCompareAtPaisa) * 100) : 20);
+  const [custom,  setCustom]  = useState(currentCompareAtPaisa ? (currentCompareAtPaisa / 100).toString() : "");
+
+  const submit = () => {
+    if (mode === "none") {
+      onSave(null);
+    } else if (mode === "percent") {
+      const factor = 1 - (percent / 100);
+      if (factor <= 0) return;
+      const compareAtRupees = priceRupees / factor;
+      onSave(Math.round(compareAtRupees * 100));
+    } else {
+      const num = Number(custom);
+      if (!num || num <= priceRupees) return;
+      onSave(Math.round(num * 100));
+    }
+  };
+
+  return (
+    <ModalShell title="Set Discount" onClose={onClose}>
+      <div className="p-5 space-y-4">
+        <div className="bg-[#fafaf9] border border-[#e5e7eb] p-3 text-xs">
+          <span className="text-[#6b7280]">Current price: </span>
+          <span className="font-bold text-[#1a1a1a]">Rs. {priceRupees.toLocaleString()}</span>
+        </div>
+
+        <div className="space-y-2">
+          {[
+            { val: "none",    label: "No discount",              desc: "Remove any current discount" },
+            { val: "percent", label: "Discount by percentage",   desc: "e.g. 20% off" },
+            { val: "custom",  label: "Set original price",       desc: "Show a custom struck-through price" },
+          ].map((opt) => (
+            <label key={opt.val} className="flex items-start gap-2 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#3b5f8f]">
+              <input type="radio" name="mode" checked={mode === opt.val}
+                onChange={() => setMode(opt.val as typeof mode)}
+                className="accent-[#3b5f8f] mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
+                <p className="text-[10px] text-[#6b7280]">{opt.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {mode === "percent" && (
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+              Discount Percentage
+            </label>
+            <div className="relative">
+              <input type="number" value={percent} min={1} max={90}
+                onChange={(e) => setPercent(Number(e.target.value))}
+                className="w-full px-3 py-2.5 pr-8 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">%</span>
+            </div>
+            <p className="mt-1 text-[10px] text-[#6b7280]">
+              Original price will show as{" "}
+              <span className="font-semibold text-[#3b5f8f]">
+                Rs. {Math.round(priceRupees / (1 - percent / 100)).toLocaleString()}
+              </span>
+            </p>
+          </div>
+        )}
+
+        {mode === "custom" && (
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
+              Original Price (Rs.)
+            </label>
+            <input type="number" value={custom} min={priceRupees + 1}
+              onChange={(e) => setCustom(e.target.value)}
+              placeholder="e.g. 4500"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+            <p className="mt-1 text-[10px] text-[#6b7280]">Must be higher than current price</p>
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-2 border-t border-[#e5e7eb]">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb]">
+            Cancel
+          </button>
+          <button onClick={submit}
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors flex items-center justify-center gap-2">
+            <Save size={12} />Save
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function StatusModal({
+  currentStatus, onClose, onSave,
+}: {
+  currentStatus: string;
+  onClose:       () => void;
+  onSave:        (status: string) => void;
+}) {
+  const [value, setValue] = useState(currentStatus);
+  const options = [
+    { val: "DRAFT",     label: "Draft",     desc: "Not visible to customers" },
+    { val: "PUBLISHED", label: "Published", desc: "Visible on your store" },
+    { val: "ARCHIVED",  label: "Archived",  desc: "Hidden and read-only" },
+  ];
+
+  return (
+    <ModalShell title="Change Status" onClose={onClose}>
+      <div className="p-5 space-y-4">
+        <div className="space-y-2">
+          {options.map((opt) => (
+            <label key={opt.val} className="flex items-start gap-2 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#3b5f8f]">
+              <input type="radio" name="status" checked={value === opt.val}
+                onChange={() => setValue(opt.val)}
+                className="accent-[#3b5f8f] mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
+                <p className="text-[10px] text-[#6b7280]">{opt.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        <div className="flex gap-2 pt-2 border-t border-[#e5e7eb]">
+          <button onClick={onClose}
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb]">
+            Cancel
+          </button>
+          <button onClick={() => onSave(value)}
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors flex items-center justify-center gap-2">
+            <Save size={12} />Save
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\page.tsx
+================================================================================
+
+import { getProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ProductsPageClient } from "./ProductsPageClient";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function ProductsPage() {
+  const dbProducts = await getProducts({ status: "ALL", limit: 200 });
+  const products   = dbProducts.map(adaptProduct);
+
+  return <ProductsPageClient initialProducts={products} />;
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\products\ProductsPageClient.tsx
+================================================================================
+
+"use client";
+import React from "react";
+import { useState, useMemo } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Plus, Search, Download, Trash, Edit,
+  MoreVertical, Package, Grid3x3, List,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { formatPrice, formatDate, cn } from "@/lib/utils";
+import { PRODUCT_STATUS_COLORS } from "@/lib/constants";
+import { confirmAction } from "@/store/confirmStore";
+import { useToastStore } from "@/store/toastStore";
+import type { AdminProduct, ProductStatus } from "@/types";
+
+const STATUS_FILTERS: (ProductStatus | "all")[] = ["all", "published", "draft", "archived"];
+
+export function ProductsPageClient({ initialProducts }: { initialProducts: AdminProduct[] }) {
+  const [search,   setSearch]   = useState("");
+  const [status,   setStatus]   = useState<ProductStatus | "all">("all");
+  const [view,     setView]     = useState<"table" | "grid">("table");
+  const [collectionFilter, setCollectionFilter] = useState("all");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const toast = useToastStore();
+
+  const filtered = useMemo(() => {
+    return initialProducts.filter((p) => {
+      const matchStatus = status === "all" || p.status === status;
+      const matchSearch = search.trim() === "" ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.sku.toLowerCase().includes(search.toLowerCase());
+      const matchCollection = collectionFilter === "all" || p.collection === collectionFilter;
+      return matchStatus && matchSearch && matchCollection;
+    });
+  }, [search, status, initialProducts, collectionFilter]);
+
+  const statusCounts = useMemo(() => ({
+    all:       initialProducts.length,
+    published: initialProducts.filter((p) => p.status === "published").length,
+    draft:     initialProducts.filter((p) => p.status === "draft").length,
+    archived:  initialProducts.filter((p) => p.status === "archived").length,
+  }), [initialProducts]);
+
+  const toggleAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map((p) => p.id));
+  const toggleOne = (id: string) => setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+
+  const handleBulkDelete = async () => {
+    const ok = await confirmAction({
+      title:       "Delete Products",
+      message:     `Permanently delete ${selected.length} product${selected.length === 1 ? "" : "s"}? This will also remove them from any order history. This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText:  "Keep them",
+      variant:     "danger",
+    });
+    if (!ok) return;
+
+    setDeleting(true);
+
+    let success = 0;
+    const failures: Array<{ id: string; name: string; error: string }> = [];
+
+    for (const id of selected) {
+      const product = initialProducts.find((p) => p.id === id);
+      const name    = product?.name ?? id;
+      try {
+        const res  = await fetch(`/api/products/${id}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          success++;
+        } else {
+          failures.push({ id, name, error: data.error ?? `HTTP ${res.status}` });
+        }
+      } catch (err) {
+        failures.push({ id, name, error: (err as Error).message });
+      }
+    }
+
+    setSelected([]);
+    setDeleting(false);
+
+    if (success > 0) {
+      toast.success(
+        `${success} product${success === 1 ? "" : "s"} deleted successfully.`,
+        "Deleted"
+      );
+    }
+    if (failures.length > 0) {
+      const first = failures[0];
+      toast.error(
+        `Failed to delete ${failures.length} product${failures.length === 1 ? "" : "s"}. Example: "${first.name}" — ${first.error}`,
+        "Some Deletes Failed"
+      );
+      console.error("Delete failures:", failures);
+    }
+
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a]">Products</h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">Manage your product catalog, inventory, and variants.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+              const csv = initialProducts.map((p) =>
+                [p.name, p.sku, p.collection, p.price, p.stock, p.sold, p.status].map((v) => `"${v}"`).join(",")
+              );
+              csv.unshift('"Name","SKU","Collection","Price","Stock","Sold","Status"');
+              const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `denova-products-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Product catalog exported to CSV.", "Export Complete");
+            }}>
+              <Download size={14} />
+              Export
+            </Button>
+          <Link href="/products/new"><Button variant="primary"><Plus size={14} />Add Product</Button></Link>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 border-b border-[#e5e7eb]">
+        {STATUS_FILTERS.map((s) => (
+          <button key={s} onClick={() => setStatus(s)}
+            className={cn("px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px",
+              status === s ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
+            {s}
+            <span className={cn("ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
+              status === s ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]")}>
+              {statusCounts[s]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white border border-[#e5e7eb] p-3 flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, SKU, collection..."
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
+        </div>
+
+        {selected.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#6b7280]">{selected.length} selected</span>
+            <Button variant="ghost" size="sm" onClick={handleBulkDelete} disabled={deleting}>
+              <Trash size={13} />
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1 border border-[#e5e7eb] p-0.5 ml-auto">
+          <button onClick={() => setView("table")} className={cn("p-1.5", view === "table" ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><List size={14} /></button>
+          <button onClick={() => setView("grid")}  className={cn("p-1.5", view === "grid"  ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><Grid3x3 size={14} /></button>
+        </div>
+        <select value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}
+          className="text-xs border border-[#e5e7eb] px-3 py-2 focus:border-[#3b5f8f] focus:outline-none bg-white">
+          <option value="all">All Collections</option>
+          <option value="Premium">Premium</option>
+          <option value="Super Premium">Super Premium</option>
+        </select>
+      </div>
+
+      {view === "table" ? (
+        <div className="bg-white border border-[#e5e7eb] overflow-hidden">
+          {filtered.length === 0 ? (
+            <div className="p-12 text-center">
+              <Package size={40} className="text-[#3b5f8f] mx-auto mb-3" />
+              <p className="text-sm font-medium text-[#1a1a1a]">No products found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
+                    <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#3b5f8f]" /></th>
+                    {["Product","SKU","Collection","Price","Stock","Sold","Status","Updated"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
+                    ))}
+                    <th className="w-16 px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e5e7eb]">
+                  {filtered.map((p) => (
+                    <ProductRow key={p.id} product={p} isSelected={selected.includes(p.id)} onToggle={() => toggleOne(p.id)} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
+        </div>
+      )}
+
+      <p className="text-xs text-[#6b7280] text-center">Showing {filtered.length} of {initialProducts.length} products</p>
+    </div>
+  );
+}
+
+function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; isSelected: boolean; onToggle: () => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [openUp, setOpenUp]     = useState(false);
+  const btnRef = React.useRef<HTMLButtonElement>(null);
+  const stockStatus = product.stock === 0 ? "out" : product.stock < 10 ? "low" : "ok";
+
+  const handleMenuToggle = () => {
+    if (!menuOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUp(spaceBelow < 120);
+    }
+    setMenuOpen(!menuOpen);
+  };
+
+  return (
+    <tr className={cn("hover:bg-[#fafaf9] transition-colors", isSelected && "bg-[#f5f0e8]/30")}>
+      <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#3b5f8f]" /></td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="relative w-11 h-14 flex-shrink-0 bg-[#fafaf9]">
+            {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="45px" />}
+          </div>
+          <div className="min-w-0">
+            <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors line-clamp-1">
+              {product.name}
+            </Link>
+            {product.isNew      && <Badge variant="gold" className="mr-1 mt-1">New</Badge>}
+            {product.isFeatured && <Badge variant="info" className="mt-1">Featured</Badge>}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-xs font-mono text-[#6b7280]">{product.sku}</td>
+      <td className="px-4 py-3 text-xs text-[#1a1a1a]">{product.collection}</td>
+      <td className="px-4 py-3">
+        <p className="text-xs font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
+        {product.comparePrice && <p className="text-[10px] text-[#6b7280] line-through">{formatPrice(product.comparePrice)}</p>}
+      </td>
+      <td className="px-4 py-3">
+        <span className={cn("text-xs font-bold",
+          stockStatus === "out" ? "text-red-500" : stockStatus === "low" ? "text-orange-500" : "text-[#1a1a1a]")}>
+          {product.stock}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-xs text-[#6b7280]">{product.sold}</td>
+      <td className="px-4 py-3">
+        <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide capitalize", PRODUCT_STATUS_COLORS[product.status])}>
+          {product.status}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-xs text-[#6b7280]">{formatDate(product.updatedAt)}</td>
+      <td className="px-4 py-3 relative">
+        <button ref={btnRef} onClick={handleMenuToggle} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
+          <MoreVertical size={16} />
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+            <div className={cn(
+              "absolute right-4 w-40 bg-white border border-[#e5e7eb] shadow-lg z-20 py-1",
+              openUp ? "bottom-full mb-1" : "top-full mt-1"
+            )}>
+              <Link href={`/products/${product.id}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-xs text-[#1a1a1a] hover:bg-[#fafaf9]">
+                <Edit size={12} />Edit
+              </Link>
+            </div>
+          </>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function ProductCard({ product }: { product: AdminProduct }) {
+  return (
+    <Link href={`/products/${product.id}`} className="group bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden">
+      <div className="relative aspect-[3/4] bg-[#fafaf9]">
+        {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="250px" />}
+        <div className="absolute top-2 right-2">
+          <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide capitalize", PRODUCT_STATUS_COLORS[product.status])}>
+            {product.status}
+          </span>
+        </div>
+      </div>
+      <div className="p-3">
+        <p className="text-[10px] text-[#3b5f8f] uppercase tracking-wider mb-1">{product.collection}</p>
+        <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#3b5f8f]">{product.name}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
+          <span className={cn("text-xs font-bold", product.stock === 0 ? "text-red-500" : product.stock < 10 ? "text-orange-500" : "text-green-600")}>
+            {product.stock} in stock
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\products\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { getProducts, createProduct } from "@/lib/db/repositories/products";
+import { rupeesToPaisa } from "@/lib/priceUtils";
+import { slugify } from "@/lib/utils";
+
+export async function GET() {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  const products = await getProducts({ status: "ALL", limit: 500 });
+  return NextResponse.json({ products });
+}
+
+export async function POST(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const body = await req.json();
+    const {
+      name, description, sku, price, comparePrice, collectionId,
+      status, isNew, isFeatured, isBestSeller, tags, variants,
+      waist, length, bottom, bgColor,
+    } = body;
+
+    if (!name || !description || !sku || price === undefined) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const slug = body.slug || slugify(name);
+
+    const imageUrls: string[] = [];
+    if (body.images && Array.isArray(body.images) && body.images.length > 0) {
+      imageUrls.push(...body.images);
+    } else if (body.imageUrl) {
+      imageUrls.push(body.imageUrl);
+    }
+
+    const waistNumber = waist !== undefined && waist !== "" ? Number(waist) : null;
+    const sizeLabel   = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+
+    // Normalize bgColor — treat empty string as null (means: keep original)
+    const bgColorNormalized =
+      bgColor !== undefined && typeof bgColor === "string" && bgColor.trim().length > 0
+        ? bgColor.trim()
+        : null;
+
+    const productId = await createProduct({
+      name,
+      slug,
+      sku,
+      description,
+      price:        rupeesToPaisa(price),
+      comparePrice: comparePrice ? rupeesToPaisa(comparePrice) : null,
+      collectionId: collectionId || null,
+      status:       (status ?? "draft").toUpperCase() as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+      isNew:        !!isNew,
+      isFeatured:   !!isFeatured,
+      isBestSeller: !!isBestSeller,
+      tags:         Array.isArray(tags) ? tags : (typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()) : []),
+      imageUrl:     imageUrls[0] || undefined,
+      imageUrls:    imageUrls,
+      waist:        waistNumber,
+      length:       length !== undefined && length !== "" ? Number(length) : null,
+      bottom:       bottom !== undefined && bottom !== "" ? Number(bottom) : null,
+      bgColor:      bgColorNormalized,
+      variants:     variants?.map((v: {
+        color: string; colorHex?: string; sku: string; stock: number; price: number;
+      }) => ({
+        size:     sizeLabel,
+        color:    v.color,
+        colorHex: v.colorHex ?? "#000000",
+        sku:      v.sku,
+        stock:    Number(v.stock),
+        price:    rupeesToPaisa(v.price),
+      })),
+    });
+
+    return NextResponse.json({ success: true, productId }, { status: 201 });
+  } catch (err) {
+    console.error("Create product error:", err);
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\products\[id]\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import {
+  updateProduct, deleteProduct,
+  replaceProductImages, syncProductVariants,
+  getProductById,
+} from "@/lib/db/repositories/products";
+import { rupeesToPaisa } from "@/lib/priceUtils";
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    const updates: Record<string, unknown> = {};
+    if (body.name         !== undefined) updates.name         = body.name;
+    if (body.slug         !== undefined) updates.slug         = body.slug;
+    if (body.sku          !== undefined) updates.sku          = body.sku;
+    if (body.description  !== undefined) updates.description  = body.description;
+    if (body.price        !== undefined) updates.price        = rupeesToPaisa(body.price);
+    if (body.comparePrice !== undefined) updates.comparePrice = body.comparePrice ? rupeesToPaisa(body.comparePrice) : null;
+    if (body.collectionId !== undefined) updates.collectionId = body.collectionId;
+    if (body.status       !== undefined) updates.status       = body.status.toUpperCase();
+    if (body.isNew        !== undefined) updates.isNew        = body.isNew;
+    if (body.isFeatured   !== undefined) updates.isFeatured   = body.isFeatured;
+    if (body.isBestSeller !== undefined) updates.isBestSeller = body.isBestSeller;
+    if (body.tags         !== undefined) updates.tags         = Array.isArray(body.tags) ? body.tags : body.tags.split(",");
+    if (body.waist        !== undefined) updates.waist        = body.waist  !== "" && body.waist  !== null ? Number(body.waist)  : null;
+    if (body.length       !== undefined) updates.length       = body.length !== "" && body.length !== null ? Number(body.length) : null;
+    if (body.bottom       !== undefined) updates.bottom       = body.bottom !== "" && body.bottom !== null ? Number(body.bottom) : null;
+
+    // bgColor: empty string or null => clear
+    if (body.bgColor !== undefined) {
+      updates.bgColor =
+        typeof body.bgColor === "string" && body.bgColor.trim().length > 0
+          ? body.bgColor.trim()
+          : null;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await updateProduct(id, updates);
+    }
+
+    if (Array.isArray(body.images)) {
+      const productForAlt = await getProductById(id);
+      const alt = body.name ?? productForAlt?.name ?? "Product";
+      await replaceProductImages(id, body.images, alt);
+    }
+
+    if (Array.isArray(body.variants)) {
+      const waistNumber = body.waist !== undefined && body.waist !== "" && body.waist !== null
+        ? Number(body.waist)
+        : null;
+      const sizeLabel = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+
+      const variantsForSync = body.variants.map((v: {
+        id?: string; color: string; colorHex?: string; sku: string; stock: number; price: number; size?: string;
+      }) => ({
+        id:       v.id,
+        size:     v.size ?? sizeLabel,
+        color:    v.color,
+        colorHex: v.colorHex ?? "#000000",
+        sku:      v.sku,
+        stock:    Number(v.stock),
+        price:    rupeesToPaisa(v.price),
+      }));
+
+      await syncProductVariants(id, variantsForSync);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Update product error:", err);
+    return NextResponse.json({ error: "Update failed: " + (err as Error).message }, { status: 500 });
+  }
+}
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { id } = await params;
+    await deleteProduct(id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Delete product error:", err);
+    return NextResponse.json(
+      { error: "Delete failed: " + (err as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\lib\db\repositories\products.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now, tagsToArray } from "@/lib/db/helpers";
+import type {
+  DbProduct, DbProductImage, DbProductVariant, ProductStatus,
+} from "@/lib/db/types";
+
+export interface ProductWithRelations extends DbProduct {
+  images:      DbProductImage[];
+  variants:    DbProductVariant[];
+  collection?: { id: string; name: string; slug: string } | null;
+}
+
+// Turso/SQLite strips result columns named "length" (reserved word).
+// Workaround: alias to a different name in SQL, then remap in code.
+const PRODUCT_COLS = `
+  p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
+  p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
+  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
+  p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
+  p.waist, p."length" as lengthInches, p.bottom, p.bgColor,
+  p.createdAt, p.updatedAt
+`;
+
+function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
+  const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
+  return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
+}
+
+export interface GetProductsOptions {
+  status?:       ProductStatus | "ALL";
+  collectionId?: string;
+  featured?:     boolean;
+  isNew?:        boolean;
+  isBestSeller?: boolean;
+  search?:       string;
+  sortBy?:       "newest" | "price-asc" | "price-desc" | "bestselling" | "rating";
+  limit?:        number;
+  offset?:       number;
+}
+
+export async function getProducts(opts: GetProductsOptions = {}): Promise<ProductWithRelations[]> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") {
+    conditions.push("p.status = ?");
+    args.push(opts.status);
+  } else if (!opts.status) {
+    conditions.push("p.status = ?");
+    args.push("PUBLISHED");
+  }
+
+  if (opts.collectionId) { conditions.push("p.collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("p.isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("p.isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("p.isBestSeller = 1"); }
+  if (opts.search) {
+    conditions.push("(p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)");
+    const term = `%${opts.search}%`;
+    args.push(term, term, term);
+  }
+
+  const where   = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  let   orderBy = "p.createdAt DESC";
+  switch (opts.sortBy) {
+    case "price-asc":   orderBy = "p.price ASC";      break;
+    case "price-desc":  orderBy = "p.price DESC";     break;
+    case "bestselling": orderBy = "p.soldCount DESC"; break;
+    case "rating":      orderBy = "p.rating DESC";    break;
+  }
+
+  const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
+  const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
+
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p
+          LEFT JOIN collections c ON c.id = p.collectionId
+          ${where} ORDER BY ${orderBy} ${limit} ${offset}`,
+    args,
+  });
+
+  const rawProducts = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as (DbProduct & {
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  })[];
+
+  if (rawProducts.length === 0) return [];
+
+  const productIds   = rawProducts.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`, args: productIds }),
+    db.execute({ sql: `SELECT * FROM product_variants WHERE productId IN (${placeholders})`, args: productIds }),
+  ]);
+
+  const images   = imgResult.rows as unknown as DbProductImage[];
+  const variants = varResult.rows as unknown as DbProductVariant[];
+
+  return rawProducts.map((p) => ({
+    ...p,
+    images:     images.filter((i) => i.productId === p.id),
+    variants:   variants.filter((v) => v.productId === p.id),
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  }));
+}
+
+export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.slug = ? LIMIT 1`,
+    args: [slug],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductById(id: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.id = ? LIMIT 1`,
+    args: [id],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductCount(opts: GetProductsOptions = {}): Promise<number> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") { conditions.push("status = ?"); args.push(opts.status); }
+  else if (!opts.status) { conditions.push("status = ?"); args.push("PUBLISHED"); }
+  if (opts.collectionId) { conditions.push("collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("isBestSeller = 1"); }
+
+  const where  = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const result = await db.execute({ sql: `SELECT COUNT(*) as count FROM products ${where}`, args });
+  return Number(result.rows[0].count);
+}
+
+export async function getRelatedProducts(
+  productId: string, collectionId: string, limit = 4
+): Promise<ProductWithRelations[]> {
+  const result = await db.execute({
+    sql:  `SELECT ${PRODUCT_COLS} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
+    args: [collectionId, productId, limit],
+  });
+  const products = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as DbProduct[];
+  if (products.length === 0) return [];
+
+  const productIds   = products.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+  const imgResult    = await db.execute({
+    sql:  `SELECT * FROM product_images WHERE productId IN (${placeholders}) AND isPrimary = 1`,
+    args: productIds,
+  });
+  const images = imgResult.rows as unknown as DbProductImage[];
+  return products.map((p) => ({ ...p, images: images.filter((i) => i.productId === p.id), variants: [] }));
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN CRUD
+// ═══════════════════════════════════════════════════════
+
+import { now as nowTs, tagsToArray as tagsToArr } from "@/lib/db/helpers";
+
+export interface CreateProductInput {
+  name:             string;
+  slug:             string;
+  sku:              string;
+  description:      string;
+  price:            number;
+  comparePrice?:    number | null;
+  costPerItem?:     number;
+  collectionId?:    string | null;
+  status?:          ProductStatus;
+  isNew?:           boolean;
+  isFeatured?:      boolean;
+  isBestSeller?:    boolean;
+  tags?:            string[];
+  metaTitle?:       string;
+  metaDescription?: string;
+  imageUrl?:        string;
+  imageUrls?:       string[];
+  waist?:           number | null;
+  length?:          number | null;
+  bottom?:          number | null;
+  bgColor?:         string | null;   // hex color like "#f5f0e8" or null to keep original
+  variants?: Array<{
+    size:     string;
+    color:    string;
+    colorHex: string;
+    sku:      string;
+    stock:    number;
+    price:    number;
+  }>;
+}
+
+export async function createProduct(input: CreateProductInput): Promise<string> {
+  const id = generateId();
+  const t  = nowTs();
+
+  await db.execute({
+    sql: `INSERT INTO products (
+      id, name, slug, sku, description, price, comparePrice, costPerItem,
+      collectionId, status, isNew, isFeatured, isBestSeller, tags,
+      metaTitle, metaDescription, waist, "length", bottom, bgColor, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id, input.name, input.slug, input.sku, input.description,
+      input.price, input.comparePrice ?? null, input.costPerItem ?? null,
+      input.collectionId ?? null, input.status ?? "DRAFT",
+      input.isNew ? 1 : 0, input.isFeatured ? 1 : 0, input.isBestSeller ? 1 : 0,
+      (input.tags ?? []).join(","),
+      input.metaTitle ?? null, input.metaDescription ?? null,
+      input.waist  ?? null,
+      input.length ?? null,
+      input.bottom ?? null,
+      input.bgColor ?? null,
+      t, t,
+    ],
+  });
+
+  const allImages = input.imageUrls && input.imageUrls.length > 0
+    ? input.imageUrls
+    : (input.imageUrl ? [input.imageUrl] : []);
+
+  for (let i = 0; i < allImages.length; i++) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), id, allImages[i], input.name, i === 0 ? 1 : 0, i],
+    });
+  }
+
+  if (input.variants && input.variants.length > 0) {
+    for (const v of input.variants) {
+      await db.execute({
+        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [generateId(), id, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+      });
+    }
+  }
+
+  return id;
+}
+
+export async function updateProduct(
+  id: string,
+  updates: Partial<Omit<CreateProductInput, "variants" | "imageUrl" | "imageUrls">>
+): Promise<void> {
+  const sets: string[] = [];
+  const args: (string | number | null)[] = [];
+
+  const map: Record<string, unknown> = {
+    name:            updates.name,
+    slug:            updates.slug,
+    sku:             updates.sku,
+    description:     updates.description,
+    price:           updates.price,
+    comparePrice:    updates.comparePrice,
+    costPerItem:     updates.costPerItem,
+    collectionId:    updates.collectionId,
+    status:          updates.status,
+    isNew:           updates.isNew        === undefined ? undefined : (updates.isNew        ? 1 : 0),
+    isFeatured:      updates.isFeatured   === undefined ? undefined : (updates.isFeatured   ? 1 : 0),
+    isBestSeller:    updates.isBestSeller === undefined ? undefined : (updates.isBestSeller ? 1 : 0),
+    tags:            updates.tags ? updates.tags.join(",") : undefined,
+    metaTitle:       updates.metaTitle,
+    metaDescription: updates.metaDescription,
+    waist:           updates.waist,
+    bottom:          updates.bottom,
+    bgColor:         updates.bgColor,
+  };
+
+  Object.entries(map).forEach(([k, v]) => {
+    if (v !== undefined) { sets.push(`${k} = ?`); args.push(v as string | number | null); }
+  });
+
+  if (updates.length !== undefined) {
+    sets.push(`"length" = ?`);
+    args.push(updates.length as number | null);
+  }
+
+  if (sets.length === 0) return;
+  sets.push("updatedAt = ?");
+  args.push(nowTs());
+  args.push(id);
+
+  await db.execute({ sql: `UPDATE products SET ${sets.join(", ")} WHERE id = ?`, args });
+}
+
+/**
+ * Hard-delete a product and ALL references to it.
+ * Manually cascades because SQLite/Turso schema uses REFERENCES without ON DELETE CASCADE
+ * on cart_items and order_items. Order of deletion matters (FK constraints).
+ */
+export async function deleteProduct(id: string): Promise<void> {
+  await db.execute({ sql: "DELETE FROM reviews    WHERE productId = ?", args: [id] });
+  await db.execute({ sql: "DELETE FROM wishlists  WHERE productId = ?", args: [id] });
+
+  await db.execute({ sql: "DELETE FROM cart_items WHERE productId = ?", args: [id] });
+  await db.execute({
+    sql: "DELETE FROM cart_items WHERE variantId IN (SELECT id FROM product_variants WHERE productId = ?)",
+    args: [id],
+  });
+
+  await db.execute({ sql: "DELETE FROM order_items WHERE productId = ?", args: [id] });
+  await db.execute({
+    sql: "DELETE FROM order_items WHERE variantId IN (SELECT id FROM product_variants WHERE productId = ?)",
+    args: [id],
+  });
+
+  await db.execute({ sql: "DELETE FROM product_variants WHERE productId = ?", args: [id] });
+  await db.execute({ sql: "DELETE FROM product_images   WHERE productId = ?", args: [id] });
+
+  await db.execute({ sql: "DELETE FROM products WHERE id = ?", args: [id] });
+}
+
+export async function updateVariantStock(variantId: string, stock: number): Promise<void> {
+  await db.execute({
+    sql:  "UPDATE product_variants SET stock = ?, updatedAt = ? WHERE id = ?",
+    args: [Math.max(0, stock), nowTs(), variantId],
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  IMAGE + VARIANT SYNC (for edit flow)
+// ═══════════════════════════════════════════════════════
+
+export async function replaceProductImages(
+  productId: string,
+  imageUrls: string[],
+  altText:   string
+): Promise<void> {
+  await db.execute({
+    sql:  "DELETE FROM product_images WHERE productId = ?",
+    args: [productId],
+  });
+
+  for (let i = 0; i < imageUrls.length; i++) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), productId, imageUrls[i], altText, i === 0 ? 1 : 0, i],
+    });
+  }
+}
+
+export interface VariantSyncInput {
+  id?:       string;
+  size:      string;
+  color:     string;
+  colorHex:  string;
+  sku:       string;
+  stock:     number;
+  price:     number;
+}
+
+export async function syncProductVariants(
+  productId: string,
+  variants:  VariantSyncInput[]
+): Promise<void> {
+  const t = nowTs();
+
+  const existingResult = await db.execute({
+    sql:  "SELECT id FROM product_variants WHERE productId = ?",
+    args: [productId],
+  });
+  const existingIds = existingResult.rows.map((r) => r.id as string);
+
+  const keptIds = variants.map((v) => v.id).filter(Boolean) as string[];
+
+  const toDelete = existingIds.filter((id) => !keptIds.includes(id));
+  for (const id of toDelete) {
+    await db.execute({ sql: "DELETE FROM cart_items  WHERE variantId = ?", args: [id] });
+    await db.execute({ sql: "DELETE FROM order_items WHERE variantId = ?", args: [id] });
+    await db.execute({ sql: "DELETE FROM product_variants WHERE id = ?", args: [id] });
+  }
+
+  for (const v of variants) {
+    if (v.id && existingIds.includes(v.id)) {
+      await db.execute({
+        sql: `UPDATE product_variants
+              SET size = ?, color = ?, colorHex = ?, sku = ?, stock = ?, price = ?, updatedAt = ?
+              WHERE id = ?`,
+        args: [v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, v.id],
+      });
+    } else {
+      await db.execute({
+        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [generateId(), productId, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+      });
+    }
+  }
+}
+
+export async function duplicateProduct(sourceId: string): Promise<string> {
+  const source = await getProductById(sourceId);
+  if (!source) throw new Error("Product not found");
+
+  const newId = generateId();
+  const t     = nowTs();
+
+  const newName = `${source.name} (Copy)`;
+  const newSlug = `${source.slug}-copy-${newId.slice(1, 7)}`;
+  const newSku  = `${source.sku}-COPY-${newId.slice(1, 5).toUpperCase()}`;
+
+  await db.execute({
+    sql: `INSERT INTO products (
+      id, name, slug, sku, description, price, comparePrice, costPerItem,
+      collectionId, status, isNew, isFeatured, isBestSeller, tags,
+      metaTitle, metaDescription, waist, "length", bottom, bgColor, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      newId, newName, newSlug, newSku, source.description,
+      source.price, source.comparePrice, source.costPerItem,
+      source.collectionId, "DRAFT",
+      source.isNew, source.isFeatured, source.isBestSeller,
+      source.tags,
+      source.metaTitle, source.metaDescription,
+      source.waist, source.length, source.bottom, source.bgColor,
+      t, t,
+    ],
+  });
+
+  for (const img of source.images) {
+    await db.execute({
+      sql:  "INSERT INTO product_images (id, productId, url, alt, isPrimary, sortOrder) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [generateId(), newId, img.url, img.alt, img.isPrimary, img.sortOrder],
+    });
+  }
+
+  for (const v of source.variants) {
+    await db.execute({
+      sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        generateId(), newId, v.size, v.color, v.colorHex,
+        `${v.sku}-C${newId.slice(1, 4).toUpperCase()}`,
+        v.stock, v.price, t, t,
+      ],
+    });
+  }
+
+  return newId;
+}
+
+void tagsToArr;
+void now;
+
+================================================================================
+FILE: admin-panel\src\lib\adapters.ts
+================================================================================
+
+import type { DbProduct, DbProductImage, DbProductVariant, DbCollection, DbOrder, DbOrderItem, DbUser } from "@/lib/db/types";
+import type { ProductWithRelations } from "@/lib/db/repositories/products";
+import type { AdminProduct, AdminOrder, AdminCustomer, AdminCollection, AdminOrderItem } from "@/types";
+import { tagsToArray } from "@/lib/db/helpers";
+
+// ─── Product ─────────────────────────────────────────────
+export function adaptProduct(p: ProductWithRelations): AdminProduct {
+  const primaryImg = p.images.find((i) => i.isPrimary === 1) || p.images[0];
+  const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+
+  return {
+    id:           p.id,
+    name:         p.name,
+    slug:         p.slug,
+    sku:          p.sku,
+    status:       p.status.toLowerCase() as "published" | "draft" | "archived",
+    price:        p.price / 100,
+    comparePrice: p.comparePrice ? p.comparePrice / 100 : null,
+    collection:   p.collection?.name ?? "",
+    collectionId: p.collectionId ?? "",
+    stock:        totalStock,
+    sold:         p.soldCount,
+    image:        primaryImg?.url ?? "",
+    isNew:        p.isNew === 1,
+    isFeatured:   p.isFeatured === 1,
+    createdAt:    new Date(p.createdAt * 1000).toISOString(),
+    updatedAt:    new Date(p.updatedAt * 1000).toISOString(),
+  };
+}
+
+// ─── Order ───────────────────────────────────────────────
+export function adaptOrder(
+  o: DbOrder & { items: DbOrderItem[]; address?: unknown },
+  customerName  = "",
+  customerEmail = "",
+  customerPhone = ""
+): AdminOrder {
+  return {
+    id:            o.id,
+    orderNumber:   o.orderNumber,
+    customer:      customerName || o.guestName || "Guest",
+    customerEmail: customerEmail || o.guestEmail || "",
+    customerPhone: customerPhone || o.guestPhone || "",
+    items:         o.items.map(adaptOrderItem),
+    status:        o.status.toLowerCase() as AdminOrder["status"],
+    paymentStatus: o.paymentStatus.toLowerCase() as AdminOrder["paymentStatus"],
+    paymentMethod: o.paymentMethod,
+    subtotal:      o.subtotal / 100,
+    discount:      o.discount / 100,
+    shipping:      o.shipping / 100,
+    total:         o.total / 100,
+    city:          "",
+    address:       "",
+    notes:         o.customerNote ?? undefined,
+    trackingNum:   o.trackingNumber ?? undefined,
+    createdAt:     new Date(o.createdAt * 1000).toISOString(),
+    updatedAt:     new Date(o.updatedAt * 1000).toISOString(),
+  };
+}
+
+function adaptOrderItem(item: DbOrderItem): AdminOrderItem {
+  return {
+    id:        item.id,
+    productId: item.productId,
+    name:      item.name,
+    image:     item.image,
+    size:      item.size,
+    color:     item.color,
+    price:     item.price / 100,
+    quantity:  item.quantity,
+    sku:       item.sku,
+  };
+}
+
+// ─── Customer ────────────────────────────────────────────
+// FIX: Accept null OR undefined for optional fields (DB returns null, TS interfaces use undefined)
+export function adaptCustomer(
+  u: DbUser & {
+    totalOrders?: number;
+    totalSpent?:  number;
+    lastOrder?:   string | null;
+    city?:        string | null;
+  }
+): AdminCustomer {
+  return {
+    id:          u.id,
+    name:        u.name,
+    email:       u.email,
+    phone:       u.phone ?? "",
+    city:        u.city ?? "",
+    totalOrders: u.totalOrders ?? 0,
+    totalSpent:  (u.totalSpent ?? 0) / 100,
+    lastOrder:   u.lastOrder ?? new Date(u.createdAt * 1000).toISOString(),
+    isActive:    u.isActive === 1,
+    joinedAt:    new Date(u.createdAt * 1000).toISOString(),
+  };
+}
+
+// ─── Collection ──────────────────────────────────────────
+export function adaptCollection(c: DbCollection & { productCount?: number }): AdminCollection {
+  return {
+    id:           c.id,
+    name:         c.name,
+    slug:         c.slug,
+    description:  c.description,
+    image:        c.image ?? "",
+    productCount: c.productCount ?? 0,
+    isActive:     c.isActive === 1,
+    createdAt:    new Date(c.createdAt * 1000).toISOString(),
+  };
+}
+
+// Silence unused
+void tagsToArray;
+
+================================================================================
+FILE: admin-panel\src\types\index.ts
+================================================================================
+
+// ─── Admin User ───────────────────────────────────────────
+export interface AdminUser {
+  id:        string;
+  name:      string;
+  email:     string;
+  role:      AdminRole;
+  avatar?:   string;
+  lastLogin: string;
+  isActive:  boolean;
+}
+
+export type AdminRole = "super_admin" | "admin" | "manager" | "staff";
+
+// ─── Product ──────────────────────────────────────────────
+export type ProductStatus = "published" | "draft" | "archived";
+
+export interface AdminProduct {
+  id:           string;
+  name:         string;
+  slug:         string;
+  sku:          string;
+  status:       ProductStatus;
+  price:        number;
+  comparePrice: number | null;
+  collection:   string;
+  collectionId: string;
+  stock:        number;
+  sold:         number;
+  image:        string;
+  images?:       string[];  // Multiple image URLs
+  isNew:        boolean;
+  isFeatured:   boolean;
+  createdAt:    string;
+  updatedAt:    string;
+}
+
+// ─── Order ────────────────────────────────────────────────
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+
+export interface AdminOrderItem {
+  id:        string;
+  productId: string;
+  name:      string;
+  image:     string;
+  size:      string;
+  color:     string;
+  price:     number;
+  quantity:  number;
+  sku:       string;
+}
+
+export interface AdminOrder {
+  id:            string;
+  orderNumber:   string;
+  customer:      string;
+  customerEmail: string;
+  customerPhone: string;
+  items:         AdminOrderItem[];
+  status:        OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: string;
+  subtotal:      number;
+  discount:      number;
+  shipping:      number;
+  total:         number;
+  city:          string;
+  address:       string;
+  notes?:        string;
+  trackingNum?:  string;
+  createdAt:     string;
+  updatedAt:     string;
+}
+
+// ─── Customer ─────────────────────────────────────────────
+export interface AdminCustomer {
+  id:          string;
+  name:        string;
+  email:       string;
+  phone:       string;
+  city:        string;
+  totalOrders: number;
+  totalSpent:  number;
+  lastOrder:   string;
+  isActive:    boolean;
+  joinedAt:    string;
+}
+
+// ─── Collection ───────────────────────────────────────────
+export interface AdminCollection {
+  id:           string;
+  name:         string;
+  slug:         string;
+  description:  string;
+  image:        string;
+  productCount: number;
+  isActive:     boolean;
+  createdAt:    string;
+}
+
+// ─── Discount ─────────────────────────────────────────────
+export type DiscountType   = "percentage" | "fixed";
+export type DiscountStatus = "active" | "expired" | "disabled";
+
+export interface AdminDiscount {
+  id:          string;
+  code:        string;
+  type:        DiscountType;
+  value:       number;
+  minOrder:    number;
+  maxUses:     number;
+  usedCount:   number;
+  status:      DiscountStatus;
+  expiresAt:   string;
+  createdAt:   string;
+}
+
+// ─── Analytics ────────────────────────────────────────────
+export interface DashboardStats {
+  totalRevenue:     number;
+  revenueChange:    number;
+  totalOrders:      number;
+  ordersChange:     number;
+  totalCustomers:   number;
+  customersChange:  number;
+  totalProducts:    number;
+  avgOrderValue:    number;
+  conversionRate:   number;
+  pendingOrders:    number;
+  lowStockItems:    number;
+}
+
+export interface RevenueDataPoint {
+  date:    string;
+  revenue: number;
+  orders:  number;
+}
+
+export interface TopProduct {
+  id:       string;
+  name:     string;
+  image:    string;
+  sold:     number;
+  revenue:  number;
+  stock:    number;
+}
+
+// ─── Table ────────────────────────────────────────────────
+export interface TableColumn<T> {
+  key:        keyof T | string;
+  label:      string;
+  sortable?:  boolean;
+  render?:    (value: unknown, row: T) => React.ReactNode;
+  width?:     string;
+}
+
+export interface SortConfig {
+  key:       string;
+  direction: "asc" | "desc";
+}
+
+================================================================================
+FILE: admin-panel\src\lib\db\add-bgcolor-column.ts
+================================================================================
+
+/**
+ * Adds `bgColor` column to products table.
+ * Safe to re-run — checks if column exists first.
+ *
+ * Usage:  npx tsx src/lib/db/add-bgcolor-column.ts
+ */
+import "dotenv/config";
+import { createClient } from "@libsql/client";
+
+async function run() {
+  const url       = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!url) {
+    console.error("Missing TURSO_DATABASE_URL");
+    process.exit(1);
+  }
+
+  const db = createClient({ url, authToken });
+  console.log("Connecting to Turso...");
+
+  // Check if column already exists
+  const info = await db.execute("PRAGMA table_info(products);");
+  const hasColumn = info.rows.some((r) => (r.name as string) === "bgColor");
+
+  if (hasColumn) {
+    console.log("Column `bgColor` already exists on products. Nothing to do.");
+    process.exit(0);
+  }
+
+  console.log("Adding `bgColor` column to products table...");
+  await db.execute("ALTER TABLE products ADD COLUMN bgColor TEXT;");
+  console.log("Done. Column added successfully.");
+}
+
+run().catch((err) => {
+  console.error("Migration failed:", err);
+  process.exit(1);
+});
+
+================================================================================
+FILE: admin-panel\src\lib\db\migrate.ts
+================================================================================
+
+/**
+ * Migration script.
+ * Uses Turso's batch API which properly handles multi-statement SQL.
+ * Run with: npm run db:init
+ */
+
+import "dotenv/config";
+import { createClient } from "@libsql/client";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+async function migrate() {
+  const url       = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!url) {
+    console.error("Missing TURSO_DATABASE_URL in .env");
+    process.exit(1);
+  }
+
+  console.log("Connecting to Turso...");
+  const db = createClient({ url, authToken });
+
+  const schemaPath = join(process.cwd(), "..", "shared", "db", "schema.sql");
+  console.log(`Reading schema from: ${schemaPath}`);
+  const schema = readFileSync(schemaPath, "utf8");
+
+  // Better SQL splitter that handles multi-line statements and comments
+  const statements = splitSqlStatements(schema);
+  console.log(`Found ${statements.length} SQL statements\n`);
+
+  // ─── Phase 1: Create all tables first ────────────────
+  const createTables = statements.filter((s) => /^\s*CREATE TABLE/i.test(s));
+  const createIndexes = statements.filter((s) => /^\s*CREATE INDEX/i.test(s));
+  const other         = statements.filter((s) =>
+    !/^\s*CREATE TABLE/i.test(s) && !/^\s*CREATE INDEX/i.test(s)
+  );
+
+  console.log(`Creating ${createTables.length} tables...`);
+  let tableSuccess = 0;
+  let tableFail    = 0;
+
+  for (const stmt of createTables) {
+    try {
+      await db.execute(stmt);
+      tableSuccess++;
+      const tableName = extractTableName(stmt);
+      console.log(`  OK  ${tableName}`);
+    } catch (err) {
+      tableFail++;
+      const tableName = extractTableName(stmt);
+      console.log(`  FAIL  ${tableName}: ${(err as Error).message}`);
+    }
+  }
+
+  // ─── Phase 2: Create indexes ─────────────────────────
+  console.log(`\nCreating ${createIndexes.length} indexes...`);
+  let idxSuccess = 0;
+  let idxFail    = 0;
+
+  for (const stmt of createIndexes) {
+    try {
+      await db.execute(stmt);
+      idxSuccess++;
+    } catch (err) {
+      idxFail++;
+      console.log(`  FAIL  ${(err as Error).message}`);
+    }
+  }
+  console.log(`  ${idxSuccess} indexes created`);
+
+  // ─── Phase 3: Everything else ────────────────────────
+  if (other.length > 0) {
+    console.log(`\nExecuting ${other.length} other statements...`);
+    for (const stmt of other) {
+      try { await db.execute(stmt); } catch (err) {
+        console.log(`  FAIL: ${(err as Error).message}`);
+      }
+    }
+  }
+
+  console.log("\n===============================================");
+  console.log(`Tables:  ${tableSuccess} created, ${tableFail} failed`);
+  console.log(`Indexes: ${idxSuccess} created, ${idxFail} failed`);
+  console.log("===============================================\n");
+
+  // Verify
+  const tables = await db.execute(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;"
+  );
+
+  console.log("Tables in database:");
+  tables.rows.forEach((r) => console.log(`   - ${r.name}`));
+  console.log(`\nTotal: ${tables.rows.length} tables\n`);
+
+  if (tableFail === 0 && idxFail === 0) {
+    console.log("Migration successful! Run: npm run db:seed");
+  } else {
+    console.log("Some statements failed. Check errors above.");
+  }
+}
+
+/**
+ * Properly split SQL by semicolons.
+ * Handles:
+ *   - Multi-line statements
+ *   - Comments (-- lines)
+ *   - Empty lines
+ */
+function splitSqlStatements(sql: string): string[] {
+  // Remove SQL comments
+  const withoutComments = sql
+    .split("\n")
+    .map((line) => {
+      const commentIdx = line.indexOf("--");
+      return commentIdx >= 0 ? line.substring(0, commentIdx) : line;
+    })
+    .join("\n");
+
+  // Split by semicolons and clean up
+  return withoutComments
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+/**
+ * Extract table name from CREATE TABLE statement
+ */
+function extractTableName(stmt: string): string {
+  const match = stmt.match(/CREATE TABLE(?:\s+IF NOT EXISTS)?\s+(\w+)/i);
+  return match ? match[1] : "unknown";
+}
+
+migrate().catch((err) => {
+  console.error("Migration failed:", err);
+  process.exit(1);
+});
+
+================================================================================
+FILE: shared\db\schema.sql
+================================================================================
+
+-- Denova PK - Complete Database Schema
+-- Run this in Turso SQL editor to create all tables
+
+-- ============================================================
+-- USERS & AUTH
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS users (
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  email          TEXT UNIQUE NOT NULL,
+  emailVerified  INTEGER,
+  phone          TEXT,
+  password       TEXT,
+  avatar         TEXT,
+  isActive       INTEGER NOT NULL DEFAULT 1,
+  birthday       TEXT,
+  loyaltyPoints  INTEGER NOT NULL DEFAULT 0,
+  createdAt      INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt      INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_users_email    ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_phone    ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_birthday ON users(birthday);
+
+CREATE TABLE IF NOT EXISTS admins (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  email      TEXT UNIQUE NOT NULL,
+  password   TEXT NOT NULL,
+  role       TEXT NOT NULL DEFAULT 'STAFF',
+  avatar     TEXT,
+  isActive   INTEGER NOT NULL DEFAULT 1,
+  lastLogin  INTEGER,
+  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id            TEXT PRIMARY KEY,
+  userId        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sessionToken  TEXT UNIQUE NOT NULL,
+  expires       INTEGER NOT NULL,
+  createdAt     INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_userId ON sessions(userId);
+
+CREATE TABLE IF NOT EXISTS addresses (
+  id          TEXT PRIMARY KEY,
+  userId      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
+  fullName    TEXT NOT NULL,
+  phone       TEXT NOT NULL,
+  street      TEXT NOT NULL,
+  apartment   TEXT,
+  city        TEXT NOT NULL,
+  province    TEXT NOT NULL,
+  postalCode  TEXT NOT NULL,
+  country     TEXT NOT NULL DEFAULT 'Pakistan',
+  isDefault   INTEGER NOT NULL DEFAULT 0,
+  createdAt   INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt   INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_addresses_userId ON addresses(userId);
+
+-- ============================================================
+-- COLLECTIONS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS collections (
+  id              TEXT PRIMARY KEY,
+  name            TEXT NOT NULL,
+  slug            TEXT UNIQUE NOT NULL,
+  description     TEXT NOT NULL DEFAULT '',
+  image           TEXT,
+  isActive        INTEGER NOT NULL DEFAULT 1,
+  sortOrder       INTEGER NOT NULL DEFAULT 0,
+  metaTitle       TEXT,
+  metaDescription TEXT,
+  createdAt       INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt       INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
+
+-- ============================================================
+-- PRODUCTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS products (
+  id                TEXT PRIMARY KEY,
+  name              TEXT NOT NULL,
+  slug              TEXT UNIQUE NOT NULL,
+  sku               TEXT UNIQUE NOT NULL,
+  description       TEXT NOT NULL,
+  shortDescription  TEXT,
+  price             INTEGER NOT NULL,
+  comparePrice      INTEGER,
+  costPerItem       INTEGER,
+  taxRate           REAL NOT NULL DEFAULT 0,
+  status            TEXT NOT NULL DEFAULT 'DRAFT',
+  collectionId      TEXT REFERENCES collections(id) ON DELETE SET NULL,
+  isNew             INTEGER NOT NULL DEFAULT 0,
+  isFeatured        INTEGER NOT NULL DEFAULT 0,
+  isBestSeller      INTEGER NOT NULL DEFAULT 0,
+  metaTitle         TEXT,
+  metaDescription   TEXT,
+  tags              TEXT NOT NULL DEFAULT '',
+  rating            REAL NOT NULL DEFAULT 0,
+  reviewCount       INTEGER NOT NULL DEFAULT 0,
+  soldCount         INTEGER NOT NULL DEFAULT 0,
+  waist             REAL,
+  length            REAL,
+  bottom            REAL,
+  bgColor           TEXT,
+  createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_products_slug         ON products(slug);
+CREATE INDEX IF NOT EXISTS idx_products_status       ON products(status);
+CREATE INDEX IF NOT EXISTS idx_products_collectionId ON products(collectionId);
+
+CREATE TABLE IF NOT EXISTS product_images (
+  id         TEXT PRIMARY KEY,
+  productId  TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  url        TEXT NOT NULL,
+  alt        TEXT NOT NULL DEFAULT '',
+  isPrimary  INTEGER NOT NULL DEFAULT 0,
+  sortOrder  INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_product_images_productId ON product_images(productId);
+
+CREATE TABLE IF NOT EXISTS product_variants (
+  id              TEXT PRIMARY KEY,
+  productId       TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  size            TEXT NOT NULL,
+  color           TEXT NOT NULL,
+  colorHex        TEXT NOT NULL,
+  sku             TEXT UNIQUE NOT NULL,
+  stock           INTEGER NOT NULL DEFAULT 0,
+  price           INTEGER NOT NULL,
+  compareAtPrice  INTEGER,
+  weight          REAL,
+  createdAt       INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt       INTEGER NOT NULL DEFAULT (unixepoch()),
+  UNIQUE(productId, size, color)
+);
+CREATE INDEX IF NOT EXISTS idx_variants_productId ON product_variants(productId);
+CREATE INDEX IF NOT EXISTS idx_variants_sku       ON product_variants(sku);
+
+-- ============================================================
+-- CART & WISHLIST
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS carts (
+  id            TEXT PRIMARY KEY,
+  userId        TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lastActivity  INTEGER NOT NULL DEFAULT (unixepoch()),
+  createdAt     INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt     INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_carts_lastActivity ON carts(lastActivity);
+
+CREATE TABLE IF NOT EXISTS cart_items (
+  id         TEXT PRIMARY KEY,
+  cartId     TEXT NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+  productId  TEXT NOT NULL REFERENCES products(id),
+  variantId  TEXT NOT NULL REFERENCES product_variants(id),
+  quantity   INTEGER NOT NULL DEFAULT 1,
+  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  UNIQUE(cartId, variantId)
+);
+CREATE INDEX IF NOT EXISTS idx_cart_items_cartId ON cart_items(cartId);
+
+CREATE TABLE IF NOT EXISTS wishlists (
+  id         TEXT PRIMARY KEY,
+  userId     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  productId  TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  UNIQUE(userId, productId)
+);
+CREATE INDEX IF NOT EXISTS idx_wishlists_userId ON wishlists(userId);
+
+-- ============================================================
+-- ABANDONED CARTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS abandoned_carts (
+  id                TEXT PRIMARY KEY,
+  userId            TEXT REFERENCES users(id) ON DELETE SET NULL,
+  email             TEXT,
+  phone             TEXT,
+  fullName          TEXT,
+  city              TEXT,
+  itemsJson         TEXT NOT NULL DEFAULT '[]',
+  itemCount         INTEGER NOT NULL DEFAULT 0,
+  subtotal          INTEGER NOT NULL DEFAULT 0,
+  totalValue        INTEGER NOT NULL DEFAULT 0,
+  reachedCheckout   INTEGER NOT NULL DEFAULT 0,
+  isContacted       INTEGER NOT NULL DEFAULT 0,
+  isRecovered       INTEGER NOT NULL DEFAULT 0,
+  recoveredOrderId  TEXT REFERENCES orders(id) ON DELETE SET NULL,
+  adminNote         TEXT,
+  lastActivity      INTEGER NOT NULL DEFAULT (unixepoch()),
+  abandonedAt       INTEGER NOT NULL DEFAULT (unixepoch()),
+  createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_userId       ON abandoned_carts(userId);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_phone        ON abandoned_carts(phone);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_email        ON abandoned_carts(email);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_abandonedAt  ON abandoned_carts(abandonedAt);
+CREATE INDEX IF NOT EXISTS idx_abandoned_carts_isRecovered  ON abandoned_carts(isRecovered);
+
+-- ============================================================
+-- ORDERS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS discounts (
+  id          TEXT PRIMARY KEY,
+  code        TEXT UNIQUE NOT NULL,
+  type        TEXT NOT NULL,
+  value       INTEGER NOT NULL,
+  minOrder    INTEGER NOT NULL DEFAULT 0,
+  maxUses     INTEGER NOT NULL DEFAULT 1000,
+  usedCount   INTEGER NOT NULL DEFAULT 0,
+  status      TEXT NOT NULL DEFAULT 'ACTIVE',
+  startsAt    INTEGER NOT NULL DEFAULT (unixepoch()),
+  expiresAt   INTEGER NOT NULL,
+  createdAt   INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt   INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_discounts_code   ON discounts(code);
+CREATE INDEX IF NOT EXISTS idx_discounts_status ON discounts(status);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id                    TEXT PRIMARY KEY,
+  orderNumber           TEXT UNIQUE NOT NULL,
+  userId                TEXT REFERENCES users(id),
+  guestEmail            TEXT,
+  guestName             TEXT,
+  guestPhone            TEXT,
+  subtotal              INTEGER NOT NULL,
+  discount              INTEGER NOT NULL DEFAULT 0,
+  loyaltyDiscount       INTEGER NOT NULL DEFAULT 0,
+  loyaltyPointsUsed     INTEGER NOT NULL DEFAULT 0,
+  loyaltyPointsEarned   INTEGER NOT NULL DEFAULT 0,
+  birthdayDiscount      INTEGER NOT NULL DEFAULT 0,
+  isBirthdayOrder       INTEGER NOT NULL DEFAULT 0,
+  shipping              INTEGER NOT NULL DEFAULT 0,
+  tax                   INTEGER NOT NULL DEFAULT 0,
+  total                 INTEGER NOT NULL,
+  status                TEXT NOT NULL DEFAULT 'PENDING',
+  paymentStatus         TEXT NOT NULL DEFAULT 'PENDING',
+  paymentMethod         TEXT NOT NULL,
+  discountCode          TEXT,
+  discountId            TEXT REFERENCES discounts(id),
+  addressId             TEXT REFERENCES addresses(id),
+  shippingAddress       TEXT,
+  shippingMethod        TEXT NOT NULL,
+  trackingNumber        TEXT,
+  courierName           TEXT,
+  customerNote          TEXT,
+  adminNote             TEXT,
+  confirmedAt           INTEGER,
+  shippedAt             INTEGER,
+  deliveredAt           INTEGER,
+  cancelledAt           INTEGER,
+  createdById           TEXT REFERENCES admins(id),
+  updatedById           TEXT REFERENCES admins(id),
+  createdAt             INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt             INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_orders_orderNumber   ON orders(orderNumber);
+CREATE INDEX IF NOT EXISTS idx_orders_userId        ON orders(userId);
+CREATE INDEX IF NOT EXISTS idx_orders_status        ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_paymentStatus ON orders(paymentStatus);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id         TEXT PRIMARY KEY,
+  orderId    TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  productId  TEXT NOT NULL REFERENCES products(id),
+  variantId  TEXT NOT NULL REFERENCES product_variants(id),
+  name       TEXT NOT NULL,
+  image      TEXT NOT NULL,
+  size       TEXT NOT NULL,
+  color      TEXT NOT NULL,
+  sku        TEXT NOT NULL,
+  price      INTEGER NOT NULL,
+  quantity   INTEGER NOT NULL,
+  subtotal   INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_order_items_orderId   ON order_items(orderId);
+CREATE INDEX IF NOT EXISTS idx_order_items_productId ON order_items(productId);
+
+-- ============================================================
+-- LOYALTY POINTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS loyalty_transactions (
+  id          TEXT PRIMARY KEY,
+  userId      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  orderId     TEXT REFERENCES orders(id) ON DELETE SET NULL,
+  type        TEXT NOT NULL,
+  points      INTEGER NOT NULL,
+  balance     INTEGER NOT NULL,
+  description TEXT,
+  createdAt   INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_userId  ON loyalty_transactions(userId);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_orderId ON loyalty_transactions(orderId);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_type    ON loyalty_transactions(type);
+
+-- ============================================================
+-- REVIEWS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id          TEXT PRIMARY KEY,
+  userId      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  productId   TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  rating      INTEGER NOT NULL,
+  title       TEXT,
+  comment     TEXT NOT NULL,
+  isVerified  INTEGER NOT NULL DEFAULT 0,
+  isApproved  INTEGER NOT NULL DEFAULT 0,
+  createdAt   INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt   INTEGER NOT NULL DEFAULT (unixepoch()),
+  UNIQUE(userId, productId)
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_productId ON reviews(productId);
+
+-- ============================================================
+-- MARKETING
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS newsletter (
+  id            TEXT PRIMARY KEY,
+  email         TEXT UNIQUE NOT NULL,
+  isSubscribed  INTEGER NOT NULL DEFAULT 1,
+  source        TEXT,
+  createdAt     INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt     INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter(email);
+
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  phone      TEXT,
+  subject    TEXT NOT NULL,
+  message    TEXT NOT NULL,
+  isRead     INTEGER NOT NULL DEFAULT 0,
+  isReplied  INTEGER NOT NULL DEFAULT 0,
+  adminNote  TEXT,
+  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_contact_isRead ON contact_messages(isRead);
+
+-- ============================================================
+-- SETTINGS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS settings (
+  id         TEXT PRIMARY KEY,
+  key        TEXT UNIQUE NOT NULL,
+  value      TEXT NOT NULL,
+  category   TEXT NOT NULL DEFAULT 'general',
+  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_settings_key      ON settings(key);
+CREATE INDEX IF NOT EXISTS idx_settings_category ON settings(category);
+
+-- ============================================================
+-- SHIPPING
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS shipping_zones (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  isActive   INTEGER NOT NULL DEFAULT 1,
+  cities     TEXT NOT NULL DEFAULT '',
+  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS shipping_methods (
+  id         TEXT PRIMARY KEY,
+  zoneId     TEXT NOT NULL REFERENCES shipping_zones(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  time       TEXT NOT NULL,
+  price      INTEGER NOT NULL,
+  isActive   INTEGER NOT NULL DEFAULT 1,
+  freeAbove  INTEGER,
+  createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
+  updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_shipping_methods_zoneId ON shipping_methods(zoneId);

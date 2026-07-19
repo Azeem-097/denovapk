@@ -17,7 +17,7 @@ const PRODUCT_COLS = `
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
   p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
-  p.waist, p."length" as lengthInches, p.bottom, p.bgColor,
+  p.waist, p."length" as lengthInches, p.bottom, p.bgColor, p.brand,
   p.createdAt, p.updatedAt
 `;
 
@@ -218,7 +218,8 @@ export interface CreateProductInput {
   waist?:           number | null;
   length?:          number | null;
   bottom?:          number | null;
-  bgColor?:         string | null;   // hex color like "#f5f0e8" or null to keep original
+  bgColor?:         string | null;
+  brand?:           string | null;   // new — free-text brand name
   variants?: Array<{
     size:     string;
     color:    string;
@@ -237,8 +238,8 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
     sql: `INSERT INTO products (
       id, name, slug, sku, description, price, comparePrice, costPerItem,
       collectionId, status, isNew, isFeatured, isBestSeller, tags,
-      metaTitle, metaDescription, waist, "length", bottom, bgColor, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      metaTitle, metaDescription, waist, "length", bottom, bgColor, brand, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id, input.name, input.slug, input.sku, input.description,
       input.price, input.comparePrice ?? null, input.costPerItem ?? null,
@@ -250,6 +251,7 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
       input.length ?? null,
       input.bottom ?? null,
       input.bgColor ?? null,
+      input.brand ?? null,
       t, t,
     ],
   });
@@ -304,6 +306,7 @@ export async function updateProduct(
     waist:           updates.waist,
     bottom:          updates.bottom,
     bgColor:         updates.bgColor,
+    brand:           updates.brand,
   };
 
   Object.entries(map).forEach(([k, v]) => {
@@ -325,8 +328,6 @@ export async function updateProduct(
 
 /**
  * Hard-delete a product and ALL references to it.
- * Manually cascades because SQLite/Turso schema uses REFERENCES without ON DELETE CASCADE
- * on cart_items and order_items. Order of deletion matters (FK constraints).
  */
 export async function deleteProduct(id: string): Promise<void> {
   await db.execute({ sql: "DELETE FROM reviews    WHERE productId = ?", args: [id] });
@@ -443,8 +444,8 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
     sql: `INSERT INTO products (
       id, name, slug, sku, description, price, comparePrice, costPerItem,
       collectionId, status, isNew, isFeatured, isBestSeller, tags,
-      metaTitle, metaDescription, waist, "length", bottom, bgColor, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      metaTitle, metaDescription, waist, "length", bottom, bgColor, brand, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       newId, newName, newSlug, newSku, source.description,
       source.price, source.comparePrice, source.costPerItem,
@@ -452,7 +453,7 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
       source.isNew, source.isFeatured, source.isBestSeller,
       source.tags,
       source.metaTitle, source.metaDescription,
-      source.waist, source.length, source.bottom, source.bgColor,
+      source.waist, source.length, source.bottom, source.bgColor, source.brand,
       t, t,
     ],
   });

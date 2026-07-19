@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown, Flame } from "lucide-react";
+import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown, Flame, Globe } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ProductImages } from "@/components/product/ProductImages";
 import { ColorSelector } from "@/components/product/ColorSelector";
@@ -80,9 +80,10 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     ? getDiscountPercent(product.compareAtPrice!, product.price)
     : 0;
 
-  const savedAmount = hasDiscount
-    ? product.compareAtPrice! - product.price
-    : 0;
+  // Brand line — prefer explicit brand, fallback to collection
+  const brandLine = (product.brand && product.brand.trim().length > 0)
+    ? product.brand.trim()
+    : (product.collection || "Denova");
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
@@ -148,49 +149,45 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
             <div className="lg:sticky lg:top-24 lg:self-start">
               <FadeIn delay={100}>
 
-                <h1 className="text-lg sm:text-xl font-bold tracking-[0.1em] uppercase text-[#1a1a1a] leading-tight mb-2">
-                  {product.name}
-                </h1>
-
-                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-5">
-                  {product.collection || "Premium"}
-                </p>
-
-                {/* MEGA DEAL LIVE BANNER */}
+                {/* 1. Sale Ends In Countdown */}
                 {hasDiscount && (
-                  <div className="mb-5 w-full max-w-md border border-[#e32c52]/30 shadow-[0_8px_30px_-12px_rgba(227,44,82,0.25)] bg-white overflow-hidden">
-                    <div className="bg-[#e32c52] px-4 py-2 flex justify-between items-center text-white">
-                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase flex items-center gap-1.5">
-                        <Flame size={12} fill="currentColor" /> Mega Deal Live
-                      </span>
-                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-white/90">
-                        Limited Time
-                      </span>
-                    </div>
-                    <div className="p-4 sm:p-5 flex flex-col items-center justify-center text-center bg-gradient-to-b from-[#fff0f3] to-white">
-                      <div className="flex items-center gap-3">
-                        <span className="font-[family-name:var(--font-playfair)] text-[42px] sm:text-[52px] font-bold text-[#e32c52] leading-none">
-                          {discountPercent}%
-                        </span>
-                        <div className="flex flex-col items-start leading-none gap-1.5">
-                          <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight uppercase">
-                            OFF TODAY
-                          </span>
-                          <span className="text-[11px] sm:text-xs font-bold text-[#d97706] uppercase tracking-wide">
-                            You save {formatPKR(savedAmount)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="w-full h-px bg-[#e32c52]/15 my-3 sm:my-4" />
-                      <p className="text-[9px] sm:text-[10px] font-bold tracking-[0.15em] text-[#e32c52] uppercase">
-                        Price dropped from {formatPKR(product.compareAtPrice!)} to {formatPKR(product.price)}
-                      </p>
-                    </div>
+                  <div className="mb-4">
+                    <SaleCountdown productId={product.id} className="mb-0 max-w-md" />
                   </div>
                 )}
 
-                {/* Price row */}
-                <div className="flex items-end gap-3 flex-wrap mb-3">
+                {/* 2. Product Name */}
+                <h1 className="text-xl sm:text-2xl font-bold tracking-[0.05em] uppercase text-[#1a1a1a] leading-tight mb-4">
+                  {product.name}
+                </h1>
+
+                {/* 3. Badges: 50% OFF + Free Delivery */}
+                <div className="flex flex-wrap items-center gap-2 mb-5">
+                  {hasDiscount && (
+                    <span className="inline-flex items-center gap-1.5 bg-[#e32c52] text-white px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] uppercase shadow-sm">
+                      <Flame size={12} fill="currentColor" />
+                      {discountPercent}% OFF
+                    </span>
+                  )}
+                  <span className="inline-flex items-center bg-[#1a1a1a] text-white px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] uppercase shadow-sm">
+                    Free Delivery
+                  </span>
+                </div>
+
+                {/* 4. Brand Information: Brand Name | International Brand */}
+                <div className="flex items-center gap-2.5 mb-6">
+                  <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#c9a96e]">
+                    {brandLine}
+                  </span>
+                  <span className="text-[#e5e7eb] font-light">|</span>
+                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#1a1a1a] bg-[#f5f0e8] px-2 py-1 flex items-center gap-1.5 border border-[#c9a96e]/30">
+                    <Globe size={10} strokeWidth={2.5} className="text-[#c9a96e]" />
+                    International Brand
+                  </span>
+                </div>
+
+                {/* 5. Product Price */}
+                <div className="flex items-end gap-3 flex-wrap mb-5 border-t border-[#e5e7eb] pt-6">
                   <span className="text-4xl sm:text-[42px] font-extrabold text-[#1a1a1a] tracking-tight leading-none">
                     {formatPKR(product.price)}
                   </span>
@@ -201,30 +198,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   )}
                 </div>
 
-                {/* Red Pill & Savings Text */}
-                {hasDiscount && (
-                  <div className="mb-6 space-y-2">
-                    <div className="inline-flex items-center gap-1.5 bg-[#feecf0] px-2.5 py-1 text-[#e32c52] text-[10px] font-bold tracking-widest uppercase rounded-sm">
-                      <Flame size={12} fill="currentColor" />
-                      {discountPercent}% OFF
-                    </div>
-                    <p className="text-xs font-bold text-[#e32c52] flex items-center gap-1.5">
-                      <Flame size={14} fill="currentColor" className="text-[#f59e0b]"/>
-                      You save {formatPKR(savedAmount)} on this deal
-                    </p>
-                  </div>
-                )}
-
-                {/* Live view counter */}
-                <div className="mb-4 max-w-md">
+                {/* 6. Product Views */}
+                <div className="mb-7">
                   <LiveViewCounter productId={product.id} />
                 </div>
 
-                {/* Sale countdown */}
-                <div className="max-w-md">
-                  <SaleCountdown productId={product.id} />
-                </div>
-
+                {/* 7. Color Selection */}
                 {uniqueColors.length > 0 && (
                   <div className="mb-7">
                     <ColorSelector
@@ -235,6 +214,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </div>
                 )}
 
+                {/* 8. Size Selection */}
                 {sizesForColor.length > 0 && (
                   <div className="mb-7">
                     <SizeSelector
@@ -246,6 +226,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </div>
                 )}
 
+                {/* 9. Quantity Selector */}
                 <div className="mb-6 flex items-center gap-4">
                   <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
                     Quantity
@@ -276,11 +257,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   )}
                 </div>
 
+                {/* 10. Add to Cart Button */}
                 <button
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
                   className={cn(
-                    "w-full max-w-md h-11 flex items-center justify-between px-5 text-xs font-bold tracking-[0.15em] uppercase transition-all duration-200",
+                    "w-full max-w-md h-12 flex items-center justify-between px-6 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200",
                     isOutOfStock
                       ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
                       : addedToCart
@@ -296,17 +278,18 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       : "Add to Cart"}
                   </span>
                   {addedToCart ? (
-                    <CheckCircle size={16} strokeWidth={2} />
+                    <CheckCircle size={18} strokeWidth={2} />
                   ) : (
-                    <ShoppingBag size={16} strokeWidth={1.75} />
+                    <ShoppingBag size={18} strokeWidth={1.75} />
                   )}
                 </button>
 
+                {/* 11. Product Description */}
                 <div className="mt-10">
-                  <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">
+                  <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3 border-b border-[#1a1a1a] inline-block pb-1">
                     Product Description
                   </h3>
-                  <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                  <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line mt-2">
                     {product.description}
                   </p>
                 </div>

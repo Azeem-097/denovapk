@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS products (
   length            REAL,
   bottom            REAL,
   bgColor           TEXT,
+  brand             TEXT,
   createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
   updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
 );

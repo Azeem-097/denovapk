@@ -1,0 +1,3457 @@
+================================================================================
+PRODUCT DETAIL PAGE — PREMIUM REDESIGN
+Tasks:
+  1. Redesign top-left discount badge (premium, high-contrast)
+  2. Move Share icon to top section
+  3. Product name below top section
+  4. Two rectangular badges: '50% OFF' + 'Save PKR X,XXX' (dynamic)
+  5. Brand name below badges (dynamic, prepare for future data)
+  6. 'International Brand' static promo badge next to product name
+  7. Price + discounted price section (keep current)
+  8. Help/info section stays as-is
+Generated: 2026-07-19 12:07:05
+================================================================================
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\page.tsx
+================================================================================
+
+import { notFound } from "next/navigation";
+import { getProductBySlug, getRelatedProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ProductDetailClient } from "./ProductDetailClient";
+
+// ISR: 60s cache. Stock levels update within 1 minute for browsing users.
+// (Real stock validation happens at checkout — this is safe.)
+export const revalidate = 60;
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+// Placeholder image shown when a product has no images uploaded yet
+const PLACEHOLDER_IMAGE = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
+export default async function ProductDetailPage({ params }: Props) {
+  const { slug } = await params;
+
+  let dbProduct;
+  try {
+    dbProduct = await getProductBySlug(slug);
+  } catch (err) {
+    console.error("Failed to load product:", err);
+    notFound();
+  }
+
+  if (!dbProduct) notFound();
+
+  const product = adaptProduct(dbProduct);
+
+  // Ensure we always have at least one image so the UI never crashes
+  if (product.images.length === 0) {
+    product.images = [PLACEHOLDER_IMAGE];
+  }
+
+  let relatedProducts: ReturnType<typeof adaptProduct>[] = [];
+  try {
+    if (dbProduct.collectionId) {
+      const dbRelated = await getRelatedProducts(dbProduct.id, dbProduct.collectionId, 4);
+      relatedProducts = dbRelated.map((p) => {
+        const adapted = adaptProduct({ ...p, collection: dbProduct.collection });
+        if (adapted.images.length === 0) adapted.images = [PLACEHOLDER_IMAGE];
+        return adapted;
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load related products:", err);
+  }
+
+  return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;
+}
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\ProductDetailClient.tsx
+================================================================================
+
+"use client";
+import { useState, useMemo } from "react";
+import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown, Flame } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { ProductImages } from "@/components/product/ProductImages";
+import { ColorSelector } from "@/components/product/ColorSelector";
+import { SizeSelector } from "@/components/product/SizeSelector";
+import { RelatedProducts } from "@/components/product/RelatedProducts";
+import { SaleCountdown } from "@/components/product/SaleCountdown";
+import { LiveViewCounter } from "@/components/product/LiveViewCounter";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { useCartStore } from "@/store/cartStore";
+import { useToastStore } from "@/store/toastStore";
+import { cn, getDiscountPercent } from "@/lib/utils";
+import type { Product } from "@/types";
+
+function formatPKR(amount: number): string {
+  return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
+}
+
+interface Props {
+  product:         Product;
+  relatedProducts: Product[];
+}
+
+export function ProductDetailClient({ product, relatedProducts }: Props) {
+  const uniqueColors = useMemo(() =>
+    Array.from(
+      new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
+    ),
+    [product.variants]
+  );
+
+  const firstInStockColor = useMemo(() => {
+    const inStock = product.variants.find((v) => v.stock > 0);
+    return inStock?.color ?? uniqueColors[0]?.name ?? "";
+  }, [product.variants, uniqueColors]);
+
+  const [selectedColor, setSelectedColor] = useState(firstInStockColor);
+
+  const sizesForColor = useMemo(() => {
+    const variants = product.variants.filter((v) => v.color === selectedColor);
+    return Array.from(new Set(variants.map((v) => v.size)));
+  }, [product.variants, selectedColor]);
+
+  const outOfStockSizes = useMemo(() => {
+    return product.variants
+      .filter((v) => v.color === selectedColor && v.stock === 0)
+      .map((v) => v.size);
+  }, [product.variants, selectedColor]);
+
+  const firstInStockSize = useMemo(() => {
+    const v = product.variants.find((x) => x.color === selectedColor && x.stock > 0);
+    return v?.size ?? sizesForColor[0] ?? "";
+  }, [product.variants, selectedColor, sizesForColor]);
+
+  const [selectedSize, setSelectedSize] = useState(firstInStockSize);
+
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    const firstAvail = product.variants.find((v) => v.color === color && v.stock > 0);
+    setSelectedSize(firstAvail?.size ?? "");
+  };
+
+  const [quantity, setQuantity]         = useState(1);
+  const [addedToCart, setAddedToCart]   = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("details");
+
+  const addToCart = useCartStore((s) => s.addItem);
+  const showToast = useToastStore((s) => s.addToast);
+
+  const selectedVariant = useMemo(() =>
+    product.variants.find((v) => v.color === selectedColor && v.size === selectedSize),
+    [product.variants, selectedColor, selectedSize]
+  );
+
+  const isOutOfStock = !selectedVariant || selectedVariant.stock === 0;
+  const hasDiscount  = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPercent = hasDiscount
+    ? getDiscountPercent(product.compareAtPrice!, product.price)
+    : 0;
+
+  const savedAmount = hasDiscount
+    ? product.compareAtPrice! - product.price
+    : 0;
+
+  const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+
+  const measurements = [
+    { label: "Waist",  value: product.waist,  unit: '"' },
+    { label: "Length", value: product.length, unit: '"' },
+    { label: "Bottom", value: product.bottom, unit: '"' },
+  ].filter((m) => m.value != null);
+
+  const fitLabel = useMemo(() => {
+    if (product.waist === null || product.waist === undefined) return null;
+    const w = `${product.waist}W`;
+    const l = product.length !== null && product.length !== undefined ? ` x ${product.length}L` : "";
+    return `${w}${l}`;
+  }, [product.waist, product.length]);
+
+  const handleAddToCart = () => {
+    if (!selectedVariant) {
+      showToast({ type: "error", message: "Please select a size" });
+      return;
+    }
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant.id,
+      name:      product.name,
+      image:     primaryImage.url,
+      size:      selectedVariant.size,
+      color:     selectedColor,
+      colorHex:  selectedVariant.colorHex,
+      price:     product.price,
+      quantity,
+      slug:      product.slug,
+      bgColor:   product.bgColor,
+    });
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2500);
+  };
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordion((prev) => (prev === key ? null : key));
+  };
+
+  return (
+    <>
+      <div className="pt-24 sm:pt-28 pb-16">
+        <div className="w-full lg:max-w-[80%] mx-auto px-3 sm:px-4 lg:px-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-8 lg:gap-8 xl:gap-10">
+
+            <FadeIn>
+              <div className="w-full">
+                <ProductImages
+                  images={product.images}
+                  productName={product.name}
+                  productId={product.id}
+                  productSlug={product.slug}
+                  productPrice={product.price}
+                  bgColor={product.bgColor}
+                  discountPercent={discountPercent}
+                />
+              </div>
+            </FadeIn>
+
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <FadeIn delay={100}>
+
+                <h1 className="text-lg sm:text-xl font-bold tracking-[0.1em] uppercase text-[#1a1a1a] leading-tight mb-2">
+                  {product.name}
+                </h1>
+
+                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-5">
+                  {product.collection || "Premium"}
+                </p>
+
+                {/* MEGA DEAL LIVE BANNER */}
+                {hasDiscount && (
+                  <div className="mb-5 w-full max-w-md border border-[#e32c52]/30 shadow-[0_8px_30px_-12px_rgba(227,44,82,0.25)] bg-white overflow-hidden">
+                    <div className="bg-[#e32c52] px-4 py-2 flex justify-between items-center text-white">
+                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase flex items-center gap-1.5">
+                        <Flame size={12} fill="currentColor" /> Mega Deal Live
+                      </span>
+                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-white/90">
+                        Limited Time
+                      </span>
+                    </div>
+                    <div className="p-4 sm:p-5 flex flex-col items-center justify-center text-center bg-gradient-to-b from-[#fff0f3] to-white">
+                      <div className="flex items-center gap-3">
+                        <span className="font-[family-name:var(--font-playfair)] text-[42px] sm:text-[52px] font-bold text-[#e32c52] leading-none">
+                          {discountPercent}%
+                        </span>
+                        <div className="flex flex-col items-start leading-none gap-1.5">
+                          <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight uppercase">
+                            OFF TODAY
+                          </span>
+                          <span className="text-[11px] sm:text-xs font-bold text-[#d97706] uppercase tracking-wide">
+                            You save {formatPKR(savedAmount)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full h-px bg-[#e32c52]/15 my-3 sm:my-4" />
+                      <p className="text-[9px] sm:text-[10px] font-bold tracking-[0.15em] text-[#e32c52] uppercase">
+                        Price dropped from {formatPKR(product.compareAtPrice!)} to {formatPKR(product.price)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Price row */}
+                <div className="flex items-end gap-3 flex-wrap mb-3">
+                  <span className="text-4xl sm:text-[42px] font-extrabold text-[#1a1a1a] tracking-tight leading-none">
+                    {formatPKR(product.price)}
+                  </span>
+                  {hasDiscount && (
+                    <span className="text-xl sm:text-2xl text-[#9ca3af] line-through decoration-[#e32c52]/70 decoration-[2.5px] font-semibold leading-none pb-1">
+                      {formatPKR(product.compareAtPrice!)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Red Pill & Savings Text */}
+                {hasDiscount && (
+                  <div className="mb-6 space-y-2">
+                    <div className="inline-flex items-center gap-1.5 bg-[#feecf0] px-2.5 py-1 text-[#e32c52] text-[10px] font-bold tracking-widest uppercase rounded-sm">
+                      <Flame size={12} fill="currentColor" />
+                      {discountPercent}% OFF
+                    </div>
+                    <p className="text-xs font-bold text-[#e32c52] flex items-center gap-1.5">
+                      <Flame size={14} fill="currentColor" className="text-[#f59e0b]"/>
+                      You save {formatPKR(savedAmount)} on this deal
+                    </p>
+                  </div>
+                )}
+
+                {/* Live view counter */}
+                <div className="mb-4 max-w-md">
+                  <LiveViewCounter productId={product.id} />
+                </div>
+
+                {/* Sale countdown */}
+                <div className="max-w-md">
+                  <SaleCountdown productId={product.id} />
+                </div>
+
+                {uniqueColors.length > 0 && (
+                  <div className="mb-7">
+                    <ColorSelector
+                      colors={uniqueColors}
+                      selectedColor={selectedColor}
+                      onSelect={handleColorChange}
+                    />
+                  </div>
+                )}
+
+                {sizesForColor.length > 0 && (
+                  <div className="mb-7">
+                    <SizeSelector
+                      sizes={sizesForColor}
+                      selectedSize={selectedSize}
+                      onSelect={setSelectedSize}
+                      outOfStock={outOfStockSizes}
+                    />
+                  </div>
+                )}
+
+                <div className="mb-6 flex items-center gap-4">
+                  <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                    Quantity
+                  </span>
+                  <div className="flex items-center border border-[#d1d5db]">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-10 text-center text-sm font-medium text-[#1a1a1a]">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity((q) => Math.min(selectedVariant?.stock ?? 10, q + 1))}
+                      className="w-9 h-9 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9]"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
+                    <span className="text-xs text-[#e32c52] font-bold">
+                      Only {selectedVariant.stock} left
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className={cn(
+                    "w-full max-w-md h-11 flex items-center justify-between px-5 text-xs font-bold tracking-[0.15em] uppercase transition-all duration-200",
+                    isOutOfStock
+                      ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                      : addedToCart
+                      ? "bg-[#3b5f8f] text-white"
+                      : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
+                  )}
+                >
+                  <span>
+                    {addedToCart
+                      ? "Added to Cart"
+                      : isOutOfStock
+                      ? "Out of Stock"
+                      : "Add to Cart"}
+                  </span>
+                  {addedToCart ? (
+                    <CheckCircle size={16} strokeWidth={2} />
+                  ) : (
+                    <ShoppingBag size={16} strokeWidth={1.75} />
+                  )}
+                </button>
+
+                <div className="mt-10">
+                  <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">
+                    Product Description
+                  </h3>
+                  <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                    {product.description}
+                  </p>
+                </div>
+
+                <div className="mt-8 border-t border-[#e5e7eb]">
+                  <AccordionItem
+                    id="details"
+                    title="Product Details & Composition"
+                    isOpen={openAccordion === "details"}
+                    onToggle={() => toggleAccordion("details")}
+                  >
+                    <div className="space-y-4">
+                      {fitLabel && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-[#6b7280] font-medium">Fit:</span>
+                          <span className="text-[#1a1a1a] font-semibold">{fitLabel}</span>
+                        </div>
+                      )}
+
+                      {measurements.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Measurements
+                          </p>
+                          <div className="divide-y divide-[#e5e7eb] border border-[#e5e7eb]">
+                            {measurements.map((m) => (
+                              <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
+                                <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">
+                                  {m.label}
+                                </span>
+                                <span className="text-sm font-semibold text-[#1a1a1a]">
+                                  {m.value}{m.unit}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {product.tags.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Style Tags
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {product.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionItem>
+
+                  <AccordionItem
+                    id="shipping"
+                    title="Shipping & Returns"
+                    isOpen={openAccordion === "shipping"}
+                    onToggle={() => toggleAccordion("shipping")}
+                  >
+                    <div className="space-y-3 text-sm text-[#6b7280] leading-relaxed">
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Free Shipping</span>
+                        <span> on every order across Pakistan. Standard delivery within 3-5 business days.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Easy Returns</span>
+                        <span> within 7 days of delivery. Items must be unworn with original tags.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Authentic Quality</span>
+                        <span> - 100% guaranteed. Every piece is quality-inspected before shipping.</span>
+                      </div>
+                    </div>
+                  </AccordionItem>
+                </div>
+              </FadeIn>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <RelatedProducts products={relatedProducts} currentProductId={product.id} />
+    </>
+  );
+}
+
+function AccordionItem({
+  id, title, isOpen, onToggle, children,
+}: {
+  id:       string;
+  title:    string;
+  isOpen:   boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-[#e5e7eb]">
+      <button
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`accordion-${id}`}
+        className="w-full flex items-center justify-between py-4 text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-[#1a1a1a] text-lg font-light w-4">
+            {isOpen ? "-" : "+"}
+          </span>
+          <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors">
+            {title}
+          </span>
+        </div>
+        <ChevronDown
+          size={14}
+          className={cn(
+            "text-[#6b7280] transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+
+      <div
+        id={`accordion-${id}`}
+        className={cn(
+          "grid transition-all duration-300 ease-out",
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-5 pl-7">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+void Button;
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\loading.tsx
+================================================================================
+
+import { SkelBar, SkelBlock } from "@/components/ui/SkeletonPrimitives";
+
+export default function LoadingProductDetail() {
+  return (
+    <div className="pt-24 sm:pt-28 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-14">
+
+          {/* Image gallery skeleton */}
+          <div className="grid grid-cols-2 gap-2 lg:gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkelBlock key={i} className="aspect-[4/5]" />
+            ))}
+          </div>
+
+          {/* Info column skeleton */}
+          <div className="space-y-4">
+            <SkelBar w="80%" h="18px" />
+            <SkelBar w="40%" h="12px" />
+            <SkelBar w="55%" h="28px" className="mt-4" />
+
+            <div className="pt-6">
+              <SkelBar w="60px" h="12px" className="mb-3" />
+              <div className="flex gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SkelBlock key={i} className="w-10 h-10 rounded-full" />
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <SkelBar w="60px" h="12px" className="mb-3" />
+              <div className="flex gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkelBlock key={i} className="w-14 h-14" />
+                ))}
+              </div>
+            </div>
+
+            <SkelBlock className="h-14 mt-6" />
+            <SkelBar w="90%" h="12px" className="mt-4" />
+            <SkelBar w="80%" h="12px" />
+            <SkelBar w="85%" h="12px" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\DiscountBadge.tsx
+================================================================================
+
+"use client";
+import { cn } from "@/lib/utils";
+
+/**
+ * Small ribbon badge hanging from the TOP-LEFT edge of the image.
+ * Pointed tail at the bottom, subtle fold shadow at the top-right.
+ */
+interface Props {
+  percent: number;
+  className?: string;
+  variant?: "corner" | "floating";
+}
+
+export function DiscountBadge({ percent, className, variant = "corner" }: Props) {
+  if (!percent || percent <= 0) return null;
+
+  if (variant === "floating") {
+    return (
+      <div
+        className={cn(
+          "absolute top-3 left-3 z-20 bg-[#e32c52] text-white shadow-md",
+          "text-[9px] font-bold tracking-[0.15em] uppercase px-2 py-1",
+          className
+        )}
+      >
+        {percent}% OFF
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "absolute top-0 left-4 z-30 pointer-events-none",
+        className
+      )}
+    >
+      <div className="flex flex-col items-stretch w-[52px]">
+        {/* Ribbon body — starts flush at the very top */}
+        <div className="bg-[#e32c52] text-white flex flex-col items-center justify-center pt-2.5 pb-2 px-1 shadow-lg">
+          <span className="text-[18px] font-extrabold leading-none tabular-nums">
+            {percent}%
+          </span>
+          <span className="text-[7px] font-bold tracking-[0.2em] uppercase mt-0.5">
+            OFF
+          </span>
+        </div>
+
+        {/* Pointed tail at bottom */}
+        <svg
+          className="w-[52px] h-[14px]"
+          viewBox="0 0 52 14"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <polygon points="0,0 52,0 26,14" fill="#e32c52" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+export function DiscountInlinePill({ percent, className }: { percent: number; className?: string }) {
+  if (!percent || percent <= 0) return null;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-1",
+        "bg-[#e32c52] text-white",
+        "text-[10px] font-bold tracking-[0.16em] uppercase",
+        className
+      )}
+    >
+      -{percent}%
+    </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductImages.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
+import { Package, Heart } from "lucide-react";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
+import { DiscountBadge } from "./DiscountBadge";
+import { ImageLightbox } from "./ImageLightbox";
+import { cn } from "@/lib/utils";
+import type { ProductImage as ProductImageType } from "@/types";
+
+interface ProductImagesProps {
+  images:           ProductImageType[];
+  productName:      string;
+  productId:        string;
+  productSlug:      string;
+  productPrice:     number;
+  bgColor?:         string | null;
+  discountPercent?: number;
+}
+
+const PLACEHOLDER: ProductImageType = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
+export function ProductImages({
+  images,
+  productName,
+  productId,
+  productSlug,
+  productPrice,
+  bgColor,
+  discountPercent,
+}: ProductImagesProps) {
+  const safeImages = images && images.length > 0 ? images : [PLACEHOLDER];
+
+  const sortedImages = [...safeImages].sort(
+    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+  );
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [mobileIndex, setMobileIndex] = useState(0);
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx,  setLightboxIdx]  = useState(0);
+
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIdx(idx);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== mobileIndex) setMobileIndex(idx);
+  }, [mobileIndex]);
+
+  const scrollToSlide = useCallback((idx: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  }, []);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const isInWishlist   = useWishlistStore((s) => s.isInWishlist(productId));
+  const showToast      = useToastStore((s) => s.addToast);
+
+  const primaryImage = sortedImages[0];
+
+  const handleWishlist = () => {
+    toggleWishlist({
+      id:        productId,
+      productId: productId,
+      name:      productName,
+      image:     primaryImage.url,
+      price:     productPrice,
+      slug:      productSlug,
+      bgColor:   bgColor,
+    });
+    showToast({
+      type: "success",
+      message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+    });
+  };
+
+  const hasDiscount = !!discountPercent && discountPercent > 0;
+  const isPlaceholder = (url: string) => url === PLACEHOLDER.url;
+
+  return (
+    <>
+      {/* DESKTOP — 2x2 grid with zoom-on-hover */}
+      <div className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3">
+        {sortedImages.map((img, i) => (
+          <div key={img.id + i} className="relative group">
+            <button
+              type="button"
+              onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+              disabled={isPlaceholder(img.url)}
+              className={cn(
+                "block w-full relative cursor-zoom-in disabled:cursor-default rounded-xl lg:rounded-2xl overflow-hidden",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3b5f8f] focus-visible:ring-offset-2"
+              )}
+              aria-label={`View image ${i + 1} in full screen`}
+            >
+              <ProductBgWrapper
+                bgColor={bgColor}
+                className={cn(
+                  "aspect-[4/5] overflow-hidden",
+                  !bgColor && "bg-[#f4f2ee]"
+                )}
+              >
+                {isPlaceholder(img.url) ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
+                    <Package size={48} strokeWidth={1.5} />
+                    <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                      Image coming soon
+                    </p>
+                  </div>
+                ) : (
+                  <Image
+                    src={img.url}
+                    alt={img.alt || productName}
+                    fill
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    sizes="(max-width: 1024px) 50vw, 45vw"
+                    priority={i === 0}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    unoptimized={img.url.endsWith(".svg")}
+                  />
+                )}
+              </ProductBgWrapper>
+            </button>
+
+            {/* Discount ribbon — only on primary image */}
+            {i === 0 && hasDiscount && (
+              <DiscountBadge percent={discountPercent!} />
+            )}
+
+            {i === 0 && (
+              <button
+                onClick={handleWishlist}
+                aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                className={cn(
+                  "absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300",
+                  "opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0",
+                  mounted && isInWishlist && "opacity-100 translate-x-0"
+                )}
+              >
+                <Heart
+                  size={16}
+                  className={cn(
+                    "transition-colors",
+                    mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
+                  )}
+                />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* MOBILE — swipeable carousel */}
+      <div className="sm:hidden">
+        <div className="relative">
+          <button
+            onClick={handleWishlist}
+            aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm"
+          >
+            <Heart
+              size={16}
+              className={cn(
+                "transition-colors",
+                mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
+              )}
+            />
+          </button>
+
+          {hasDiscount && (
+            <DiscountBadge percent={discountPercent!} />
+          )}
+
+          <div
+            ref={scrollerRef}
+            onScroll={handleScroll}
+            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x"
+            style={{ scrollBehavior: "auto" }}
+          >
+            {sortedImages.map((img, i) => (
+              <button
+                key={img.id + i}
+                type="button"
+                onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+                disabled={isPlaceholder(img.url)}
+                className="flex-shrink-0 w-full snap-start cursor-zoom-in disabled:cursor-default"
+                aria-label={`View image ${i + 1} in full screen`}
+              >
+                <ProductBgWrapper
+                  bgColor={bgColor}
+                  className={cn(
+                    "aspect-[4/5] rounded-xl overflow-hidden",
+                    !bgColor && "bg-[#f4f2ee]"
+                  )}
+                >
+                  {isPlaceholder(img.url) ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
+                      <Package size={48} strokeWidth={1.5} />
+                      <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                        Image coming soon
+                      </p>
+                    </div>
+                  ) : (
+                    <Image
+                      src={img.url}
+                      alt={img.alt || productName}
+                      fill
+                      className="object-cover pointer-events-none"
+                      sizes="100vw"
+                      priority={i === 0}
+                      draggable={false}
+                    />
+                  )}
+                </ProductBgWrapper>
+              </button>
+            ))}
+          </div>
+
+          {sortedImages.length > 1 && (
+            <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full">
+              {mobileIndex + 1} / {sortedImages.length}
+            </div>
+          )}
+        </div>
+
+        {sortedImages.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
+            {sortedImages.map((_, i) => {
+              const isActive = i === mobileIndex;
+              return (
+                <button
+                  key={i}
+                  onClick={() => scrollToSlide(i)}
+                  aria-label={`Go to image ${i + 1}`}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    isActive
+                      ? "w-6 bg-[#1a1a1a]"
+                      : "w-1.5 bg-[#d1d5db] hover:bg-[#9ca3af]"
+                  )}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <ImageLightbox
+        images={sortedImages.filter((img) => !isPlaceholder(img.url))}
+        initialIdx={lightboxIdx}
+        productName={productName}
+        isOpen={lightboxOpen}
+        onClose={closeLightbox}
+      />
+
+      <style jsx global>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ImageLightbox.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { ProductImage as ProductImageType } from "@/types";
+
+interface ImageLightboxProps {
+  images:      ProductImageType[];
+  initialIdx:  number;
+  productName: string;
+  isOpen:      boolean;
+  onClose:     () => void;
+}
+
+/**
+ * Full-screen image lightbox — portal-based so it escapes any
+ * parent's transform/overflow/z-index constraints.
+ *
+ * Design: clean white full-viewport background, minimal chrome
+ * (close X top-right, prev/next arrows on sides), image
+ * perfectly centered at natural aspect ratio.
+ *
+ * Interactions:
+ *   • Close:    × button, Esc key, click empty area, or click image
+ *   • Navigate: ← → arrow keys, prev/next side buttons
+ *   • Zoom:     Click image to toggle 1x <-> 2x
+ *   • Pan:      Click-and-drag when zoomed
+ */
+export function ImageLightbox({
+  images,
+  initialIdx,
+  productName,
+  isOpen,
+  onClose,
+}: ImageLightboxProps) {
+  const [mounted, setMounted]       = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(initialIdx);
+  const [zoomed, setZoomed]         = useState(false);
+  const [panX, setPanX]             = useState(0);
+  const [panY, setPanY]             = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const didDragRef   = useRef(false);
+
+  // Portal target — render at document body root
+  useEffect(() => setMounted(true), []);
+
+  const resetTransform = useCallback(() => {
+    setZoomed(false);
+    setPanX(0);
+    setPanY(0);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) setCurrentIdx(initialIdx);
+  }, [isOpen, initialIdx]);
+
+  useEffect(() => {
+    resetTransform();
+  }, [currentIdx, resetTransform]);
+
+  // Body scroll lock
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prevOverflow; };
+  }, [isOpen]);
+
+  const goPrev = useCallback(() => {
+    setCurrentIdx((i) => (i === 0 ? images.length - 1 : i - 1));
+  }, [images.length]);
+
+  const goNext = useCallback(() => {
+    setCurrentIdx((i) => (i === images.length - 1 ? 0 : i + 1));
+  }, [images.length]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "Escape":     onClose(); break;
+        case "ArrowLeft":  goPrev();  break;
+        case "ArrowRight": goNext();  break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, onClose, goPrev, goNext]);
+
+  // Drag to pan (only when zoomed)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!zoomed) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    didDragRef.current = false;
+    dragStartRef.current = { x: e.clientX, y: e.clientY, panX, panY };
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (e: MouseEvent) => {
+      if (!dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDragRef.current = true;
+      setPanX(dragStartRef.current.panX + dx);
+      setPanY(dragStartRef.current.panY + dy);
+    };
+    const handleUp = () => {
+      setIsDragging(false);
+      dragStartRef.current = null;
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+  }, [isDragging]);
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // If user just finished dragging, don't toggle zoom
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
+    if (zoomed) resetTransform();
+    else        setZoomed(true);
+  };
+
+  // Click empty backdrop area to close
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  if (!mounted || !isOpen || images.length === 0) return null;
+  const currentImage = images[currentIdx];
+  if (!currentImage) return null;
+
+  const lightbox = (
+    <div
+      className="fixed inset-0 z-[9999] bg-white flex flex-col animate-fade-zoom-in"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Product image viewer"
+      style={{ isolation: "isolate" }}
+    >
+      {/* ═══ CLOSE BUTTON (top-right) ═══════════════════════ */}
+      <button
+        onClick={onClose}
+        aria-label="Close (Esc)"
+        className="absolute top-5 right-5 sm:top-6 sm:right-6 z-20 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full text-[#1a1a1a] hover:bg-[#f5f0e8] active:scale-95 transition-all duration-200"
+      >
+        <X size={22} strokeWidth={1.75} />
+      </button>
+
+      {/* ═══ IMAGE COUNTER (top-left, only if multiple) ════ */}
+      {images.length > 1 && (
+        <div className="absolute top-5 left-5 sm:top-7 sm:left-7 z-20 text-[#1a1a1a]/70 text-sm font-medium tracking-wide tabular-nums">
+          {currentIdx + 1} <span className="text-[#3b5f8f] mx-1">/</span> {images.length}
+        </div>
+      )}
+
+      {/* ═══ IMAGE AREA ════════════════════════════════════ */}
+      <div
+        className="flex-1 relative flex items-center justify-center overflow-hidden select-none"
+        onClick={handleBackdropClick}
+      >
+        {/* Previous arrow */}
+        {images.length > 1 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+            className="absolute left-3 sm:left-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full text-[#1a1a1a] border border-[#e5e7eb] bg-white hover:bg-[#f5f0e8] hover:border-[#3b5f8f] shadow-sm transition-all duration-200 active:scale-95"
+            aria-label="Previous image (Left arrow)"
+          >
+            <ChevronLeft size={20} strokeWidth={1.75} />
+          </button>
+        )}
+
+        {/* Image container — transform for zoom & pan */}
+        <div
+          className={cn(
+            "relative w-full h-full max-w-[85vw] max-h-[85vh] flex items-center justify-center transition-transform duration-300 ease-out",
+            zoomed && (isDragging ? "cursor-grabbing" : "cursor-grab"),
+            !zoomed && "cursor-zoom-in"
+          )}
+          style={{
+            transform: `translate3d(${panX}px, ${panY}px, 0) scale(${zoomed ? 2 : 1})`,
+            transition: isDragging ? "none" : "transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+          }}
+          onMouseDown={handleMouseDown}
+          onClick={handleImageClick}
+        >
+          <Image
+            src={currentImage.url}
+            alt={currentImage.alt || productName}
+            width={1600}
+            height={2000}
+            className="w-auto h-auto max-w-full max-h-full object-contain pointer-events-none"
+            priority
+            draggable={false}
+            unoptimized={currentImage.url.endsWith(".svg")}
+          />
+        </div>
+
+        {/* Next arrow */}
+        {images.length > 1 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); goNext(); }}
+            className="absolute right-3 sm:right-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full text-[#1a1a1a] border border-[#e5e7eb] bg-white hover:bg-[#f5f0e8] hover:border-[#3b5f8f] shadow-sm transition-all duration-200 active:scale-95"
+            aria-label="Next image (Right arrow)"
+          >
+            <ChevronRight size={20} strokeWidth={1.75} />
+          </button>
+        )}
+      </div>
+
+      {/* ═══ THUMBNAILS (bottom, only if multiple) ══════════ */}
+      {images.length > 1 && (
+        <div className="flex items-center justify-center gap-2 sm:gap-3 px-4 pb-6 pt-2 overflow-x-auto scrollbar-hide">
+          {images.map((img, i) => (
+            <button
+              key={img.id + i}
+              onClick={() => setCurrentIdx(i)}
+              className={cn(
+                "flex-shrink-0 relative w-12 h-14 sm:w-14 sm:h-16 overflow-hidden rounded-lg transition-all duration-200",
+                i === currentIdx
+                  ? "ring-2 ring-[#3b5f8f] ring-offset-2 ring-offset-white opacity-100"
+                  : "opacity-50 hover:opacity-90"
+              )}
+              aria-label={`View image ${i + 1}`}
+            >
+              <Image
+                src={img.url}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="80px"
+                unoptimized={img.url.endsWith(".svg")}
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return createPortal(lightbox, document.body);
+}
+
+================================================================================
+FILE: user-panel\src\components\product\SizeSelector.tsx
+================================================================================
+
+"use client";
+import { cn } from "@/lib/utils";
+
+interface SizeSelectorProps {
+  sizes:         string[];
+  selectedSize:  string;
+  onSelect:      (size: string) => void;
+  outOfStock?:   string[];
+}
+
+export function SizeSelector({
+  sizes,
+  selectedSize,
+  onSelect,
+  outOfStock = [],
+}: SizeSelectorProps) {
+  if (sizes.length === 0) return null;
+
+  return (
+    <div>
+      <div className="mb-4">
+        <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+          Select Size
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-x-6 gap-y-3">
+        {sizes.map((size) => {
+          const oos = outOfStock.includes(size);
+          const isSelected = selectedSize === size;
+
+          return (
+            <button
+              key={size}
+              onClick={() => !oos && onSelect(size)}
+              disabled={oos}
+              className={cn(
+                "text-sm font-medium tracking-wide transition-all duration-150 relative",
+                oos
+                  ? "text-[#d1d5db] cursor-not-allowed line-through"
+                  : isSelected
+                  ? "text-[#1a1a1a] font-bold"
+                  : "text-[#6b7280] hover:text-[#1a1a1a]"
+              )}
+            >
+              {size}
+              {isSelected && !oos && (
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#1a1a1a]" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedSize && (
+        <p className="mt-3 text-[11px] text-[#6b7280] tracking-wide">
+          Selected: <span className="text-[#1a1a1a] font-semibold">{selectedSize}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ColorSelector.tsx
+================================================================================
+
+"use client";
+import { cn } from "@/lib/utils";
+
+interface ColorOption {
+  name: string;
+  hex:  string;
+}
+
+interface ColorSelectorProps {
+  colors:        ColorOption[];
+  selectedColor: string;
+  onSelect:      (color: string) => void;
+}
+
+export function ColorSelector({
+  colors,
+  selectedColor,
+  onSelect,
+}: ColorSelectorProps) {
+  const activeColorName = colors.find((c) => c.name === selectedColor)?.name ?? "";
+
+  return (
+    <div>
+      <div className="mb-3">
+        <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+          Color
+        </span>
+        {activeColorName && (
+          <span className="ml-2 text-xs text-[#6b7280] tracking-wide">
+            {activeColorName}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {colors.map((color) => {
+          const isSelected = selectedColor === color.name;
+          return (
+            <button
+              key={color.name}
+              onClick={() => onSelect(color.name)}
+              title={color.name}
+              className={cn(
+                "relative w-8 h-8 border transition-all duration-150",
+                isSelected
+                  ? "border-[#1a1a1a] p-0.5"
+                  : "border-[#d1d5db] hover:border-[#1a1a1a]"
+              )}
+            >
+              <span
+                className="block w-full h-full"
+                style={{ backgroundColor: color.hex }}
+              />
+              {isSelected && (
+                <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 bg-[#1a1a1a]" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\LiveViewCounter.tsx
+================================================================================
+
+"use client";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+
+/**
+ * Simulated live-viewer counter (5-10 people).
+ *
+ * On first mount, picks a random number in the 5-10 range and stores it
+ * in sessionStorage keyed by product ID so it stays consistent within
+ * a browsing session (page navigation, tab switch, etc.).
+ *
+ * Every 30-45 seconds, the number drifts by +/- 1 to feel alive.
+ * Stays within the [MIN, MAX] range so it never looks fake.
+ *
+ * Storage key: denova_live_viewers_{productId}
+ */
+
+interface Props {
+  productId: string;
+  className?: string;
+}
+
+const MIN = 5;
+const MAX = 10;
+
+function initialCount(productId: string): number {
+  if (typeof window === "undefined") return MIN + 2;
+
+  const key = `denova_live_viewers_${productId}`;
+  const stored = window.sessionStorage.getItem(key);
+  if (stored) {
+    const n = Number(stored);
+    if (!isNaN(n) && n >= MIN && n <= MAX) return n;
+  }
+  const fresh = MIN + Math.floor(Math.random() * (MAX - MIN + 1));
+  window.sessionStorage.setItem(key, String(fresh));
+  return fresh;
+}
+
+function driftDelayMs(): number {
+  // Random between 30s and 45s
+  return 30_000 + Math.floor(Math.random() * 15_000);
+}
+
+export function LiveViewCounter({ productId, className }: Props) {
+  const [mounted, setMounted] = useState(false);
+  const [count,   setCount]   = useState<number>(MIN + 2);
+
+  useEffect(() => {
+    setMounted(true);
+    setCount(initialCount(productId));
+  }, [productId]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const drift = () => {
+      setCount((current) => {
+        // Randomly go up or down by 1, but clamp to [MIN, MAX]
+        const direction = Math.random() < 0.5 ? -1 : 1;
+        let next = current + direction;
+        if (next < MIN) next = MIN + 1;
+        if (next > MAX) next = MAX - 1;
+
+        // Occasionally stay flat to feel more organic
+        if (Math.random() < 0.25) next = current;
+
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(`denova_live_viewers_${productId}`, String(next));
+        }
+        return next;
+      });
+
+      timeoutId = setTimeout(drift, driftDelayMs());
+    };
+
+    timeoutId = setTimeout(drift, driftDelayMs());
+    return () => clearTimeout(timeoutId);
+  }, [mounted, productId]);
+
+  if (!mounted) {
+    return (
+      <div className={cn("h-4", className)} aria-hidden />
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 text-xs text-[#6b7280]",
+        className
+      )}
+      aria-live="polite"
+    >
+      <span className="relative flex items-center justify-center">
+        <span className="absolute inline-flex h-2 w-2 rounded-full bg-green-500 opacity-75 animate-live-ping" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+      </span>
+      <span>
+        <span className="font-bold text-[#1a1a1a] tabular-nums">{count}</span>{" "}
+        <span>people are viewing this right now</span>
+      </span>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\SaleCountdown.tsx
+================================================================================
+
+"use client";
+import { useEffect, useState } from "react";
+import { Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  productId: string;
+  className?: string;
+}
+
+const MIN_HOURS = 24;
+const MAX_HOURS = 48;
+
+function getOrCreateDeadline(productId: string): number {
+  if (typeof window === "undefined") return Date.now() + MIN_HOURS * 3_600_000;
+
+  const key = "denova_sale_expires_" + productId;
+  const stored = window.localStorage.getItem(key);
+
+  if (stored) {
+    const ts = Number(stored);
+    if (!isNaN(ts) && ts > Date.now()) return ts;
+  }
+
+  const hours    = MIN_HOURS + Math.random() * (MAX_HOURS - MIN_HOURS);
+  const deadline = Date.now() + hours * 3_600_000;
+  window.localStorage.setItem(key, String(deadline));
+  return deadline;
+}
+
+interface TimeParts {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  expired: boolean;
+}
+
+function computeParts(deadline: number): TimeParts {
+  const diff = deadline - Date.now();
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+  }
+
+  const days    = Math.floor(diff / 86_400_000);
+  const hours   = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  const seconds = Math.floor((diff % 60_000) / 1000);
+  return { days, hours, minutes, seconds, expired: false };
+}
+
+export function SaleCountdown({ productId, className }: Props) {
+  const [mounted,  setMounted]  = useState(false);
+  const [deadline, setDeadline] = useState<number>(0);
+  const [parts,    setParts]    = useState<TimeParts>({
+    days: 0, hours: 0, minutes: 0, seconds: 0, expired: false,
+  });
+
+  useEffect(() => {
+    setMounted(true);
+    setDeadline(getOrCreateDeadline(productId));
+  }, [productId]);
+
+  useEffect(() => {
+    if (!deadline) return;
+    const update = () => {
+      const next = computeParts(deadline);
+      if (next.expired) {
+        const newDeadline = Date.now() + (MIN_HOURS + Math.random() * (MAX_HOURS - MIN_HOURS)) * 3_600_000;
+        window.localStorage.setItem("denova_sale_expires_" + productId, String(newDeadline));
+        setDeadline(newDeadline);
+        setParts(computeParts(newDeadline));
+      } else {
+        setParts(next);
+      }
+    };
+
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [deadline, productId]);
+
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          "border border-[#e5d3b3] bg-[#fdfbf7] p-3 sm:p-4 mb-6 shadow-[0_4px_20px_-10px_rgba(217,119,6,0.15)]",
+          className
+        )}
+        aria-hidden
+      >
+        <div className="h-[32px]" />
+      </div>
+    );
+  }
+
+  const cells: Array<{ label: string; value: number }> = [
+    { label: "Days",    value: parts.days },
+    { label: "Hours",   value: parts.hours },
+    { label: "Minutes", value: parts.minutes },
+    { label: "Seconds", value: parts.seconds },
+  ];
+
+  return (
+    <div
+      className={cn(
+        "w-fit border border-[#e5d3b3] bg-[#fdfbf7] p-3 sm:p-4 mb-6 shadow-[0_4px_20px_-10px_rgba(217,119,6,0.15)]",
+        className
+      )}
+    >
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Zap
+          size={12}
+          strokeWidth={2.5}
+          className="text-[#d97706] fill-[#d97706]/20"
+        />
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#d97706]">
+          Sale Ends In
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        {cells.map((cell, i) => (
+          <div key={cell.label} className="flex items-center gap-2 sm:gap-3">
+            <div className="flex flex-col items-center min-w-[34px] sm:min-w-[40px]">
+              <span className="font-[family-name:var(--font-playfair)] text-base sm:text-lg font-bold text-[#1a1a1a] leading-none tabular-nums">
+                {String(cell.value).padStart(2, "0")}
+              </span>
+              <span className="text-[8px] font-bold tracking-wider uppercase text-[#6b7280] mt-1">
+                {cell.label}
+              </span>
+            </div>
+            {i < cells.length - 1 && (
+              <span className="text-[#d97706]/50 text-sm font-light leading-none pb-2">
+                :
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductBgWrapper.tsx
+================================================================================
+
+"use client";
+import type { CSSProperties, ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+/**
+ * Wraps a product image with an optional configurable background color.
+ *
+ * Uses CSS `mix-blend-mode: multiply` — white pixels in the image become
+ * transparent, letting the wrapper's background color show through.
+ *
+ * Works PERFECTLY when:
+ *   - Image has a pure white (#FFFFFF) background
+ *   - Product itself has minimal pure-white details
+ *
+ * If `bgColor` is null/undefined, renders children as-is (no blend applied).
+ *
+ * Usage:
+ *   <ProductBgWrapper bgColor={product.bgColor} className="aspect-[4/5]">
+ *     <Image src={...} alt={...} fill className="object-cover" />
+ *   </ProductBgWrapper>
+ */
+interface Props {
+  bgColor?:   string | null;
+  className?: string;
+  style?:     CSSProperties;
+  children:   ReactNode;
+}
+
+export function ProductBgWrapper({ bgColor, className, style, children }: Props) {
+  const hasBg = !!bgColor;
+
+  return (
+    <div
+      className={cn("relative overflow-hidden", className)}
+      style={{
+        ...style,
+        ...(hasBg ? { backgroundColor: bgColor } : {}),
+      }}
+      data-product-bg={hasBg ? bgColor : undefined}
+    >
+      {hasBg ? (
+        <div
+          className="absolute inset-0 [&>img]:mix-blend-multiply [&_img]:mix-blend-multiply"
+        >
+          {children}
+        </div>
+      ) : (
+        children
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\ui\Badge.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: "new" | "sale" | "bestseller" | "soldout" | "default";
+  className?: string;
+}
+
+export function Badge({ children, variant = "default", className }: BadgeProps) {
+  const variants = {
+    new:        "bg-[#1a1a1a] text-white",
+    sale:       "bg-[#3b5f8f] text-white",
+    bestseller: "bg-[#f5f0e8] text-[#1a1a1a]",
+    soldout:    "bg-[#6b7280] text-white",
+    default:    "bg-[#e5e7eb] text-[#1a1a1a]",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-block text-[10px] font-semibold tracking-widest uppercase px-2 py-1",
+        variants[variant],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\ui\Button.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+import { type ButtonHTMLAttributes, forwardRef } from "react";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "gold";
+  size?: "sm" | "md" | "lg";
+  isLoading?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      isLoading = false,
+      disabled,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const base =
+      "inline-flex items-center justify-center font-medium tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+
+    const variants = {
+      primary:
+        "bg-[#1a1a1a] text-white hover:bg-[#333333] focus:ring-[#1a1a1a] active:scale-[0.98]",
+      secondary:
+        "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df] focus:ring-[#3b5f8f] active:scale-[0.98]",
+      outline:
+        "border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white focus:ring-[#1a1a1a] active:scale-[0.98]",
+      ghost:
+        "text-[#1a1a1a] hover:bg-[#f5f0e8] focus:ring-[#3b5f8f] active:scale-[0.98]",
+      gold:
+        "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] focus:ring-[#3b5f8f] active:scale-[0.98]",
+    };
+
+    const sizes = {
+      sm: "text-xs px-4 py-2 rounded",
+      md: "text-sm px-6 py-3 rounded",
+      lg: "text-base px-8 py-4 rounded",
+    };
+
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || isLoading}
+        className={cn(base, variants[variant], sizes[size], className)}
+        {...props}
+      >
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            Loading...
+          </span>
+        ) : (
+          children
+        )}
+      </button>
+    );
+  }
+);
+
+Button.displayName = "Button";
+export { Button };
+
+================================================================================
+FILE: user-panel\src\components\ui\Breadcrumb.tsx
+================================================================================
+
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface BreadcrumbProps {
+  items:     BreadcrumbItem[];
+  className?: string;
+}
+
+export function Breadcrumb({ items, className }: BreadcrumbProps) {
+  return (
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("flex items-center gap-1.5", className)}
+    >
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        return (
+          <div key={index} className="flex items-center gap-1.5">
+            {index > 0 && (
+              <ChevronRight size={12} className="text-[#6b7280] flex-shrink-0" />
+            )}
+            {isLast || !item.href ? (
+              <span
+                className={cn(
+                  "text-xs tracking-wide",
+                  isLast
+                    ? "text-[#1a1a1a] font-medium"
+                    : "text-[#6b7280]"
+                )}
+              >
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                href={item.href}
+                className="text-xs text-[#6b7280] hover:text-[#3b5f8f] transition-colors tracking-wide"
+              >
+                {item.label}
+              </Link>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\types\index.ts
+================================================================================
+
+// ─── Product Types ───────────────────────────────────────────────
+export interface ProductImage {
+  id: string;
+  url: string;
+  alt: string;
+  isPrimary: boolean;
+}
+
+export interface ProductVariant {
+  id: string;
+  size: string;
+  color: string;
+  colorHex: string;
+  stock: number;
+  price: number;
+  compareAtPrice?: number;
+  sku: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  compareAtPrice?: number;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  collectionId: string;
+  collection: string;
+  tags: string[];
+  isNew: boolean;
+  isFeatured: boolean;
+  isBestSeller: boolean;
+  rating: number;
+  reviewCount: number;
+  waist:  number | null;
+  length: number | null;
+  bottom: number | null;
+  bgColor: string | null;   // hex e.g. "#f5f0e8" or null (keep original white background)
+  createdAt: string;
+}
+
+// ─── Collection Types ────────────────────────────────────────────
+export interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  productCount: number;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+// ─── Cart Types ──────────────────────────────────────────────────
+export interface CartItem {
+  id: string;
+  productId: string;
+  variantId: string;
+  name: string;
+  image: string;
+  size: string;
+  color: string;
+  colorHex: string;
+  price: number;
+  quantity: number;
+  slug: string;
+  bgColor?: string | null;   // optional — captured at add-to-cart time
+}
+
+export interface Cart {
+  items: CartItem[];
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+}
+
+// ─── Wishlist Types ──────────────────────────────────────────────
+export interface WishlistItem {
+  id: string;
+  productId: string;
+  name: string;
+  image: string;
+  price: number;
+  slug: string;
+  bgColor?: string | null;
+}
+
+// ─── User / Auth Types ───────────────────────────────────────────
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  createdAt: string;
+}
+
+export interface Address {
+  id: string;
+  userId: string;
+  label: string;
+  fullName: string;
+  phone: string;
+  street: string;
+  apartment?: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  isDefault: boolean;
+}
+
+// ─── Order Types ─────────────────────────────────────────────────
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+export interface OrderItem {
+  id: string;
+  productId: string;
+  name: string;
+  image: string;
+  size: string;
+  color: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  items: OrderItem[];
+  status: OrderStatus;
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+  address: Address;
+  paymentMethod: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Testimonial Types ───────────────────────────────────────────
+export interface Testimonial {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  comment: string;
+  avatar?: string;
+  date: string;
+}
+
+// ─── Navigation Types ────────────────────────────────────────────
+export interface NavLink {
+  label: string;
+  href: string;
+  children?: NavLink[];
+}
+
+// ─── Animation Types ─────────────────────────────────────────────
+export type AnimationVariant = "fadeUp" | "fadeIn" | "slideLeft" | "slideRight";
+
+export interface DevicePerformance {
+  tier: "low" | "medium" | "high";
+  prefersReducedMotion: boolean;
+  shouldAnimate: boolean;
+}
+
+================================================================================
+FILE: user-panel\src\lib\adapters.ts
+================================================================================
+
+/**
+ * Adapters to convert database types (paisa, unix timestamps, 0/1 booleans)
+ * to frontend types (rupees, dates, true/false).
+ */
+
+import type {
+  DbProduct, DbProductImage, DbProductVariant, DbCollection,
+} from "@/lib/db/types";
+import type { ProductWithRelations } from "@/lib/db/repositories/products";
+import type { Product, ProductImage, ProductVariant, Collection, Testimonial } from "@/types";
+import { tagsToArray } from "@/lib/db/helpers";
+
+// ─── Product ─────────────────────────────────────────────
+export function adaptProduct(p: ProductWithRelations): Product {
+  return {
+    id:             p.id,
+    name:           p.name,
+    slug:           p.slug,
+    description:    p.description,
+    price:          p.price / 100,
+    compareAtPrice: p.comparePrice ? p.comparePrice / 100 : undefined,
+    images:         p.images.map(adaptImage),
+    variants:       p.variants.map(adaptVariant),
+    collectionId:   p.collectionId ?? "",
+    collection:     p.collection?.name ?? "",
+    tags:           tagsToArray(p.tags),
+    isNew:          p.isNew === 1,
+    isFeatured:     p.isFeatured === 1,
+    isBestSeller:   p.isBestSeller === 1,
+    rating:         p.rating,
+    reviewCount:    p.reviewCount,
+    waist:          p.waist  ?? null,
+    length:         p.length ?? null,
+    bottom:         p.bottom ?? null,
+    bgColor:        p.bgColor ?? null,
+    createdAt:      new Date(p.createdAt * 1000).toISOString(),
+  };
+}
+
+function adaptImage(img: DbProductImage): ProductImage {
+  return {
+    id:        img.id,
+    url:       img.url,
+    alt:       img.alt,
+    isPrimary: img.isPrimary === 1,
+  };
+}
+
+function adaptVariant(v: DbProductVariant): ProductVariant {
+  return {
+    id:             v.id,
+    size:           v.size,
+    color:          v.color,
+    colorHex:       v.colorHex,
+    stock:          v.stock,
+    price:          v.price / 100,
+    compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : undefined,
+    sku:            v.sku,
+  };
+}
+
+// ─── Collection ──────────────────────────────────────────
+export function adaptCollection(
+  c: DbCollection & { productCount?: number; minPrice?: number | null; maxPrice?: number | null }
+): Collection {
+  return {
+    id:           c.id,
+    name:         c.name,
+    slug:         c.slug,
+    description:  c.description,
+    image:        c.image ?? "",
+    productCount: c.productCount ?? 0,
+    minPrice:     c.minPrice != null ? c.minPrice / 100 : undefined,
+    maxPrice:     c.maxPrice != null ? c.maxPrice / 100 : undefined,
+  };
+}
+
+// ─── Testimonials (denim-focused, brand-relevant) ────────
+export function getMockTestimonials(): Testimonial[] {
+  return [
+    {
+      id:       "t-1",
+      name:     "Ahmed Raza",
+      location: "Lahore",
+      rating:   5,
+      comment:  "Best denim I've owned. The fit is spot on, the fabric feels heavy and premium — you can tell it's export quality. Wore them for weeks straight and the colour hasn't faded a bit.",
+      date:     "2024-06-12",
+    },
+    {
+      id:       "t-2",
+      name:     "Usman Tariq",
+      location: "Karachi",
+      rating:   5,
+      comment:  "Finally jeans that fit Pakistani body types properly. Bought the mid-blue enzyme wash — the wash is beautiful and the stitching is on another level. Worth every rupee.",
+      date:     "2024-06-02",
+    },
+    {
+      id:       "t-3",
+      name:     "Bilal Ahmed",
+      location: "Islamabad",
+      rating:   5,
+      comment:  "I've been buying imported jeans for years. Denova PK matches that quality at half the price. The Super Premium range especially — feels like a proper Japanese denim experience.",
+      date:     "2024-06-18",
+    },
+    {
+      id:       "t-4",
+      name:     "Hamza Sheikh",
+      location: "Rawalpindi",
+      rating:   5,
+      comment:  "Ordered the black tapered fit and grey cargo pants. Delivery was fast, packaging was premium, and both pieces fit exactly as described. Denim quality is top-tier.",
+      date:     "2024-05-28",
+    },
+    {
+      id:       "t-5",
+      name:     "Zain Ali",
+      location: "Faisalabad",
+      rating:   5,
+      comment:  "Was skeptical about buying jeans online but Denova PK nailed it. Size guide is accurate, fabric is comfortable, and the loose-fit denim is exactly what I was looking for. Ordering another pair.",
+      date:     "2024-05-15",
+    },
+    {
+      id:       "t-6",
+      name:     "Faisal Khan",
+      location: "Lahore",
+      rating:   5,
+      comment:  "The garment-dyed cargo is unreal. Fits perfectly, colour is rich, and the pockets are actually functional. Denova is doing what no other Pakistani denim brand is doing right now.",
+      date:     "2024-04-30",
+    },
+  ];
+}
+
+================================================================================
+FILE: user-panel\src\lib\priceUtils.ts
+================================================================================
+
+export function paisaToRupees(paisa: number): number { return paisa / 100; }
+export function rupeesToPaisa(rupees: number): number { return Math.round(rupees * 100); }
+
+export function formatPaisa(paisa: number): string {
+  return new Intl.NumberFormat("en-PK", {
+    style: "currency", currency: "PKR",
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(paisa / 100);
+}
+
+================================================================================
+FILE: user-panel\src\lib\constants.ts
+================================================================================
+
+export const SITE_NAME = "Denova PK";
+export const SITE_DESCRIPTION = "Premium Denim Clothing - Crafted for the Modern You. Pakistan's finest selvedge jeans and denim apparel. Summer 2026 Collection.";
+
+// ══════════════════════════════════════════════════════════
+// HARDCODED to always point to production domain
+// ══════════════════════════════════════════════════════════
+export const SITE_URL = "https://denovapk.com";
+
+export const BRAND_COLORS = {
+  primary:    "#1a1a1a",
+  secondary:  "#3b5f8f",
+  accent:     "#f5f0e8",
+  background: "#ffffff",
+  surface:    "#fafaf9",
+  text:       "#111111",
+  muted:      "#6b7280",
+  border:     "#e5e7eb",
+} as const;
+
+export const NAV_LINKS = [
+  { label: "Shop",         href: "/shop" },
+  { label: "Collections",  href: "/collections" },
+  { label: "New Arrivals", href: "/shop?filter=new" },
+  { label: "Sale",         href: "/shop?filter=sale" },
+  { label: "About",        href: "/about" },
+] as const;
+
+export const SIZES = ["28", "30", "32", "34", "36", "38", "40"] as const;
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending:    "Pending",
+  confirmed:  "Confirmed",
+  processing: "Processing",
+  shipped:    "Shipped",
+  delivered:  "Delivered",
+  cancelled:  "Cancelled",
+  refunded:   "Refunded",
+};
+
+// ═══════════════════════════════════════════════════════════
+// FALLBACK ONLY — actual value comes from admin settings via
+// /api/shipping-config. Do NOT import this for shipping logic.
+// ═══════════════════════════════════════════════════════════
+export const FREE_SHIPPING_THRESHOLD = 5000;
+
+export const ITEMS_PER_PAGE = 12;
+
+export const BRAND_YEAR = 2026;
+export const BRAND_SEASON = "Summer 2026";
+
+================================================================================
+FILE: user-panel\src\lib\db\repositories\products.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now, tagsToArray } from "@/lib/db/helpers";
+import type {
+  DbProduct, DbProductImage, DbProductVariant, ProductStatus,
+} from "@/lib/db/types";
+
+export interface ProductWithRelations extends DbProduct {
+  images:      DbProductImage[];
+  variants:    DbProductVariant[];
+  collection?: { id: string; name: string; slug: string } | null;
+}
+
+// Turso strips result columns aliased "length". Alias to lengthInches and remap.
+const PRODUCT_COLS = `
+  p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
+  p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
+  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
+  p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
+  p.waist, p."length" as lengthInches, p.bottom, p.bgColor,
+  p.createdAt, p.updatedAt
+`;
+
+function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
+  const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
+  return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
+}
+
+export interface GetProductsOptions {
+  status?:       ProductStatus | "ALL";
+  collectionId?: string;
+  featured?:     boolean;
+  isNew?:        boolean;
+  isBestSeller?: boolean;
+  search?:       string;
+  sortBy?:       "newest" | "price-asc" | "price-desc" | "bestselling" | "rating";
+  limit?:        number;
+  offset?:       number;
+}
+
+export async function getProducts(opts: GetProductsOptions = {}): Promise<ProductWithRelations[]> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") { conditions.push("p.status = ?"); args.push(opts.status); }
+  else if (!opts.status) { conditions.push("p.status = ?"); args.push("PUBLISHED"); }
+
+  if (opts.collectionId) { conditions.push("p.collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("p.isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("p.isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("p.isBestSeller = 1"); }
+  if (opts.search) {
+    conditions.push("(p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)");
+    const term = `%${opts.search}%`;
+    args.push(term, term, term);
+  }
+
+  const where   = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  let   orderBy = "p.createdAt DESC";
+  switch (opts.sortBy) {
+    case "price-asc":   orderBy = "p.price ASC";      break;
+    case "price-desc":  orderBy = "p.price DESC";     break;
+    case "bestselling": orderBy = "p.soldCount DESC"; break;
+    case "rating":      orderBy = "p.rating DESC";    break;
+  }
+
+  const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
+  const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
+
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          ${where} ORDER BY ${orderBy} ${limit} ${offset}`,
+    args,
+  });
+
+  const rawProducts = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as (DbProduct & {
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  })[];
+
+  if (rawProducts.length === 0) return [];
+
+  const productIds   = rawProducts.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`, args: productIds }),
+    db.execute({ sql: `SELECT * FROM product_variants WHERE productId IN (${placeholders})`, args: productIds }),
+  ]);
+
+  const images   = imgResult.rows as unknown as DbProductImage[];
+  const variants = varResult.rows as unknown as DbProductVariant[];
+
+  return rawProducts.map((p) => ({
+    ...p,
+    images:     images.filter((i) => i.productId === p.id),
+    variants:   variants.filter((v) => v.productId === p.id),
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  }));
+}
+
+export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+          FROM products p LEFT JOIN collections c ON c.id = p.collectionId
+          WHERE p.slug = ? LIMIT 1`,
+    args: [slug],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & {
+    lengthInches?: number | null;
+    col_id: string | null; col_name: string | null; col_slug: string | null;
+  });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:     imgResult.rows as unknown as DbProductImage[],
+    variants:   varResult.rows as unknown as DbProductVariant[],
+    collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
+  };
+}
+
+export async function getProductById(id: string): Promise<ProductWithRelations | null> {
+  const result = await db.execute({
+    sql: `SELECT ${PRODUCT_COLS} FROM products p WHERE p.id = ? LIMIT 1`,
+    args: [id],
+  });
+  if (result.rows.length === 0) return null;
+
+  const p = remapLength(result.rows[0] as unknown as DbProduct & { lengthInches?: number | null });
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC", args: [p.id] }),
+    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+  ]);
+  return {
+    ...p,
+    images:   imgResult.rows as unknown as DbProductImage[],
+    variants: varResult.rows as unknown as DbProductVariant[],
+  };
+}
+
+export async function getProductCount(opts: GetProductsOptions = {}): Promise<number> {
+  const conditions: string[] = [];
+  const args: (string | number)[] = [];
+
+  if (opts.status && opts.status !== "ALL") { conditions.push("status = ?"); args.push(opts.status); }
+  else if (!opts.status) { conditions.push("status = ?"); args.push("PUBLISHED"); }
+  if (opts.collectionId) { conditions.push("collectionId = ?"); args.push(opts.collectionId); }
+  if (opts.featured)     { conditions.push("isFeatured = 1"); }
+  if (opts.isNew)        { conditions.push("isNew = 1"); }
+  if (opts.isBestSeller) { conditions.push("isBestSeller = 1"); }
+
+  const where  = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const result = await db.execute({ sql: `SELECT COUNT(*) as count FROM products ${where}`, args });
+  return Number(result.rows[0].count);
+}
+
+/**
+ * Fetch related products in the same collection.
+ * Includes ALL images (sorted primary first) + variants so the ProductCard
+ * hover-swap effect works properly.
+ */
+export async function getRelatedProducts(
+  productId: string, collectionId: string, limit = 4
+): Promise<ProductWithRelations[]> {
+  const result = await db.execute({
+    sql:  `SELECT ${PRODUCT_COLS} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
+    args: [collectionId, productId, limit],
+  });
+  const products = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as DbProduct[];
+  if (products.length === 0) return [];
+
+  const productIds   = products.map((p) => p.id);
+  const placeholders = productIds.map(() => "?").join(",");
+
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({
+      sql:  `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`,
+      args: productIds,
+    }),
+    db.execute({
+      sql:  `SELECT * FROM product_variants WHERE productId IN (${placeholders})`,
+      args: productIds,
+    }),
+  ]);
+
+  const images   = imgResult.rows as unknown as DbProductImage[];
+  const variants = varResult.rows as unknown as DbProductVariant[];
+
+  return products.map((p) => ({
+    ...p,
+    images:   images.filter((i) => i.productId === p.id),
+    variants: variants.filter((v) => v.productId === p.id),
+  }));
+}
+
+void generateId; void now; void tagsToArray;
+
+================================================================================
+FILE: user-panel\src\lib\db\types.ts
+================================================================================
+
+/**
+ * Database table types.
+ * These match the SQL schema exactly.
+ *
+ * Timestamps are Unix epochs (integers) in the DB.
+ * SQLite booleans stored as 0 | 1.
+ */
+
+// ─── Users ───────────────────────────────────────────────
+export interface DbUser {
+  id:            string;
+  name:          string;
+  email:         string;
+  emailVerified: number | null;
+  phone:         string | null;
+  password:      string | null;
+  avatar:        string | null;
+  isActive:      number;
+  birthday:      string | null;
+  loyaltyPoints: number;
+  createdAt:     number;
+  updatedAt:     number;
+}
+
+export interface DbAdmin {
+  id:         string;
+  name:       string;
+  email:      string;
+  password:   string;
+  role:       "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "STAFF";
+  avatar:     string | null;
+  isActive:   number;
+  lastLogin:  number | null;
+  createdAt:  number;
+  updatedAt:  number;
+}
+
+export interface DbAddress {
+  id:          string;
+  userId:      string;
+  label:       string;
+  fullName:    string;
+  phone:       string;
+  street:      string;
+  apartment:   string | null;
+  city:        string;
+  province:    string;
+  postalCode:  string;
+  country:     string;
+  isDefault:   number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+// ─── Collections ─────────────────────────────────────────
+export interface DbCollection {
+  id:              string;
+  name:            string;
+  slug:            string;
+  description:     string;
+  image:           string | null;
+  isActive:        number;
+  sortOrder:       number;
+  metaTitle:       string | null;
+  metaDescription: string | null;
+  createdAt:       number;
+  updatedAt:       number;
+}
+
+// ─── Products ────────────────────────────────────────────
+export type ProductStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export interface DbProduct {
+  id:               string;
+  name:             string;
+  slug:             string;
+  sku:              string;
+  description:      string;
+  shortDescription: string | null;
+  price:            number;
+  comparePrice:     number | null;
+  costPerItem:      number | null;
+  taxRate:          number;
+  status:           ProductStatus;
+  collectionId:     string | null;
+  isNew:            number;
+  isFeatured:       number;
+  isBestSeller:     number;
+  metaTitle:        string | null;
+  metaDescription:  string | null;
+  tags:             string;
+  rating:           number;
+  reviewCount:      number;
+  soldCount:        number;
+  waist:            number | null;   // inches
+  length:           number | null;   // inches
+  bottom:           number | null;   // inches
+  bgColor:          string | null;   // hex e.g. "#f5f0e8" — replaces white product image background via CSS blend
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface DbProductImage {
+  id:        string;
+  productId: string;
+  url:       string;
+  alt:       string;
+  isPrimary: number;
+  sortOrder: number;
+}
+
+export interface DbProductVariant {
+  id:              string;
+  productId:       string;
+  size:            string;
+  color:           string;
+  colorHex:        string;
+  sku:             string;
+  stock:           number;
+  price:           number;
+  compareAtPrice:  number | null;
+  weight:          number | null;
+  createdAt:       number;
+  updatedAt:       number;
+}
+
+// ─── Cart & Wishlist ─────────────────────────────────────
+export interface DbCart {
+  id:           string;
+  userId:       string;
+  lastActivity: number;
+  createdAt:    number;
+  updatedAt:    number;
+}
+
+export interface DbCartItem {
+  id:        string;
+  cartId:    string;
+  productId: string;
+  variantId: string;
+  quantity:  number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface DbWishlist {
+  id:        string;
+  userId:    string;
+  productId: string;
+  createdAt: number;
+}
+
+// ─── Abandoned Cart ──────────────────────────────────────
+export interface DbAbandonedCart {
+  id:               string;
+  userId:           string | null;
+  email:            string | null;
+  phone:            string | null;
+  fullName:         string | null;
+  city:             string | null;
+  itemsJson:        string;
+  itemCount:        number;
+  subtotal:         number;
+  totalValue:       number;
+  reachedCheckout:  number;
+  isContacted:      number;
+  isRecovered:      number;
+  recoveredOrderId: string | null;
+  adminNote:        string | null;
+  lastActivity:     number;
+  abandonedAt:      number;
+  createdAt:        number;
+  updatedAt:        number;
+}
+
+export interface AbandonedCartItem {
+  productId:  string;
+  variantId:  string;
+  name:       string;
+  image:      string;
+  size:       string;
+  color:      string;
+  price:      number;
+  quantity:   number;
+  slug:       string;
+}
+
+// ─── Orders ──────────────────────────────────────────────
+export type OrderStatus =
+  | "PENDING" | "CONFIRMED" | "PROCESSING"
+  | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+
+export type PaymentStatus =
+  | "PENDING" | "PAID" | "FAILED"
+  | "REFUNDED" | "PARTIALLY_REFUNDED";
+
+export type PaymentMethod =
+  | "COD" | "CARD" | "JAZZCASH" | "EASYPAISA" | "BANK_TRANSFER";
+
+export interface DbOrder {
+  id:                   string;
+  orderNumber:          string;
+  userId:               string | null;
+  guestEmail:           string | null;
+  guestName:            string | null;
+  guestPhone:           string | null;
+  subtotal:             number;
+  discount:             number;
+  loyaltyDiscount:      number;
+  loyaltyPointsUsed:    number;
+  loyaltyPointsEarned:  number;
+  birthdayDiscount:     number;
+  isBirthdayOrder:      number;
+  shipping:             number;
+  tax:                  number;
+  total:                number;
+  status:               OrderStatus;
+  paymentStatus:        PaymentStatus;
+  paymentMethod:        PaymentMethod;
+  discountCode:         string | null;
+  discountId:           string | null;
+  addressId:            string | null;
+  shippingAddress:      string | null;
+  shippingMethod:       string;
+  trackingNumber:       string | null;
+  courierName:          string | null;
+  customerNote:         string | null;
+  adminNote:            string | null;
+  confirmedAt:          number | null;
+  shippedAt:            number | null;
+  deliveredAt:          number | null;
+  cancelledAt:          number | null;
+  createdById:          string | null;
+  updatedById:          string | null;
+  createdAt:            number;
+  updatedAt:            number;
+}
+
+export interface DbOrderItem {
+  id:        string;
+  orderId:   string;
+  productId: string;
+  variantId: string;
+  name:      string;
+  image:     string;
+  size:      string;
+  color:     string;
+  sku:       string;
+  price:     number;
+  quantity:  number;
+  subtotal:  number;
+}
+
+// ─── Loyalty ─────────────────────────────────────────────
+export type LoyaltyTransactionType = "EARNED" | "REDEEMED" | "EXPIRED" | "ADJUSTED";
+
+export interface DbLoyaltyTransaction {
+  id:          string;
+  userId:      string;
+  orderId:     string | null;
+  type:        LoyaltyTransactionType;
+  points:      number;
+  balance:     number;
+  description: string | null;
+  createdAt:   number;
+}
+
+// ─── Discounts ───────────────────────────────────────────
+export type DiscountType   = "PERCENTAGE" | "FIXED";
+export type DiscountStatus = "ACTIVE" | "EXPIRED" | "DISABLED";
+
+export interface DbDiscount {
+  id:          string;
+  code:        string;
+  type:        DiscountType;
+  value:       number;
+  minOrder:    number;
+  maxUses:     number;
+  usedCount:   number;
+  status:      DiscountStatus;
+  startsAt:    number;
+  expiresAt:   number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+// ─── Settings ────────────────────────────────────────────
+export interface DbSetting {
+  id:        string;
+  key:       string;
+  value:     string;
+  category:  string;
+  updatedAt: number;
+}
+
+// ─── Others ──────────────────────────────────────────────
+export interface DbReview {
+  id:          string;
+  userId:      string;
+  productId:   string;
+  rating:      number;
+  title:       string | null;
+  comment:     string;
+  isVerified:  number;
+  isApproved:  number;
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+export interface DbNewsletter {
+  id:            string;
+  email:         string;
+  isSubscribed:  number;
+  source:        string | null;
+  createdAt:     number;
+  updatedAt:     number;
+}
+
+export interface DbContactMessage {
+  id:         string;
+  name:       string;
+  email:      string;
+  phone:      string | null;
+  subject:    string;
+  message:    string;
+  isRead:     number;
+  isReplied:  number;
+  adminNote:  string | null;
+  createdAt:  number;
+  updatedAt:  number;
+}
+
+================================================================================
+FILE: user-panel\src\store\cartStore.ts
+================================================================================
+
+"use client";
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { CartItem } from "@/types";
+import { useShippingConfigStore } from "./shippingConfigStore";
+
+interface CartState {
+  items:      CartItem[];
+  isOpen:     boolean;
+  isSyncing:  boolean;
+  serverSync: boolean;
+
+  addItem:    (item: Omit<CartItem, "id">) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  updateQty:  (id: string, quantity: number) => Promise<void>;
+  clearCart:  () => Promise<void>;
+  openCart:   () => void;
+  closeCart:  () => void;
+  toggleCart: () => void;
+
+  syncFromServer:   () => Promise<void>;
+  mergeToServer:    () => Promise<void>;
+  setServerSync:    (enabled: boolean) => void;
+
+  getSubtotal:  () => number;
+  getShipping:  () => number;
+  getTotal:     () => number;
+  getItemCount: () => number;
+}
+
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items:      [],
+      isOpen:     false,
+      isSyncing:  false,
+      serverSync: false,
+
+      addItem: async (newItem) => {
+        const items = get().items;
+        const existing = items.find(
+          (i) => i.productId === newItem.productId && i.variantId === newItem.variantId
+        );
+
+        if (existing) {
+          set({
+            items: items.map((i) =>
+              i.id === existing.id ? { ...i, quantity: i.quantity + newItem.quantity } : i
+            ),
+          });
+        } else {
+          const id = `${newItem.productId}-${newItem.variantId}-${Date.now()}`;
+          set({ items: [...items, { ...newItem, id }] });
+        }
+        set({ isOpen: true });
+
+        if (get().serverSync) {
+          try {
+            const res = await fetch("/api/cart", {
+              method:  "POST",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({
+                productId: newItem.productId,
+                variantId: newItem.variantId,
+                quantity:  newItem.quantity,
+              }),
+            });
+            if (res.ok) {
+              const { cart } = await res.json();
+              set({ items: mapServerCart(cart) });
+            }
+          } catch {}
+        }
+      },
+
+      removeItem: async (id) => {
+        set({ items: get().items.filter((i) => i.id !== id) });
+        if (get().serverSync) {
+          try {
+            const res = await fetch(`/api/cart/${id}`, { method: "DELETE" });
+            if (res.ok) {
+              const { cart } = await res.json();
+              set({ items: mapServerCart(cart) });
+            }
+          } catch {}
+        }
+      },
+
+      updateQty: async (id, quantity) => {
+        if (quantity <= 0) { await get().removeItem(id); return; }
+        set({ items: get().items.map((i) => i.id === id ? { ...i, quantity } : i) });
+
+        if (get().serverSync) {
+          try {
+            const res = await fetch(`/api/cart/${id}`, {
+              method:  "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ quantity }),
+            });
+            if (res.ok) {
+              const { cart } = await res.json();
+              set({ items: mapServerCart(cart) });
+            }
+          } catch {}
+        }
+      },
+
+      clearCart: async () => {
+        set({ items: [] });
+        if (get().serverSync) {
+          try { await fetch("/api/cart", { method: "DELETE" }); } catch {}
+        }
+      },
+
+      openCart:   () => set({ isOpen: true }),
+      closeCart:  () => set({ isOpen: false }),
+      toggleCart: () => set({ isOpen: !get().isOpen }),
+
+      syncFromServer: async () => {
+        set({ isSyncing: true });
+        try {
+          const res = await fetch("/api/cart");
+          if (res.ok) {
+            const data = await res.json();
+            if (data.cart) set({ items: mapServerCart(data.cart) });
+          }
+        } catch {}
+        set({ isSyncing: false });
+      },
+
+      mergeToServer: async () => {
+        const localItems = get().items;
+        if (localItems.length === 0) { await get().syncFromServer(); return; }
+
+        set({ isSyncing: true });
+        try {
+          const merge = localItems.map((i) => ({
+            productId: i.productId, variantId: i.variantId, quantity: i.quantity,
+          }));
+          const res = await fetch("/api/cart", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ merge }),
+          });
+          if (res.ok) {
+            const { cart } = await res.json();
+            set({ items: mapServerCart(cart) });
+          }
+        } catch {}
+        set({ isSyncing: false });
+      },
+
+      setServerSync: (enabled) => set({ serverSync: enabled }),
+
+      getSubtotal: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+      getShipping: () => {
+        const subtotal = get().getSubtotal();
+        // Read dynamic shipping config
+        return useShippingConfigStore.getState().calcShipping(subtotal);
+      },
+      getTotal:     () => get().getSubtotal() + get().getShipping(),
+      getItemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
+    }),
+    {
+      name: "denova-cart",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+);
+
+function mapServerCart(cart: { items: Array<{
+  id: string; productId: string; variantId: string; quantity: number;
+  product: { name: string; slug: string; images: Array<{ url: string }> };
+  variant: { size: string; color: string; colorHex: string; price: number };
+}>}): CartItem[] {
+  return cart.items.map((item) => ({
+    id:        item.id,
+    productId: item.productId,
+    variantId: item.variantId,
+    name:      item.product.name,
+    image:     item.product.images[0]?.url ?? "",
+    size:      item.variant.size,
+    color:     item.variant.color,
+    colorHex:  item.variant.colorHex,
+    price:     item.variant.price / 100,
+    quantity:  item.quantity,
+    slug:      item.product.slug,
+  }));
+}
+
+================================================================================
+FILE: user-panel\src\store\wishlistStore.ts
+================================================================================
+
+"use client";
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { WishlistItem } from "@/types";
+
+interface WishlistState {
+  items:      WishlistItem[];
+  addItem:    (item: WishlistItem) => void;
+  removeItem: (productId: string) => void;
+  toggleItem: (item: WishlistItem) => void;
+  isInWishlist: (productId: string) => boolean;
+  clearAll:   () => void;
+  getCount:   () => number;
+}
+
+export const useWishlistStore = create<WishlistState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+
+      addItem: (item) => {
+        if (get().isInWishlist(item.productId)) return;
+        set({ items: [...get().items, item] });
+      },
+
+      removeItem: (productId) => {
+        set({ items: get().items.filter((i) => i.productId !== productId) });
+      },
+
+      toggleItem: (item) => {
+        if (get().isInWishlist(item.productId)) {
+          get().removeItem(item.productId);
+        } else {
+          get().addItem(item);
+        }
+      },
+
+      isInWishlist: (productId) =>
+        get().items.some((i) => i.productId === productId),
+
+      clearAll: () => set({ items: [] }),
+
+      getCount: () => get().items.length,
+    }),
+    {
+      name: "denova-wishlist",
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
+
+================================================================================
+FILE: user-panel\src\store\toastStore.ts
+================================================================================
+
+"use client";
+import { create } from "zustand";
+
+export interface Toast {
+  id:       string;
+  message:  string;
+  type:     "success" | "error" | "info";
+  duration?: number;
+}
+
+interface ToastState {
+  toasts:      Toast[];
+  addToast:    (toast: Omit<Toast, "id">) => void;
+  removeToast: (id: string) => void;
+}
+
+export const useToastStore = create<ToastState>((set, get) => ({
+  toasts: [],
+
+  addToast: (toast) => {
+    const id = Math.random().toString(36).slice(2);
+    const newToast: Toast = { ...toast, id, duration: toast.duration ?? 3000 };
+    set({ toasts: [...get().toasts, newToast] });
+
+    setTimeout(() => {
+      get().removeToast(id);
+    }, newToast.duration);
+  },
+
+  removeToast: (id) => {
+    set({ toasts: get().toasts.filter((t) => t.id !== id) });
+  },
+}));
+
+================================================================================
+FILE: user-panel\src\app\globals.css
+================================================================================
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary:    #1a1a1a;
+  --color-brand-secondary:  #3b5f8f;
+  --color-brand-accent:     #f5f0e8;
+  --color-brand-surface:    #fafaf9;
+  --color-brand-muted:      #6b7280;
+  --color-brand-border:     #e5e7eb;
+
+  --font-sans:      var(--font-inter);
+  --font-serif:     var(--font-playfair);
+  --font-cormorant: var(--font-cormorant);
+
+  --breakpoint-3xl: 1920px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+::selection { background-color: #3b5f8f; color: #ffffff; }
+img, video { max-width: 100%; height: auto; display: block; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #fafaf9; }
+::-webkit-scrollbar-thumb { background: #3b5f8f; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #2d4a72; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.site-container {
+  width: 100%; margin-left: auto; margin-right: auto;
+  padding-left: 12px; padding-right: 12px;
+}
+@media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
+@media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
+@media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
+@media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+
+/* ═══════════════════════════════════════════════════════════
+   Existing animation keyframes
+   ═══════════════════════════════════════════════════════════ */
+@keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+@keyframes float-soft    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes pulse-gold    { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(59, 95, 143, 0); } }
+@keyframes marquee       { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes ken-burns     { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-1%, -1%); } }
+@keyframes letter-drop   { 0% { opacity: 0; transform: translateY(0.5em) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
+@keyframes draw-line     { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes tile-reveal   { 0% { opacity: 0; transform: scale(0.94) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes focus-ring    { 0% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.35); } 100% { box-shadow: 0 0 0 5px rgba(59, 95, 143, 0); } }
+@keyframes fade-zoom-in  { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── Live view counter pulse ── */
+@keyframes live-ping {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
+.animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
+.animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
+.animate-marquee      { animation: marquee 30s linear infinite; }
+.animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
+.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+.shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
+.shimmer-btn::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 800ms ease;
+  pointer-events: none; z-index: 1;
+}
+.shimmer-btn:hover::before { transform: translateX(200%); }
+.shimmer-btn > * { position: relative; z-index: 2; }
+
+.hover-lift {
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.hover-lift:hover { transform: translateY(-4px); }
+
+.gold-underline { position: relative; display: inline-block; }
+.gold-underline::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+  background-color: #3b5f8f;
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gold-underline:hover::after { transform: scaleX(1); }
+
+.input-focus-gold:focus { animation: focus-ring 1.4s ease-out; border-color: #3b5f8f; }
+
+.product-image-frame { overflow: hidden; }
+.product-image-frame img {
+  transition: transform 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.product-image-frame:hover img { transform: scale(1.06); }
+
+.marquee-track {
+  display: flex; width: max-content;
+  animation: marquee 30s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }
+
+.tilt-3d { transform-style: preserve-3d; perspective: 1000px; }
+
+.section-veil { position: relative; }
+.section-veil::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fafaf9 0%, transparent 15%, transparent 85%, #fafaf9 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
+@keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-left    { from { opacity: 0; transform: translateX(-40px); }    to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-slide-right   { from { opacity: 0; transform: translateX(40px); }     to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-scale-in      { from { opacity: 0; transform: scale(0.85); }          to { opacity: 1; transform: scale(1); } }
+@keyframes hero-scale-bounce  {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hero-blur-in {
+  from { opacity: 0; filter: blur(12px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+@keyframes hero-mask-reveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes hero-pulse-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(59,95,143,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+  50%      { text-shadow: 0 0 20px rgba(59,95,143,0.75), 0 2px 6px rgba(0,0,0,0.35); }
+}
+@keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+@keyframes hero-underline-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes hero-accent-bar-draw {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes hero-shimmer-sweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%)  skewX(-20deg); }
+}
+@keyframes hero-dot-pop {
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-sticker-diag {
+  0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1); }
+}
+@keyframes hero-sticker-diag-tl {
+  0%   { opacity: 0; transform: translate(-30%, -30%) rotate(-45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1); }
+}
+@keyframes hero-sticker-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes hero-sticker-slide-up {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hero-sticker-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-2deg); }
+  75%      { transform: rotate(2deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOUNCEMENT BAR — LUXURY ANIMATIONS (BLUE)
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes announcement-gradient-drift {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+
+@keyframes announcement-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.55; box-shadow: 0 0 0 0 currentColor; }
+  50%      { transform: scale(1.6); opacity: 1;    box-shadow: 0 0 6px currentColor; }
+}
+
+@keyframes announcement-glow-in {
+  0%   { text-shadow: 0 0 0 transparent; }
+  30%  { text-shadow: 0 0 12px rgba(59, 95, 143, 0.55); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+@keyframes announcement-icon-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(59, 95, 143, 0)); }
+  50%      { filter: drop-shadow(0 0 4px rgba(59, 95, 143, 0.7)); }
+}
+
+@keyframes announcement-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.announcement-bar-shell {
+  animation: announcement-gradient-drift 12s ease-in-out infinite;
+}
+
+.announcement-dot-pulse {
+  animation: announcement-dot-pulse 2.4s ease-in-out infinite;
+}
+
+.announcement-glow-in {
+  animation: announcement-glow-in 1.2s ease-out both;
+}
+
+.announcement-icon-glow {
+  animation: announcement-icon-glow 2.8s ease-in-out infinite;
+}
+
+.announcement-marquee {
+  animation: announcement-marquee 22s linear infinite;
+  will-change: transform;
+}
+.announcement-bar-shell:hover .announcement-marquee {
+  animation-play-state: paused;
+}
+
+/* Utility used by product sliders */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+/* ═══════════════════════════════════════════════════════════
+   NO SCROLLBAR UTILITY (used for horizontal sliders)
+   ═══════════════════════════════════════════════════════════ */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* ═══════════════════════════════════════════════════════════
+   HERO SLIDER — PREMIUM SLIDE TRANSITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-slide-in-right {
+  from { opacity: 0; transform: translateX(60px) scale(1.02); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+
+@keyframes hero-slide-out-left {
+  from { opacity: 1; transform: translateX(0)     scale(1);    }
+  to   { opacity: 0; transform: translateX(-60px) scale(0.98); }
+}
+
+@keyframes hero-slide-in-left {
+  from { opacity: 0; transform: translateX(-60px) scale(1.02); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);    }
+}
+
+@keyframes hero-slide-out-right {
+  from { opacity: 1; transform: translateX(0)    scale(1);    }
+  to   { opacity: 0; transform: translateX(60px) scale(0.98); }
+}
+
+@keyframes hero-ken-burns-active {
+  from { transform: scale(1)    translate(0, 0); }
+  to   { transform: scale(1.06) translate(-1%, -0.5%); }
+}
+
+.hero-slide-enter {
+  animation: hero-slide-in-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-slide-exit {
+  animation: hero-slide-out-left 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-slide-enter-prev {
+  animation: hero-slide-in-left 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-slide-exit-next {
+  animation: hero-slide-out-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-image-ken-burns {
+  animation: hero-ken-burns-active var(--hero-duration, 8s) ease-in-out both;
+  will-change: transform;
+}
+/* ═══════════════════════════════════════════════════════════
+   HERO CINEMATIC TRANSITIONS (Editorial Luxury)
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-cinematic-in {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes hero-cinematic-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.01);
+    filter: blur(6px);
+  }
+}
+
+.hero-cinematic-enter {
+  animation: hero-cinematic-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-cinematic-exit {
+  animation: hero-cinematic-out 700ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+================================================================================
+FILE: user-panel\src\lib\fonts.ts
+================================================================================
+
+import { Inter, Playfair_Display, Cormorant_Garamond } from "next/font/google";
+
+export const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+export const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+export const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-cormorant",
+  display: "swap",
+});

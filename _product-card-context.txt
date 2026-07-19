@@ -1,3 +1,17 @@
+================================================================================
+ADD 'SAVE X%' BLACK STICKER TO PRODUCT CARDS
+Design reference:
+  - Black rectangle, top-left corner of image
+  - White text: 'SAVE 42%' / 'SAVE 50%'
+  - Small padding, uppercase, tracked letters
+  - Only shown when product has a compareAtPrice (discount exists)
+Generated: 2026-07-19 12:43:11
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\product\ProductCard.tsx
+================================================================================
+
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -7,7 +21,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
 import { ProductBgWrapper } from "./ProductBgWrapper";
-import { cn, getDiscountPercent } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
 interface ProductCardProps {
@@ -41,10 +55,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const secondaryImage = sortedImages[1];
   const hasSecondary   = Boolean(secondaryImage);
 
-  const hasDiscount = !!product.compareAtPrice && product.compareAtPrice > product.price;
-  const discountPercent = hasDiscount
-    ? getDiscountPercent(product.compareAtPrice!, product.price)
-    : 0;
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
 
   const uniqueColors = Array.from(
     new Map(product.variants.map((v) => [v.colorHex, { hex: v.colorHex, name: v.color }])).values()
@@ -133,7 +144,6 @@ export function ProductCard({ product, className }: ProductCardProps) {
         <div
           className={cn(
             "absolute top-3 left-3 w-4 h-4 border-t border-l border-[#3b5f8f] transition-all duration-500 pointer-events-none",
-            // Hide the top-left accent when SAVE badge is showing to avoid visual clutter
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />
@@ -223,4 +233,222 @@ export function ProductCard({ product, className }: ProductCardProps) {
       </div>
     </div>
   );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\DiscountBadge.tsx
+================================================================================
+
+"use client";
+import { cn } from "@/lib/utils";
+
+/**
+ * Simple square SALE badge — sits at the top-left of the primary product image.
+ *
+ * Design: bold red square, white "SALE" text, high contrast, no ornament.
+ * Renders NOTHING when percent <= 0 (so it's safe to always mount).
+ */
+interface Props {
+  percent: number;
+  className?: string;
+  /** kept for backwards compatibility — both variants render the same SALE square now */
+  variant?: "corner" | "floating";
+}
+
+export function DiscountBadge({ percent, className }: Props) {
+  if (!percent || percent <= 0) return null;
+
+  return (
+    <div
+      className={cn(
+        "absolute top-3 left-3 z-20 pointer-events-none",
+        "bg-[#e32c52] text-white",
+        "px-3 py-1.5 shadow-md",
+        "text-[11px] font-bold tracking-[0.2em] uppercase",
+        className
+      )}
+      aria-label={`On sale - ${percent}% off`}
+    >
+      SALE
+    </div>
+  );
+}
+
+/**
+ * Legacy inline pill kept for anywhere it was already used (e.g. product cards).
+ */
+export function DiscountInlinePill({ percent, className }: { percent: number; className?: string }) {
+  if (!percent || percent <= 0) return null;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-1",
+        "bg-[#e32c52] text-white",
+        "text-[10px] font-bold tracking-[0.16em] uppercase",
+        className
+      )}
+    >
+      -{percent}%
+    </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductBgWrapper.tsx
+================================================================================
+
+"use client";
+import type { CSSProperties, ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+/**
+ * Wraps a product image with an optional configurable background color.
+ *
+ * Uses CSS `mix-blend-mode: multiply` — white pixels in the image become
+ * transparent, letting the wrapper's background color show through.
+ *
+ * Works PERFECTLY when:
+ *   - Image has a pure white (#FFFFFF) background
+ *   - Product itself has minimal pure-white details
+ *
+ * If `bgColor` is null/undefined, renders children as-is (no blend applied).
+ *
+ * Usage:
+ *   <ProductBgWrapper bgColor={product.bgColor} className="aspect-[4/5]">
+ *     <Image src={...} alt={...} fill className="object-cover" />
+ *   </ProductBgWrapper>
+ */
+interface Props {
+  bgColor?:   string | null;
+  className?: string;
+  style?:     CSSProperties;
+  children:   ReactNode;
+}
+
+export function ProductBgWrapper({ bgColor, className, style, children }: Props) {
+  const hasBg = !!bgColor;
+
+  return (
+    <div
+      className={cn("relative overflow-hidden", className)}
+      style={{
+        ...style,
+        ...(hasBg ? { backgroundColor: bgColor } : {}),
+      }}
+      data-product-bg={hasBg ? bgColor : undefined}
+    >
+      {hasBg ? (
+        <div
+          className="absolute inset-0 [&>img]:mix-blend-multiply [&_img]:mix-blend-multiply"
+        >
+          {children}
+        </div>
+      ) : (
+        children
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\ui\Badge.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: "new" | "sale" | "bestseller" | "soldout" | "default";
+  className?: string;
+}
+
+export function Badge({ children, variant = "default", className }: BadgeProps) {
+  const variants = {
+    new:        "bg-[#1a1a1a] text-white",
+    sale:       "bg-[#3b5f8f] text-white",
+    bestseller: "bg-[#f5f0e8] text-[#1a1a1a]",
+    soldout:    "bg-[#6b7280] text-white",
+    default:    "bg-[#e5e7eb] text-[#1a1a1a]",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-block text-[10px] font-semibold tracking-widest uppercase px-2 py-1",
+        variants[variant],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\lib\utils.ts
+================================================================================
+
+import { type ClassValue, clsx } from "clsx";
+
+// Merge class names safely
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs);
+}
+
+// Format price in PKR
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat("en-PK", {
+    style: "currency",
+    currency: "PKR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+// Calculate discount percentage
+export function getDiscountPercent(original: number, sale: number): number {
+  return Math.round(((original - sale) / original) * 100);
+}
+
+// Slugify a string
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w ]+/g, "")
+    .replace(/ +/g, "-");
+}
+
+// Truncate text
+export function truncate(text: string, length: number): string {
+  if (text.length <= length) return text;
+  return text.slice(0, length) + "...";
+}
+
+// Format date
+export function formatDate(dateString: string): string {
+  return new Intl.DateTimeFormat("en-PK", {
+    year:  "numeric",
+    month: "long",
+    day:   "numeric",
+  }).format(new Date(dateString));
+}
+
+// Generate star array for ratings
+export function getStars(rating: number): boolean[] {
+  return Array.from({ length: 5 }, (_, i) => i < Math.round(rating));
+}
+
+================================================================================
+FILE: user-panel\src\lib\priceUtils.ts
+================================================================================
+
+export function paisaToRupees(paisa: number): number { return paisa / 100; }
+export function rupeesToPaisa(rupees: number): number { return Math.round(rupees * 100); }
+
+export function formatPaisa(paisa: number): string {
+  return new Intl.NumberFormat("en-PK", {
+    style: "currency", currency: "PKR",
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(paisa / 100);
 }

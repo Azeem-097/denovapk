@@ -23,6 +23,7 @@ export function adaptProduct(p: ProductWithRelations): AdminProduct {
     image:        primaryImg?.url ?? "",
     isNew:        p.isNew === 1,
     isFeatured:   p.isFeatured === 1,
+    brand:        p.brand ?? null,
     createdAt:    new Date(p.createdAt * 1000).toISOString(),
     updatedAt:    new Date(p.updatedAt * 1000).toISOString(),
   };

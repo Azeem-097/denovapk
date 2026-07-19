@@ -1,6 +1,7 @@
 ================================================================================
-ANNOUNCEMENT BAR — MAKE TRANSITIONS COOL
-Generated: 2026-07-19 09:05:54
+MAKE ANNOUNCEMENT BAR SWIPEABLE (MULTI-MESSAGE ROTATING/SWIPE)
+Current issue: Only shows one static message, no way to swipe or rotate.
+Generated: 2026-07-19 12:59:56
 ================================================================================
 
 ================================================================================
@@ -8,9 +9,10 @@ FILE: user-panel\src\components\layout\AnnouncementBar.tsx
 ================================================================================
 
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X, Truck, Flame, Gift, Sparkles, Gem, Zap, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AnnouncementMessage {
   id:        string;
@@ -34,20 +36,33 @@ const FALLBACK_CONFIG: AnnouncementConfig = {
   enabled:           true,
   autoRotateSeconds: 5,
   dismissible:       true,
-  bgColor:           "#1a1a1a",
+  bgColor:           "#0d0d0d",
   textColor:         "#ffffff",
-  accentColor:       "#3b5f8f",
+  accentColor:       "#3b5f8f", // Blue accent
   messages: [
     { id: "m1", text: "Free shipping on orders above PKR 5,000", link: "", isActive: true, sortOrder: 0 },
   ],
 };
 
+function pickIcon(text: string) {
+  const t = text.toLowerCase();
+  if (/(ship|delivery|deliver|courier)/.test(t))         return Truck;
+  if (/(sale|off|discount|deal|save)/.test(t))            return Flame;
+  if (/(gift|reward|bonus|free)/.test(t))                 return Gift;
+  if (/(new|arrival|launch|drop|introducing)/.test(t))    return Sparkles;
+  if (/(premium|luxury|exclusive|selvedge)/.test(t))      return Gem;
+  if (/(limited|hurry|ends|last chance|today)/.test(t))   return Zap;
+  return Star;
+}
+
 export function AnnouncementBar() {
   const [config,    setConfig]    = useState<AnnouncementConfig | null>(null);
   const [current,   setCurrent]   = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const [paused,    setPaused]    = useState(false);
+  const [progress,  setProgress]  = useState(0);
 
-  // Fetch config from API
   useEffect(() => {
     fetch("/api/announcement-bar")
       .then((r) => r.ok ? r.json() : null)
@@ -58,62 +73,164 @@ export function AnnouncementBar() {
       .catch(() => setConfig(FALLBACK_CONFIG));
   }, []);
 
-  // Auto-rotate messages
-  useEffect(() => {
-    if (!config || config.messages.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrent((c) => (c + 1) % config.messages.length);
-    }, Math.max(1, config.autoRotateSeconds) * 1000);
-    return () => clearInterval(interval);
+  const rotateMs = useMemo(() => {
+    if (!config) return 5000;
+    return Math.max(2000, config.autoRotateSeconds * 1000);
   }, [config]);
 
-  // Don't render if disabled, dismissed, or no messages
-  if (!config) return null;
-  if (!config.enabled) return null;
-  if (dismissed) return null;
-  if (config.messages.length === 0) return null;
+  useEffect(() => {
+    if (!config || config.messages.length <= 1 || paused) return;
+    setProgress(0);
+    const startedAt = Date.now();
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const pct = Math.min(100, (elapsed / rotateMs) * 100);
+      setProgress(pct);
+    }, 33);
+    return () => clearInterval(id);
+  }, [current, rotateMs, config, paused]);
 
-  const message = config.messages[current] ?? config.messages[0];
-  if (!message) return null;
+  useEffect(() => {
+    if (!config || config.messages.length <= 1 || paused) return;
+    const t = setTimeout(() => {
+      setAnimating(true);
+      setTimeout(() => {
+        setCurrent((c) => (c + 1) % config.messages.length);
+        setAnimating(false);
+      }, 400);
+    }, rotateMs);
+    return () => clearTimeout(t);
+  }, [config, current, rotateMs, paused]);
 
-  const content = (
-    <p className="text-center leading-none font-medium tracking-[0.12em]">
-      {message.text}
-    </p>
+  if (!config || !config.enabled || dismissed || config.messages.length === 0) return null;
+
+  const message = config.messages[current];
+  const Icon    = pickIcon(message.text);
+  const bg      = config.bgColor      || "#0d0d0d";
+  const fg      = config.textColor    || "#ffffff";
+  const accent  = config.accentColor  || "#3b5f8f"; // Blue
+
+  const isLong  = message.text.length > 70;
+  const hasMany = config.messages.length > 1;
+
+  const messageInner = (
+    <div className="flex items-center gap-2.5 leading-none">
+      <Icon
+        size={13}
+        strokeWidth={2}
+        className="flex-shrink-0 announcement-icon-glow"
+        style={{ color: accent }}
+      />
+      <p className="font-semibold tracking-[0.18em] uppercase text-[11px] sm:text-[12px]">
+        {message.text}
+      </p>
+      <Icon
+        size={13}
+        strokeWidth={2}
+        className="flex-shrink-0 announcement-icon-glow hidden sm:inline-block"
+        style={{ color: accent }}
+      />
+    </div>
   );
 
   return (
     <div
-      className="w-full text-xs tracking-widest uppercase"
-      style={{ backgroundColor: config.bgColor, color: config.textColor }}
+      className="relative w-full overflow-hidden select-none announcement-bar-shell"
+      style={{
+        background: `linear-gradient(90deg, ${bg} 0%, ${bg} 40%, ${shade(bg, 12)} 50%, ${bg} 60%, ${bg} 100%)`,
+        backgroundSize: "200% 100%",
+        color: fg,
+      }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
     >
-      <div className="site-container h-9 flex items-center justify-center gap-4 relative">
-        {message.link ? (
-          <Link
-            href={message.link}
-            className="transition-opacity hover:opacity-80"
-            style={{ color: config.textColor }}
-          >
-            {content}
-          </Link>
-        ) : (
-          content
-        )}
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-60"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+      />
 
-        {config.dismissible && (
-          <button
-            onClick={() => setDismissed(true)}
-            className="absolute right-4 opacity-60 hover:opacity-100 transition-opacity"
-            style={{ color: config.textColor }}
-            aria-label="Dismiss announcement"
-          >
-            <X size={14} />
-          </button>
-        )}
+      <div className="site-container h-10 sm:h-11 relative">
+        <div className="h-full flex items-center justify-center relative">
+          <div className="hidden sm:flex absolute left-4 items-center gap-2 opacity-70">
+            <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent }} />
+            <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} />
+          </div>
+
+          <div className="hidden sm:flex absolute right-14 items-center gap-2 opacity-70">
+            <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent})` }} />
+            <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent, animationDelay: "0.9s" }} />
+          </div>
+
+          <div className="flex-1 flex items-center justify-center overflow-hidden px-8 sm:px-16">
+            {isLong ? (
+              <div className="w-full overflow-hidden">
+                <div className="flex whitespace-nowrap announcement-marquee">
+                  <div className="flex items-center gap-16 pr-16">
+                    {messageInner}{messageInner}{messageInner}{messageInner}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                key={message.id + current}
+                className={cn(
+                  "transition-all duration-400 ease-out",
+                  animating ? "opacity-0 -translate-y-2 blur-[3px]" : "opacity-100 translate-y-0 blur-0 announcement-glow-in"
+                )}
+              >
+                {message.link ? (
+                  <Link href={message.link} className="transition-all hover:opacity-90" style={{ color: fg }}>
+                    {messageInner}
+                  </Link>
+                ) : messageInner}
+              </div>
+            )}
+          </div>
+
+          {config.dismissible && (
+            <button
+              onClick={() => setDismissed(true)}
+              className="absolute right-3 sm:right-4 opacity-50 hover:opacity-100 transition-all hover:scale-110 hover:rotate-90"
+              style={{ color: fg }}
+              aria-label="Dismiss"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {hasMany && (
+        <div
+          className="absolute bottom-0 left-0 h-px transition-all duration-100 ease-linear"
+          style={{
+            width: `${progress}%`,
+            background: `linear-gradient(90deg, ${accent}, ${lighten(accent, 30)})`,
+            boxShadow: `0 0 8px ${accent}, 0 0 4px ${accent}`,
+          }}
+        />
+      )}
     </div>
   );
 }
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const num = parseInt(full, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+function rgbToHex(r: number, g: number, b: number): string {
+  const to = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return "#" + to(r) + to(g) + to(b);
+}
+function shade(hex: string, amt: number): string {
+  try {
+    const [r, g, b] = hexToRgb(hex);
+    return rgbToHex(r + amt, g + amt, b + amt);
+  } catch { return hex; }
+}
+function lighten(hex: string, amt: number): string { return shade(hex, amt); }
 
 ================================================================================
 FILE: user-panel\src\app\api\announcement-bar\route.ts
@@ -125,13 +242,15 @@ import { getSetting } from "@/lib/db/repositories/settings";
 export const dynamic   = "force-dynamic";
 export const revalidate = 0;
 
+const BRAND_ACCENT = "#3b5f8f"; // Denova Blue — always used as accent
+
 const DEFAULT_CONFIG = {
   enabled:           true,
   autoRotateSeconds: 5,
   dismissible:       true,
   bgColor:           "#1a1a1a",
   textColor:         "#ffffff",
-  accentColor:       "#3b5f8f",
+  accentColor:       BRAND_ACCENT,
   messages: [] as AnnouncementMessage[],
 };
 
@@ -143,7 +262,6 @@ interface AnnouncementMessage {
   sortOrder: number;
 }
 
-// Public endpoint — returns config with only ACTIVE messages, sorted
 export async function GET() {
   try {
     const raw = await getSetting("announcement_bar");
@@ -161,7 +279,7 @@ export async function GET() {
         dismissible:       all.dismissible !== false,
         bgColor:           all.bgColor     || "#1a1a1a",
         textColor:         all.textColor   || "#ffffff",
-        accentColor:       all.accentColor || "#3b5f8f",
+        accentColor:       BRAND_ACCENT, // Always blue, ignore DB value
         messages:          activeMessages,
       },
     });
@@ -216,456 +334,625 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 }
 
 ================================================================================
-FILE: user-panel\src\components\layout\Navbar.tsx
+FILE: admin-panel\src\app\(dashboard)\announcement-bar\page.tsx
+================================================================================
+
+import { getSetting } from "@/lib/db/repositories/settings";
+import { AnnouncementBarClient } from "./AnnouncementBarClient";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+const DEFAULT_CONFIG = {
+  enabled:           true,
+  autoRotateSeconds: 5,
+  dismissible:       true,
+  bgColor:           "#1a1a1a",
+  textColor:         "#ffffff",
+  accentColor:       "#3b5f8f",
+  messages: [
+    { id: "m1", text: "Free shipping on orders above PKR 5,000",   link: "",      isActive: true, sortOrder: 0 },
+    { id: "m2", text: "New Summer Collection is now live",         link: "/shop", isActive: true, sortOrder: 1 },
+    { id: "m3", text: "Use code DENOVA10 for 10% off first order", link: "",      isActive: true, sortOrder: 2 },
+  ],
+};
+
+export default async function AnnouncementBarPage() {
+  const raw = await getSetting("announcement_bar");
+  let config = DEFAULT_CONFIG;
+
+  if (raw) {
+    try {
+      config = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+    } catch {}
+  }
+
+  return <AnnouncementBarClient initialConfig={config} />;
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\announcement-bar\AnnouncementBarClient.tsx
 ================================================================================
 
 "use client";
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  Megaphone, Plus, GripVertical, Trash2, Eye, EyeOff,
+  Save, Loader, X, Palette, Clock, Info, Link as LinkIcon,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { NavbarMobile } from "./NavbarMobile";
-import { useCartStore } from "@/store/cartStore";
-import { useWishlistStore } from "@/store/wishlistStore";
-import { useAuthStore } from "@/store/authStore";
-import { useSearchStore } from "@/store/searchStore";
+import { useToastStore }   from "@/store/toastStore";
+import { useConfirmStore } from "@/store/confirmStore";
 
-const collectionsDropdown = [
-  { label: "Premium",       href: "/collections/premium" },
-  { label: "Super Premium", href: "/collections/super-premium" },
-];
+// ─── Types ───────────────────────────────────────────────
+interface AnnouncementMessage {
+  id:        string;
+  text:      string;
+  link:      string;
+  isActive:  boolean;
+  sortOrder: number;
+}
 
-// ═══════════════════════════════════════════════════════════
-//  Cloudinary logo (transparent, 612 x 408 source)
-// ═══════════════════════════════════════════════════════════
-const LOGO_BASE = "https://res.cloudinary.com/djy5qqco7/image/upload";
-const LOGO_ID   = "v1784388373/denovapk/general/logo-without-bg_1784388368531";
-const LOGO_DESKTOP = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_160/${LOGO_ID}`;
-const LOGO_MOBILE  = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_120/${LOGO_ID}`;
+interface AnnouncementConfig {
+  enabled:           boolean;
+  autoRotateSeconds: number;
+  dismissible:       boolean;
+  bgColor:           string;
+  textColor:         string;
+  accentColor:       string;
+  messages:          AnnouncementMessage[];
+}
 
-export function Navbar() {
-  const [scrolled,     setScrolled]     = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mounted,      setMounted]      = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+function genId(): string {
+  return "m" + Math.random().toString(36).slice(2, 12);
+}
 
-  const cartCount     = useCartStore((s) => s.getItemCount());
-  const wishlistCount = useWishlistStore((s) => s.items.length);
-  const openCart      = useCartStore((s) => s.openCart);
-  const isLoggedIn    = useAuthStore((s) => s.isLoggedIn);
-  const openSearch    = useSearchStore((s) => s.openSearch);
+function emptyMessage(): AnnouncementMessage {
+  return {
+    id:        genId(),
+    text:      "",
+    link:      "",
+    isActive:  true,
+    sortOrder: 0,
+  };
+}
 
-  useEffect(() => setMounted(true), []);
+// ─── Props ───────────────────────────────────────────────
+interface Props {
+  initialConfig: AnnouncementConfig;
+}
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+// ══════════════════════════════════════════════════════════
+//  MAIN
+// ══════════════════════════════════════════════════════════
+export function AnnouncementBarClient({ initialConfig }: Props) {
+  const [config,     setConfig]     = useState<AnnouncementConfig>(initialConfig);
+  const [saving,     setSaving]     = useState(false);
+  const [dirty,      setDirty]      = useState(false);
+  const [previewIdx, setPreviewIdx] = useState(0);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
+  const toast   = useToastStore();
+  const confirm = useConfirmStore();
+
+  // ── Update helpers ────────────────────────────────────
+  const updateConfig = <K extends keyof AnnouncementConfig>(key: K, value: AnnouncementConfig[K]) => {
+    setConfig((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+
+  const updateMessage = (id: string, field: keyof AnnouncementMessage, value: string | boolean | number) => {
+    setConfig((prev) => ({
+      ...prev,
+      messages: prev.messages.map((m) => m.id === id ? { ...m, [field]: value } : m),
+    }));
+    setDirty(true);
+  };
+
+  const addMessage = () => {
+    const newMsg = { ...emptyMessage(), sortOrder: config.messages.length };
+    setConfig((prev) => ({ ...prev, messages: [...prev.messages, newMsg] }));
+    setDirty(true);
+  };
+
+  const deleteMessage = async (id: string) => {
+    const msg = config.messages.find((m) => m.id === id);
+    if (!msg) return;
+
+    const ok = await confirm.confirm({
+      title:       "Delete Message",
+      message:     `Delete "${msg.text || "this message"}"? This cannot be undone.`,
+      confirmText: "Delete",
+      variant:     "danger",
+    });
+    if (!ok) return;
+
+    setConfig((prev) => ({
+      ...prev,
+      messages: prev.messages.filter((m) => m.id !== id),
+    }));
+    setDirty(true);
+    toast.success("Message removed. Click Save to apply.");
+  };
+
+  // ── Drag & drop reorder ───────────────────────────────
+  const dragIndex = useRef<number | null>(null);
+
+  const onDragStart = (i: number) => { dragIndex.current = i; };
+
+  const onDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const from = dragIndex.current;
+    if (from === null || from === i) return;
+
+    const next = [...config.messages];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+
+    setConfig((prev) => ({
+      ...prev,
+      messages: next.map((m, idx) => ({ ...m, sortOrder: idx })),
+    }));
+    dragIndex.current = i;
+    setDirty(true);
+  };
+
+  const onDragEnd = () => { dragIndex.current = null; };
+
+  // ── Save all ──────────────────────────────────────────
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Ensure sortOrder is sequential
+      const orderedMessages = config.messages.map((m, i) => ({ ...m, sortOrder: i }));
+      const payload = { ...config, messages: orderedMessages };
+
+      const res = await fetch("/api/announcement-bar", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ config: payload }),
+      });
+
+      if (res.ok) {
+        setConfig(payload);
+        setDirty(false);
+        toast.success("Announcement bar saved successfully!", "Saved");
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "Failed to save");
       }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    } catch {
+      toast.error("Network error - could not save");
+    }
+    setSaving(false);
+  };
 
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
-
-  const accountHref = mounted && isLoggedIn ? "/account/dashboard" : "/account/login";
+  // ── Active message for preview ────────────────────────
+  const activeMessages = config.messages.filter((m) => m.isActive);
+  const previewMessage = activeMessages[previewIdx] ?? activeMessages[0];
 
   return (
-    <>
-      <header
-        className={cn(
-          "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
-          // ── CRITICAL: solid bg always, overflow hidden so nothing bursts out ──
-          "bg-white overflow-hidden",
-          scrolled
-            ? "shadow-sm border-b border-[#e5e7eb]"
-            : "border-b border-transparent"
-        )}
-      >
-        <div className="site-container">
+    <div className="max-w-4xl space-y-5">
 
-          {/* ═══════════════════════════════════════════════════
-              MOBILE — 64px header, logo constrained to 40px
-              ═══════════════════════════════════════════════════ */}
-          <div className="lg:hidden relative flex items-center justify-between h-16">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="p-2 -ml-2 text-[#1a1a1a] hover:text-[#3b5f8f]"
-              aria-label="Open menu"
-            >
-              <Menu size={22} />
-            </button>
+      {/* ── Header ────────────────────────────────────── */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
+            <Megaphone size={22} className="text-[#3b5f8f]" />
+            Announcement Bar
+          </h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">
+            Manage the rotating announcement bar at the top of your storefront.
+          </p>
+        </div>
+        <Button variant="primary" onClick={handleSave} disabled={saving || !dirty}>
+          {saving
+            ? <><Loader size={14} className="animate-spin" />Saving...</>
+            : <><Save size={14} />{dirty ? "Save Changes" : "Saved"}</>
+          }
+        </Button>
+      </div>
 
-            {/* Logo container with STRICT height cap */}
-            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center h-11 pointer-events-auto" aria-label="Denova PK home">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={LOGO_MOBILE}
-                alt="Denova PK"
-                className="block h-full w-auto max-h-11 object-contain"
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-              />
-            </Link>
-
+      {/* ── Live preview ──────────────────────────────── */}
+      <div className="bg-white border border-[#e5e7eb]">
+        <div className="px-4 py-3 border-b border-[#e5e7eb] flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-wide text-[#6b7280]">Live Preview</p>
+          {activeMessages.length > 1 && (
             <div className="flex items-center gap-1">
-              <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Search">
-                <Search size={20} />
-              </button>
-              <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Cart">
-                <ShoppingBag size={20} />
-                {mounted && cartCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
-                    {cartCount > 9 ? "9+" : cartCount}
-                  </span>
-                )}
-              </button>
+              {activeMessages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPreviewIdx(i)}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-colors",
+                    i === previewIdx ? "bg-[#3b5f8f]" : "bg-[#e5e7eb] hover:bg-[#6b7280]"
+                  )}
+                  aria-label={`Preview message ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {config.enabled && activeMessages.length > 0 ? (
+          <div
+            className="w-full text-xs tracking-widest uppercase relative"
+            style={{ backgroundColor: config.bgColor, color: config.textColor }}
+          >
+            <div className="h-9 flex items-center justify-center px-12">
+              <p className="text-center leading-none font-medium tracking-[0.12em]">
+                {previewMessage?.text || "(empty message)"}
+              </p>
+              {config.dismissible && (
+                <button className="absolute right-4 opacity-60" style={{ color: config.textColor }}>
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
+        ) : (
+          <div className="p-6 text-center bg-[#fafaf9]">
+            <p className="text-sm text-[#6b7280]">
+              {!config.enabled
+                ? "Announcement bar is currently disabled"
+                : "No active messages to display"}
+            </p>
+          </div>
+        )}
+      </div>
 
-          {/* ═══════════════════════════════════════════════════
-              DESKTOP — 80px header, logo constrained to 56px
-              ═══════════════════════════════════════════════════ */}
-          <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[88px] gap-8">
+      {/* ── Global settings ───────────────────────────── */}
+      <div className="bg-white border border-[#e5e7eb] p-5 space-y-4">
+        <h2 className="text-base font-bold text-[#1a1a1a] flex items-center gap-2">
+          <Palette size={16} className="text-[#3b5f8f]" />
+          Settings
+        </h2>
 
-            {/* Left nav */}
-            <nav className="flex items-center justify-start gap-7">
-              <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
-                Shop
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
-              </Link>
+        {/* Enabled toggle */}
+        <label className={cn(
+          "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
+          config.enabled ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
+        )}>
+          <input
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(e) => updateConfig("enabled", e.target.checked)}
+            className="w-4 h-4 accent-[#3b5f8f]"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
+              {config.enabled
+                ? <><Eye size={13} className="text-[#3b5f8f]" />Enabled (visible on storefront)</>
+                : <><EyeOff size={13} className="text-[#6b7280]" />Disabled (hidden from customers)</>
+              }
+            </p>
+          </div>
+        </label>
 
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 whitespace-nowrap"
-                >
-                  Collections
-                  <ChevronDown size={14} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
-                </button>
+        {/* Dismissible toggle */}
+        <label className="flex items-center gap-3 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#3b5f8f] transition-colors">
+          <input
+            type="checkbox"
+            checked={config.dismissible}
+            onChange={(e) => updateConfig("dismissible", e.target.checked)}
+            className="w-4 h-4 accent-[#3b5f8f]"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Allow customers to dismiss</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Show an X button so visitors can close the bar</p>
+          </div>
+        </label>
 
-                <div className={cn(
-                  "absolute top-full left-0 mt-3 w-56 bg-white border border-[#e5e7eb] shadow-lg transition-all duration-200 origin-top z-50",
-                  dropdownOpen ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-95 pointer-events-none"
-                )}>
-                  <div className="py-2">
-                    {collectionsDropdown.map((item) => (
-                      <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#f5f0e8] hover:text-[#3b5f8f] transition-colors">
-                        {item.label}
-                      </Link>
-                    ))}
-                    <div className="border-t border-[#e5e7eb] mt-1 pt-1">
-                      <Link href="/collections" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-[#3b5f8f] hover:bg-[#f5f0e8] transition-colors">
-                        View All Collections →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* Auto-rotate seconds */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2 flex items-center gap-1.5">
+            <Clock size={12} />Rotation Speed (seconds)
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={60}
+            value={config.autoRotateSeconds}
+            onChange={(e) => updateConfig("autoRotateSeconds", Math.max(1, Number(e.target.value) || 5))}
+            className="w-32 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+          />
+          <p className="mt-1 text-[10px] text-[#6b7280]">
+            How long each message stays visible before rotating. Only applies when there are 2+ active messages.
+          </p>
+        </div>
 
-              <Link href="/shop?filter=new" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
-                New Arrivals
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
-              </Link>
-            </nav>
+        {/* Colors */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <ColorField
+            label="Background"
+            value={config.bgColor}
+            onChange={(v) => updateConfig("bgColor", v)}
+          />
+          <ColorField
+            label="Text Color"
+            value={config.textColor}
+            onChange={(v) => updateConfig("textColor", v)}
+          />
+          <ColorField
+            label="Accent (Links)"
+            value={config.accentColor}
+            onChange={(v) => updateConfig("accentColor", v)}
+          />
+        </div>
+      </div>
 
-            {/* CENTER — logo container with STRICT height cap */}
-            <Link href="/" className="flex items-center h-16 flex-shrink-0 hover:opacity-80 transition-opacity duration-300" aria-label="Denova PK home">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={LOGO_DESKTOP}
-                alt="Denova PK"
-                className="block h-full w-auto max-h-11 object-contain"
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
+      {/* ── Info banner ───────────────────────────────── */}
+      <div className="bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
+        <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-blue-900 leading-relaxed">
+          <p className="font-semibold mb-1">How it works</p>
+          <p>
+            Drag &amp; drop messages to change their order. Toggle <Eye size={11} className="inline" /> to enable/disable
+            individual messages. Add an optional link URL to make the whole bar clickable when that message is showing.
+            Messages auto-rotate every {config.autoRotateSeconds}s.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Messages list ─────────────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-[#1a1a1a]">
+            Messages ({config.messages.length})
+          </h2>
+          <button
+            onClick={addMessage}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72]"
+          >
+            <Plus size={14} />Add Message
+          </button>
+        </div>
+
+        {config.messages.length === 0 ? (
+          <div className="bg-white border border-dashed border-[#e5e7eb] p-12 text-center">
+            <Megaphone size={32} className="text-[#e5e7eb] mx-auto mb-3" />
+            <p className="text-sm font-semibold text-[#1a1a1a] mb-1">No messages yet</p>
+            <p className="text-xs text-[#6b7280] mb-4">Add your first announcement to get started.</p>
+            <Button variant="primary" onClick={addMessage}>
+              <Plus size={14} />Add First Message
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {config.messages.map((msg, i) => (
+              <MessageRow
+                key={msg.id}
+                message={msg}
+                index={i}
+                onUpdate={(field, value) => updateMessage(msg.id, field, value)}
+                onDelete={() => deleteMessage(msg.id)}
+                onDragStart={() => onDragStart(i)}
+                onDragOver={(e) => onDragOver(e, i)}
+                onDragEnd={onDragEnd}
               />
-            </Link>
+            ))}
+          </div>
+        )}
 
-            <div className="flex items-center justify-end gap-7">
-              <Link href="/shop?filter=sale" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
-                Sale
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
-              </Link>
-              <Link href="/about" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
-                About
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
-              </Link>
+        {config.messages.length > 0 && (
+          <button
+            onClick={addMessage}
+            className="w-full py-3 border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] text-sm font-medium text-[#6b7280] hover:text-[#3b5f8f] transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus size={16} />Add Another Message
+          </button>
+        )}
+      </div>
 
-              <div className="flex items-center gap-1 ml-3 pl-3 border-l border-[#e5e7eb]">
-                <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Search">
-                  <Search size={19} />
-                </button>
-                <Link href="/wishlist" className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Wishlist">
-                  <Heart size={19} />
-                  {mounted && wishlistCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
-                      {wishlistCount > 9 ? "9+" : wishlistCount}
-                    </span>
-                  )}
-                </Link>
-                <Link href={accountHref} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f] relative" aria-label="Account">
-                  <User size={19} />
-                  {mounted && isLoggedIn && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#3b5f8f]" />
-                  )}
-                </Link>
-                <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Cart">
-                  <ShoppingBag size={19} />
-                  {mounted && cartCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
-                      {cartCount > 9 ? "9+" : cartCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
+      {/* ── Bottom save bar ───────────────────────────── */}
+      {dirty && (
+        <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 bg-white border-t border-[#e5e7eb] px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-end gap-3">
+          <p className="text-xs text-[#6b7280] mr-auto">You have unsaved changes</p>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            {saving
+              ? <><Loader size={14} className="animate-spin" />Saving...</>
+              : <><Save size={14} />Save Changes</>
+            }
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  COLOR FIELD
+// ══════════════════════════════════════════════════════════
+function ColorField({
+  label, value, onChange,
+}: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-10 h-10 border border-[#e5e7eb] cursor-pointer flex-shrink-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="#000000"
+          className="flex-1 px-3 py-2 text-xs font-mono border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none uppercase"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  MESSAGE ROW
+// ══════════════════════════════════════════════════════════
+interface MessageRowProps {
+  message:     AnnouncementMessage;
+  index:       number;
+  onUpdate:    (field: keyof AnnouncementMessage, value: string | boolean | number) => void;
+  onDelete:    () => void;
+  onDragStart: () => void;
+  onDragOver:  (e: React.DragEvent) => void;
+  onDragEnd:   () => void;
+}
+
+function MessageRow({
+  message, index, onUpdate, onDelete,
+  onDragStart, onDragOver, onDragEnd,
+}: MessageRowProps) {
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "bg-white border border-[#e5e7eb] p-4 transition-all",
+        !message.isActive && "opacity-60"
+      )}
+    >
+      <div className="flex items-start gap-3">
+
+        {/* Drag handle + index */}
+        <div className="flex flex-col items-center gap-1 pt-2 flex-shrink-0">
+          <div className="cursor-grab active:cursor-grabbing text-[#6b7280] hover:text-[#3b5f8f]">
+            <GripVertical size={16} />
+          </div>
+          <span className="text-[10px] font-bold text-[#6b7280]">#{index + 1}</span>
+        </div>
+
+        {/* Fields */}
+        <div className="flex-1 min-w-0 space-y-2">
+
+          {/* Message text */}
+          <input
+            type="text"
+            value={message.text}
+            onChange={(e) => onUpdate("text", e.target.value)}
+            placeholder="e.g. Free shipping on orders above PKR 5,000"
+            className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+          />
+
+          {/* Optional link */}
+          <div className="flex items-center border border-[#e5e7eb] focus-within:border-[#3b5f8f]">
+            <span className="px-2 text-[#6b7280] flex-shrink-0">
+              <LinkIcon size={12} />
+            </span>
+            <input
+              type="text"
+              value={message.link}
+              onChange={(e) => onUpdate("link", e.target.value)}
+              placeholder="Optional link URL (e.g. /shop or https://...)"
+              className="flex-1 py-2 pr-3 text-xs bg-transparent focus:outline-none"
+            />
           </div>
         </div>
 
-        <div className={cn(
-          "h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300",
-          scrolled ? "opacity-100" : "opacity-0"
-        )} />
-      </header>
-
-      <NavbarMobile isOpen={mobileOpen} onClose={() => setMobileOpen(false)} cartCount={cartCount} />
-    </>
+        {/* Actions */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => onUpdate("isActive", !message.isActive)}
+            className={cn(
+              "p-2 transition-colors",
+              message.isActive
+                ? "text-[#3b5f8f] hover:text-[#2d4a72]"
+                : "text-[#6b7280] hover:text-[#1a1a1a]"
+            )}
+            title={message.isActive ? "Disable" : "Enable"}
+          >
+            {message.isActive ? <Eye size={15} /> : <EyeOff size={15} />}
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-2 text-[#6b7280] hover:text-red-500 transition-colors"
+            title="Delete"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 ================================================================================
-FILE: user-panel\src\app\globals.css
+FILE: admin-panel\src\app\api\announcement-bar\route.ts
 ================================================================================
 
-@import "tailwindcss";
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { getSetting, setSetting } from "@/lib/db/repositories/settings";
 
-@theme {
-  --color-brand-primary:    #1a1a1a;
-  --color-brand-secondary:  #3b5f8f;
-  --color-brand-accent:     #f5f0e8;
-  --color-brand-surface:    #fafaf9;
-  --color-brand-muted:      #6b7280;
-  --color-brand-border:     #e5e7eb;
+export const dynamic = "force-dynamic";
 
-  --font-sans:      var(--font-inter);
-  --font-serif:     var(--font-playfair);
-  --font-cormorant: var(--font-cormorant);
+// Default config (used if setting doesn't exist yet)
+const DEFAULT_CONFIG = {
+  enabled:           true,
+  autoRotateSeconds: 5,
+  dismissible:       true,
+  bgColor:           "#1a1a1a",
+  textColor:         "#ffffff",
+  accentColor:       "#3b5f8f",
+  messages: [
+    { id: "m1", text: "Free shipping on orders above PKR 5,000",   link: "",      isActive: true, sortOrder: 0 },
+    { id: "m2", text: "New Summer Collection is now live",         link: "/shop", isActive: true, sortOrder: 1 },
+    { id: "m3", text: "Use code DENOVA10 for 10% off first order", link: "",      isActive: true, sortOrder: 2 },
+  ],
+};
 
-  --breakpoint-3xl: 1920px;
-}
+// ─── GET /api/announcement-bar ──────────────────────────
+export async function GET() {
+  const authError = await requireAdmin();
+  if (authError) return authError;
 
-* { box-sizing: border-box; }
+  const raw = await getSetting("announcement_bar");
+  if (!raw) return NextResponse.json({ config: DEFAULT_CONFIG });
 
-html {
-  scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  background-color: #ffffff;
-  color: #111111;
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-}
-
-::selection { background-color: #3b5f8f; color: #ffffff; }
-img, video { max-width: 100%; height: auto; display: block; }
-
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #fafaf9; }
-::-webkit-scrollbar-thumb { background: #3b5f8f; border-radius: 5px; }
-::-webkit-scrollbar-thumb:hover { background: #2d4a72; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  try {
+    const config = JSON.parse(raw);
+    return NextResponse.json({ config });
+  } catch {
+    return NextResponse.json({ config: DEFAULT_CONFIG });
   }
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+// ─── POST /api/announcement-bar ─────────────────────────
+export async function POST(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
 
-.site-container {
-  width: 100%; margin-left: auto; margin-right: auto;
-  padding-left: 12px; padding-right: 12px;
-}
-@media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
-@media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
-@media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
-@media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
-@media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+  try {
+    const { config } = await req.json();
 
-/* ═══════════════════════════════════════════════════════════
-   Existing animation keyframes
-   ═══════════════════════════════════════════════════════════ */
-@keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
-@keyframes float-soft    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-@keyframes pulse-gold    { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(59, 95, 143, 0); } }
-@keyframes marquee       { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-@keyframes ken-burns     { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-1%, -1%); } }
-@keyframes letter-drop   { 0% { opacity: 0; transform: translateY(0.5em) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
-@keyframes draw-line     { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
-@keyframes tile-reveal   { 0% { opacity: 0; transform: scale(0.94) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
-@keyframes focus-ring    { 0% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.35); } 100% { box-shadow: 0 0 0 5px rgba(59, 95, 143, 0); } }
-@keyframes fade-zoom-in  { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+    if (!config || typeof config !== "object") {
+      return NextResponse.json({ error: "Invalid config" }, { status: 400 });
+    }
 
-/* ── Live view counter pulse ── */
-@keyframes live-ping {
-  0%   { transform: scale(1);   opacity: 0.75; }
-  75%, 100% { transform: scale(2.4); opacity: 0; }
-}
+    if (!Array.isArray(config.messages)) {
+      return NextResponse.json({ error: "messages must be an array" }, { status: 400 });
+    }
 
-.animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
-.animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
-.animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
-.animate-marquee      { animation: marquee 30s linear infinite; }
-.animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-.animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
-.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+    // Validate each message
+    for (const m of config.messages) {
+      if (!m.id || typeof m.id !== "string") {
+        return NextResponse.json({ error: "Each message must have an id" }, { status: 400 });
+      }
+      if (!m.text || typeof m.text !== "string") {
+        return NextResponse.json({ error: "Each message must have text" }, { status: 400 });
+      }
+    }
 
-.shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
-.shimmer-btn::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
-  transform: translateX(-100%);
-  transition: transform 800ms ease;
-  pointer-events: none; z-index: 1;
-}
-.shimmer-btn:hover::before { transform: translateX(200%); }
-.shimmer-btn > * { position: relative; z-index: 2; }
-
-.hover-lift {
-  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: transform;
-}
-.hover-lift:hover { transform: translateY(-4px); }
-
-.gold-underline { position: relative; display: inline-block; }
-.gold-underline::after {
-  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
-  background-color: #3b5f8f;
-  transform: scaleX(0); transform-origin: left center;
-  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.gold-underline:hover::after { transform: scaleX(1); }
-
-.input-focus-gold:focus { animation: focus-ring 1.4s ease-out; border-color: #3b5f8f; }
-
-.product-image-frame { overflow: hidden; }
-.product-image-frame img {
-  transition: transform 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: transform;
-}
-.product-image-frame:hover img { transform: scale(1.06); }
-
-.marquee-track {
-  display: flex; width: max-content;
-  animation: marquee 30s linear infinite;
-}
-.marquee-track:hover { animation-play-state: paused; }
-
-.tilt-3d { transform-style: preserve-3d; perspective: 1000px; }
-
-.section-veil { position: relative; }
-.section-veil::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, #fafaf9 0%, transparent 15%, transparent 85%, #fafaf9 100%);
-  pointer-events: none; z-index: 1;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
-   ═══════════════════════════════════════════════════════════ */
-
-@keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
-@keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
-@keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
-@keyframes hero-slide-left    { from { opacity: 0; transform: translateX(-40px); }    to { opacity: 1; transform: translateX(0); } }
-@keyframes hero-slide-right   { from { opacity: 0; transform: translateX(40px); }     to { opacity: 1; transform: translateX(0); } }
-@keyframes hero-scale-in      { from { opacity: 0; transform: scale(0.85); }          to { opacity: 1; transform: scale(1); } }
-@keyframes hero-scale-bounce  {
-  0%   { opacity: 0; transform: scale(0.5); }
-  60%  { opacity: 1; transform: scale(1.08); }
-  100% { opacity: 1; transform: scale(1); }
-}
-@keyframes hero-blur-in {
-  from { opacity: 0; filter: blur(12px); }
-  to   { opacity: 1; filter: blur(0); }
-}
-@keyframes hero-mask-reveal {
-  from { opacity: 0; clip-path: inset(0 100% 0 0); }
-  to   { opacity: 1; clip-path: inset(0 0 0 0); }
-}
-
-@keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes hero-pulse-glow {
-  0%, 100% { text-shadow: 0 0 8px rgba(59,95,143,0.35), 0 2px 6px rgba(0,0,0,0.35); }
-  50%      { text-shadow: 0 0 20px rgba(59,95,143,0.75), 0 2px 6px rgba(0,0,0,0.35); }
-}
-@keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-
-@keyframes hero-underline-draw {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-@keyframes hero-accent-bar-draw {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
-}
-@keyframes hero-shimmer-sweep {
-  0%   { transform: translateX(-150%) skewX(-20deg); }
-  100% { transform: translateX(250%)  skewX(-20deg); }
-}
-@keyframes hero-dot-pop {
-  from { opacity: 0; transform: scale(0); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes hero-sticker-diag {
-  0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
-  60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }
-  100% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1); }
-}
-@keyframes hero-sticker-diag-tl {
-  0%   { opacity: 0; transform: translate(-30%, -30%) rotate(-45deg) scale(0.4); }
-  60%  { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1.05); }
-  100% { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1); }
-}
-@keyframes hero-sticker-pop {
-  0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
-  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
-}
-@keyframes hero-sticker-slide-up {
-  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes hero-sticker-wiggle {
-  0%, 100% { transform: rotate(0); }
-  25%      { transform: rotate(-2deg); }
-  75%      { transform: rotate(2deg); }
+    await setSetting("announcement_bar", JSON.stringify(config), "announcement");
+    return NextResponse.json({ success: true, count: config.messages.length });
+  } catch (err) {
+    console.error("Announcement bar save error:", err);
+    return NextResponse.json({ error: "Failed to save" }, { status: 500 });
+  }
 }

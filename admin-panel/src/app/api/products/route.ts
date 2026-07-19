@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const {
       name, description, sku, price, comparePrice, collectionId,
       status, isNew, isFeatured, isBestSeller, tags, variants,
-      waist, length, bottom, bgColor,
+      waist, length, bottom, bgColor, brand,
     } = body;
 
     if (!name || !description || !sku || price === undefined) {
@@ -65,6 +65,7 @@ export async function POST(req: Request) {
       length:       length !== undefined && length !== "" ? Number(length) : null,
       bottom:       bottom !== undefined && bottom !== "" ? Number(bottom) : null,
       bgColor:      bgColorNormalized,
+      brand:        typeof brand === "string" && brand.trim().length > 0 ? brand.trim() : null,
       variants:     variants?.map((v: {
         color: string; colorHex?: string; sku: string; stock: number; price: number;
       }) => ({

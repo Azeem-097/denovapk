@@ -28,6 +28,7 @@ export interface AdminProduct {
   sold:         number;
   image:        string;
   images?:       string[];  // Multiple image URLs
+  brand?:       string | null;   // Optional brand name
   isNew:        boolean;
   isFeatured:   boolean;
   createdAt:    string;
