@@ -1,0 +1,1917 @@
+================================================================================
+MAKE GALLERY FULLY DYNAMIC — layout-per-image, drag-reorder, add/remove slots
+Current: Fixed 5-slot premium layout (top-left, bottom-left, center-tall,
+         top-right, bottom-right). Every slot has a hardcoded shape.
+Goal:    Admin can add unlimited images, each with its own layout type:
+           - Square (1:1)      -> 1 col x 1 row
+           - Portrait (2:3)    -> 1 col x 2 rows
+           - Landscape (3:2)   -> 2 cols x 1 row
+           - Wide Banner (3:1) -> 3 cols x 1 row (optional)
+         Drag-and-drop reordering, name field per image.
+         Frontend auto-renders CSS grid with configured spans.
+Generated: 2026-07-19 13:23:50
+================================================================================
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\gallery\page.tsx
+================================================================================
+
+import { getSetting } from "@/lib/db/repositories/settings";
+import { GalleryClient } from "./GalleryClient";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+const DEFAULT_CONFIG = {
+  enabled:            true,
+  sectionLabel:       "@denovapk",
+  sectionTitle:       "Style in Action",
+  sectionDescription: "Follow us for daily style inspiration and behind-the-scenes moments",
+  slots: [
+    { id: "s1", image: "", link: "", isActive: true },
+    { id: "s2", image: "", link: "", isActive: true },
+    { id: "s3", image: "", link: "", isActive: true },
+    { id: "s4", image: "", link: "", isActive: true },
+    { id: "s5", image: "", link: "", isActive: true },
+  ],
+};
+
+export default async function GalleryPage() {
+  const raw = await getSetting("gallery");
+  let config = DEFAULT_CONFIG;
+
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      config = { ...DEFAULT_CONFIG, ...parsed };
+      // Ensure 5 slots always
+      if (!Array.isArray(config.slots) || config.slots.length !== 5) {
+        config.slots = DEFAULT_CONFIG.slots;
+      }
+    } catch {}
+  }
+
+  return <GalleryClient initialConfig={config} />;
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\gallery\GalleryClient.tsx
+================================================================================
+
+"use client";
+import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
+import {
+  Image as ImageIcon, Edit, Trash2, Eye, EyeOff,
+  Save, Loader, X, Info, Link as LinkIcon, Upload,
+  LayoutGrid,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import { useToastStore } from "@/store/toastStore";
+
+// ─── Types ───────────────────────────────────────────────
+interface GallerySlot {
+  id:       string;
+  image:    string;
+  link:     string;
+  isActive: boolean;
+}
+
+interface GalleryConfig {
+  enabled:            boolean;
+  sectionLabel:       string;
+  sectionTitle:       string;
+  sectionDescription: string;
+  slots:              GallerySlot[];
+}
+
+// ─── Upload helper ───────────────────────────────────────
+async function uploadImage(file: File): Promise<string | null> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("type", "banner");
+  const res  = await fetch("/api/upload", { method: "POST", body: fd });
+  const data = await res.json();
+  return res.ok ? data.image.url : null;
+}
+
+async function uploadImageFromUrl(url: string): Promise<string | null> {
+  const res = await fetch("/api/upload", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ url, type: "banner" }),
+  });
+  const data = await res.json();
+  return res.ok ? data.image.url : url;
+}
+
+// ─── Props ───────────────────────────────────────────────
+interface Props {
+  initialConfig: GalleryConfig;
+}
+
+// Slot labels (for UI clarity)
+const SLOT_LABELS = ["Top Left", "Bottom Left", "Center (Tall)", "Top Right", "Bottom Right"];
+
+// ══════════════════════════════════════════════════════════
+//  MAIN
+// ══════════════════════════════════════════════════════════
+export function GalleryClient({ initialConfig }: Props) {
+  const [config,     setConfig]     = useState<GalleryConfig>(initialConfig);
+  const [saving,     setSaving]     = useState(false);
+  const [dirty,      setDirty]      = useState(false);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+
+  const toast = useToastStore();
+
+  // ── Update helpers ────────────────────────────────────
+  const updateConfig = <K extends keyof GalleryConfig>(key: K, value: GalleryConfig[K]) => {
+    setConfig((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+
+  const updateSlot = (idx: number, changes: Partial<GallerySlot>) => {
+    setConfig((prev) => ({
+      ...prev,
+      slots: prev.slots.map((s, i) => i === idx ? { ...s, ...changes } : s),
+    }));
+    setDirty(true);
+  };
+
+  // ── Save ──────────────────────────────────────────────
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/gallery", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ config }),
+      });
+
+      if (res.ok) {
+        setDirty(false);
+        toast.success("Gallery saved successfully!", "Saved");
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "Failed to save");
+      }
+    } catch {
+      toast.error("Network error - could not save");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="max-w-6xl space-y-5">
+
+      {/* ── Header ────────────────────────────────────── */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
+            <LayoutGrid size={22} className="text-[#3b5f8f]" />
+            Gallery Section
+          </h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">
+            Manage the &quot;Style in Action&quot; gallery on your homepage.
+          </p>
+        </div>
+        <Button variant="primary" onClick={handleSave} disabled={saving || !dirty}>
+          {saving
+            ? <><Loader size={14} className="animate-spin" />Saving...</>
+            : <><Save size={14} />{dirty ? "Save Changes" : "Saved"}</>
+          }
+        </Button>
+      </div>
+
+      {/* ── Section Text Settings ─────────────────────── */}
+      <div className="bg-white border border-[#e5e7eb] p-5 space-y-4">
+        <h2 className="text-base font-bold text-[#1a1a1a]">Section Text</h2>
+
+        {/* Enabled toggle */}
+        <label className={cn(
+          "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
+          config.enabled ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
+        )}>
+          <input
+            type="checkbox"
+            checked={config.enabled}
+            onChange={(e) => updateConfig("enabled", e.target.checked)}
+            className="w-4 h-4 accent-[#3b5f8f]"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
+              {config.enabled
+                ? <><Eye size={13} className="text-[#3b5f8f]" />Section visible on homepage</>
+                : <><EyeOff size={13} className="text-[#6b7280]" />Section hidden from homepage</>
+              }
+            </p>
+          </div>
+        </label>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+              Small Label (above title)
+            </label>
+            <input
+              type="text"
+              value={config.sectionLabel}
+              onChange={(e) => updateConfig("sectionLabel", e.target.value)}
+              placeholder="e.g. @denovapk"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+              Section Title
+            </label>
+            <input
+              type="text"
+              value={config.sectionTitle}
+              onChange={(e) => updateConfig("sectionTitle", e.target.value)}
+              placeholder="e.g. Style in Action"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+            Description
+          </label>
+          <textarea
+            value={config.sectionDescription}
+            onChange={(e) => updateConfig("sectionDescription", e.target.value)}
+            placeholder="e.g. Follow us for daily style inspiration..."
+            rows={2}
+            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
+          />
+        </div>
+      </div>
+
+      {/* ── Info banner ───────────────────────────────── */}
+      <div className="bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
+        <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-blue-900 leading-relaxed">
+          <p className="font-semibold mb-1">Layout</p>
+          <p>
+            5 slots in a fixed premium layout. Center slot is <strong>tall</strong> (2x height).
+            Click any slot to upload/replace image, add a link, or toggle visibility.
+            Empty slots will show a subtle placeholder on the user site.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Visual Layout Preview ────────────────────── */}
+      <div className="bg-white border border-[#e5e7eb] p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-[#1a1a1a]">Gallery Layout</h2>
+          <p className="text-xs text-[#6b7280]">Click any slot to edit</p>
+        </div>
+
+        {/*
+          Layout:
+          ┌───┬─────────┬───┐
+          │ 1 │         │ 4 │
+          ├───┤    3    ├───┤
+          │ 2 │  tall   │ 5 │
+          └───┴─────────┴───┘
+        */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          {/* Slot 1: top-left */}
+          <SlotCard
+            slot={config.slots[0]} index={0} label={SLOT_LABELS[0]}
+            aspectClass="aspect-square"
+            gridClass=""
+            onEdit={() => setEditingIdx(0)}
+            onToggle={() => updateSlot(0, { isActive: !config.slots[0].isActive })}
+          />
+
+          {/* Slot 3: center tall — spans 2 rows */}
+          <SlotCard
+            slot={config.slots[2]} index={2} label={SLOT_LABELS[2]}
+            aspectClass=""
+            gridClass="col-span-2 sm:col-span-2 row-span-2 aspect-[2/1] sm:aspect-auto"
+            onEdit={() => setEditingIdx(2)}
+            onToggle={() => updateSlot(2, { isActive: !config.slots[2].isActive })}
+          />
+
+          {/* Slot 4: top-right */}
+          <SlotCard
+            slot={config.slots[3]} index={3} label={SLOT_LABELS[3]}
+            aspectClass="aspect-square"
+            gridClass=""
+            onEdit={() => setEditingIdx(3)}
+            onToggle={() => updateSlot(3, { isActive: !config.slots[3].isActive })}
+          />
+
+          {/* Slot 2: bottom-left */}
+          <SlotCard
+            slot={config.slots[1]} index={1} label={SLOT_LABELS[1]}
+            aspectClass="aspect-square"
+            gridClass=""
+            onEdit={() => setEditingIdx(1)}
+            onToggle={() => updateSlot(1, { isActive: !config.slots[1].isActive })}
+          />
+
+          {/* Slot 5: bottom-right */}
+          <SlotCard
+            slot={config.slots[4]} index={4} label={SLOT_LABELS[4]}
+            aspectClass="aspect-square"
+            gridClass=""
+            onEdit={() => setEditingIdx(4)}
+            onToggle={() => updateSlot(4, { isActive: !config.slots[4].isActive })}
+          />
+        </div>
+      </div>
+
+      {/* ── Modal for editing a slot ──────────────────── */}
+      {editingIdx !== null && (
+        <SlotEditModal
+          slot={config.slots[editingIdx]}
+          label={SLOT_LABELS[editingIdx]}
+          onClose={() => setEditingIdx(null)}
+          onSave={(updatedSlot) => {
+            updateSlot(editingIdx, updatedSlot);
+            setEditingIdx(null);
+          }}
+        />
+      )}
+
+      {/* ── Sticky save bar ───────────────────────────── */}
+      {dirty && (
+        <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 bg-white border-t border-[#e5e7eb] px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-end gap-3 z-10">
+          <p className="text-xs text-[#6b7280] mr-auto">You have unsaved changes</p>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            {saving
+              ? <><Loader size={14} className="animate-spin" />Saving...</>
+              : <><Save size={14} />Save Changes</>
+            }
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  SLOT CARD (Visual layout preview)
+// ══════════════════════════════════════════════════════════
+interface SlotCardProps {
+  slot:        GallerySlot;
+  index:       number;
+  label:       string;
+  aspectClass: string;
+  gridClass:   string;
+  onEdit:      () => void;
+  onToggle:    () => void;
+}
+
+function SlotCard({ slot, index, label, aspectClass, gridClass, onEdit, onToggle }: SlotCardProps) {
+  return (
+    <div
+      className={cn(
+        "relative group bg-[#fafaf9] border border-[#e5e7eb] overflow-hidden",
+        aspectClass,
+        gridClass,
+        !slot.isActive && "opacity-50"
+      )}
+    >
+      {/* Image or placeholder */}
+      {slot.image ? (
+        <Image
+          src={slot.image}
+          alt={`Slot ${index + 1}`}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 50vw, 25vw"
+          unoptimized={slot.image.startsWith("/uploads")}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center text-[#6b7280]">
+          <ImageIcon size={28} className="opacity-30 mb-1" />
+          <span className="text-[10px] font-medium">Empty</span>
+        </div>
+      )}
+
+      {/* Slot number badge */}
+      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
+        #{index + 1} {label}
+      </div>
+
+      {/* Link indicator */}
+      {slot.image && slot.link && (
+        <div className="absolute top-2 right-2 bg-[#3b5f8f] text-white p-1" title={`Links to: ${slot.link}`}>
+          <LinkIcon size={10} />
+        </div>
+      )}
+
+      {/* Inactive overlay */}
+      {!slot.isActive && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <span className="bg-white/90 text-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider px-2 py-1">
+            Hidden
+          </span>
+        </div>
+      )}
+
+      {/* Hover overlay with actions */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+        <button
+          onClick={onEdit}
+          className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#3b5f8f] hover:text-white transition-colors flex items-center gap-1.5"
+        >
+          <Edit size={12} />Edit
+        </button>
+        <button
+          onClick={onToggle}
+          className={cn(
+            "px-3 py-2 text-xs font-semibold transition-colors flex items-center gap-1.5",
+            slot.isActive
+              ? "bg-white text-[#6b7280] hover:bg-[#6b7280] hover:text-white"
+              : "bg-[#3b5f8f] text-white hover:bg-[#2d4a72]"
+          )}
+        >
+          {slot.isActive
+            ? <><EyeOff size={12} />Hide</>
+            : <><Eye size={12} />Show</>
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  EDIT MODAL
+// ══════════════════════════════════════════════════════════
+interface ModalProps {
+  slot:    GallerySlot;
+  label:   string;
+  onClose: () => void;
+  onSave:  (slot: Partial<GallerySlot>) => void;
+}
+
+function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
+  const [image,    setImage]    = useState(slot.image);
+  const [link,     setLink]     = useState(slot.link);
+  const [isActive, setIsActive] = useState(slot.isActive);
+  const [tab,      setTab]      = useState<"upload" | "url">("upload");
+  const [uploading, setUploading] = useState(false);
+  const [dragOver,  setDragOver]  = useState(false);
+  const [urlInput,  setUrlInput]  = useState("");
+  const fileRef  = useRef<HTMLInputElement>(null);
+  const toast    = useToastStore();
+
+  // ESC to close, body scroll lock
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const orig = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = orig;
+    };
+  }, [onClose]);
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    setUploading(true);
+    const url = await uploadImage(file);
+    if (url) {
+      setImage(url);
+      toast.success("Image uploaded");
+    } else {
+      toast.error("Upload failed");
+    }
+    setUploading(false);
+  };
+
+  const handleUrlAdd = async () => {
+    const url = urlInput.trim();
+    if (!url.startsWith("http")) return;
+    setUploading(true);
+    const optimized = await uploadImageFromUrl(url);
+    if (optimized) {
+      setImage(optimized);
+      setUrlInput("");
+      toast.success("Image loaded");
+    } else {
+      toast.error("Could not load image");
+    }
+    setUploading(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  const handleSubmit = () => {
+    onSave({ image, link, isActive });
+  };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white shadow-2xl pointer-events-auto animate-in zoom-in-95 fade-in duration-200 overflow-hidden">
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 bg-[#1a1a1a] text-white flex-shrink-0">
+            <h3 className="text-base font-bold">Edit Gallery Slot: {label}</h3>
+            <button onClick={onClose} className="p-1 hover:bg-white/10 rounded" aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
+            {/* Image */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+                Image
+              </label>
+
+              {/* Tabs */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setTab("upload")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-colors",
+                    tab === "upload"
+                      ? "bg-[#fafaf9] border-[#1a1a1a] text-[#1a1a1a]"
+                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a]"
+                  )}
+                >
+                  <Upload size={12} />Upload
+                </button>
+                <button
+                  onClick={() => setTab("url")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-colors",
+                    tab === "url"
+                      ? "bg-[#fafaf9] border-[#1a1a1a] text-[#1a1a1a]"
+                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#1a1a1a]"
+                  )}
+                >
+                  <LinkIcon size={12} />URL
+                </button>
+              </div>
+
+              {/* Preview */}
+              {image && (
+                <div className="relative mb-3 border border-[#e5e7eb] overflow-hidden aspect-square bg-[#111]">
+                  <Image
+                    src={image}
+                    alt="Preview"
+                    fill
+                    className="object-cover"
+                    sizes="400px"
+                    unoptimized={image.startsWith("/uploads")}
+                  />
+                  <button
+                    onClick={() => setImage("")}
+                    className="absolute top-2 right-2 bg-white/90 hover:bg-red-500 hover:text-white text-[#1a1a1a] p-1.5 transition-colors"
+                    title="Remove image"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Upload zone */}
+              {tab === "upload" && !image && (
+                <div
+                  className={cn(
+                    "border-2 border-dashed aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors",
+                    dragOver
+                      ? "border-[#3b5f8f] bg-[#f5f0e8]/50"
+                      : "border-[#e5e7eb] hover:border-[#3b5f8f] bg-[#fafaf9]"
+                  )}
+                  onClick={() => fileRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                >
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader size={24} className="text-[#3b5f8f] animate-spin" />
+                      <span className="text-xs text-[#6b7280]">Uploading &amp; optimizing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 p-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center">
+                        <ImageIcon size={18} className="text-[#3b5f8f]" />
+                      </div>
+                      <span className="text-sm font-semibold text-[#1a1a1a]">
+                        Click or drag image here
+                      </span>
+                      <span className="text-[10px] text-[#6b7280]">
+                        JPG, PNG, WebP, AVIF &middot; Max 10 MB
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* URL input */}
+              {tab === "url" && !image && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                    />
+                    <button
+                      onClick={handleUrlAdd}
+                      disabled={!urlInput.trim() || uploading}
+                      className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
+                    >
+                      {uploading ? <Loader size={12} className="animate-spin" /> : "Load"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            {/* Link */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+                Link URL (Optional)
+              </label>
+              <input
+                type="text"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="/collections/premium  or  https://example.com"
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+              />
+              <p className="mt-1 text-[10px] text-[#6b7280]">
+                Where to send visitors when they click this image. Leave empty for no link.
+              </p>
+            </div>
+
+            {/* Active toggle */}
+            <label className={cn(
+              "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
+              isActive
+                ? "bg-[#f5f0e8]/40 border-[#3b5f8f]"
+                : "bg-[#fafaf9] border-[#e5e7eb]"
+            )}>
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4 accent-[#3b5f8f]"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
+                  {isActive
+                    ? <><Eye size={13} className="text-[#3b5f8f]" />Visible on website</>
+                    : <><EyeOff size={13} className="text-[#6b7280]" />Hidden from website</>
+                  }
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 px-6 py-4 bg-[#fafaf9] border-t border-[#e5e7eb] flex-shrink-0">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6b7280] hover:text-[#1a1a1a] border border-[#e5e7eb] hover:border-[#1a1a1a] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="inline-flex items-center gap-2 bg-[#3b5f8f] hover:bg-[#2d4a72] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+            >
+              <Save size={12} />Apply Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\gallery\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { getSetting, setSetting } from "@/lib/db/repositories/settings";
+
+export const dynamic = "force-dynamic";
+
+// 5 slots, empty by default
+const DEFAULT_CONFIG = {
+  enabled:     true,
+  sectionLabel:       "@denovapk",
+  sectionTitle:       "Style in Action",
+  sectionDescription: "Follow us for daily style inspiration and behind-the-scenes moments",
+  slots: [
+    { id: "s1", image: "", link: "", isActive: true },  // top-left square
+    { id: "s2", image: "", link: "", isActive: true },  // bottom-left square
+    { id: "s3", image: "", link: "", isActive: true },  // center tall
+    { id: "s4", image: "", link: "", isActive: true },  // top-right square
+    { id: "s5", image: "", link: "", isActive: true },  // bottom-right square
+  ],
+};
+
+// ─── GET /api/gallery ───────────────────────────────────
+export async function GET() {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  const raw = await getSetting("gallery");
+  if (!raw) return NextResponse.json({ config: DEFAULT_CONFIG });
+
+  try {
+    const parsed = JSON.parse(raw);
+    return NextResponse.json({ config: { ...DEFAULT_CONFIG, ...parsed } });
+  } catch {
+    return NextResponse.json({ config: DEFAULT_CONFIG });
+  }
+}
+
+// ─── POST /api/gallery ──────────────────────────────────
+export async function POST(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { config } = await req.json();
+
+    if (!config || typeof config !== "object") {
+      return NextResponse.json({ error: "Invalid config" }, { status: 400 });
+    }
+
+    if (!Array.isArray(config.slots)) {
+      return NextResponse.json({ error: "slots must be an array" }, { status: 400 });
+    }
+
+    // Ensure exactly 5 slots (positions matter — layout is fixed)
+    if (config.slots.length !== 5) {
+      return NextResponse.json({ error: "Gallery must have exactly 5 slots" }, { status: 400 });
+    }
+
+    // Validate each slot
+    for (const s of config.slots) {
+      if (!s.id || typeof s.id !== "string") {
+        return NextResponse.json({ error: "Each slot must have an id" }, { status: 400 });
+      }
+    }
+
+    await setSetting("gallery", JSON.stringify(config), "gallery");
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Gallery save error:", err);
+    return NextResponse.json({ error: "Failed to save" }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\GallerySection.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { TextReveal } from "@/components/animations/TextReveal";
+import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface GallerySlot {
+  id:       string;
+  image:    string;
+  link:     string;
+  isActive: boolean;
+}
+
+interface GalleryConfig {
+  enabled:            boolean;
+  sectionLabel:       string;
+  sectionTitle:       string;
+  sectionDescription: string;
+  slots:              GallerySlot[];
+}
+
+const FALLBACK: GalleryConfig = {
+  enabled:            true,
+  sectionLabel:       "@denovapk",
+  sectionTitle:       "Style in Action",
+  sectionDescription: "Follow us for daily style inspiration and behind-the-scenes moments",
+  slots: [],
+};
+
+export function GallerySection() {
+  const [config, setConfig] = useState<GalleryConfig | null>(null);
+
+  useEffect(() => {
+    fetch("/api/gallery")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => setConfig(data?.config ?? FALLBACK))
+      .catch(() => setConfig(FALLBACK));
+  }, []);
+
+  if (!config || !config.enabled) return null;
+
+  const activeSlots = config.slots.filter((s) => s.isActive && s.image);
+  if (activeSlots.length === 0) return null;
+
+  const [s1, s2, s3, s4, s5] = config.slots;
+
+  return (
+    <section className="py-16 sm:py-20 lg:py-24 bg-white">
+
+      <div className="site-container">
+        <div className="text-center mb-10 lg:mb-14">
+          {config.sectionLabel && (
+            <FadeIn>
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+                {config.sectionLabel}
+              </span>
+            </FadeIn>
+          )}
+
+          <TextReveal as="h2" delay={100}>
+            <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mt-3 block">
+              {config.sectionTitle}
+            </span>
+          </TextReveal>
+
+          {config.sectionDescription && (
+            <FadeIn delay={200}>
+              <p className="text-[#6b7280] text-sm sm:text-base max-w-lg mx-auto mt-4 leading-relaxed">
+                {config.sectionDescription}
+              </p>
+            </FadeIn>
+          )}
+        </div>
+      </div>
+
+      {/* Image grid — full bleed */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 w-full">
+        <GalleryCell slot={s1} className="aspect-square" delay={0} />
+        <GalleryCell
+          slot={s3}
+          className="col-span-2 sm:col-span-2 sm:row-span-2 aspect-square"
+          delay={100}
+        />
+        <GalleryCell slot={s4} className="aspect-square" delay={200} />
+        <GalleryCell slot={s2} className="aspect-square" delay={300} />
+        <GalleryCell slot={s5} className="aspect-square" delay={400} />
+      </div>
+    </section>
+  );
+}
+
+interface GalleryCellProps {
+  slot:      GallerySlot | undefined;
+  className?: string;
+  delay?:    number;
+}
+
+function GalleryCell({ slot, className, delay = 0 }: GalleryCellProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
+  if (!slot || !slot.isActive || !slot.image) {
+    return <div className={cn("bg-[#fafaf9]", className)} aria-hidden="true" />;
+  }
+
+  const content = (
+    <>
+      <Image
+        src={slot.image}
+        alt=""
+        fill
+        className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 25vw"
+        loading="lazy"
+        unoptimized={slot.image.startsWith("/uploads")}
+      />
+      <div className="absolute inset-0 bg-[#1a1a1a]/0 group-hover:bg-[#1a1a1a]/20 transition-colors duration-500" />
+      {/* Corner accent that fades in */}
+      <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[#3b5f8f] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[#3b5f8f] opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" />
+    </>
+  );
+
+  const commonClass = cn(
+    "group relative overflow-hidden bg-[#fafaf9]",
+    className
+  );
+
+  const revealStyle = {
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? "scale(1) rotate(0)" : "scale(0.94) rotate(-1deg)",
+    transition: shouldAnimate
+      ? `opacity 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+      : "none",
+    transitionDelay: `${delay}ms`,
+  };
+
+  if (slot.link) {
+    const isExternal = slot.link.startsWith("http");
+    if (isExternal) {
+      return (
+        <div ref={ref} style={revealStyle}>
+          <a href={slot.link} target="_blank" rel="noopener noreferrer" className={commonClass}>
+            {content}
+          </a>
+        </div>
+      );
+    }
+    return (
+      <div ref={ref} style={revealStyle}>
+        <Link href={slot.link} className={commonClass}>
+          {content}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} style={revealStyle}>
+      <div className={commonClass}>{content}</div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\api\gallery\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { getSetting } from "@/lib/db/repositories/settings";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+const DEFAULT_CONFIG = {
+  enabled:            true,
+  sectionLabel:       "@denovapk",
+  sectionTitle:       "Style in Action",
+  sectionDescription: "Follow us for daily style inspiration and behind-the-scenes moments",
+  slots: [] as GallerySlot[],
+};
+
+interface GallerySlot {
+  id:       string;
+  image:    string;
+  link:     string;
+  isActive: boolean;
+}
+
+export async function GET() {
+  try {
+    const raw = await getSetting("gallery");
+    if (!raw) return NextResponse.json({ config: DEFAULT_CONFIG });
+
+    const all = JSON.parse(raw);
+    return NextResponse.json({
+      config: {
+        enabled:            all.enabled !== false,
+        sectionLabel:       all.sectionLabel       || "@denovapk",
+        sectionTitle:       all.sectionTitle       || "Style in Action",
+        sectionDescription: all.sectionDescription || "Follow us for daily style inspiration and behind-the-scenes moments",
+        slots:              Array.isArray(all.slots) ? all.slots : [],
+      },
+    });
+  } catch {
+    return NextResponse.json({ config: DEFAULT_CONFIG });
+  }
+}
+
+================================================================================
+FILE: user-panel\src\app\page.tsx
+================================================================================
+
+import { HeroSection }           from "@/components/sections/HeroSection";
+import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
+import { SaleCountdown }         from "@/components/sections/SaleCountdown";
+import { FeaturedCollections }   from "@/components/sections/FeaturedCollections";
+import { BrandTicker }           from "@/components/sections/BrandTicker";
+import { NewArrivals }           from "@/components/sections/NewArrivals";
+import { BrandStory }            from "@/components/sections/BrandStory";
+import { Testimonials }          from "@/components/sections/Testimonials";
+import { GallerySection }        from "@/components/sections/GallerySection";
+import { NewsletterSection }     from "@/components/sections/NewsletterSection";
+import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
+import { getProducts }              from "@/lib/db/repositories/products";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
+import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
+
+type HeroBanner = {
+  isActive: true;
+  sortOrder: number;
+};
+
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
+    getCollectionsWithCounts(),
+    getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
+    getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
+  ]);
+
+  const collections  = dbCollections.map(adaptCollection);
+  const allProducts  = dbAllProducts.map(adaptProduct);
+
+  // Split products by collection name for the two tabs
+  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
+  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+
+  const testimonials = getMockTestimonials();
+
+  let heroBanners: HeroBanner[] = [];
+  if (heroBannersRaw) {
+    try {
+      const all: unknown[] = JSON.parse(heroBannersRaw);
+      heroBanners = all
+        .filter(
+          (b): b is HeroBanner =>
+            typeof b === "object" &&
+            b !== null &&
+            (b as { isActive?: boolean }).isActive === true &&
+            typeof (b as { sortOrder?: unknown }).sortOrder === "number"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch { heroBanners = []; }
+  }
+
+  return (
+    <>
+      {/* ═══════════════════════════════════════════════════════
+          HERO — position:fixed, cannot move
+          ═══════════════════════════════════════════════════════ */}
+      <FixedHeroBackground>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
+      </FixedHeroBackground>
+
+      {/* ═══════════════════════════════════════════════════════
+          REVEAL LAYER — slides up over the fixed hero on scroll.
+          Contains only SaleCountdown now (Collections moved down).
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white rounded-t-[32px] sm:rounded-t-[44px] lg:rounded-t-[56px] overflow-hidden shadow-[0_-30px_60px_-20px_rgba(0,0,0,0.3)]">
+        <SaleCountdown />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          BRAND TICKER — international brand collaborations
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10">
+        <BrandTicker />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          SHOP BY WAIST — now with Premium / Super Premium tabs
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white">
+        <NewArrivals
+          newArrivals={premiumProducts}
+          bestSellers={superPremiumProducts}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          OUR COLLECTIONS — moved to appear AFTER Shop by Waist
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10">
+        <FeaturedCollections collections={collections} />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          Remaining sections
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white">
+        <BrandStory />
+        <Testimonials testimonials={testimonials} />
+        <GallerySection />
+        <NewsletterSection />
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\components\ui\ImageUploader.tsx
+================================================================================
+
+"use client";
+import { useState, useRef } from "react";
+import { Upload, X, Image as ImageIcon, Check, AlertCircle, Loader } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  value:      string;
+  onChange:   (url: string) => void;
+  type?:      "product" | "banner" | "thumbnail" | "og";
+  className?: string;
+  aspectRatio?: string;
+}
+
+export function ImageUploader({
+  value,
+  onChange,
+  type = "product",
+  className,
+  aspectRatio = "aspect-[3/4]",
+}: Props) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]         = useState("");
+  const [stats, setStats]         = useState<{
+    format: string; savings: string; optimizedSize: string;
+  } | null>(null);
+  const [dragOver, setDragOver]   = useState(false);
+  const fileInputRef              = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    setError("");
+    setStats(null);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body:   formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Upload failed");
+        setUploading(false);
+        return;
+      }
+
+      onChange(data.image.url);
+      setStats({
+        format:        data.image.format,
+        savings:       data.image.savings,
+        optimizedSize: data.image.optimizedSize,
+      });
+    } catch {
+      setError("Network error during upload");
+    }
+
+    setUploading(false);
+  };
+
+  const handleUrlPaste = async (url: string) => {
+    if (!url.startsWith("http")) return;
+
+    setError("");
+    setStats(null);
+    setUploading(true);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ url, type }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to process image");
+        onChange(url);
+        setUploading(false);
+        return;
+      }
+
+      onChange(data.image.url);
+      setStats({
+        format:        data.image.format,
+        savings:       data.image.savings,
+        optimizedSize: data.image.optimizedSize,
+      });
+    } catch {
+      onChange(url);
+      setError("Could not optimize, using original URL");
+    }
+
+    setUploading(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      handleFile(file);
+    }
+  };
+
+  // ── Handler that stops the click from propagating up to a parent form ──
+  // This is the KEY fix: buttons default to type="submit" inside a <form>,
+  // which was triggering the form's onSubmit whenever "Replace" was clicked.
+  const openFilePicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <div className={cn("space-y-3", className)}>
+
+      {/* Preview or Upload Area */}
+      {value ? (
+        <div className="relative group">
+          <div className={cn("relative bg-[#fafaf9] border border-[#e5e7eb] overflow-hidden", aspectRatio)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt="Preview" className="w-full h-full object-cover" />
+
+            {/* Overlay with actions */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={openFilePicker}
+                className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#3b5f8f] hover:text-white transition-colors"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onChange("");
+                  setStats(null);
+                }}
+                className="bg-red-500 text-white px-3 py-2 text-xs font-semibold hover:bg-red-600 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+
+          {/* Optimization stats */}
+          {stats && (
+            <div className="flex items-center gap-2 mt-2 text-[10px] text-green-700 bg-green-50 border border-green-200 px-2 py-1">
+              <Check size={10} />
+              <span>
+                Converted to <span className="font-bold uppercase">{stats.format}</span> &middot; {stats.optimizedSize} &middot; {stats.savings} saved
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
+            aspectRatio,
+            dragOver
+              ? "border-[#3b5f8f] bg-[#f5f0e8]/50"
+              : "border-[#e5e7eb] bg-[#fafaf9] hover:border-[#3b5f8f]"
+          )}
+          onClick={openFilePicker}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader size={24} className="text-[#3b5f8f] animate-spin" />
+              <span className="text-xs text-[#6b7280]">Optimizing image...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 p-4">
+              <Upload size={24} className="text-[#6b7280]" />
+              <span className="text-xs font-semibold text-[#1a1a1a]">
+                Drop image here or click to upload
+              </span>
+              <span className="text-[10px] text-[#6b7280]">
+                PNG, JPG, WebP up to 10MB &middot; Auto-converts to AVIF
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,image/tiff"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          e.target.value = "";
+        }}
+      />
+
+      {/* URL input (alternative to file upload) */}
+      <div>
+        <label className="block text-[10px] font-medium text-[#6b7280] mb-1">
+          Or paste image URL
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={value.startsWith("/uploads") ? "" : value}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={(e) => {
+              const url = e.target.value.trim();
+              if (url.startsWith("http") && !url.includes("/uploads/")) {
+                handleUrlPaste(url);
+              }
+            }}
+            placeholder="https://images.unsplash.com/..."
+            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+          />
+        </div>
+        <p className="mt-1 text-[9px] text-[#6b7280]">
+          External URLs are auto-downloaded and converted to AVIF for best performance
+        </p>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 border border-red-200 px-2 py-1">
+          <AlertCircle size={10} />
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\components\ui\MultiImageUploader.tsx
+================================================================================
+
+"use client";
+import { useState, useRef } from "react";
+import { Upload, X, Star, GripVertical, Loader, AlertCircle, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  images:    string[];
+  onChange:  (images: string[]) => void;
+  maxImages?: number;
+  type?:     "product" | "banner";
+}
+
+export function MultiImageUploader({
+  images,
+  onChange,
+  maxImages = 8,
+  type = "product",
+}: Props) {
+  const [uploading, setUploading]   = useState(false);
+  const [error, setError]           = useState("");
+  const [dragIndex, setDragIndex]   = useState<number | null>(null);
+  const [urlInput, setUrlInput]     = useState("");
+  const fileInputRef                = useRef<HTMLInputElement>(null);
+
+  // ── Upload a single file ─────────────────────────────
+  const uploadFile = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body:   formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Upload failed");
+        return null;
+      }
+
+      return data.image.url;
+    } catch {
+      return null;
+    }
+  };
+
+  // ── Handle file selection (multiple) ─────────────────
+  const handleFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files).filter((f) => f.type.startsWith("image/"));
+
+    if (images.length + fileArray.length > maxImages) {
+      setError(`Maximum ${maxImages} images allowed. You have ${images.length}, trying to add ${fileArray.length}.`);
+      return;
+    }
+
+    setError("");
+    setUploading(true);
+
+    const newUrls: string[] = [];
+    for (const file of fileArray) {
+      const url = await uploadFile(file);
+      if (url) newUrls.push(url);
+    }
+
+    if (newUrls.length > 0) {
+      onChange([...images, ...newUrls]);
+    }
+
+    setUploading(false);
+  };
+
+  // ── Handle URL paste ─────────────────────────────────
+  const handleAddUrl = async () => {
+    const url = urlInput.trim();
+    if (!url.startsWith("http")) return;
+    if (images.length >= maxImages) {
+      setError(`Maximum ${maxImages} images allowed.`);
+      return;
+    }
+
+    setError("");
+    setUploading(true);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ url, type }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        onChange([...images, data.image.url]);
+        setUrlInput("");
+      } else {
+        // If optimization fails, still add the original URL
+        onChange([...images, url]);
+        setUrlInput("");
+      }
+    } catch {
+      onChange([...images, url]);
+      setUrlInput("");
+    }
+
+    setUploading(false);
+  };
+
+  // ── Remove image ─────────────────────────────────────
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    onChange(newImages);
+  };
+
+  // ── Set as primary (move to index 0) ─────────────────
+  const setPrimary = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...images];
+    const [moved] = newImages.splice(index, 1);
+    newImages.unshift(moved);
+    onChange(newImages);
+  };
+
+  // ── Drag and drop reordering ─────────────────────────
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+
+    const newImages = [...images];
+    const [moved] = newImages.splice(dragIndex, 1);
+    newImages.splice(index, 0, moved);
+    onChange(newImages);
+    setDragIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+  };
+
+  // ── Handle drop on upload zone ───────────────────────
+  const handleZoneDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+
+      {/* Image Grid */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {images.map((img, i) => (
+            <div
+              key={`${img}-${i}`}
+              draggable
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "relative group border-2 aspect-square bg-[#fafaf9] overflow-hidden cursor-move",
+                i === 0 ? "border-[#3b5f8f]" : "border-[#e5e7eb]",
+                dragIndex === i && "opacity-50"
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img} alt={`Product ${i + 1}`} className="w-full h-full object-cover" />
+
+              {/* Primary badge */}
+              {i === 0 && (
+                <span className="absolute top-1.5 left-1.5 bg-[#3b5f8f] text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
+                  Primary
+                </span>
+              )}
+
+              {/* Drag handle */}
+              <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <GripVertical size={14} className="text-white drop-shadow-md" />
+              </div>
+
+              {/* Actions overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100">
+                {i !== 0 && (
+                  <button
+                    onClick={() => setPrimary(i)}
+                    className="bg-white text-[#1a1a1a] p-1.5 hover:bg-[#3b5f8f] hover:text-white transition-colors"
+                    title="Set as primary"
+                  >
+                    <Star size={12} />
+                  </button>
+                )}
+                <button
+                  onClick={() => removeImage(i)}
+                  className="bg-white text-red-500 p-1.5 hover:bg-red-500 hover:text-white transition-colors"
+                  title="Remove"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Add more button (in grid) */}
+          {images.length < maxImages && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] flex flex-col items-center justify-center gap-1 transition-colors text-[#6b7280] hover:text-[#3b5f8f]"
+            >
+              <Plus size={20} />
+              <span className="text-[10px] font-medium">Add More</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Upload zone (shown when no images) */}
+      {images.length === 0 && (
+        <div
+          className="border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] aspect-[3/2] flex flex-col items-center justify-center cursor-pointer transition-colors"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleZoneDrop}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader size={24} className="text-[#3b5f8f] animate-spin" />
+              <span className="text-xs text-[#6b7280]">Uploading & optimizing...</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 p-4">
+              <Upload size={28} className="text-[#6b7280]" />
+              <span className="text-xs font-semibold text-[#1a1a1a]">
+                Drop images here or click to upload
+              </span>
+              <span className="text-[10px] text-[#6b7280]">
+                PNG, JPG, WebP · Up to {maxImages} images · Auto-converts to AVIF
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Uploading indicator */}
+      {uploading && images.length > 0 && (
+        <div className="flex items-center gap-2 text-xs text-[#3b5f8f]">
+          <Loader size={12} className="animate-spin" />
+          Uploading & optimizing...
+        </div>
+      )}
+
+      {/* Hidden file input (multiple!) */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) handleFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
+
+      {/* URL input */}
+      <div>
+        <label className="block text-[10px] font-medium text-[#6b7280] mb-1">
+          Or paste image URL
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="https://images.unsplash.com/..."
+            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+          />
+          <button
+            onClick={handleAddUrl}
+            disabled={!urlInput.trim() || uploading}
+            className="px-3 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      {/* Info */}
+      <p className="text-[9px] text-[#6b7280]">
+        First image is the primary (shown on product cards). Drag to reorder. Click ★ to set primary. {images.length}/{maxImages} images.
+      </p>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 border border-red-200 px-2 py-1">
+          <AlertCircle size={10} />
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+================================================================================
+FILE: admin-panel\src\app\api\upload\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
+import { processImage, processImageFromUrl, formatFileSize } from "@/lib/imageProcessor";
+import type { ImageOptions } from "@/lib/imageProcessor";
+
+/**
+ * POST /api/upload
+ *
+ * Uploads images to Cloudinary CDN.
+ *
+ * Accepts either:
+ *   - FormData with file (multipart upload)
+ *   - JSON with { url, type } (Cloudinary downloads + optimizes external image)
+ *
+ * Returns optimized Cloudinary URL + stats.
+ */
+export async function POST(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const contentType = req.headers.get("content-type") ?? "";
+    let result;
+
+    if (contentType.includes("multipart/form-data")) {
+      // ── FILE UPLOAD ────────────────────────────────────
+      const formData = await req.formData();
+      const file     = formData.get("file") as File | null;
+      const type     = (formData.get("type") as string) ?? "product";
+
+      if (!file) {
+        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const allowedTypes = [
+        "image/jpeg", "image/png", "image/webp",
+        "image/avif", "image/gif", "image/bmp", "image/tiff",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        return NextResponse.json({
+          error: `Unsupported file type: ${file.type}. Allowed: JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF`,
+        }, { status: 400 });
+      }
+
+      // Max 10 MB
+      if (file.size > 10 * 1024 * 1024) {
+        return NextResponse.json({
+          error: "File too large. Maximum size is 10MB.",
+        }, { status: 400 });
+      }
+
+      const buffer  = Buffer.from(await file.arrayBuffer());
+      const options: ImageOptions = { type: type as ImageOptions["type"] };
+
+      result = await processImage(buffer, options);
+
+    } else if (contentType.includes("application/json")) {
+      // ── URL-BASED UPLOAD ──────────────────────────────
+      const { url, type } = await req.json();
+
+      if (!url) {
+        return NextResponse.json({ error: "No URL provided" }, { status: 400 });
+      }
+
+      const options: ImageOptions = { type: (type ?? "product") as ImageOptions["type"] };
+      result = await processImageFromUrl(url, options);
+
+    } else {
+      return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      image: {
+        url:           result.url,
+        filename:      result.filename,
+        format:        result.format,
+        width:         result.width,
+        height:        result.height,
+        originalSize:  formatFileSize(result.originalSize),
+        optimizedSize: formatFileSize(result.optimizedSize),
+        savings:       `${result.savings}%`,
+      },
+    });
+
+  } catch (err) {
+    console.error("Image upload error:", err);
+    return NextResponse.json({
+      error: "Failed to process image: " + (err as Error).message,
+    }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\lib\db\repositories\settings.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now } from "@/lib/db/helpers";
+import type { DbSetting } from "@/lib/db/types";
+
+// ─── Get single setting by key ───────────────────────────
+export async function getSetting(key: string): Promise<string | null> {
+  const result = await db.execute({
+    sql:  "SELECT value FROM settings WHERE key = ? LIMIT 1",
+    args: [key],
+  });
+  if (result.rows.length === 0) return null;
+  return result.rows[0].value as string;
+}
+
+// ─── Get typed setting values ────────────────────────────
+export async function getBoolSetting(key: string, defaultValue = false): Promise<boolean> {
+  const val = await getSetting(key);
+  if (val === null) return defaultValue;
+  return val === "true" || val === "1";
+}
+
+export async function getNumberSetting(key: string, defaultValue = 0): Promise<number> {
+  const val = await getSetting(key);
+  if (val === null) return defaultValue;
+  const num = Number(val);
+  return isNaN(num) ? defaultValue : num;
+}
+
+export async function getStringSetting(key: string, defaultValue = ""): Promise<string> {
+  const val = await getSetting(key);
+  return val ?? defaultValue;
+}
+
+// ─── Get all settings by category ────────────────────────
+export async function getSettingsByCategory(category: string): Promise<Record<string, string>> {
+  const result = await db.execute({
+    sql:  "SELECT key, value FROM settings WHERE category = ?",
+    args: [category],
+  });
+
+  const map: Record<string, string> = {};
+  for (const row of result.rows) {
+    map[row.key as string] = row.value as string;
+  }
+  return map;
+}
+
+// ─── Get ALL settings (grouped by category) ──────────────
+export async function getAllSettings(): Promise<Record<string, Record<string, string>>> {
+  const result = await db.execute("SELECT key, value, category FROM settings ORDER BY category, key");
+
+  const grouped: Record<string, Record<string, string>> = {};
+  for (const row of result.rows) {
+    const cat = row.category as string;
+    if (!grouped[cat]) grouped[cat] = {};
+    grouped[cat][row.key as string] = row.value as string;
+  }
+  return grouped;
+}
+
+// ─── Update or insert a setting ──────────────────────────
+export async function setSetting(key: string, value: string, category = "general"): Promise<void> {
+  const existing = await db.execute({
+    sql:  "SELECT id FROM settings WHERE key = ? LIMIT 1",
+    args: [key],
+  });
+
+  if (existing.rows.length > 0) {
+    await db.execute({
+      sql:  "UPDATE settings SET value = ?, updatedAt = ? WHERE key = ?",
+      args: [value, now(), key],
+    });
+  } else {
+    await db.execute({
+      sql:  "INSERT INTO settings (id, key, value, category, updatedAt) VALUES (?, ?, ?, ?, ?)",
+      args: [generateId(), key, value, category, now()],
+    });
+  }
+}
+
+// ─── Bulk update multiple settings ───────────────────────
+export async function setMultipleSettings(
+  settings: Array<{ key: string; value: string; category?: string }>
+): Promise<void> {
+  for (const s of settings) {
+    await setSetting(s.key, s.value, s.category ?? "general");
+  }
+}
+
+// ─── Helper: Get common feature flags ────────────────────
+export async function getFeatureFlags() {
+  const [abandonedCart, loyalty, birthday] = await Promise.all([
+    getBoolSetting("abandoned_cart_enabled", true),
+    getBoolSetting("loyalty_enabled",        true),
+    getBoolSetting("birthday_enabled",       true),
+  ]);
+
+  return {
+    abandonedCartEnabled: abandonedCart,
+    loyaltyEnabled:       loyalty,
+    birthdayEnabled:      birthday,
+  };
+}

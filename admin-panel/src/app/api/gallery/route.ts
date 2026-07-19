@@ -1,22 +1,15 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { getSetting, setSetting } from "@/lib/db/repositories/settings";
 
 export const dynamic = "force-dynamic";
 
-// 5 slots, empty by default
 const DEFAULT_CONFIG = {
-  enabled:     true,
+  enabled:            true,
   sectionLabel:       "@denovapk",
   sectionTitle:       "Style in Action",
   sectionDescription: "Follow us for daily style inspiration and behind-the-scenes moments",
-  slots: [
-    { id: "s1", image: "", link: "", isActive: true },  // top-left square
-    { id: "s2", image: "", link: "", isActive: true },  // bottom-left square
-    { id: "s3", image: "", link: "", isActive: true },  // center tall
-    { id: "s4", image: "", link: "", isActive: true },  // top-right square
-    { id: "s5", image: "", link: "", isActive: true },  // bottom-right square
-  ],
+  items:              [] as unknown[],
 };
 
 // ─── GET /api/gallery ───────────────────────────────────
@@ -47,24 +40,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid config" }, { status: 400 });
     }
 
-    if (!Array.isArray(config.slots)) {
-      return NextResponse.json({ error: "slots must be an array" }, { status: 400 });
+    if (!Array.isArray(config.items)) {
+      return NextResponse.json({ error: "items must be an array" }, { status: 400 });
     }
 
-    // Ensure exactly 5 slots (positions matter — layout is fixed)
-    if (config.slots.length !== 5) {
-      return NextResponse.json({ error: "Gallery must have exactly 5 slots" }, { status: 400 });
-    }
-
-    // Validate each slot
-    for (const s of config.slots) {
-      if (!s.id || typeof s.id !== "string") {
-        return NextResponse.json({ error: "Each slot must have an id" }, { status: 400 });
+    // Validate each item
+    const validLayouts = ["square", "portrait", "landscape", "wide"];
+    for (const it of config.items) {
+      if (!it.id || typeof it.id !== "string") {
+        return NextResponse.json({ error: "Each item must have an id" }, { status: 400 });
+      }
+      if (it.layout && !validLayouts.includes(it.layout)) {
+        return NextResponse.json({ error: `Invalid layout: ${it.layout}` }, { status: 400 });
       }
     }
 
     await setSetting("gallery", JSON.stringify(config), "gallery");
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, count: config.items.length });
   } catch (err) {
     console.error("Gallery save error:", err);
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });

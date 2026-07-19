@@ -2,31 +2,29 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import {
-  Image as ImageIcon, Edit, Trash2, Eye, EyeOff,
+  Image as ImageIcon, Trash2, Eye, EyeOff, GripVertical,
   Save, Loader, X, Info, Link as LinkIcon, Upload,
-  LayoutGrid,
+  LayoutGrid, Plus, Square, RectangleVertical, RectangleHorizontal, StretchHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useToastStore } from "@/store/toastStore";
+import type { GalleryLayout, GalleryItem, GalleryConfig } from "./page";
 
-// ─── Types ───────────────────────────────────────────────
-interface GallerySlot {
-  id:       string;
-  image:    string;
-  link:     string;
-  isActive: boolean;
-}
+// ─── Layout definitions ──────────────────────────────────
+const LAYOUT_OPTIONS: Array<{
+  value: GalleryLayout;
+  label: string;
+  icon:  React.ComponentType<{ size?: number; className?: string }>;
+  desc:  string;
+}> = [
+  { value: "square",    label: "Square",    icon: Square,               desc: "1x1 (1 col x 1 row)" },
+  { value: "portrait",  label: "Portrait",  icon: RectangleVertical,    desc: "1x2 tall (1 col x 2 rows)" },
+  { value: "landscape", label: "Landscape", icon: RectangleHorizontal,  desc: "2x1 wide (2 cols x 1 row)" },
+  { value: "wide",      label: "Wide Banner", icon: StretchHorizontal,  desc: "3x1 full-width (3 cols x 1 row)" },
+];
 
-interface GalleryConfig {
-  enabled:            boolean;
-  sectionLabel:       string;
-  sectionTitle:       string;
-  sectionDescription: string;
-  slots:              GallerySlot[];
-}
-
-// ─── Upload helper ───────────────────────────────────────
+// ─── Upload helpers ──────────────────────────────────────
 async function uploadImage(file: File): Promise<string | null> {
   const fd = new FormData();
   fd.append("file", file);
@@ -46,24 +44,31 @@ async function uploadImageFromUrl(url: string): Promise<string | null> {
   return res.ok ? data.image.url : url;
 }
 
-// ─── Props ───────────────────────────────────────────────
+function genId(): string {
+  return "g" + Math.random().toString(36).slice(2, 10);
+}
+
 interface Props {
   initialConfig: GalleryConfig;
 }
-
-// Slot labels (for UI clarity)
-const SLOT_LABELS = ["Top Left", "Bottom Left", "Center (Tall)", "Top Right", "Bottom Right"];
 
 // ══════════════════════════════════════════════════════════
 //  MAIN
 // ══════════════════════════════════════════════════════════
 export function GalleryClient({ initialConfig }: Props) {
-  const [config,     setConfig]     = useState<GalleryConfig>(initialConfig);
-  const [saving,     setSaving]     = useState(false);
-  const [dirty,      setDirty]      = useState(false);
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [config,      setConfig]      = useState<GalleryConfig>(initialConfig);
+  const [saving,      setSaving]      = useState(false);
+  const [dirty,       setDirty]       = useState(false);
+  const [editingId,   setEditingId]   = useState<string | null>(null);
 
   const toast = useToastStore();
+  const dragIndex = useRef<number | null>(null);
+
+  // Ensure items are sorted by sortOrder
+  useEffect(() => {
+    const sorted = [...initialConfig.items].sort((a, b) => a.sortOrder - b.sortOrder);
+    setConfig({ ...initialConfig, items: sorted });
+  }, [initialConfig]);
 
   // ── Update helpers ────────────────────────────────────
   const updateConfig = <K extends keyof GalleryConfig>(key: K, value: GalleryConfig[K]) => {
@@ -71,25 +76,73 @@ export function GalleryClient({ initialConfig }: Props) {
     setDirty(true);
   };
 
-  const updateSlot = (idx: number, changes: Partial<GallerySlot>) => {
+  const updateItem = (id: string, changes: Partial<GalleryItem>) => {
     setConfig((prev) => ({
       ...prev,
-      slots: prev.slots.map((s, i) => i === idx ? { ...s, ...changes } : s),
+      items: prev.items.map((it) => it.id === id ? { ...it, ...changes } : it),
     }));
     setDirty(true);
   };
+
+  const addItem = () => {
+    const newItem: GalleryItem = {
+      id:        genId(),
+      image:     "",
+      name:      "",
+      link:      "",
+      layout:    "square",
+      isActive:  true,
+      sortOrder: config.items.length,
+    };
+    setConfig((prev) => ({ ...prev, items: [...prev.items, newItem] }));
+    setDirty(true);
+    // Open editor immediately for the new item
+    setEditingId(newItem.id);
+  };
+
+  const removeItem = (id: string) => {
+    if (!confirm("Remove this gallery image? This cannot be undone once you save.")) return;
+    setConfig((prev) => ({
+      ...prev,
+      items: prev.items.filter((it) => it.id !== id).map((it, i) => ({ ...it, sortOrder: i })),
+    }));
+    setDirty(true);
+  };
+
+  // ── Drag-and-drop reorder ─────────────────────────────
+  const onDragStart = (i: number) => { dragIndex.current = i; };
+
+  const onDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const from = dragIndex.current;
+    if (from === null || from === i) return;
+
+    const next = [...config.items];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+
+    setConfig((prev) => ({
+      ...prev,
+      items: next.map((it, idx) => ({ ...it, sortOrder: idx })),
+    }));
+    dragIndex.current = i;
+    setDirty(true);
+  };
+
+  const onDragEnd = () => { dragIndex.current = null; };
 
   // ── Save ──────────────────────────────────────────────
   const handleSave = async () => {
     setSaving(true);
     try {
+      const ordered = { ...config, items: config.items.map((it, i) => ({ ...it, sortOrder: i })) };
       const res = await fetch("/api/gallery", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ config }),
+        body:    JSON.stringify({ config: ordered }),
       });
-
       if (res.ok) {
+        setConfig(ordered);
         setDirty(false);
         toast.success("Gallery saved successfully!", "Saved");
       } else {
@@ -102,6 +155,8 @@ export function GalleryClient({ initialConfig }: Props) {
     setSaving(false);
   };
 
+  const editingItem = config.items.find((it) => it.id === editingId) ?? null;
+
   return (
     <div className="max-w-6xl space-y-5">
 
@@ -113,7 +168,7 @@ export function GalleryClient({ initialConfig }: Props) {
             Gallery Section
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
-            Manage the &quot;Style in Action&quot; gallery on your homepage.
+            Manage the &quot;Style in Action&quot; gallery on your homepage. Add unlimited images with any layout.
           </p>
         </div>
         <Button variant="primary" onClick={handleSave} disabled={saving || !dirty}>
@@ -128,7 +183,6 @@ export function GalleryClient({ initialConfig }: Props) {
       <div className="bg-white border border-[#e5e7eb] p-5 space-y-4">
         <h2 className="text-base font-bold text-[#1a1a1a]">Section Text</h2>
 
-        {/* Enabled toggle */}
         <label className={cn(
           "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
           config.enabled ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
@@ -139,14 +193,12 @@ export function GalleryClient({ initialConfig }: Props) {
             onChange={(e) => updateConfig("enabled", e.target.checked)}
             className="w-4 h-4 accent-[#3b5f8f]"
           />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
-              {config.enabled
-                ? <><Eye size={13} className="text-[#3b5f8f]" />Section visible on homepage</>
-                : <><EyeOff size={13} className="text-[#6b7280]" />Section hidden from homepage</>
-              }
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
+            {config.enabled
+              ? <><Eye size={13} className="text-[#3b5f8f]" />Section visible on homepage</>
+              : <><EyeOff size={13} className="text-[#6b7280]" />Section hidden from homepage</>
+            }
+          </p>
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -194,87 +246,75 @@ export function GalleryClient({ initialConfig }: Props) {
       <div className="bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
         <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
         <div className="text-xs text-blue-900 leading-relaxed">
-          <p className="font-semibold mb-1">Layout</p>
+          <p className="font-semibold mb-1">How it works</p>
           <p>
-            5 slots in a fixed premium layout. Center slot is <strong>tall</strong> (2x height).
-            Click any slot to upload/replace image, add a link, or toggle visibility.
-            Empty slots will show a subtle placeholder on the user site.
+            Add as many images as you want. Each image can have its own layout: <strong>Square</strong>,
+            <strong> Portrait</strong> (tall), <strong>Landscape</strong> (wide), or <strong>Wide Banner</strong> (full row).
+            <strong> Drag the ⋮⋮ handle</strong> to reorder. The frontend automatically arranges them in a CSS grid based on the sequence and layout you set.
           </p>
         </div>
       </div>
 
-      {/* ── Visual Layout Preview ────────────────────── */}
-      <div className="bg-white border border-[#e5e7eb] p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-[#1a1a1a]">Gallery Layout</h2>
-          <p className="text-xs text-[#6b7280]">Click any slot to edit</p>
+      {/* ── Gallery Items ─────────────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-[#1a1a1a]">
+            Gallery Images ({config.items.length})
+          </h2>
+          <button
+            onClick={addItem}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72]"
+          >
+            <Plus size={14} />Add Image
+          </button>
         </div>
 
-        {/*
-          Layout:
-          ┌───┬─────────┬───┐
-          │ 1 │         │ 4 │
-          ├───┤    3    ├───┤
-          │ 2 │  tall   │ 5 │
-          └───┴─────────┴───┘
-        */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          {/* Slot 1: top-left */}
-          <SlotCard
-            slot={config.slots[0]} index={0} label={SLOT_LABELS[0]}
-            aspectClass="aspect-square"
-            gridClass=""
-            onEdit={() => setEditingIdx(0)}
-            onToggle={() => updateSlot(0, { isActive: !config.slots[0].isActive })}
-          />
+        {config.items.length === 0 ? (
+          <div className="bg-white border border-dashed border-[#e5e7eb] p-12 text-center">
+            <LayoutGrid size={32} className="text-[#e5e7eb] mx-auto mb-3" />
+            <p className="text-sm font-semibold text-[#1a1a1a] mb-1">No gallery images yet</p>
+            <p className="text-xs text-[#6b7280] mb-4">Add your first image to build the gallery.</p>
+            <Button variant="primary" onClick={addItem}>
+              <Plus size={14} />Add First Image
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {config.items.map((item, i) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                index={i}
+                onEdit={() => setEditingId(item.id)}
+                onToggleActive={() => updateItem(item.id, { isActive: !item.isActive })}
+                onRemove={() => removeItem(item.id)}
+                onDragStart={() => onDragStart(i)}
+                onDragOver={(e) => onDragOver(e, i)}
+                onDragEnd={onDragEnd}
+                onLayoutChange={(layout) => updateItem(item.id, { layout })}
+              />
+            ))}
+          </div>
+        )}
 
-          {/* Slot 3: center tall — spans 2 rows */}
-          <SlotCard
-            slot={config.slots[2]} index={2} label={SLOT_LABELS[2]}
-            aspectClass=""
-            gridClass="col-span-2 sm:col-span-2 row-span-2 aspect-[2/1] sm:aspect-auto"
-            onEdit={() => setEditingIdx(2)}
-            onToggle={() => updateSlot(2, { isActive: !config.slots[2].isActive })}
-          />
-
-          {/* Slot 4: top-right */}
-          <SlotCard
-            slot={config.slots[3]} index={3} label={SLOT_LABELS[3]}
-            aspectClass="aspect-square"
-            gridClass=""
-            onEdit={() => setEditingIdx(3)}
-            onToggle={() => updateSlot(3, { isActive: !config.slots[3].isActive })}
-          />
-
-          {/* Slot 2: bottom-left */}
-          <SlotCard
-            slot={config.slots[1]} index={1} label={SLOT_LABELS[1]}
-            aspectClass="aspect-square"
-            gridClass=""
-            onEdit={() => setEditingIdx(1)}
-            onToggle={() => updateSlot(1, { isActive: !config.slots[1].isActive })}
-          />
-
-          {/* Slot 5: bottom-right */}
-          <SlotCard
-            slot={config.slots[4]} index={4} label={SLOT_LABELS[4]}
-            aspectClass="aspect-square"
-            gridClass=""
-            onEdit={() => setEditingIdx(4)}
-            onToggle={() => updateSlot(4, { isActive: !config.slots[4].isActive })}
-          />
-        </div>
+        {config.items.length > 0 && (
+          <button
+            onClick={addItem}
+            className="w-full py-3 border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] text-sm font-medium text-[#6b7280] hover:text-[#3b5f8f] transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus size={16} />Add Another Image
+          </button>
+        )}
       </div>
 
-      {/* ── Modal for editing a slot ──────────────────── */}
-      {editingIdx !== null && (
-        <SlotEditModal
-          slot={config.slots[editingIdx]}
-          label={SLOT_LABELS[editingIdx]}
-          onClose={() => setEditingIdx(null)}
-          onSave={(updatedSlot) => {
-            updateSlot(editingIdx, updatedSlot);
-            setEditingIdx(null);
+      {/* ── Edit Modal ────────────────────────────────── */}
+      {editingItem && (
+        <ItemEditModal
+          item={editingItem}
+          onClose={() => setEditingId(null)}
+          onSave={(changes) => {
+            updateItem(editingItem.id, changes);
+            setEditingId(null);
           }}
         />
       )}
@@ -296,88 +336,150 @@ export function GalleryClient({ initialConfig }: Props) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  SLOT CARD (Visual layout preview)
+//  ITEM CARD
 // ══════════════════════════════════════════════════════════
-interface SlotCardProps {
-  slot:        GallerySlot;
-  index:       number;
-  label:       string;
-  aspectClass: string;
-  gridClass:   string;
-  onEdit:      () => void;
-  onToggle:    () => void;
+interface ItemCardProps {
+  item:          GalleryItem;
+  index:         number;
+  onEdit:        () => void;
+  onToggleActive: () => void;
+  onRemove:      () => void;
+  onDragStart:   () => void;
+  onDragOver:    (e: React.DragEvent) => void;
+  onDragEnd:     () => void;
+  onLayoutChange: (layout: GalleryLayout) => void;
 }
 
-function SlotCard({ slot, index, label, aspectClass, gridClass, onEdit, onToggle }: SlotCardProps) {
+function ItemCard({
+  item, index, onEdit, onToggleActive, onRemove,
+  onDragStart, onDragOver, onDragEnd, onLayoutChange,
+}: ItemCardProps) {
+  const safeLayout: GalleryLayout = (item.layout && ["square","portrait","landscape","wide"].includes(item.layout))
+    ? item.layout
+    : "square";
+  const LayoutIcon = LAYOUT_OPTIONS.find((l) => l.value === safeLayout)?.icon ?? Square;
+
   return (
     <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
       className={cn(
-        "relative group bg-[#fafaf9] border border-[#e5e7eb] overflow-hidden",
-        aspectClass,
-        gridClass,
-        !slot.isActive && "opacity-50"
+        "bg-white border border-[#e5e7eb] overflow-hidden transition-all",
+        !item.isActive && "opacity-60"
       )}
     >
-      {/* Image or placeholder */}
-      {slot.image ? (
-        <Image
-          src={slot.image}
-          alt={`Slot ${index + 1}`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 640px) 50vw, 25vw"
-          unoptimized={slot.image.startsWith("/uploads")}
-        />
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center text-[#6b7280]">
-          <ImageIcon size={28} className="opacity-30 mb-1" />
-          <span className="text-[10px] font-medium">Empty</span>
-        </div>
-      )}
+      {/* Thumbnail */}
+      <div className="relative aspect-[4/3] bg-[#fafaf9]">
+        {item.image ? (
+          <Image
+            src={item.image}
+            alt={item.name || `Gallery item ${index + 1}`}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized={item.image.startsWith("/uploads")}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-[#6b7280]">
+            <ImageIcon size={32} className="opacity-30 mb-2" />
+            <span className="text-[10px] font-medium">Click Edit to add image</span>
+          </div>
+        )}
 
-      {/* Slot number badge */}
-      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
-        #{index + 1} {label}
+        {/* Sort number + drag handle */}
+        <div className="absolute top-2 left-2 flex items-center gap-1">
+          <div className="bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">
+            #{index + 1}
+          </div>
+          <div className="bg-black/70 backdrop-blur-sm text-white p-1 cursor-grab active:cursor-grabbing" title="Drag to reorder">
+            <GripVertical size={12} />
+          </div>
+        </div>
+
+        {/* Layout badge */}
+        <div className="absolute top-2 right-2 bg-[#3b5f8f] text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider flex items-center gap-1">
+          <LayoutIcon size={11} />
+          {safeLayout}
+        </div>
+
+        {/* Hidden overlay */}
+        {!item.isActive && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <span className="bg-white/90 text-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider px-2 py-1">
+              Hidden
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Link indicator */}
-      {slot.image && slot.link && (
-        <div className="absolute top-2 right-2 bg-[#3b5f8f] text-white p-1" title={`Links to: ${slot.link}`}>
-          <LinkIcon size={10} />
-        </div>
-      )}
+      {/* Body */}
+      <div className="p-3 space-y-2">
+        {item.name && (
+          <p className="text-xs font-semibold text-[#1a1a1a] line-clamp-1">{item.name}</p>
+        )}
+        {item.link && (
+          <p className="text-[10px] text-[#6b7280] flex items-center gap-1 line-clamp-1">
+            <LinkIcon size={9} />
+            {item.link}
+          </p>
+        )}
 
-      {/* Inactive overlay */}
-      {!slot.isActive && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <span className="bg-white/90 text-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider px-2 py-1">
-            Hidden
-          </span>
+        {/* Layout picker */}
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#6b7280] mb-1">
+            Layout
+          </label>
+          <div className="grid grid-cols-4 gap-1">
+            {LAYOUT_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const isActive = safeLayout === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => onLayoutChange(opt.value)}
+                  title={`${opt.label} — ${opt.desc}`}
+                  className={cn(
+                    "flex items-center justify-center p-2 border transition-colors",
+                    isActive
+                      ? "border-[#3b5f8f] bg-[#3b5f8f] text-white"
+                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#3b5f8f]"
+                  )}
+                >
+                  <Icon size={14} />
+                </button>
+              );
+            })}
+          </div>
         </div>
-      )}
 
-      {/* Hover overlay with actions */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-        <button
-          onClick={onEdit}
-          className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#3b5f8f] hover:text-white transition-colors flex items-center gap-1.5"
-        >
-          <Edit size={12} />Edit
-        </button>
-        <button
-          onClick={onToggle}
-          className={cn(
-            "px-3 py-2 text-xs font-semibold transition-colors flex items-center gap-1.5",
-            slot.isActive
-              ? "bg-white text-[#6b7280] hover:bg-[#6b7280] hover:text-white"
-              : "bg-[#3b5f8f] text-white hover:bg-[#2d4a72]"
-          )}
-        >
-          {slot.isActive
-            ? <><EyeOff size={12} />Hide</>
-            : <><Eye size={12} />Show</>
-          }
-        </button>
+        {/* Actions */}
+        <div className="flex items-center gap-1 pt-1 border-t border-[#e5e7eb]">
+          <button
+            onClick={onEdit}
+            className="flex-1 py-2 text-[11px] font-semibold text-[#1a1a1a] hover:bg-[#fafaf9] transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={onToggleActive}
+            className={cn(
+              "p-2 transition-colors",
+              item.isActive ? "text-[#3b5f8f] hover:text-[#2d4a72]" : "text-[#6b7280] hover:text-[#1a1a1a]"
+            )}
+            title={item.isActive ? "Hide from site" : "Show on site"}
+          >
+            {item.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+          </button>
+          <button
+            onClick={onRemove}
+            className="p-2 text-[#6b7280] hover:text-red-500 transition-colors"
+            title="Remove"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -387,16 +489,17 @@ function SlotCard({ slot, index, label, aspectClass, gridClass, onEdit, onToggle
 //  EDIT MODAL
 // ══════════════════════════════════════════════════════════
 interface ModalProps {
-  slot:    GallerySlot;
-  label:   string;
+  item:    GalleryItem;
   onClose: () => void;
-  onSave:  (slot: Partial<GallerySlot>) => void;
+  onSave:  (changes: Partial<GalleryItem>) => void;
 }
 
-function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
-  const [image,    setImage]    = useState(slot.image);
-  const [link,     setLink]     = useState(slot.link);
-  const [isActive, setIsActive] = useState(slot.isActive);
+function ItemEditModal({ item, onClose, onSave }: ModalProps) {
+  const [image,    setImage]    = useState(item.image);
+  const [name,     setName]     = useState(item.name);
+  const [link,     setLink]     = useState(item.link);
+  const [layout,   setLayout]   = useState<GalleryLayout>(item.layout);
+  const [isActive, setIsActive] = useState(item.isActive);
   const [tab,      setTab]      = useState<"upload" | "url">("upload");
   const [uploading, setUploading] = useState(false);
   const [dragOver,  setDragOver]  = useState(false);
@@ -404,7 +507,6 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
   const fileRef  = useRef<HTMLInputElement>(null);
   const toast    = useToastStore();
 
-  // ESC to close, body scroll lock
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -457,27 +559,25 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
   };
 
   const handleSubmit = () => {
-    onSave({ image, link, isActive });
+    onSave({ image, name, link, layout, isActive });
   };
 
   return (
     <>
       <div
-        className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white shadow-2xl pointer-events-auto animate-in zoom-in-95 fade-in duration-200 overflow-hidden">
+        <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white shadow-2xl pointer-events-auto overflow-hidden">
 
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 bg-[#1a1a1a] text-white flex-shrink-0">
-            <h3 className="text-base font-bold">Edit Gallery Slot: {label}</h3>
+            <h3 className="text-base font-bold">Edit Gallery Image</h3>
             <button onClick={onClose} className="p-1 hover:bg-white/10 rounded" aria-label="Close">
               <X size={18} />
             </button>
           </div>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
             {/* Image */}
@@ -486,7 +586,6 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 Image
               </label>
 
-              {/* Tabs */}
               <div className="flex gap-2 mb-3">
                 <button
                   onClick={() => setTab("upload")}
@@ -512,7 +611,6 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 </button>
               </div>
 
-              {/* Preview */}
               {image && (
                 <div className="relative mb-3 border border-[#e5e7eb] overflow-hidden aspect-square bg-[#111]">
                   <Image
@@ -533,7 +631,6 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 </div>
               )}
 
-              {/* Upload zone */}
               {tab === "upload" && !image && (
                 <div
                   className={cn(
@@ -568,25 +665,22 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 </div>
               )}
 
-              {/* URL input */}
               {tab === "url" && !image && (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="https://images.unsplash.com/..."
-                      className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
-                    />
-                    <button
-                      onClick={handleUrlAdd}
-                      disabled={!urlInput.trim() || uploading}
-                      className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
-                    >
-                      {uploading ? <Loader size={12} className="animate-spin" /> : "Load"}
-                    </button>
-                  </div>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                  />
+                  <button
+                    onClick={handleUrlAdd}
+                    disabled={!urlInput.trim() || uploading}
+                    className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
+                  >
+                    {uploading ? <Loader size={12} className="animate-spin" /> : "Load"}
+                  </button>
                 </div>
               )}
 
@@ -603,6 +697,56 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
               />
             </div>
 
+            {/* Name */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+                Image Name (Optional)
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Summer vibes at DHA"
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+              />
+              <p className="mt-1 text-[10px] text-[#6b7280]">
+                Internal label to help you identify this image. Not shown to visitors.
+              </p>
+            </div>
+
+            {/* Layout */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
+                Display Layout
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {LAYOUT_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const isActive = layout === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setLayout(opt.value)}
+                      className={cn(
+                        "flex items-center gap-2 p-3 border transition-colors text-left",
+                        isActive
+                          ? "border-[#3b5f8f] bg-[#3b5f8f] text-white"
+                          : "border-[#e5e7eb] hover:border-[#3b5f8f]"
+                      )}
+                    >
+                      <Icon size={18} className="flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold">{opt.label}</p>
+                        <p className={cn("text-[9px] mt-0.5", isActive ? "text-white/80" : "text-[#6b7280]")}>
+                          {opt.desc}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Link */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
@@ -616,7 +760,7 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
               />
               <p className="mt-1 text-[10px] text-[#6b7280]">
-                Where to send visitors when they click this image. Leave empty for no link.
+                Where to send visitors when they click this image.
               </p>
             </div>
 
@@ -633,18 +777,15 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 onChange={(e) => setIsActive(e.target.checked)}
                 className="w-4 h-4 accent-[#3b5f8f]"
               />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
-                  {isActive
-                    ? <><Eye size={13} className="text-[#3b5f8f]" />Visible on website</>
-                    : <><EyeOff size={13} className="text-[#6b7280]" />Hidden from website</>
-                  }
-                </p>
-              </div>
+              <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
+                {isActive
+                  ? <><Eye size={13} className="text-[#3b5f8f]" />Visible on website</>
+                  : <><EyeOff size={13} className="text-[#6b7280]" />Hidden from website</>
+                }
+              </p>
             </label>
           </div>
 
-          {/* Footer */}
           <div className="flex items-center justify-end gap-2 px-6 py-4 bg-[#fafaf9] border-t border-[#e5e7eb] flex-shrink-0">
             <button
               onClick={onClose}

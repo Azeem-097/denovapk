@@ -5,68 +5,62 @@ import { usePathname, useSearchParams } from "next/navigation";
 /**
  * Top-of-page navigation progress bar (YouTube/GitHub style).
  *
- * Shows a thin gold bar that:
- *   1. Instantly appears when user clicks any Link
- *   2. Animates progress while the next page is loading
- *   3. Completes to 100% when new pathname/searchParams settle
- *   4. Fades out
- *
- * Works with Next.js App Router — hooks into pathname changes
- * AND intercepts click events on <a> tags before navigation starts,
- * so users see immediate feedback even during server thinking time.
+ * Uses PURE CSS transitions for smoothness — no requestAnimationFrame,
+ * no per-frame React re-renders. State only changes 3 times per navigation:
+ *   1. START:    width jumps to 5%   (instant)
+ *   2. LOADING:  width transitions to 85%  (2.5s smooth ease-out)
+ *   3. COMPLETE: width jumps to 100% (300ms) then fades out
  */
+
+type Phase = "idle" | "loading" | "complete";
+
 export function TopProgressBar() {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
 
-  const [progress, setProgress] = useState(0);
-  const [visible,  setVisible]  = useState(false);
-  const timeoutRef              = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rafRef                  = useRef<number | null>(null);
+  const [phase,     setPhase]     = useState<Phase>("idle");
+  const completeTimer              = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimer                  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Start progress: fires when user clicks a link ────
   const startProgress = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    // Clear any pending completion timers from a previous nav
+    if (completeTimer.current) clearTimeout(completeTimer.current);
+    if (hideTimer.current)     clearTimeout(hideTimer.current);
 
-    setVisible(true);
-    setProgress(10);
+    // Step 1: reset to idle briefly so CSS restarts the transition cleanly
+    setPhase("idle");
 
-    // Animate: quickly to 30%, slowly to 80%, then wait for page
-    let current = 10;
-    const tick = () => {
-      current += (80 - current) * 0.05;
-      if (current > 79) current = 79;
-      setProgress(current);
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    setTimeout(() => { rafRef.current = requestAnimationFrame(tick); }, 100);
+    // Force a reflow so the browser sees the reset before the loading state
+    // (this is what makes the transition actually restart from 0)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setPhase("loading");
+      });
+    });
   };
 
-  // ── Complete progress: fires when pathname changes (= page loaded) ─
+  // ── Complete progress ──────────────────────────────────
   const completeProgress = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    setProgress(100);
-    timeoutRef.current = setTimeout(() => {
-      setVisible(false);
-      setTimeout(() => setProgress(0), 200);
-    }, 300);
+    setPhase("complete");
+    // After the "100%" transition finishes, hide the bar
+    hideTimer.current = setTimeout(() => {
+      setPhase("idle");
+    }, 400);
   };
 
   // ── Listen for pathname/search changes = navigation completed ────
   useEffect(() => {
-    if (visible) completeProgress();
+    if (phase === "loading") completeProgress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams]);
 
-  // ── Intercept all internal link clicks to start progress instantly ─
+  // ── Intercept internal link clicks ─────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      // Only left click, no modifier keys
       if (e.button !== 0) return;
       if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
 
-      // Find nearest anchor
       let el: HTMLElement | null = e.target as HTMLElement;
       while (el && el.tagName !== "A") el = el.parentElement;
       if (!el) return;
@@ -74,7 +68,6 @@ export function TopProgressBar() {
       const anchor = el as HTMLAnchorElement;
       const href   = anchor.getAttribute("href");
 
-      // Only internal, same-origin, non-hash links
       if (!href) return;
       if (href.startsWith("http://") || href.startsWith("https://")) {
         try {
@@ -87,7 +80,6 @@ export function TopProgressBar() {
       if (anchor.target === "_blank") return;
       if (anchor.hasAttribute("download")) return;
 
-      // Same-page? Don't fire
       const targetPath = href.split("?")[0].split("#")[0];
       if (targetPath === pathname) return;
 
@@ -101,12 +93,31 @@ export function TopProgressBar() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (completeTimer.current) clearTimeout(completeTimer.current);
+      if (hideTimer.current)     clearTimeout(hideTimer.current);
     };
   }, []);
 
-  if (!visible && progress === 0) return null;
+  // ── Compute width + transition per phase ───────────────
+  //   idle     -> 0%   instant (invisible)
+  //   loading  -> 85%  slow smooth ease-out (2.5s) — creates natural progress feel
+  //   complete -> 100% fast (250ms) then fade
+  let width      = "0%";
+  let transition = "none";
+  let opacity    = 0;
+
+  if (phase === "loading") {
+    width      = "85%";
+    transition = "width 2500ms cubic-bezier(0.1, 0.7, 0.1, 1)";
+    opacity    = 1;
+  } else if (phase === "complete") {
+    width      = "100%";
+    transition = "width 250ms ease-out, opacity 350ms ease-out 150ms";
+    opacity    = 0;
+  }
+
+  // Don't render at all when idle — saves a DOM node
+  if (phase === "idle") return null;
 
   return (
     <div
@@ -115,14 +126,15 @@ export function TopProgressBar() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-[#3b5f8f]"
         style={{
-          width:      `${progress}%`,
-          opacity:    visible ? 1 : 0,
-          transition: progress === 100
-            ? "width 200ms ease-out, opacity 300ms ease-out 200ms"
-            : "width 200ms ease-out, opacity 150ms ease-out",
+          width,
+          height:     "100%",
+          opacity,
+          transition,
+          background: "linear-gradient(90deg, #3b5f8f 0%, #5580b8 100%)",
           boxShadow:  "0 0 8px rgba(59, 95, 143, 0.6), 0 0 4px rgba(59, 95, 143, 0.4)",
+          transformOrigin: "left center",
+          willChange: "width, opacity",
         }}
       />
     </div>
