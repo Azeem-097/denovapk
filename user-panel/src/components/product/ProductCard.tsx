@@ -182,7 +182,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       <div className="px-0.5 space-y-1.5">
         <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#3b5f8f]">
-          {product.collection || "Denova"}
+          {(product.brand && product.brand.trim()) || product.collection || "Denova"}
         </p>
 
         <Link href={`/products/${product.slug}`}>

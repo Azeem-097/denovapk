@@ -35,26 +35,13 @@ const FALLBACK: GalleryConfig = {
   items:              [],
 };
 
-/**
- * Convert layout type -> CSS grid classes.
- *
- * Grid base rows are FIXED via grid-auto-rows on the parent so that
- * row-span-2 actually results in a visually taller cell (twice the row height).
- *
- * We DO NOT set aspect ratio on individual cells — they get their size
- * from the grid cell dimensions instead. This is what makes portrait
- * actually look tall vs. two squares stacked.
- */
 function layoutClasses(layout: GalleryLayout): string {
   switch (layout) {
     case "portrait":
-      // 1 col wide, 2 rows tall
       return "col-span-1 row-span-2";
     case "landscape":
-      // 2 cols wide, 1 row tall
       return "col-span-2 row-span-1";
     case "wide":
-      // Full-width banner: all columns, 1 row
       return "col-span-2 sm:col-span-4 row-span-1";
     case "square":
     default:
@@ -107,16 +94,8 @@ export function GallerySection() {
 
       {/*
         Dynamic CSS grid — full bleed.
-
-        Key trick: grid-auto-rows uses a fraction of viewport WIDTH so rows are
-        SQUARE-shaped (matching col width). A portrait cell (row-span-2) then
-        naturally becomes TWICE as tall as a square, which is exactly what
-        "portrait" should look like.
-
-        Mobile: 2 cols -> row height = 50vw    (each cell is 50vw x 50vw square base)
-        Desktop: 4 cols -> row height = 25vw   (each cell is 25vw x 25vw square base)
-
-        grid-auto-flow: dense fills gaps left by tall items.
+        grid-auto-rows uses vw so a portrait cell (row-span-2) is TWICE as tall
+        as a square, matching what "portrait" should look like.
       */}
       <div
         className="grid grid-cols-2 sm:grid-cols-4 gap-0 w-full gallery-grid"
@@ -129,12 +108,10 @@ export function GallerySection() {
 
       <style jsx>{`
         .gallery-grid {
-          /* Mobile: 2 columns  ->  row = 50vw (square base) */
           grid-auto-rows: 50vw;
         }
         @media (min-width: 640px) {
           .gallery-grid {
-            /* Desktop: 4 columns -> row = 25vw (square base) */
             grid-auto-rows: 25vw;
           }
         }
@@ -148,8 +125,12 @@ interface GalleryCellProps {
   delay?: number;
 }
 
+/**
+ * Uses a single generic HTMLElement ref that works for div, a, and Link.
+ * IntersectionObserver only reads .isIntersecting, doesn't care about element type.
+ */
 function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const { shouldAnimate } = useDevicePerformance();
 
@@ -170,10 +151,8 @@ function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
     return () => observer.disconnect();
   }, [shouldAnimate]);
 
-  // NO aspect ratio here — cell gets size from grid row/col span.
-  // overflow-hidden + relative + h-full/w-full so the Image fill works.
   const cellClass = cn(
-    "group relative overflow-hidden bg-[#fafaf9] w-full h-full",
+    "group relative overflow-hidden bg-[#fafaf9] w-full h-full block",
     layoutClasses(item.layout)
   );
 
@@ -205,10 +184,11 @@ function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
 
   if (item.link) {
     const isExternal = item.link.startsWith("http");
+
     if (isExternal) {
       return (
         <a
-          ref={ref as React.RefObject<HTMLAnchorElement>}
+          ref={(el) => { ref.current = el; }}
           href={item.link}
           target="_blank"
           rel="noopener noreferrer"
@@ -219,9 +199,10 @@ function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
         </a>
       );
     }
+
     return (
       <Link
-        ref={ref as React.RefObject<HTMLAnchorElement>}
+        ref={(el) => { ref.current = el; }}
         href={item.link}
         className={cellClass}
         style={revealStyle}
@@ -232,7 +213,11 @@ function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
   }
 
   return (
-    <div ref={ref} className={cellClass} style={revealStyle}>
+    <div
+      ref={(el) => { ref.current = el; }}
+      className={cellClass}
+      style={revealStyle}
+    >
       {content}
     </div>
   );
