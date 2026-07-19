@@ -4,7 +4,7 @@ export default function LoadingShop() {
   return (
     <>
       {/* Header skeleton */}
-      <div className="pt-28 pb-8 sm:pt-32 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
+      <div className="pt-6 pb-8 sm:pt-8 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
         <div className="site-container">
           <SkelBar w="140px" h="12px" className="mb-4" />
           <SkelBar w="240px" h="40px" />

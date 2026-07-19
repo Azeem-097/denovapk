@@ -1,3 +1,35 @@
+================================================================================
+REMOVE EMPTY SPACE BETWEEN NAVBAR AND BREADCRUMB ON SHOP PAGE
+Generated: 2026-07-20 01:18:05
+================================================================================
+
+================================================================================
+FILE: user-panel\src\app\shop\page.tsx
+================================================================================
+
+import { Suspense } from "react";
+import { getProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ShopPageClient } from "./ShopPageClient";
+
+// ISR: 60s cache. Products change occasionally; a 1-minute delay is imperceptible.
+export const revalidate = 60;
+
+export default async function ShopPage() {
+  const dbProducts = await getProducts({ status: "PUBLISHED", limit: 100 });
+  const products   = dbProducts.map(adaptProduct);
+
+  return (
+    <Suspense fallback={<div className="pt-32 text-center text-sm text-[#6b7280]">Loading...</div>}>
+      <ShopPageClient products={products} />
+    </Suspense>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\shop\ShopPageClient.tsx
+================================================================================
+
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
@@ -173,7 +205,7 @@ export function ShopPageClient({ products }: Props) {
 
   return (
     <>
-      <div className="pt-6 pb-4 sm:pt-8 sm:pb-5 bg-[#fafaf9] border-b border-[#e5e7eb]">
+      <div className="pt-20 pb-4 sm:pt-20 sm:pb-5 bg-[#fafaf9] border-b border-[#e5e7eb]">
         <div className="site-container">
           <FadeIn>
             <Breadcrumb items={[{ label: "Home", href: "/" }, { label: pageTitle }]} className="mb-2" />
@@ -238,11 +270,11 @@ export function ShopPageClient({ products }: Props) {
             </div>
 
             {availableSizes.length > 0 && (
-              <div className="mb-6 pb-4 border-b border-[#e5e7eb]">
+              <div className="hidden md:block mb-6 pb-4 border-b border-[#e5e7eb]">
                 <div className="text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
                   Filter by Waist
                 </div>
-                <div className="mt-3 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                <div className="mt-3 flex items-center gap-4">
                   <div className="flex flex-wrap gap-2">
                     {availableSizes.map((size) => {
                       const isActive = filters.sizes.includes(size);
@@ -279,8 +311,8 @@ export function ShopPageClient({ products }: Props) {
                       </button>
                     )}
                   </div>
-                  <div className="hidden md:block flex-1 h-px bg-[#e5e7eb]" />
-                  <div className="hidden md:flex items-center gap-1">
+                  <div className="flex-1 h-px bg-[#e5e7eb]" />
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => setColumns(2)}
                       className={cn("p-1.5 transition-colors", columns === 2 ? "text-[#1a1a1a]" : "text-[#6b7280] hover:text-[#1a1a1a]")}
@@ -338,5 +370,152 @@ function FilterTag({ label, onRemove }: { label: string; onRemove: () => void })
         <X size={11} />
       </button>
     </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\shop\loading.tsx
+================================================================================
+
+import { SkelBar, SkelBlock } from "@/components/ui/SkeletonPrimitives";
+
+export default function LoadingShop() {
+  return (
+    <>
+      {/* Header skeleton */}
+      <div className="pt-28 pb-8 sm:pt-32 sm:pb-10 bg-[#fafaf9] border-b border-[#e5e7eb]">
+        <div className="site-container">
+          <SkelBar w="140px" h="12px" className="mb-4" />
+          <SkelBar w="240px" h="40px" />
+          <SkelBar w="120px" h="12px" className="mt-3" />
+        </div>
+      </div>
+
+      {/* Products grid skeleton */}
+      <div className="site-container py-8 lg:py-10">
+        <div className="flex gap-8 lg:gap-10">
+          {/* Filter sidebar */}
+          <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <SkelBar w="80px" h="12px" />
+                <SkelBlock className="h-24" />
+              </div>
+            ))}
+          </aside>
+
+          {/* Grid */}
+          <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i}>
+                  <SkelBlock className="aspect-[4/5] mb-3" />
+                  <SkelBar w="70%" h="10px" className="mb-2" />
+                  <SkelBar w="50%" h="14px" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\ui\Breadcrumb.tsx
+================================================================================
+
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface BreadcrumbProps {
+  items:     BreadcrumbItem[];
+  className?: string;
+}
+
+export function Breadcrumb({ items, className }: BreadcrumbProps) {
+  return (
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("flex items-center gap-1.5", className)}
+    >
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        return (
+          <div key={index} className="flex items-center gap-1.5">
+            {index > 0 && (
+              <ChevronRight size={12} className="text-[#6b7280] flex-shrink-0" />
+            )}
+            {isLast || !item.href ? (
+              <span
+                className={cn(
+                  "text-xs tracking-wide",
+                  isLast
+                    ? "text-[#1a1a1a] font-medium"
+                    : "text-[#6b7280]"
+                )}
+              >
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                href={item.href}
+                className="text-xs text-[#6b7280] hover:text-[#3b5f8f] transition-colors tracking-wide"
+              >
+                {item.label}
+              </Link>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\layout\LayoutShell.tsx
+================================================================================
+
+"use client";
+import { usePathname } from "next/navigation";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
+import { Navbar }          from "@/components/layout/Navbar";
+import { Footer }          from "@/components/layout/Footer";
+import { CartDrawer }      from "@/components/cart/CartDrawer";
+import { SearchModal }     from "@/components/layout/SearchModal";
+import { WhatsAppWidget }  from "@/components/layout/WhatsAppWidget";
+import { FixedFooterReveal } from "@/components/layout/FixedFooterReveal";
+
+const MINIMAL_ROUTES: string[] = [];
+
+export function LayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? "";
+  const isMinimal = MINIMAL_ROUTES.some((r) =>
+    pathname === r || pathname.startsWith(r + "/")
+  );
+
+  if (isMinimal) {
+    return <main className="min-h-screen">{children}</main>;
+  }
+
+  return (
+    <>
+      <FixedFooterReveal footer={<Footer />}>
+        <AnnouncementBar />
+        <Navbar />
+        <main className="min-h-screen">{children}</main>
+      </FixedFooterReveal>
+
+      <CartDrawer />
+      <SearchModal />
+      <WhatsAppWidget />
+    </>
   );
 }
