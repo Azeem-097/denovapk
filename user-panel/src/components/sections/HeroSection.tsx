@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
 import { cn } from "@/lib/utils";
@@ -74,12 +74,10 @@ export interface OverlayV2 {
   mobile:  OverlayConfig;
 }
 
-// ── Stickers ──
 export type StickerKind    = "50-off" | "free-delivery";
 export type LegacyCorner   = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type StickerSize    = "sm" | "md" | "lg" | "xl";
 
-// New sticker position (per device)
 export interface StickerPosition {
   x:      number;
   y:      number;
@@ -90,12 +88,8 @@ export interface Sticker {
   enabled:         boolean;
   kind:            StickerKind;
   size:            StickerSize;
-
-  // NEW per-device positions
   positionDesktop?: StickerPosition;
   positionMobile?:  StickerPosition;
-
-  // Legacy fields (auto-migrated)
   corner?: LegacyCorner;
   offset?: number;
 }
@@ -118,7 +112,6 @@ interface HeroBanner {
   overlayDarkness?:  number;
   stickers?:         Sticker[];
 
-  // Legacy
   countdownEnabled?: boolean;
   countdownEndsAt?:  string;
   brand?:            string;
@@ -147,9 +140,6 @@ const FALLBACK: HeroBanner[] = [
   },
 ];
 
-// ═══════════════════════════════════════════════════════════
-//  Defaults + adapters
-// ═══════════════════════════════════════════════════════════
 export function defaultAnimation(): AnimationConfig {
   return { entrance: "slide-up", decorative: "none", loop: "none", speed: "normal", delay: "short" };
 }
@@ -181,7 +171,6 @@ function defaultCountdownStyle(overrides: Partial<CountdownStyle> = {}): Countdo
   };
 }
 
-// ─── Sticker corner → x/y/anchor migration ────────────────
 function cornerToPosition(corner: LegacyCorner | undefined): StickerPosition {
   switch (corner) {
     case "top-left":     return { x: 5,  y: 5,  anchor: "start" };
@@ -192,7 +181,6 @@ function cornerToPosition(corner: LegacyCorner | undefined): StickerPosition {
   }
 }
 
-// Normalize a sticker so positionDesktop + positionMobile always exist
 function normalizeSticker(s: Sticker): Sticker {
   const fallback = cornerToPosition(s.corner);
   return {
@@ -202,7 +190,6 @@ function normalizeSticker(s: Sticker): Sticker {
   };
 }
 
-// Legacy converter — pre-V2 banners
 function legacyToOverlayV2(banner: HeroBanner): OverlayV2 {
   const isLight = (banner.textTheme ?? "light") === "light";
   const color   = isLight ? "#ffffff" : "#1a1a1a";
@@ -256,9 +243,6 @@ function ensureCountdownInConfig(cfg: OverlayConfig | undefined, legacy: HeroBan
   return patched;
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Animation constants
-// ═══════════════════════════════════════════════════════════
 const SPEED_MS: Record<Speed, number> = { fast: 400, normal: 700, slow: 1100 };
 const DELAY_MS: Record<DelayLevel, number> = { immediate: 0, short: 200, medium: 500, long: 900 };
 
@@ -284,7 +268,7 @@ function animationCSS(anim: AnimationConfig | undefined, shouldAnim: boolean): {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  MAIN
+//  MAIN — REBUILT AUTO-ROTATION LOGIC (bulletproof)
 // ═══════════════════════════════════════════════════════════
 export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: HeroSectionProps) {
   const [slides, setSlides] = useState<HeroBanner[]>(
@@ -292,14 +276,25 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   );
   const [rotation, setRotation] = useState(rotationSeconds);
   const [current, setCurrent]   = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const { shouldAnimate } = useDevicePerformance();
 
-  const rafRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number>(0);
+  // ─── Timer state (all refs — no re-render trigger) ────
+  const rafRef            = useRef<number | null>(null);
+  const cycleStartRef     = useRef<number>(0);       // when THIS cycle began
+  const accumulatedRef    = useRef<number>(0);       // ms elapsed in current cycle before pause
+  const isPausedRef       = useRef<boolean>(false);
+  const rotationRef       = useRef<number>(rotationSeconds);
+  const slidesLengthRef   = useRef<number>(slides.length);
+  const shouldAnimateRef  = useRef<boolean>(true);
 
+  // Keep refs in sync with state (no effect re-runs)
+  useEffect(() => { rotationRef.current      = rotation;                }, [rotation]);
+  useEffect(() => { slidesLengthRef.current  = slides.length;           }, [slides.length]);
+  useEffect(() => { shouldAnimateRef.current = shouldAnimate;           }, [shouldAnimate]);
+
+  // ─── Mobile detection ─────────────────────────────────
   useEffect(() => {
     const check = () => setIsMobile(window.matchMedia("(max-width: 767px)").matches);
     check();
@@ -309,19 +304,25 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
     return () => mq.removeEventListener("change", listener);
   }, []);
 
+  // ─── Fetch banners + rotation from API (always overrides) ──
   useEffect(() => {
-    if (initialBanners && initialBanners.length > 0) return;
-    fetch("/api/hero-banners")
+    fetch("/api/hero-banners", { cache: "no-store" })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.banners?.length > 0) setSlides(data.banners);
-        if (data?.rotationSeconds)     setRotation(Number(data.rotationSeconds));
+        if (data?.rotationSeconds && Number(data.rotationSeconds) > 0) {
+          setRotation(Number(data.rotationSeconds));
+        }
       })
       .catch(() => {});
-  }, [initialBanners]);
+  }, []);
 
-  useEffect(() => { setCurrent(0); }, [slides.length]);
+  // Reset current index if slides array shrinks
+  useEffect(() => {
+    if (current >= slides.length) setCurrent(0);
+  }, [slides.length, current]);
 
+  // Preload next image
   useEffect(() => {
     if (slides.length <= 1) return;
     const next = slides[(current + 1) % slides.length];
@@ -329,47 +330,92 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
     if (next?.imageMobile) { const img = new window.Image(); img.src = next.imageMobile; }
   }, [current, slides]);
 
+  // ═══════════════════════════════════════════════════════
+  //  BULLETPROOF ROTATION TIMER
+  //
+  //  Runs ONCE on mount. Never restarts when `current` changes.
+  //  Uses refs for all mutable state so the RAF loop is stable.
+  //  Pause accumulates elapsed time; resume continues from there.
+  // ═══════════════════════════════════════════════════════
   useEffect(() => {
-    if (!shouldAnimate || slides.length <= 1 || isPaused) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      return;
-    }
-    const durationMs = Math.max(2, rotation) * 1000;
-    startTimeRef.current = performance.now();
+    // Init cycle start on first mount
+    cycleStartRef.current  = performance.now();
+    accumulatedRef.current = 0;
 
     const tick = (now: number) => {
-      const elapsed = now - startTimeRef.current;
-      const pct = Math.min(elapsed / durationMs, 1);
+      if (slidesLengthRef.current <= 1 || !shouldAnimateRef.current) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (isPausedRef.current) {
+        // Timer is paused — do nothing, just keep the RAF alive
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const durationMs = Math.max(2, rotationRef.current) * 1000;
+      const elapsed    = accumulatedRef.current + (now - cycleStartRef.current);
+      const pct        = Math.min(elapsed / durationMs, 1);
       setProgress(pct * 100);
-      if (pct >= 1) {
-        setCurrent((c) => (c + 1) % slides.length);
-        startTimeRef.current = performance.now();
+
+      if (elapsed >= durationMs) {
+        setCurrent((c) => (c + 1) % slidesLengthRef.current);
+        cycleStartRef.current  = performance.now();
+        accumulatedRef.current = 0;
         setProgress(0);
       }
+
       rafRef.current = requestAnimationFrame(tick);
     };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [shouldAnimate, slides.length, rotation, isPaused, current]);
 
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []); // ← EMPTY DEPS. Runs ONCE for the entire component lifetime.
+
+  // ─── Pause / Resume handlers (accumulate elapsed, don't reset) ──
+  const handlePause = useCallback(() => {
+    if (isPausedRef.current) return;
+    // Save elapsed time before pausing
+    accumulatedRef.current += performance.now() - cycleStartRef.current;
+    isPausedRef.current = true;
+  }, []);
+
+  const handleResume = useCallback(() => {
+    if (!isPausedRef.current) return;
+    // Restart the reference point; elapsed time is already saved
+    cycleStartRef.current = performance.now();
+    isPausedRef.current = false;
+  }, []);
+
+  // Auto-pause when tab is hidden
   useEffect(() => {
-    const onVis = () => setIsPaused(document.hidden);
+    const onVis = () => {
+      if (document.hidden) handlePause();
+      else handleResume();
+    };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, []);
+  }, [handlePause, handleResume]);
 
   if (slides.length === 0) return null;
 
   const goToSlide = (i: number) => {
     if (i === current) return;
-    setCurrent(i); setProgress(0); startTimeRef.current = performance.now();
+    setCurrent(i);
+    cycleStartRef.current  = performance.now();
+    accumulatedRef.current = 0;
+    setProgress(0);
   };
 
   return (
     <section
       className="relative w-full bg-white overflow-hidden group/hero"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseEnter={handlePause}
+      onMouseLeave={handleResume}
     >
       {slides.map((slide, i) => (
         <BannerSlide
@@ -406,7 +452,7 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
 }
 
 // ═══════════════════════════════════════════════════════════
-//  BannerSlide — natural aspect ratio (NO CROPPING)
+//  BannerSlide (unchanged)
 // ═══════════════════════════════════════════════════════════
 interface BannerSlideProps {
   slide: HeroBanner; isActive: boolean; index: number;
@@ -420,11 +466,19 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
   const rawOverlay: OverlayV2 = slide.overlayV2 ?? legacyToOverlayV2(slide);
   const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
 
-  // Ken Burns: reset key on each activation so animation restarts
+  // Track first mount to skip entrance/ken-burns animations on initial load
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    // Mark as mounted after first paint. Any subsequent isActive toggle
+    // (i.e. a real slide change) will trigger cinematic transition.
+    const t = setTimeout(() => setHasMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
   const [kenBurnsKey, setKenBurnsKey] = useState(0);
   useEffect(() => {
-    if (isActive) setKenBurnsKey((k) => k + 1);
-  }, [isActive]);
+    if (isActive && hasMounted) setKenBurnsKey((k) => k + 1);
+  }, [isActive, hasMounted]);
 
   const imgElement = (
     <div className="overflow-hidden w-full">
@@ -437,9 +491,9 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
           alt={slide.title || `Banner ${index + 1}`}
           className={cn(
             "block w-full h-auto origin-center",
-            shouldAnimate && isActive && "hero-image-ken-burns"
+            shouldAnimate && isActive && hasMounted && "hero-image-ken-burns"
           )}
-          style={shouldAnimate && isActive
+          style={shouldAnimate && isActive && hasMounted
             ? { "--hero-duration": "9s" } as React.CSSProperties
             : undefined
           }
@@ -454,8 +508,8 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
   const containerClass = cn(
     "top-0 left-0 w-full",
     isActive
-      ? cn("relative z-10", shouldAnimate && "hero-cinematic-enter")
-      : cn("absolute z-0 pointer-events-none", shouldAnimate && "hero-cinematic-exit")
+      ? cn("relative z-10", shouldAnimate && hasMounted && "hero-cinematic-enter")
+      : cn("absolute z-0 pointer-events-none opacity-0", shouldAnimate && hasMounted && "hero-cinematic-exit")
   );
 
   const inner = (
@@ -469,7 +523,6 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
 
       <BannerOverlayV2 config={config} slide={slide} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} />
 
-      {/* Stickers — draggable-positioned per device */}
       {(slide.stickers ?? []).filter((s) => s.enabled).map((s, i) => (
         <StickerLayer key={`${s.kind}-${i}`} sticker={normalizeSticker(s)} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} />
       ))}
@@ -487,9 +540,6 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
   return <div className={containerClass}>{inner}</div>;
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Overlay
-// ═══════════════════════════════════════════════════════════
 const ELEMENT_ORDER: ElementKey[] = ["brand", "tagline", "productDesc", "originalPrice", "currentPrice", "countdown"];
 
 function BannerOverlayV2({ config, slide, isActive, shouldAnimate, isMobile }: {
@@ -522,9 +572,6 @@ function BannerOverlayV2({ config, slide, isActive, shouldAnimate, isMobile }: {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Text element
-// ═══════════════════════════════════════════════════════════
 function OverlayElement({ elementKey, style, shouldAnim }: {
   elementKey: ElementKey; style: ElementStyle; shouldAnim: boolean;
 }) {
@@ -635,9 +682,6 @@ function OverlayElement({ elementKey, style, shouldAnim }: {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Countdown element
-// ═══════════════════════════════════════════════════════════
 function CountdownElement({ style, shouldAnim }: {
   style: CountdownStyle; shouldAnim: boolean; isMobile: boolean;
 }) {
@@ -748,9 +792,6 @@ function CountdownElement({ style, shouldAnim }: {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Sticker layer — X/Y positioning per device
-// ═══════════════════════════════════════════════════════════
 const STICKER_SIZES: Record<StickerSize, { w: number; wMobile: number }> = {
   sm: { w: 140, wMobile: 90  },
   md: { w: 200, wMobile: 130 },
@@ -761,7 +802,6 @@ const STICKER_SIZES: Record<StickerSize, { w: number; wMobile: number }> = {
 function StickerLayer({ sticker, isActive, shouldAnimate, isMobile }: {
   sticker: Sticker; isActive: boolean; shouldAnimate: boolean; isMobile: boolean;
 }) {
-  // Cloudinary CDN URLs — work on both localhost and production
   const src = sticker.kind === "50-off"
     ? "https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto/v1784388357/denovapk/general/50-off_1784388351902.png"
     : "https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto/v1784388363/denovapk/general/free-delivery_1784388357255.png";
@@ -771,8 +811,6 @@ function StickerLayer({ sticker, isActive, shouldAnimate, isMobile }: {
   const translateX = pos.anchor === "center" ? "-50%" : pos.anchor === "end" ? "-100%" : "0";
 
   const shouldAnim = shouldAnimate && isActive;
-
-  // Signature entrance animation depends on position (top vs bottom)
   const animName = pos.y < 50 ? "hero-sticker-pop" : "hero-sticker-slide-up";
 
   return (
@@ -800,9 +838,6 @@ function StickerLayer({ sticker, isActive, shouldAnimate, isMobile }: {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Helpers
-// ═══════════════════════════════════════════════════════════
 function isColorDark(hex: string): boolean {
   const c = hex.replace("#", "");
   if (c.length !== 6) return false;
