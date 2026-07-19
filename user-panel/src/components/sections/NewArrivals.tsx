@@ -9,37 +9,49 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
-type Tab = "new" | "bestsellers";
-
 interface Props {
+  /** Premium collection products (kept for backwards-compat with page.tsx) */
   newArrivals: Product[];
+  /** Super Premium collection products (kept for backwards-compat with page.tsx) */
   bestSellers: Product[];
 }
 
 const MAX_PRODUCTS = 16;
 
+/**
+ * "Shop by Waist" section — displays a unified list of products from BOTH
+ * Premium and Super Premium collections, filtered by waist size.
+ *
+ * Previously had Premium / Super Premium tabs at the top — these were
+ * removed to give customers a single, streamlined browsing experience.
+ * The props (newArrivals + bestSellers) are kept so page.tsx does not
+ * need to change; they are simply merged into one list.
+ */
 export function NewArrivals({ newArrivals, bestSellers }: Props) {
-  const [activeTab,      setActiveTab]      = useState<Tab>("new");
   const [selectedWaists, setSelectedWaists] = useState<number[]>([]);
-  const [isTabSwitching, setIsTabSwitching] = useState(false);
 
-  const tabProducts = activeTab === "new" ? newArrivals : bestSellers;
+  // Merge both lists, deduping by product id
+  const allProducts = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: Product[] = [];
+    for (const p of [...newArrivals, ...bestSellers]) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        merged.push(p);
+      }
+    }
+    return merged;
+  }, [newArrivals, bestSellers]);
 
   const availableWaists = useMemo(() => {
     const set = new Set<number>();
-    for (const p of tabProducts) {
+    for (const p of allProducts) {
       if (p.waist !== null && p.waist !== undefined) set.add(p.waist);
     }
     return Array.from(set).sort((a, b) => a - b);
-  }, [tabProducts]);
+  }, [allProducts]);
 
-  useEffect(() => {
-    setSelectedWaists([]);
-    setIsTabSwitching(true);
-    const t = setTimeout(() => setIsTabSwitching(false), 400);
-    return () => clearTimeout(t);
-  }, [activeTab]);
-
+  // Prune selected waists if underlying list changes and one is no longer available
   useEffect(() => {
     setSelectedWaists((prev) => prev.filter((w) => availableWaists.includes(w)));
   }, [availableWaists]);
@@ -54,22 +66,21 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
 
   const displayProducts = useMemo(() => {
     const list = selectedWaists.length === 0
-      ? tabProducts
-      : tabProducts.filter(
+      ? allProducts
+      : allProducts.filter(
           (p) => p.waist !== null && p.waist !== undefined && selectedWaists.includes(p.waist)
         );
     return list.slice(0, MAX_PRODUCTS);
-  }, [tabProducts, selectedWaists]);
+  }, [allProducts, selectedWaists]);
 
   const viewAllHref = useMemo(() => {
     const params = new URLSearchParams();
     if (selectedWaists.length > 0) {
       params.set("waist", [...selectedWaists].sort((a, b) => a - b).join(","));
     }
-    const collectionSlug = activeTab === "new" ? "premium" : "super-premium";
     const query = params.toString();
-    return query ? `/collections/${collectionSlug}?${query}` : `/collections/${collectionSlug}`;
-  }, [activeTab, selectedWaists]);
+    return query ? `/shop?${query}` : `/shop`;
+  }, [selectedWaists]);
 
   const waistLabel = selectedWaists.length > 0
     ? `(${[...selectedWaists].sort((a, b) => a - b).join(", ")}")`
@@ -90,28 +101,10 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
               Shop by Waist
             </span>
           </TextReveal>
-
           <FadeIn delay={200}>
-            <div className="flex items-center justify-center gap-6 mt-6">
-              <button
-                onClick={() => setActiveTab("new")}
-                className={cn(
-                  "text-sm font-medium tracking-wide pb-1.5 border-b-2 transition-all duration-300",
-                  activeTab === "new"
-                    ? "border-[#3b5f8f] text-[#1a1a1a]"
-                    : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
-                )}
-              >Premium</button>
-              <button
-                onClick={() => setActiveTab("bestsellers")}
-                className={cn(
-                  "text-sm font-medium tracking-wide pb-1.5 border-b-2 transition-all duration-300",
-                  activeTab === "bestsellers"
-                    ? "border-[#3b5f8f] text-[#1a1a1a]"
-                    : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
-                )}
-              >Super Premium</button>
-            </div>
+            <p className="text-sm sm:text-[15px] text-[#6b7280] mt-4 max-w-xl mx-auto leading-relaxed">
+              Find your perfect fit — filter by waist size and explore our curated denim collection.
+            </p>
           </FadeIn>
         </div>
 
@@ -169,13 +162,7 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
         )}
 
         {displayProducts.length > 0 ? (
-          <div
-            key={activeTab}
-            className={cn(
-              "transition-opacity duration-300",
-              isTabSwitching ? "opacity-0" : "opacity-100"
-            )}
-          >
+          <div>
             <MobileSlider products={displayProducts} />
             <DesktopSlider products={displayProducts} />
           </div>
@@ -205,7 +192,7 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
                 href={viewAllHref}
                 className="shimmer-btn group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 hover-lift"
               >
-                <span>View All {activeTab === "new" ? "Premium" : "Super Premium"}</span>
+                <span>View All Products</span>
                 {waistLabel && (
                   <span className="text-[#3b5f8f] group-hover:text-white transition-colors">
                     {waistLabel}

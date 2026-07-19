@@ -1,15 +1,14 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Send, CheckCircle, Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
 import { ScaleIn } from "@/components/animations/ScaleIn";
 import { SlideIn } from "@/components/animations/SlideIn";
-import { useToastStore } from "@/store/toastStore";
 
 // ═══════════════════════════════════════════════════════════
-//  Cloudinary hero images
+//  Cloudinary hero images (unchanged)
 // ═══════════════════════════════════════════════════════════
 const BASE            = "https://res.cloudinary.com/djy5qqco7/image/upload";
 const IMAGE_ID        = "v1784387547/denovapk/general/newsletter_hires_1784387491499";
@@ -31,45 +30,48 @@ const IMG_MBL_640  = buildMblUrl(640);
 const IMG_MBL_900  = buildMblUrl(900);
 const IMG_MBL_1200 = buildMblUrl(1200);
 
+// ═══════════════════════════════════════════════════════════
+//  Community config — matches /api/whatsapp-widget shape
+// ═══════════════════════════════════════════════════════════
+interface CommunityConfig {
+  communityLink:    string;
+  communityLabel:   string;
+  communitySubtext: string;
+}
+
+const FALLBACK: CommunityConfig = {
+  communityLink:    "",
+  communityLabel:   "Join Community",
+  communitySubtext: "Join our WhatsApp community",
+};
+
+/**
+ * NewsletterSection — repurposed as WhatsApp Community CTA.
+ *
+ * Reads communityLink / labels from settings via /api/whatsapp-widget.
+ * If the admin has not configured a communityLink, the button gracefully
+ * degrades to a "Shop Now" link so the section still looks intentional.
+ *
+ * Component name kept as NewsletterSection so the homepage import
+ * (app/page.tsx) does not need to change.
+ */
 export function NewsletterSection() {
-  const [email, setEmail]         = useState("");
-  const [status, setStatus]       = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [isFocused, setIsFocused] = useState(false);
-  const addToast = useToastStore((s) => s.addToast);
+  const [config, setConfig] = useState<CommunityConfig>(FALLBACK);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || status === "loading" || status === "success") return;
-
-    setStatus("loading");
-
-    try {
-      const res = await fetch("/api/newsletter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "homepage-newsletter" }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Something went wrong");
-
-      setStatus("success");
-      setEmail("");
-      addToast({
-        type: "success",
-        message: data?.message === "Already subscribed"
-          ? "You're already part of the Denova community!"
-          : "Welcome to Denova! Check your inbox soon.",
-      });
-
-      setTimeout(() => setStatus("idle"), 4000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to subscribe";
-      setStatus("error");
-      addToast({ type: "error", message });
-      setTimeout(() => setStatus("idle"), 3000);
-    }
-  };
+  useEffect(() => {
+    fetch("/api/whatsapp-widget")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.config) {
+          setConfig({
+            communityLink:    data.config.communityLink    ?? "",
+            communityLabel:   data.config.communityLabel   ?? FALLBACK.communityLabel,
+            communitySubtext: data.config.communitySubtext ?? FALLBACK.communitySubtext,
+          });
+        }
+      })
+      .catch(() => setConfig(FALLBACK));
+  }, []);
 
   const srcSet = [
     `${IMG_640}  640w`,
@@ -87,7 +89,7 @@ export function NewsletterSection() {
 
   return (
     <section
-      aria-labelledby="newsletter-heading"
+      aria-labelledby="community-heading"
       className="relative bg-[#f5f0e8] overflow-hidden"
     >
       {/* MOBILE LAYOUT */}
@@ -116,15 +118,7 @@ export function NewsletterSection() {
         </div>
 
         <div className="site-container pt-8 pb-6 sm:pt-10 sm:pb-8">
-          <NewsletterContent
-            email={email}
-            setEmail={setEmail}
-            status={status}
-            isFocused={isFocused}
-            setIsFocused={setIsFocused}
-            onSubmit={handleSubmit}
-            align="center"
-          />
+          <CommunityContent config={config} align="center" />
         </div>
       </div>
 
@@ -167,15 +161,7 @@ export function NewsletterSection() {
 
         <div className="absolute inset-0 site-container flex items-center">
           <div className="w-full max-w-[560px] lg:pr-8">
-            <NewsletterContent
-              email={email}
-              setEmail={setEmail}
-              status={status}
-              isFocused={isFocused}
-              setIsFocused={setIsFocused}
-              onSubmit={handleSubmit}
-              align="left"
-            />
+            <CommunityContent config={config} align="left" />
           </div>
         </div>
       </div>
@@ -183,22 +169,17 @@ export function NewsletterSection() {
   );
 }
 
-interface NewsletterContentProps {
-  email:        string;
-  setEmail:     (v: string) => void;
-  status:       "idle" | "loading" | "success" | "error";
-  isFocused:    boolean;
-  setIsFocused: (v: boolean) => void;
-  onSubmit:     (e: React.FormEvent) => void;
-  align:        "left" | "center";
+interface CommunityContentProps {
+  config: CommunityConfig;
+  align:  "left" | "center";
 }
 
-function NewsletterContent({
-  email, setEmail, status, isFocused, setIsFocused, onSubmit, align,
-}: NewsletterContentProps) {
-  const isLeft = align === "left";
+function CommunityContent({ config, align }: CommunityContentProps) {
+  const isLeft    = align === "left";
   const textAlign = isLeft ? "text-left" : "text-center";
   const flexAlign = isLeft ? "items-start" : "items-center";
+
+  const hasLink = !!config.communityLink;
 
   return (
     <div className={`flex flex-col ${flexAlign} ${textAlign}`}>
@@ -212,7 +193,7 @@ function NewsletterContent({
 
       <TextReveal as="h2" delay={100}>
         <span
-          id="newsletter-heading"
+          id="community-heading"
           className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-[2.5rem] xl:text-5xl font-bold text-[#1a1a1a] mt-4 block leading-[1.05]"
         >
           Dress the Part.
@@ -223,8 +204,9 @@ function NewsletterContent({
 
       <FadeIn delay={200}>
         <p className={`text-[#4a4a4a] text-sm sm:text-base leading-relaxed mt-4 max-w-md ${isLeft ? "" : "mx-auto"}`}>
-          Get first access to new denim drops, exclusive member-only pricing,
-          and styling notes crafted by our design team &mdash; delivered to your inbox.
+          Join our exclusive WhatsApp community for first access to new denim
+          drops, member-only pricing, and styling notes crafted by our design
+          team &mdash; straight to your chat.
         </p>
       </FadeIn>
 
@@ -246,69 +228,64 @@ function NewsletterContent({
       )}
 
       <ScaleIn from={0.95} delay={350}>
-        <form
-          onSubmit={onSubmit}
-          className={`mt-6 flex flex-col sm:flex-row gap-3 w-full ${isLeft ? "max-w-md" : "max-w-lg mx-auto"}`}
-        >
-          <div className="flex-1 relative">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder="Enter your email address"
-              required
-              autoComplete="email"
-              aria-label="Email address for newsletter"
-              className="input-focus-gold w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none transition-all duration-300 placeholder:text-[#6b7280]/60 rounded-none"
-              disabled={status === "loading" || status === "success"}
-            />
-            <span
-              className="absolute bottom-0 left-0 h-[2px] bg-[#3b5f8f] transition-transform duration-500 origin-left w-full"
-              style={{ transform: isFocused ? "scaleX(1)" : "scaleX(0)" }}
-            />
-          </div>
+        <div className={`mt-7 flex flex-wrap items-center gap-x-6 gap-y-3 ${isLeft ? "" : "justify-center"}`}>
+          {hasLink ? (
+            <a
+              href={config.communityLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shimmer-btn hover-lift group inline-flex items-center gap-2.5 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#25D366] transition-all duration-300 shadow-sm"
+            >
+              <WhatsAppIcon size={16} className="text-white" />
+              <span>{config.communityLabel || "Join Community"}</span>
+              <ArrowRight size={14} className="ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          ) : (
+            <Link
+              href="/shop"
+              className="shimmer-btn hover-lift group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 shadow-sm"
+            >
+              <span>Explore Collection</span>
+              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          )}
 
-          <button
-            type="submit"
-            disabled={status === "loading" || status === "success"}
-            className="shimmer-btn inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 hover-lift"
+          <Link
+            href="/shop"
+            className="text-xs font-medium tracking-[0.15em] uppercase text-[#6b7280] hover:text-[#1a1a1a] transition-colors group inline-flex items-center gap-1.5"
           >
-            {status === "loading" ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Subscribing...
-              </>
-            ) : status === "success" ? (
-              <>
-                <CheckCircle size={16} className="animate-fade-zoom-in" />
-                Subscribed!
-              </>
-            ) : (
-              <>
-                <Send size={15} />
-                Subscribe
-              </>
-            )}
-          </button>
-        </form>
+            Or shop the collection
+            <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
       </ScaleIn>
 
-      {status === "success" && (
-        <div className={`mt-4 text-sm text-[#3b5f8f] font-medium animate-fade-zoom-in ${isLeft ? "" : "text-center"}`}>
-          Thank you! You&apos;re now part of the Denova community. 🎉
-        </div>
-      )}
-
-      <FadeIn delay={450}>
-        <p className={`mt-4 text-[11px] text-[#6b7280]/80 tracking-wide ${isLeft ? "" : "text-center"}`}>
-          No spam, ever. Unsubscribe anytime. By subscribing you agree to our{" "}
+      <FadeIn delay={480}>
+        <p className={`mt-5 text-[11px] text-[#6b7280]/80 tracking-wide ${isLeft ? "" : "text-center"}`}>
+          Free to join. Leave anytime. By joining you agree to our{" "}
           <a href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#3b5f8f] transition-colors">
             privacy policy
           </a>.
         </p>
       </FadeIn>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WhatsApp brand icon (matches WhatsAppWidget)
+// ═══════════════════════════════════════════════════════════
+function WhatsAppIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.14 1.545 5.873L.057 23.997l6.306-1.654A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.017-1.376l-.36-.214-3.733.979 1-3.646-.234-.374A9.818 9.818 0 0 1 12 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/>
+    </svg>
   );
 }

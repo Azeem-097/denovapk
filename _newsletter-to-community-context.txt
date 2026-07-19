@@ -1,0 +1,1858 @@
+================================================================================
+REPLACE NEWSLETTER SECTION WITH WHATSAPP COMMUNITY JOIN CTA
+Generated: 2026-07-19 22:41:23
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\sections\NewsletterSection.tsx
+================================================================================
+
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { Send, CheckCircle, Sparkles, ArrowRight } from "lucide-react";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { TextReveal } from "@/components/animations/TextReveal";
+import { ScaleIn } from "@/components/animations/ScaleIn";
+import { SlideIn } from "@/components/animations/SlideIn";
+import { useToastStore } from "@/store/toastStore";
+
+// ═══════════════════════════════════════════════════════════
+//  Cloudinary hero images
+// ═══════════════════════════════════════════════════════════
+const BASE            = "https://res.cloudinary.com/djy5qqco7/image/upload";
+const IMAGE_ID        = "v1784387547/denovapk/general/newsletter_hires_1784387491499";
+const IMAGE_ID_MOBILE = "v1784389913/denovapk/general/newsletter-mbl_1784389867961";
+
+const buildUrl = (width: number) =>
+  `${BASE}/f_auto,q_auto:best,c_limit,w_${width}/${IMAGE_ID}`;
+
+const IMG_640  = buildUrl(640);
+const IMG_900  = buildUrl(900);
+const IMG_1200 = buildUrl(1200);
+const IMG_1600 = buildUrl(1600);
+const IMG_1915 = buildUrl(1915);
+
+const buildMblUrl = (width: number) =>
+  `${BASE}/f_auto,q_auto:best,c_limit,w_${width}/${IMAGE_ID_MOBILE}`;
+
+const IMG_MBL_640  = buildMblUrl(640);
+const IMG_MBL_900  = buildMblUrl(900);
+const IMG_MBL_1200 = buildMblUrl(1200);
+
+export function NewsletterSection() {
+  const [email, setEmail]         = useState("");
+  const [status, setStatus]       = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [isFocused, setIsFocused] = useState(false);
+  const addToast = useToastStore((s) => s.addToast);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || status === "loading" || status === "success") return;
+
+    setStatus("loading");
+
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "homepage-newsletter" }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Something went wrong");
+
+      setStatus("success");
+      setEmail("");
+      addToast({
+        type: "success",
+        message: data?.message === "Already subscribed"
+          ? "You're already part of the Denova community!"
+          : "Welcome to Denova! Check your inbox soon.",
+      });
+
+      setTimeout(() => setStatus("idle"), 4000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to subscribe";
+      setStatus("error");
+      addToast({ type: "error", message });
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  };
+
+  const srcSet = [
+    `${IMG_640}  640w`,
+    `${IMG_900}  900w`,
+    `${IMG_1200} 1200w`,
+    `${IMG_1600} 1600w`,
+    `${IMG_1915} 1915w`,
+  ].join(", ");
+
+  const srcSetMobile = [
+    `${IMG_MBL_640}  640w`,
+    `${IMG_MBL_900}  900w`,
+    `${IMG_MBL_1200} 1200w`,
+  ].join(", ");
+
+  return (
+    <section
+      aria-labelledby="newsletter-heading"
+      className="relative bg-[#f5f0e8] overflow-hidden"
+    >
+      {/* MOBILE LAYOUT */}
+      <div className="lg:hidden">
+        <div className="relative w-full aspect-square overflow-hidden bg-[#f5f0e8]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={IMG_MBL_900}
+            srcSet={srcSetMobile}
+            sizes="100vw"
+            alt="Denova denim jeans on premium models"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+
+        <div className="site-container flex justify-center pt-6 sm:pt-8">
+          <Link
+            href="/shop"
+            className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#3b5f8f] transition-all duration-300 shadow-md"
+          >
+            Shop Now
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        <div className="site-container pt-8 pb-6 sm:pt-10 sm:pb-8">
+          <NewsletterContent
+            email={email}
+            setEmail={setEmail}
+            status={status}
+            isFocused={isFocused}
+            setIsFocused={setIsFocused}
+            onSubmit={handleSubmit}
+            align="center"
+          />
+        </div>
+      </div>
+
+      {/* DESKTOP LAYOUT */}
+      <div className="hidden lg:block relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={IMG_1600}
+          srcSet={srcSet}
+          sizes="100vw"
+          alt="Five men modeling premium Denova denim jeans against a warm cream backdrop"
+          className="block w-full h-auto"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div
+          className="absolute inset-y-0 left-0 w-[55%] pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, #f5f0e8 0%, #f5f0e8 55%, rgba(245,240,232,0.85) 80%, rgba(245,240,232,0) 100%)",
+          }}
+        />
+
+        <div
+          className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#3b5f8f]/8 animate-float-soft pointer-events-none"
+          style={{ animationDuration: "8s" }}
+        />
+        <div
+          className="absolute bottom-[10%] left-[8%] w-32 h-32 rounded-full bg-[#3b5f8f]/6 animate-float-soft pointer-events-none"
+          style={{ animationDuration: "10s", animationDelay: "1s" }}
+        />
+
+        <div
+          className="absolute inset-y-0 left-0 w-[45%] opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+
+        <div className="absolute inset-0 site-container flex items-center">
+          <div className="w-full max-w-[560px] lg:pr-8">
+            <NewsletterContent
+              email={email}
+              setEmail={setEmail}
+              status={status}
+              isFocused={isFocused}
+              setIsFocused={setIsFocused}
+              onSubmit={handleSubmit}
+              align="left"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+interface NewsletterContentProps {
+  email:        string;
+  setEmail:     (v: string) => void;
+  status:       "idle" | "loading" | "success" | "error";
+  isFocused:    boolean;
+  setIsFocused: (v: boolean) => void;
+  onSubmit:     (e: React.FormEvent) => void;
+  align:        "left" | "center";
+}
+
+function NewsletterContent({
+  email, setEmail, status, isFocused, setIsFocused, onSubmit, align,
+}: NewsletterContentProps) {
+  const isLeft = align === "left";
+  const textAlign = isLeft ? "text-left" : "text-center";
+  const flexAlign = isLeft ? "items-start" : "items-center";
+
+  return (
+    <div className={`flex flex-col ${flexAlign} ${textAlign}`}>
+
+      <FadeIn>
+        <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#3b5f8f]">
+          <Sparkles size={12} className="opacity-80" />
+          Join the Community
+        </span>
+      </FadeIn>
+
+      <TextReveal as="h2" delay={100}>
+        <span
+          id="newsletter-heading"
+          className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-[2.5rem] xl:text-5xl font-bold text-[#1a1a1a] mt-4 block leading-[1.05]"
+        >
+          Dress the Part.
+          <br />
+          <span className="text-[#3b5f8f] italic font-normal">Live the Legacy.</span>
+        </span>
+      </TextReveal>
+
+      <FadeIn delay={200}>
+        <p className={`text-[#4a4a4a] text-sm sm:text-base leading-relaxed mt-4 max-w-md ${isLeft ? "" : "mx-auto"}`}>
+          Get first access to new denim drops, exclusive member-only pricing,
+          and styling notes crafted by our design team &mdash; delivered to your inbox.
+        </p>
+      </FadeIn>
+
+      {isLeft && (
+        <SlideIn from="left" distance={20} delay={280} duration={600}>
+          <ul className="mt-5 space-y-2">
+            {[
+              "10% off your first order",
+              "Early access to limited collections",
+              "Insider styling tips & lookbooks",
+            ].map((perk) => (
+              <li key={perk} className="flex items-center gap-2.5 text-sm text-[#4a4a4a]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3b5f8f] flex-shrink-0" />
+                {perk}
+              </li>
+            ))}
+          </ul>
+        </SlideIn>
+      )}
+
+      <ScaleIn from={0.95} delay={350}>
+        <form
+          onSubmit={onSubmit}
+          className={`mt-6 flex flex-col sm:flex-row gap-3 w-full ${isLeft ? "max-w-md" : "max-w-lg mx-auto"}`}
+        >
+          <div className="flex-1 relative">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="Enter your email address"
+              required
+              autoComplete="email"
+              aria-label="Email address for newsletter"
+              className="input-focus-gold w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none transition-all duration-300 placeholder:text-[#6b7280]/60 rounded-none"
+              disabled={status === "loading" || status === "success"}
+            />
+            <span
+              className="absolute bottom-0 left-0 h-[2px] bg-[#3b5f8f] transition-transform duration-500 origin-left w-full"
+              style={{ transform: isFocused ? "scaleX(1)" : "scaleX(0)" }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={status === "loading" || status === "success"}
+            className="shimmer-btn inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 hover-lift"
+          >
+            {status === "loading" ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Subscribing...
+              </>
+            ) : status === "success" ? (
+              <>
+                <CheckCircle size={16} className="animate-fade-zoom-in" />
+                Subscribed!
+              </>
+            ) : (
+              <>
+                <Send size={15} />
+                Subscribe
+              </>
+            )}
+          </button>
+        </form>
+      </ScaleIn>
+
+      {status === "success" && (
+        <div className={`mt-4 text-sm text-[#3b5f8f] font-medium animate-fade-zoom-in ${isLeft ? "" : "text-center"}`}>
+          Thank you! You&apos;re now part of the Denova community. 🎉
+        </div>
+      )}
+
+      <FadeIn delay={450}>
+        <p className={`mt-4 text-[11px] text-[#6b7280]/80 tracking-wide ${isLeft ? "" : "text-center"}`}>
+          No spam, ever. Unsubscribe anytime. By subscribing you agree to our{" "}
+          <a href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#3b5f8f] transition-colors">
+            privacy policy
+          </a>.
+        </p>
+      </FadeIn>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\page.tsx
+================================================================================
+
+import { HeroSection }           from "@/components/sections/HeroSection";
+import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
+import { SaleCountdown }         from "@/components/sections/SaleCountdown";
+import { FeaturedCollections }   from "@/components/sections/FeaturedCollections";
+import { BrandTicker }           from "@/components/sections/BrandTicker";
+import { NewArrivals }           from "@/components/sections/NewArrivals";
+import { BrandStory }            from "@/components/sections/BrandStory";
+import { Testimonials }          from "@/components/sections/Testimonials";
+import { GallerySection }        from "@/components/sections/GallerySection";
+import { NewsletterSection }     from "@/components/sections/NewsletterSection";
+import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
+import { getProducts }              from "@/lib/db/repositories/products";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
+import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
+
+type HeroBanner = {
+  isActive: true;
+  sortOrder: number;
+};
+
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
+    getCollectionsWithCounts(),
+    getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
+    getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
+  ]);
+
+  const collections  = dbCollections.map(adaptCollection);
+  const allProducts  = dbAllProducts.map(adaptProduct);
+
+  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
+  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+
+  const testimonials = getMockTestimonials();
+
+  let heroBanners: HeroBanner[] = [];
+  if (heroBannersRaw) {
+    try {
+      const all: unknown[] = JSON.parse(heroBannersRaw);
+      heroBanners = all
+        .filter(
+          (b): b is HeroBanner =>
+            typeof b === "object" &&
+            b !== null &&
+            (b as { isActive?: boolean }).isActive === true &&
+            typeof (b as { sortOrder?: unknown }).sortOrder === "number"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch { heroBanners = []; }
+  }
+
+  return (
+    <>
+      {/* LAYER 1 — HERO */}
+      <FixedHeroBackground>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
+      </FixedHeroBackground>
+
+      {/* LAYER 2 — CONTENT SHELL
+          - overflow-hidden clips the square backgrounds of Sale & Newsletter.
+          - Because this wrapper is BELOW the header, overflow-hidden here 
+            does NOT break the sticky header! */}
+      <div
+        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden"
+        style={{
+          boxShadow: "0 -12px 40px -20px rgba(0, 0, 0, 0.15)",
+        }}
+      >
+        <SaleCountdown />
+        <BrandTicker />
+        <NewArrivals
+          newArrivals={premiumProducts}
+          bestSellers={superPremiumProducts}
+        />
+        <FeaturedCollections collections={collections} />
+        <BrandStory />
+        <Testimonials testimonials={testimonials} />
+        <GallerySection />
+
+        <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">
+          <NewsletterSection />
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\layout\WhatsAppWidget.tsx
+================================================================================
+
+"use client";
+import { useEffect, useState, useRef } from "react";
+import { MessageCircle, Users, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface WhatsAppConfig {
+  enabled:          boolean;
+  phone:            string;
+  communityLink:    string;
+  greeting:         string;
+  directLabel:      string;
+  communityLabel:   string;
+  directSubtext:    string;
+  communitySubtext: string;
+}
+
+const FALLBACK: WhatsAppConfig = {
+  enabled:          false,
+  phone:            "",
+  communityLink:    "",
+  greeting:         "Hi! I'm interested in Denova PK.",
+  directLabel:      "Direct Message",
+  communityLabel:   "Join Community",
+  directSubtext:    "Chat with our support team",
+  communitySubtext: "Join our WhatsApp community",
+};
+
+const WA_GREEN      = "#25D366";
+
+/**
+ * Normalize a phone number for WhatsApp wa.me links.
+ * WhatsApp requires the FULL international number WITHOUT the leading + or 00.
+ *
+ * Handles Pakistani phone formats specifically:
+ *   "+923001234567"   -> "923001234567"       (already international)
+ *   "923001234567"    -> "923001234567"       (already international, no +)
+ *   "03001234567"     -> "923001234567"       (drop 0, prepend 92)
+ *   "3001234567"      -> "923001234567"       (10-digit local, prepend 92)
+ *   "0092 300 1234567" -> "923001234567"      (00 prefix, drop it, keep 92)
+ *
+ * If the number already has a valid international format, respect it.
+ * Otherwise, assume Pakistan (+92).
+ */
+export function normalizeWhatsAppPhone(raw: string): string {
+  if (!raw) return "";
+
+  // Remove ALL non-digit characters (spaces, dashes, parens, plus signs)
+  let digits = raw.replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  // Strip leading "00" (international dialing prefix in some regions)
+  if (digits.startsWith("00")) {
+    digits = digits.substring(2);
+  }
+
+  // If it starts with "92" and total length is 12 (92 + 10-digit number), it's already Pakistan international
+  if (digits.startsWith("92") && digits.length === 12) {
+    return digits;
+  }
+
+  // If it starts with "0" (local Pakistani format like 03001234567), drop the 0 and prepend 92
+  if (digits.startsWith("0")) {
+    return "92" + digits.substring(1);
+  }
+
+  // If it's a 10-digit number (e.g. 3001234567), assume Pakistan mobile → prepend 92
+  if (digits.length === 10) {
+    return "92" + digits;
+  }
+
+  // Fallback: if number already looks international (11+ digits, doesn't start with 0)
+  // just use as-is
+  return digits;
+}
+
+export function WhatsAppWidget() {
+  const [config, setConfig]   = useState<WhatsAppConfig | null>(null);
+  const [open,   setOpen]     = useState(false);
+  const panelRef              = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/whatsapp-widget")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => setConfig(data?.config ?? FALLBACK))
+      .catch(() => setConfig(FALLBACK));
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
+  if (!config) return null;
+  if (!config.enabled) return null;
+  if (!config.phone && !config.communityLink) return null;
+
+  // ── Build direct message link using PROPER normalization ──
+  const normalizedPhone = normalizeWhatsAppPhone(config.phone);
+  const directLink = normalizedPhone
+    ? `https://wa.me/${normalizedPhone}${config.greeting ? `?text=${encodeURIComponent(config.greeting)}` : ""}`
+    : "";
+
+  return (
+    <div
+      ref={panelRef}
+      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40"
+    >
+      {open && (
+        <div
+          className="mb-3 w-72 sm:w-80 bg-white shadow-2xl border border-[#e5e7eb] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+          style={{ borderRadius: "12px" }}
+        >
+          <div
+            className="px-4 py-3 flex items-center gap-3"
+            style={{ backgroundColor: WA_GREEN }}
+          >
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <WhatsAppIcon size={20} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white leading-tight">Denova PK</p>
+              <p className="text-[11px] text-white/80 leading-tight mt-0.5">
+                Typically replies within an hour
+              </p>
+            </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1 text-white/80 hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-3 space-y-2 bg-[#fafaf9]">
+            {directLink && (
+              <a
+                href={directLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 bg-white hover:bg-[#f5f0e8] transition-colors group"
+                style={{ borderRadius: "10px" }}
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${WA_GREEN}20` }}
+                >
+                  <MessageCircle size={18} style={{ color: WA_GREEN }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#1a1a1a] truncate">
+                    {config.directLabel || "Direct Message"}
+                  </p>
+                  <p className="text-[11px] text-[#6b7280] truncate">
+                    {config.directSubtext || "Chat with our support team"}
+                  </p>
+                </div>
+                <span className="text-[#3b5f8f] opacity-0 group-hover:opacity-100 transition-opacity">
+                  &rarr;
+                </span>
+              </a>
+            )}
+
+            {config.communityLink && (
+              <a
+                href={config.communityLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 bg-white hover:bg-[#f5f0e8] transition-colors group"
+                style={{ borderRadius: "10px" }}
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${WA_GREEN}20` }}
+                >
+                  <Users size={18} style={{ color: WA_GREEN }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#1a1a1a] truncate">
+                    {config.communityLabel || "Join Community"}
+                  </p>
+                  <p className="text-[11px] text-[#6b7280] truncate">
+                    {config.communitySubtext || "Join our WhatsApp community"}
+                  </p>
+                </div>
+                <span className="text-[#3b5f8f] opacity-0 group-hover:opacity-100 transition-opacity">
+                  &rarr;
+                </span>
+              </a>
+            )}
+
+            <p className="text-center text-[10px] text-[#6b7280] pt-2">
+              Powered by WhatsApp
+            </p>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
+          "hover:scale-110 active:scale-95",
+          open && "rotate-90"
+        )}
+        style={{
+          backgroundColor: WA_GREEN,
+          boxShadow: `0 8px 24px rgba(37, 211, 102, 0.4), 0 4px 12px rgba(0, 0, 0, 0.15)`,
+        }}
+        aria-label={open ? "Close WhatsApp menu" : "Contact us on WhatsApp"}
+      >
+        {open ? (
+          <X size={24} className="text-white" />
+        ) : (
+          <WhatsAppIcon size={26} className="text-white" />
+        )}
+
+        {!open && (
+          <span
+            className="absolute inset-0 rounded-full animate-ping opacity-30"
+            style={{ backgroundColor: WA_GREEN }}
+          />
+        )}
+      </button>
+    </div>
+  );
+}
+
+function WhatsAppIcon({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.14 1.545 5.873L.057 23.997l6.306-1.654A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.017-1.376l-.36-.214-3.733.979 1-3.646-.234-.374A9.818 9.818 0 0 1 12 2.182c5.427 0 9.818 4.391 9.818 9.818 0 5.428-4.391 9.818-9.818 9.818z"/>
+    </svg>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\api\whatsapp-widget\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { getSetting } from "@/lib/db/repositories/settings";
+
+export const dynamic   = "force-dynamic";
+export const revalidate = 0;
+
+const DEFAULT_CONFIG = {
+  enabled:            true,
+  phone:              "",         // e.g. "+923001234567"
+  communityLink:      "",         // e.g. "https://chat.whatsapp.com/xxx"
+  greeting:           "Hi! I'm interested in Denova PK.",
+  directLabel:        "Direct Message",
+  communityLabel:     "Join Community",
+  directSubtext:      "Chat with our support team",
+  communitySubtext:   "Join our WhatsApp community",
+};
+
+export async function GET() {
+  try {
+    const raw = await getSetting("whatsapp_widget");
+    if (!raw) return NextResponse.json({ config: DEFAULT_CONFIG });
+
+    const parsed = JSON.parse(raw);
+    return NextResponse.json({
+      config: { ...DEFAULT_CONFIG, ...parsed },
+    });
+  } catch {
+    return NextResponse.json({ config: DEFAULT_CONFIG });
+  }
+}
+
+================================================================================
+FILE: admin-panel\src\app\(dashboard)\settings\SettingsClient.tsx
+================================================================================
+
+"use client";
+import { useState } from "react";
+import { FooterTab } from "./FooterTab";
+import { FirstOrderTab } from "./FirstOrderTab";
+import { ShippingTab } from "./ShippingTab";
+import { PaymentMethodsTab } from "./PaymentMethodsTab";
+import {
+  Store, Phone, ShoppingBag, Cake, Award,
+  DollarSign, Globe, Save, CheckCircle, MessageCircle, Truck, CreditCard,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  initialSettings: Record<string, Record<string, string>>;
+}
+
+type TabId =
+  | "restaurant" | "contact" | "abandoned_cart" | "birthday"
+  | "loyalty" | "pricing" | "shipping" | "payments" | "social"
+  | "first_order" | "footer" | "whatsapp";
+
+const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
+  { id: "restaurant",     label: "Brand Information",   icon: Store       },
+  { id: "contact",        label: "Contact Information", icon: Phone       },
+  { id: "whatsapp",       label: "WhatsApp Widget",     icon: MessageCircle },
+  { id: "shipping",       label: "Shipping & Delivery", icon: Truck       },
+  { id: "payments",       label: "Payment Methods",     icon: CreditCard  },
+  { id: "abandoned_cart", label: "Abandoned Cart",      icon: ShoppingBag },
+  { id: "birthday",       label: "Birthday Rewards",    icon: Cake        },
+  { id: "first_order",    label: "First Order Discount", icon: Award      },
+  { id: "loyalty",        label: "Loyalty Program",     icon: Award       },
+  { id: "pricing",        label: "Pricing & Tax",       icon: DollarSign  },
+  { id: "social",         label: "Social Media",        icon: Globe       },
+  { id: "footer",         label: "Footer Content",      icon: Globe       },
+];
+
+export function SettingsClient({ initialSettings }: Props) {
+  const [activeTab, setActiveTab] = useState<TabId>("restaurant");
+  const [settings, setSettings] = useState(initialSettings);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const updateSetting = (category: TabId, key: string, value: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      [category]: { ...(prev[category] ?? {}), [key]: value },
+    }));
+  };
+
+  const saveCurrentTab = async () => {
+    setSaving(true);
+    const tabSettings = settings[activeTab] ?? {};
+
+    if (activeTab === "whatsapp") {
+      const config = {
+        enabled:          (tabSettings.enabled ?? "true") === "true",
+        phone:            tabSettings.phone ?? "",
+        communityLink:    tabSettings.communityLink ?? "",
+        greeting:         tabSettings.greeting ?? "Hi! I'm interested in Denova PK.",
+        directLabel:      tabSettings.directLabel ?? "Direct Message",
+        communityLabel:   tabSettings.communityLabel ?? "Join Community",
+        directSubtext:    tabSettings.directSubtext ?? "Chat with our support team",
+        communitySubtext: tabSettings.communitySubtext ?? "Join our WhatsApp community",
+      };
+
+      try {
+        const res = await fetch("/api/settings", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            settings: [{ key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }]
+          }),
+        });
+        if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+      } catch {}
+      setSaving(false);
+      return;
+    }
+
+    const payload = Object.entries(tabSettings).map(([key, value]) => ({
+      key, value, category: activeTab,
+    }));
+
+    try {
+      const res = await fetch("/api/settings", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ settings: payload }),
+      });
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    } catch {}
+    setSaving(false);
+  };
+
+  const whatsappSettings = (() => {
+    if (settings.whatsapp && Object.keys(settings.whatsapp).length > 0) {
+      return settings.whatsapp;
+    }
+    return {};
+  })();
+
+  return (
+    <div className="max-w-6xl space-y-5">
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
+            <Store size={22} className="text-[#3b5f8f]" />
+            Settings
+          </h1>
+          <p className="text-sm text-[#6b7280] mt-0.5">Configure your store and features</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-5">
+
+        <div className="bg-white border border-[#e5e7eb] p-2 h-fit lg:sticky lg:top-24">
+          <nav className="space-y-0.5">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded transition-colors text-left",
+                    active
+                      ? "bg-[#3b5f8f] text-white font-semibold"
+                      : "text-[#6b7280] hover:bg-[#fafaf9] hover:text-[#1a1a1a]"
+                  )}
+                >
+                  <Icon size={15} />
+                  <span className="flex-1">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="space-y-5">
+          <div className="bg-white border border-[#e5e7eb] p-6">
+            {activeTab === "restaurant"     && <RestaurantTab     settings={settings.restaurant     ?? {}} onChange={(k, v) => updateSetting("restaurant", k, v)} />}
+            {activeTab === "contact"        && <ContactTab        settings={settings.contact        ?? {}} onChange={(k, v) => updateSetting("contact", k, v)} />}
+            {activeTab === "whatsapp"       && <WhatsAppTab       settings={whatsappSettings              } onChange={(k, v) => updateSetting("whatsapp", k, v)} />}
+            {activeTab === "shipping"       && <ShippingTab       settings={settings.shipping       ?? {}} onChange={(k, v) => updateSetting("shipping", k, v)} />}
+            {activeTab === "payments"       && <PaymentMethodsTab settings={settings.payments      ?? {}} onChange={(k, v) => updateSetting("payments", k, v)} />}
+            {activeTab === "abandoned_cart" && <AbandonedCartTab  settings={settings.abandoned_cart ?? {}} onChange={(k, v) => updateSetting("abandoned_cart", k, v)} />}
+            {activeTab === "birthday"       && <BirthdayTab       settings={settings.birthday       ?? {}} onChange={(k, v) => updateSetting("birthday", k, v)} />}
+            {activeTab === "first_order"    && <FirstOrderTab     settings={settings.first_order    ?? {}} onChange={(k, v) => updateSetting("first_order", k, v)} />}
+            {activeTab === "loyalty"        && <LoyaltyTab        settings={settings.loyalty        ?? {}} onChange={(k, v) => updateSetting("loyalty", k, v)} />}
+            {activeTab === "pricing"        && <PricingTab        settings={settings.pricing        ?? {}} onChange={(k, v) => updateSetting("pricing", k, v)} />}
+            {activeTab === "social"         && <SocialTab         settings={settings.social         ?? {}} onChange={(k, v) => updateSetting("social", k, v)} />}
+            {activeTab === "footer"         && <FooterTab         settings={settings.footer         ?? {}} onChange={(k, v) => updateSetting("footer", k, v)} />}
+          </div>
+
+          <div className="flex justify-end">
+            <Button variant="primary" size="md" onClick={saveCurrentTab} disabled={saving}>
+              {saved ? (<><CheckCircle size={15} />Saved!</>) : (<><Save size={15} />{saving ? "Saving..." : "Save Changes"}</>)}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface TabProps {
+  settings: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+}
+
+function Field({
+  label, id, value, onChange, type = "text", hint, rows,
+}: {
+  label: string; id: string; value: string;
+  onChange: (v: string) => void;
+  type?: string; hint?: string; rows?: number;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold tracking-wide uppercase text-[#1a1a1a] mb-1.5">
+        {label}
+      </label>
+      {rows ? (
+        <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y" />
+      ) : (
+        <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)}
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+      )}
+      {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
+    </div>
+  );
+}
+
+function RestaurantTab({ settings, onChange }: TabProps) {
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Store size={16} className="text-[#3b5f8f]" />
+        Brand Information
+      </h2>
+      <div className="space-y-4">
+        <Field label="Brand Name" id="brand_name" value={settings.brand_name ?? ""} onChange={(v) => onChange("brand_name", v)} />
+        <Field label="Tagline" id="brand_tagline" value={settings.brand_tagline ?? ""} onChange={(v) => onChange("brand_tagline", v)} hint="Short slogan shown across the site" />
+        <Field label="Description" id="brand_description" value={settings.brand_description ?? ""} onChange={(v) => onChange("brand_description", v)} rows={3} />
+        <Field label="City" id="brand_city" value={settings.brand_city ?? ""} onChange={(v) => onChange("brand_city", v)} />
+        <Field label="Full Address" id="brand_address" value={settings.brand_address ?? ""} onChange={(v) => onChange("brand_address", v)} rows={2}
+          hint="Shown on Contact page and legal pages (Privacy, Terms)" />
+        <Field label="Established Year" id="brand_year" value={settings.brand_year ?? ""} onChange={(v) => onChange("brand_year", v)} />
+
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">Legal Pages</h3>
+          <Field
+            label="Last Updated Date"
+            id="legal_last_updated"
+            value={settings.legal_last_updated ?? "July 2026"}
+            onChange={(v) => onChange("legal_last_updated", v)}
+            hint="Shown at top of Privacy Policy and Terms of Service. e.g. 'July 2026'. Update whenever you revise the policies."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactTab({ settings, onChange }: TabProps) {
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Phone size={16} className="text-[#3b5f8f]" />
+        Contact Information
+      </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        These details are shown on the Contact page, legal pages (Privacy, Terms, Shipping), and in the footer.
+      </p>
+      <div className="space-y-4">
+        <Field label="Primary Phone" id="contact_phone_primary" value={settings.contact_phone_primary ?? ""} onChange={(v) => onChange("contact_phone_primary", v)} type="tel" hint="Shown across the site. e.g. +92 300 123 4567" />
+        <Field label="Secondary Phone" id="contact_phone_secondary" value={settings.contact_phone_secondary ?? ""} onChange={(v) => onChange("contact_phone_secondary", v)} type="tel" />
+        <Field label="Email" id="contact_email" value={settings.contact_email ?? ""} onChange={(v) => onChange("contact_email", v)} type="email" />
+        <Field label="WhatsApp Number" id="contact_whatsapp" value={settings.contact_whatsapp ?? ""} onChange={(v) => onChange("contact_whatsapp", v)} type="tel" hint="Include country code, no spaces. e.g. +923001234567" />
+      </div>
+    </div>
+  );
+}
+
+function WhatsAppTab({ settings, onChange }: TabProps) {
+  const enabled = (settings.enabled ?? "true") === "true";
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <MessageCircle size={16} className="text-[#3b5f8f]" />
+        WhatsApp Floating Widget
+      </h2>
+      <div className="space-y-4">
+        <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
+          <input type="checkbox" checked={enabled}
+            onChange={(e) => onChange("enabled", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#3b5f8f]" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Show floating WhatsApp button on website</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Appears in bottom-right corner of every page</p>
+          </div>
+        </label>
+
+        <div className="pt-2">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">Direct Message Option</h3>
+          <div className="space-y-4">
+            <Field label="WhatsApp Phone Number" id="phone"
+              value={settings.phone ?? ""} onChange={(v) => onChange("phone", v)} type="tel" />
+            <Field label="Greeting Message (pre-filled in chat)" id="greeting"
+              value={settings.greeting ?? "Hi! I'm interested in Denova PK."}
+              onChange={(v) => onChange("greeting", v)} rows={2} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Button Label" id="directLabel"
+                value={settings.directLabel ?? "Direct Message"}
+                onChange={(v) => onChange("directLabel", v)} />
+              <Field label="Button Subtext" id="directSubtext"
+                value={settings.directSubtext ?? "Chat with our support team"}
+                onChange={(v) => onChange("directSubtext", v)} />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">Community Option</h3>
+          <div className="space-y-4">
+            <Field label="Community / Group Invite Link" id="communityLink"
+              value={settings.communityLink ?? ""}
+              onChange={(v) => onChange("communityLink", v)} type="url" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Button Label" id="communityLabel"
+                value={settings.communityLabel ?? "Join Community"}
+                onChange={(v) => onChange("communityLabel", v)} />
+              <Field label="Button Subtext" id="communitySubtext"
+                value={settings.communitySubtext ?? "Join our WhatsApp community"}
+                onChange={(v) => onChange("communitySubtext", v)} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AbandonedCartTab({ settings, onChange }: TabProps) {
+  const enabled = settings.abandoned_cart_enabled === "true";
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <ShoppingBag size={16} className="text-[#3b5f8f]" />
+        Abandoned Cart Settings
+      </h2>
+      <div className="space-y-4">
+        <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
+          <input type="checkbox" checked={enabled}
+            onChange={(e) => onChange("abandoned_cart_enabled", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#3b5f8f]" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Enable Abandoned Cart Tracking</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Track customers who leave without completing checkout</p>
+          </div>
+        </label>
+        <Field label="Inactivity Timeout (minutes)" id="abandoned_cart_timeout_minutes"
+          value={settings.abandoned_cart_timeout_minutes ?? "15"} onChange={(v) => onChange("abandoned_cart_timeout_minutes", v)}
+          type="number" hint="After this many minutes of inactivity, the cart is marked as abandoned" />
+        <Field label="WhatsApp Follow-up Message" id="abandoned_cart_wa_message"
+          value={settings.abandoned_cart_wa_message ?? ""} onChange={(v) => onChange("abandoned_cart_wa_message", v)}
+          rows={6} hint="Available tokens: {{name}}, {{amount}}" />
+      </div>
+    </div>
+  );
+}
+
+function BirthdayTab({ settings, onChange }: TabProps) {
+  const enabled = settings.birthday_enabled === "true";
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Cake size={16} className="text-[#3b5f8f]" />
+        Birthday Rewards
+      </h2>
+      <div className="space-y-4">
+        <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
+          <input type="checkbox" checked={enabled}
+            onChange={(e) => onChange("birthday_enabled", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#3b5f8f]" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Enable Birthday Rewards</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Automatic birthday discount for customers</p>
+          </div>
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Discount Percentage (%)" id="birthday_discount_pct" value={settings.birthday_discount_pct ?? "15"} onChange={(v) => onChange("birthday_discount_pct", v)} type="number" hint="Set 0 to use fixed amount instead" />
+          <Field label="Fixed Discount Amount (Rs.)" id="birthday_fixed_amount" value={settings.birthday_fixed_amount ?? "0"} onChange={(v) => onChange("birthday_fixed_amount", v)} type="number" hint="Use instead of %. Set 0 to disable" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Minimum Order (Rs.)" id="birthday_min_order" value={settings.birthday_min_order ?? "3000"} onChange={(v) => onChange("birthday_min_order", v)} type="number" />
+          <Field label="Offer Validity (Days)" id="birthday_validity_days" value={settings.birthday_validity_days ?? "7"} onChange={(v) => onChange("birthday_validity_days", v)} type="number" />
+        </div>
+        <Field label="Reminder Period (Days)" id="birthday_reminder_days" value={settings.birthday_reminder_days ?? "7"} onChange={(v) => onChange("birthday_reminder_days", v)} type="number" />
+        <Field label="Free Gift Description (optional)" id="birthday_free_gift" value={settings.birthday_free_gift ?? ""} onChange={(v) => onChange("birthday_free_gift", v)} />
+        <Field label="WhatsApp Message Template" id="birthday_wa_message" value={settings.birthday_wa_message ?? ""} onChange={(v) => onChange("birthday_wa_message", v)} rows={6} hint="Tokens: {{name}} {{discount}} {{minOrder}} {{days}}" />
+      </div>
+    </div>
+  );
+}
+
+function LoyaltyTab({ settings, onChange }: TabProps) {
+  const enabled = settings.loyalty_enabled === "true";
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Award size={16} className="text-[#3b5f8f]" />
+        Loyalty Program
+      </h2>
+      <div className="space-y-4">
+        <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
+          <input type="checkbox" checked={enabled}
+            onChange={(e) => onChange("loyalty_enabled", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#3b5f8f]" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Enable Loyalty Program</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Customers earn points on every order</p>
+          </div>
+        </label>
+        <Field label="Program Name" id="loyalty_program_name" value={settings.loyalty_program_name ?? "Denova Rewards"} onChange={(v) => onChange("loyalty_program_name", v)} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Earning Rate (%)" id="loyalty_earning_rate" value={settings.loyalty_earning_rate ?? "5"} onChange={(v) => onChange("loyalty_earning_rate", v)} type="number" />
+          <Field label="Point Value (Rs. per point)" id="loyalty_point_value" value={settings.loyalty_point_value ?? "1"} onChange={(v) => onChange("loyalty_point_value", v)} type="number" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Minimum Points to Redeem" id="loyalty_min_redemption" value={settings.loyalty_min_redemption ?? "100"} onChange={(v) => onChange("loyalty_min_redemption", v)} type="number" />
+          <Field label="Max Redemption % per Order" id="loyalty_max_redemption_pct" value={settings.loyalty_max_redemption_pct ?? "20"} onChange={(v) => onChange("loyalty_max_redemption_pct", v)} type="number" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PricingTab({ settings, onChange }: TabProps) {
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <DollarSign size={16} className="text-[#3b5f8f]" />
+        Pricing &amp; Tax
+      </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        Shipping costs are managed in the Shipping tab. Payment methods are managed in the Payment Methods tab.
+      </p>
+      <div className="space-y-4">
+        <Field label="Tax Percentage (%)" id="tax_percentage" value={settings.tax_percentage ?? "0"} onChange={(v) => onChange("tax_percentage", v)} type="number" />
+        <Field label="Currency Symbol" id="currency_symbol" value={settings.currency_symbol ?? "Rs."} onChange={(v) => onChange("currency_symbol", v)} />
+      </div>
+    </div>
+  );
+}
+
+function SocialTab({ settings, onChange }: TabProps) {
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Globe size={16} className="text-[#3b5f8f]" />
+        Social Media Links
+      </h2>
+      <div className="space-y-4">
+        <Field label="Facebook URL" id="social_facebook" value={settings.social_facebook ?? ""} onChange={(v) => onChange("social_facebook", v)} type="url" />
+        <Field label="Instagram URL" id="social_instagram" value={settings.social_instagram ?? ""} onChange={(v) => onChange("social_instagram", v)} type="url" />
+        <Field label="TikTok URL" id="social_tiktok" value={settings.social_tiktok ?? ""} onChange={(v) => onChange("social_tiktok", v)} type="url" />
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\api\settings\[key]\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { getSetting } from "@/lib/db/repositories/settings";
+
+// Public API to read a single setting value (safe - only for non-sensitive keys)
+const PUBLIC_KEYS = [
+  "abandoned_cart_timeout_minutes",
+  "abandoned_cart_enabled",
+  "loyalty_enabled",
+  "loyalty_earning_rate",
+  "loyalty_point_value",
+  "loyalty_min_redemption",
+  "loyalty_max_redemption_pct",
+  "birthday_enabled",
+  "birthday_discount_pct",
+  "birthday_min_order",
+  "free_shipping_threshold",
+  "currency_symbol",
+  "tax_percentage",
+  "brand_name",
+  "hero_rotation_seconds",
+];
+
+export async function GET(_: Request, { params }: { params: Promise<{ key: string }> }) {
+  const { key } = await params;
+
+  if (!PUBLIC_KEYS.includes(key)) {
+    return NextResponse.json({ error: "Not public" }, { status: 403 });
+  }
+
+  const value = await getSetting(key);
+  return NextResponse.json({ key, value });
+}
+
+================================================================================
+FILE: user-panel\src\lib\siteInfo.ts
+================================================================================
+
+import { getStringSetting } from "@/lib/db/repositories/settings";
+
+/**
+ * Site-wide dynamic info sourced from admin settings.
+ * Used by legal pages, contact page, and any other page
+ * that needs brand contact information.
+ *
+ * All fields have sensible fallbacks so pages never break.
+ */
+export interface SiteInfo {
+  email:              string;
+  phone:              string;
+  whatsapp:           string;
+  address:            string;
+  brandName:          string;
+  brandYear:          string;
+  legalLastUpdated:   string;
+}
+
+const DEFAULTS: SiteInfo = {
+  email:            "hello@denovapk.com",
+  phone:            "+92 300 123 4567",
+  whatsapp:         "+923001234567",
+  address:          "Gulberg III, Lahore, Pakistan",
+  brandName:        "Denova PK",
+  brandYear:        "2026",
+  legalLastUpdated: "July 2026",
+};
+
+/**
+ * Server-side: load all site info in a single call.
+ * Use in server components (RSC / page.tsx).
+ */
+export async function getSiteInfo(): Promise<SiteInfo> {
+  try {
+    const [email, phone, whatsapp, address, brandName, brandYear, legalLastUpdated] = await Promise.all([
+      getStringSetting("contact_email",          DEFAULTS.email),
+      getStringSetting("contact_phone_primary",  DEFAULTS.phone),
+      getStringSetting("contact_whatsapp",       DEFAULTS.whatsapp),
+      getStringSetting("brand_address",          DEFAULTS.address),
+      getStringSetting("brand_name",             DEFAULTS.brandName),
+      getStringSetting("brand_year",             DEFAULTS.brandYear),
+      getStringSetting("legal_last_updated",     DEFAULTS.legalLastUpdated),
+    ]);
+
+    return {
+      email:            email          || DEFAULTS.email,
+      phone:            phone          || DEFAULTS.phone,
+      whatsapp:         whatsapp       || DEFAULTS.whatsapp,
+      address:          address        || DEFAULTS.address,
+      brandName:        brandName      || DEFAULTS.brandName,
+      brandYear:        brandYear      || DEFAULTS.brandYear,
+      legalLastUpdated: legalLastUpdated || DEFAULTS.legalLastUpdated,
+    };
+  } catch (err) {
+    console.error("Failed to load site info, using defaults:", err);
+    return DEFAULTS;
+  }
+}
+
+/**
+ * Helper: strip everything except digits + leading '+' from phone.
+ * Useful for building tel:/wa.me: links.
+ */
+export function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, "");
+}
+
+================================================================================
+FILE: user-panel\src\lib\db\repositories\settings.ts
+================================================================================
+
+import { db } from "@/lib/db/client";
+import { generateId, now } from "@/lib/db/helpers";
+import type { DbSetting } from "@/lib/db/types";
+
+// ─── Get single setting by key ───────────────────────────
+export async function getSetting(key: string): Promise<string | null> {
+  const result = await db.execute({
+    sql:  "SELECT value FROM settings WHERE key = ? LIMIT 1",
+    args: [key],
+  });
+  if (result.rows.length === 0) return null;
+  return result.rows[0].value as string;
+}
+
+// ─── Get typed setting values ────────────────────────────
+export async function getBoolSetting(key: string, defaultValue = false): Promise<boolean> {
+  const val = await getSetting(key);
+  if (val === null) return defaultValue;
+  return val === "true" || val === "1";
+}
+
+export async function getNumberSetting(key: string, defaultValue = 0): Promise<number> {
+  const val = await getSetting(key);
+  if (val === null) return defaultValue;
+  const num = Number(val);
+  return isNaN(num) ? defaultValue : num;
+}
+
+export async function getStringSetting(key: string, defaultValue = ""): Promise<string> {
+  const val = await getSetting(key);
+  return val ?? defaultValue;
+}
+
+// ─── Get all settings by category ────────────────────────
+export async function getSettingsByCategory(category: string): Promise<Record<string, string>> {
+  const result = await db.execute({
+    sql:  "SELECT key, value FROM settings WHERE category = ?",
+    args: [category],
+  });
+
+  const map: Record<string, string> = {};
+  for (const row of result.rows) {
+    map[row.key as string] = row.value as string;
+  }
+  return map;
+}
+
+// ─── Get ALL settings (grouped by category) ──────────────
+export async function getAllSettings(): Promise<Record<string, Record<string, string>>> {
+  const result = await db.execute("SELECT key, value, category FROM settings ORDER BY category, key");
+
+  const grouped: Record<string, Record<string, string>> = {};
+  for (const row of result.rows) {
+    const cat = row.category as string;
+    if (!grouped[cat]) grouped[cat] = {};
+    grouped[cat][row.key as string] = row.value as string;
+  }
+  return grouped;
+}
+
+// ─── Update or insert a setting ──────────────────────────
+export async function setSetting(key: string, value: string, category = "general"): Promise<void> {
+  const existing = await db.execute({
+    sql:  "SELECT id FROM settings WHERE key = ? LIMIT 1",
+    args: [key],
+  });
+
+  if (existing.rows.length > 0) {
+    await db.execute({
+      sql:  "UPDATE settings SET value = ?, updatedAt = ? WHERE key = ?",
+      args: [value, now(), key],
+    });
+  } else {
+    await db.execute({
+      sql:  "INSERT INTO settings (id, key, value, category, updatedAt) VALUES (?, ?, ?, ?, ?)",
+      args: [generateId(), key, value, category, now()],
+    });
+  }
+}
+
+// ─── Bulk update multiple settings ───────────────────────
+export async function setMultipleSettings(
+  settings: Array<{ key: string; value: string; category?: string }>
+): Promise<void> {
+  for (const s of settings) {
+    await setSetting(s.key, s.value, s.category ?? "general");
+  }
+}
+
+// ─── Helper: Get common feature flags ────────────────────
+export async function getFeatureFlags() {
+  const [abandonedCart, loyalty, birthday] = await Promise.all([
+    getBoolSetting("abandoned_cart_enabled", true),
+    getBoolSetting("loyalty_enabled",        true),
+    getBoolSetting("birthday_enabled",       true),
+  ]);
+
+  return {
+    abandonedCartEnabled: abandonedCart,
+    loyaltyEnabled:       loyalty,
+    birthdayEnabled:      birthday,
+  };
+}
+
+================================================================================
+FILE: user-panel\src\components\ui\Button.tsx
+================================================================================
+
+import { cn } from "@/lib/utils";
+import { type ButtonHTMLAttributes, forwardRef } from "react";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "gold";
+  size?: "sm" | "md" | "lg";
+  isLoading?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      isLoading = false,
+      disabled,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const base =
+      "inline-flex items-center justify-center font-medium tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+
+    const variants = {
+      primary:
+        "bg-[#1a1a1a] text-white hover:bg-[#333333] focus:ring-[#1a1a1a] active:scale-[0.98]",
+      secondary:
+        "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df] focus:ring-[#3b5f8f] active:scale-[0.98]",
+      outline:
+        "border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white focus:ring-[#1a1a1a] active:scale-[0.98]",
+      ghost:
+        "text-[#1a1a1a] hover:bg-[#f5f0e8] focus:ring-[#3b5f8f] active:scale-[0.98]",
+      gold:
+        "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] focus:ring-[#3b5f8f] active:scale-[0.98]",
+    };
+
+    const sizes = {
+      sm: "text-xs px-4 py-2 rounded",
+      md: "text-sm px-6 py-3 rounded",
+      lg: "text-base px-8 py-4 rounded",
+    };
+
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || isLoading}
+        className={cn(base, variants[variant], sizes[size], className)}
+        {...props}
+      >
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            Loading...
+          </span>
+        ) : (
+          children
+        )}
+      </button>
+    );
+  }
+);
+
+Button.displayName = "Button";
+export { Button };
+
+================================================================================
+FILE: user-panel\src\components\animations\FadeIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface FadeInProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;      // ms
+  duration?: number;   // ms
+  threshold?: number;  // 0-1
+  once?: boolean;
+}
+
+export function FadeIn({
+  children,
+  className,
+  delay = 0,
+  duration = 600,
+  threshold = 0.15,
+  once = true,
+}: FadeInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (once) observer.disconnect();
+        } else if (!once) {
+          setIsVisible(false);
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold, once]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(16px)",
+        transition: shouldAnimate
+          ? `opacity ${duration}ms ease, transform ${duration}ms ease`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\SlideIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface SlideInProps {
+  children:   React.ReactNode;
+  className?: string;
+  from?:      "left" | "right" | "top" | "bottom";
+  distance?:  number;    // px
+  delay?:     number;
+  duration?:  number;
+  threshold?: number;
+}
+
+export function SlideIn({
+  children,
+  className,
+  from      = "left",
+  distance  = 40,
+  delay     = 0,
+  duration  = 700,
+  threshold = 0.15,
+}: SlideInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold]);
+
+  const getTransform = () => {
+    if (isVisible) return "translate(0, 0)";
+    switch (from) {
+      case "left":   return `translate(-${distance}px, 0)`;
+      case "right":  return `translate(${distance}px, 0)`;
+      case "top":    return `translate(0, -${distance}px)`;
+      case "bottom": return `translate(0, ${distance}px)`;
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: getTransform(),
+        transition: shouldAnimate
+          ? `opacity ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\SlideUp.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface SlideUpProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  stagger?: number; // extra delay per index
+  index?: number;
+}
+
+export function SlideUp({
+  children,
+  className,
+  delay = 0,
+  stagger = 0,
+  index = 0,
+}: SlideUpProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  const totalDelay = delay + stagger * index;
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(32px)",
+        transition: shouldAnimate
+          ? `opacity 600ms ease, transform 600ms ease`
+          : "none",
+        transitionDelay: `${totalDelay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\LetterReveal.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface LetterRevealProps {
+  text:       string;
+  className?: string;
+  delay?:     number;     // start delay
+  stagger?:   number;     // ms between letters
+  threshold?: number;
+  as?:        "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
+}
+
+export function LetterReveal({
+  text,
+  className,
+  delay     = 0,
+  stagger   = 40,
+  threshold = 0.3,
+  as: Tag   = "span",
+}: LetterRevealProps) {
+  const ref = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold]);
+
+  // Split into words to preserve line breaks
+  const words = text.split(" ");
+
+  return (
+    <Tag
+      ref={ref as React.RefObject<HTMLHeadingElement>}
+      className={cn("inline-block", className)}
+      aria-label={text}
+    >
+      {words.map((word, wi) => (
+        <span key={wi} className="inline-block whitespace-nowrap" aria-hidden="true">
+          {word.split("").map((char, ci) => {
+            const index = words.slice(0, wi).reduce((sum, w) => sum + w.length, 0) + ci;
+            return (
+              <span
+                key={ci}
+                className="inline-block"
+                style={{
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? "translateY(0)" : "translateY(0.5em)",
+                  transition: shouldAnimate
+                    ? `opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+                    : "none",
+                  transitionDelay: `${delay + index * stagger}ms`,
+                }}
+              >
+                {char}
+              </span>
+            );
+          })}
+          {wi < words.length - 1 && <span>&nbsp;</span>}
+        </span>
+      ))}
+    </Tag>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\api\newsletter\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db/client";
+import { generateId, now } from "@/lib/db/helpers";
+
+export async function POST(req: Request) {
+  try {
+    const { email, source } = await req.json();
+    if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+
+    const existing = await db.execute({
+      sql: "SELECT id FROM newsletter WHERE email = ?",
+      args: [email.toLowerCase()],
+    });
+
+    if (existing.rows.length > 0) {
+      return NextResponse.json({ message: "Already subscribed" });
+    }
+
+    await db.execute({
+      sql:  "INSERT INTO newsletter (id, email, isSubscribed, source, createdAt, updatedAt) VALUES (?, ?, 1, ?, ?, ?)",
+      args: [generateId(), email.toLowerCase(), source ?? "footer", now(), now()],
+    });
+
+    return NextResponse.json({ success: true }, { status: 201 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
+  }
+}
+
+================================================================================
+FILE: user-panel\src\lib\constants.ts
+================================================================================
+
+export const SITE_NAME = "Denova PK";
+export const SITE_DESCRIPTION = "Premium Denim Clothing - Crafted for the Modern You. Pakistan's finest selvedge jeans and denim apparel. Summer 2026 Collection.";
+
+// ══════════════════════════════════════════════════════════
+// HARDCODED to always point to production domain
+// ══════════════════════════════════════════════════════════
+export const SITE_URL = "https://denovapk.com";
+
+export const BRAND_COLORS = {
+  primary:    "#1a1a1a",
+  secondary:  "#3b5f8f",
+  accent:     "#f5f0e8",
+  background: "#ffffff",
+  surface:    "#fafaf9",
+  text:       "#111111",
+  muted:      "#6b7280",
+  border:     "#e5e7eb",
+} as const;
+
+export const NAV_LINKS = [
+  { label: "Shop",         href: "/shop" },
+  { label: "Collections",  href: "/collections" },
+  { label: "New Arrivals", href: "/shop?filter=new" },
+  { label: "Sale",         href: "/shop?filter=sale" },
+  { label: "About",        href: "/about" },
+] as const;
+
+export const SIZES = ["28", "30", "32", "34", "36", "38", "40"] as const;
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending:    "Pending",
+  confirmed:  "Confirmed",
+  processing: "Processing",
+  shipped:    "Shipped",
+  delivered:  "Delivered",
+  cancelled:  "Cancelled",
+  refunded:   "Refunded",
+};
+
+// ═══════════════════════════════════════════════════════════
+// FALLBACK ONLY — actual value comes from admin settings via
+// /api/shipping-config. Do NOT import this for shipping logic.
+// ═══════════════════════════════════════════════════════════
+export const FREE_SHIPPING_THRESHOLD = 5000;
+
+export const ITEMS_PER_PAGE = 12;
+
+export const BRAND_YEAR = 2026;
+export const BRAND_SEASON = "Summer 2026";
+
+================================================================================
+FILE: user-panel\src\lib\fonts.ts
+================================================================================
+
+import { Inter, Playfair_Display, Cormorant_Garamond } from "next/font/google";
+
+export const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+export const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+export const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-cormorant",
+  display: "swap",
+});

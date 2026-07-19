@@ -1,0 +1,1110 @@
+================================================================================
+REMOVE PREMIUM / SUPER PREMIUM TABS FROM 'SHOP BY WAIST' SECTION
+Generated: 2026-07-19 22:49:17
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\sections\NewArrivals.tsx
+================================================================================
+
+"use client";
+import Link from "next/link";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { TextReveal } from "@/components/animations/TextReveal";
+import { ScaleIn } from "@/components/animations/ScaleIn";
+import { ProductCard } from "@/components/product/ProductCard";
+import { cn } from "@/lib/utils";
+import type { Product } from "@/types";
+
+type Tab = "new" | "bestsellers";
+
+interface Props {
+  newArrivals: Product[];
+  bestSellers: Product[];
+}
+
+const MAX_PRODUCTS = 16;
+
+export function NewArrivals({ newArrivals, bestSellers }: Props) {
+  const [activeTab,      setActiveTab]      = useState<Tab>("new");
+  const [selectedWaists, setSelectedWaists] = useState<number[]>([]);
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
+
+  const tabProducts = activeTab === "new" ? newArrivals : bestSellers;
+
+  const availableWaists = useMemo(() => {
+    const set = new Set<number>();
+    for (const p of tabProducts) {
+      if (p.waist !== null && p.waist !== undefined) set.add(p.waist);
+    }
+    return Array.from(set).sort((a, b) => a - b);
+  }, [tabProducts]);
+
+  useEffect(() => {
+    setSelectedWaists([]);
+    setIsTabSwitching(true);
+    const t = setTimeout(() => setIsTabSwitching(false), 400);
+    return () => clearTimeout(t);
+  }, [activeTab]);
+
+  useEffect(() => {
+    setSelectedWaists((prev) => prev.filter((w) => availableWaists.includes(w)));
+  }, [availableWaists]);
+
+  const toggleWaist = (waist: number) => {
+    setSelectedWaists((prev) =>
+      prev.includes(waist) ? prev.filter((w) => w !== waist) : [...prev, waist]
+    );
+  };
+
+  const clearWaists = () => setSelectedWaists([]);
+
+  const displayProducts = useMemo(() => {
+    const list = selectedWaists.length === 0
+      ? tabProducts
+      : tabProducts.filter(
+          (p) => p.waist !== null && p.waist !== undefined && selectedWaists.includes(p.waist)
+        );
+    return list.slice(0, MAX_PRODUCTS);
+  }, [tabProducts, selectedWaists]);
+
+  const viewAllHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedWaists.length > 0) {
+      params.set("waist", [...selectedWaists].sort((a, b) => a - b).join(","));
+    }
+    const collectionSlug = activeTab === "new" ? "premium" : "super-premium";
+    const query = params.toString();
+    return query ? `/collections/${collectionSlug}?${query}` : `/collections/${collectionSlug}`;
+  }, [activeTab, selectedWaists]);
+
+  const waistLabel = selectedWaists.length > 0
+    ? `(${[...selectedWaists].sort((a, b) => a - b).join(", ")}")`
+    : "";
+
+  return (
+    <section className="py-16 sm:py-20 lg:py-24 bg-[#fafaf9]">
+      <div className="site-container">
+
+        <div className="text-center mb-8 lg:mb-10">
+          <FadeIn>
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              Discover
+            </span>
+          </FadeIn>
+          <TextReveal as="h2" delay={100}>
+            <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mt-3 block">
+              Shop by Waist
+            </span>
+          </TextReveal>
+
+          <FadeIn delay={200}>
+            <div className="flex items-center justify-center gap-6 mt-6">
+              <button
+                onClick={() => setActiveTab("new")}
+                className={cn(
+                  "text-sm font-medium tracking-wide pb-1.5 border-b-2 transition-all duration-300",
+                  activeTab === "new"
+                    ? "border-[#3b5f8f] text-[#1a1a1a]"
+                    : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+                )}
+              >Premium</button>
+              <button
+                onClick={() => setActiveTab("bestsellers")}
+                className={cn(
+                  "text-sm font-medium tracking-wide pb-1.5 border-b-2 transition-all duration-300",
+                  activeTab === "bestsellers"
+                    ? "border-[#3b5f8f] text-[#1a1a1a]"
+                    : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+                )}
+              >Super Premium</button>
+            </div>
+          </FadeIn>
+        </div>
+
+        {availableWaists.length >= 2 && (
+          <FadeIn delay={250}>
+            <div className="flex items-center justify-center gap-2 mb-8 lg:mb-10 flex-wrap px-4">
+              <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#6b7280] mr-2">
+                Waist:
+              </span>
+
+              <ScaleIn from={0.7} delay={0}>
+                <button
+                  onClick={clearWaists}
+                  className={cn(
+                    "min-w-[44px] h-9 px-3 text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 border hover:scale-105 active:scale-95",
+                    selectedWaists.length === 0
+                      ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                      : "border-[#d1d5db] bg-white text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                  )}
+                >
+                  All
+                </button>
+              </ScaleIn>
+
+              {availableWaists.map((waist, i) => {
+                const isActive = selectedWaists.includes(waist);
+                return (
+                  <ScaleIn key={waist} from={0.7} delay={80 + i * 60}>
+                    <button
+                      onClick={() => toggleWaist(waist)}
+                      className={cn(
+                        "min-w-[44px] h-9 px-3 text-xs font-semibold tracking-[0.1em] transition-all duration-200 border hover:scale-105 active:scale-95",
+                        isActive
+                          ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                          : "border-[#d1d5db] bg-white text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                      )}
+                      aria-pressed={isActive}
+                    >
+                      {waist}
+                    </button>
+                  </ScaleIn>
+                );
+              })}
+
+              {selectedWaists.length > 0 && (
+                <button
+                  onClick={clearWaists}
+                  className="ml-2 text-[10px] text-[#3b5f8f] hover:text-[#2d4a72] underline animate-fade-zoom-in"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </FadeIn>
+        )}
+
+        {displayProducts.length > 0 ? (
+          <div
+            key={activeTab}
+            className={cn(
+              "transition-opacity duration-300",
+              isTabSwitching ? "opacity-0" : "opacity-100"
+            )}
+          >
+            <MobileSlider products={displayProducts} />
+            <DesktopSlider products={displayProducts} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-zoom-in">
+            <div className="w-14 h-14 bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#3b5f8f]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-[#1a1a1a] mb-1">
+              No products in{" "}
+              {selectedWaists.length === 1
+                ? `waist size ${selectedWaists[0]}"`
+                : `waist sizes ${[...selectedWaists].sort((a, b) => a - b).join(", ")}"`}
+            </p>
+            <button onClick={clearWaists} className="text-xs text-[#3b5f8f] hover:text-[#2d4a72] underline mt-1">
+              Show all sizes
+            </button>
+          </div>
+        )}
+
+        {displayProducts.length > 0 && (
+          <FadeIn delay={500}>
+            <div className="text-center mt-10 lg:mt-14">
+              <Link
+                href={viewAllHref}
+                className="shimmer-btn group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 hover-lift"
+              >
+                <span>View All {activeTab === "new" ? "Premium" : "Super Premium"}</span>
+                {waistLabel && (
+                  <span className="text-[#3b5f8f] group-hover:text-white transition-colors">
+                    {waistLabel}
+                  </span>
+                )}
+                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1.5" />
+              </Link>
+            </div>
+          </FadeIn>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MOBILE SLIDER
+// ═══════════════════════════════════════════════════════════
+function MobileSlider({ products }: { products: Product[] }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [pageIdx, setPageIdx] = useState(0);
+
+  const pages = useMemo(() => {
+    const chunks: Product[][] = [];
+    for (let i = 0; i < products.length; i += 4) {
+      chunks.push(products.slice(i, i + 4));
+    }
+    return chunks;
+  }, [products]);
+
+  const onScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== pageIdx) setPageIdx(idx);
+  }, [pageIdx]);
+
+  const scrollToPage = (i: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  };
+
+  if (pages.length === 0) return null;
+
+  return (
+    <div className="sm:hidden -mx-3">
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar overscroll-x-contain"
+        style={{ scrollBehavior: "auto" }}
+      >
+        {pages.map((page, pi) => (
+          <div key={pi} className="flex-shrink-0 w-full snap-start px-3">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+              {page.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {pages.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-6">
+          {pages.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => scrollToPage(i)}
+              aria-label={`Go to page ${i + 1}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                i === pageIdx
+                  ? "w-6 bg-[#1a1a1a]"
+                  : "w-1.5 bg-[#d1d5db] hover:bg-[#9ca3af]"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DESKTOP SLIDER
+// ═══════════════════════════════════════════════════════════
+function DesktopSlider({ products }: { products: Product[] }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft]   = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollerRef.current;
+    if (!el) return;
+    const onScroll = () => updateArrows();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [updateArrows, products]);
+
+  const scrollBy = (dir: "left" | "right") => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const firstCard = el.querySelector("[data-card]") as HTMLElement | null;
+    const step = firstCard ? firstCard.offsetWidth + 24 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir === "left" ? -step : step, behavior: "smooth" });
+  };
+
+  if (products.length === 0) return null;
+
+  return (
+    <div className="hidden sm:block relative group/slider">
+      <div
+        ref={scrollerRef}
+        className="flex gap-4 lg:gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth overscroll-x-contain pb-2"
+      >
+        {products.map((product) => (
+          <div
+            key={product.id}
+            data-card
+            className="flex-shrink-0 snap-start w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4.5rem)/4)] 2xl:w-[calc((100%-6rem)/5)]"
+          >
+            <ProductCard product={product} />
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={() => scrollBy("left")}
+        aria-label="Scroll left"
+        className={cn(
+          "absolute left-0 top-[42%] -translate-y-1/2 -translate-x-1/3 z-10",
+          "w-11 h-11 rounded-full bg-white border border-[#e5e7eb] shadow-lg",
+          "flex items-center justify-center text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white",
+          "transition-all duration-300",
+          canScrollLeft
+            ? "opacity-100 lg:opacity-0 lg:group-hover/slider:opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        )}
+      >
+        <ChevronLeft size={20} strokeWidth={2} />
+      </button>
+
+      <button
+        onClick={() => scrollBy("right")}
+        aria-label="Scroll right"
+        className={cn(
+          "absolute right-0 top-[42%] -translate-y-1/2 translate-x-1/3 z-10",
+          "w-11 h-11 rounded-full bg-white border border-[#e5e7eb] shadow-lg",
+          "flex items-center justify-center text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white",
+          "transition-all duration-300",
+          canScrollRight
+            ? "opacity-100 lg:opacity-0 lg:group-hover/slider:opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        )}
+      >
+        <ChevronRight size={20} strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\page.tsx
+================================================================================
+
+import { HeroSection }           from "@/components/sections/HeroSection";
+import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
+import { SaleCountdown }         from "@/components/sections/SaleCountdown";
+import { FeaturedCollections }   from "@/components/sections/FeaturedCollections";
+import { BrandTicker }           from "@/components/sections/BrandTicker";
+import { NewArrivals }           from "@/components/sections/NewArrivals";
+import { BrandStory }            from "@/components/sections/BrandStory";
+import { Testimonials }          from "@/components/sections/Testimonials";
+import { GallerySection }        from "@/components/sections/GallerySection";
+import { NewsletterSection }     from "@/components/sections/NewsletterSection";
+import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
+import { getProducts }              from "@/lib/db/repositories/products";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
+import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
+
+type HeroBanner = {
+  isActive: true;
+  sortOrder: number;
+};
+
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
+    getCollectionsWithCounts(),
+    getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
+    getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
+  ]);
+
+  const collections  = dbCollections.map(adaptCollection);
+  const allProducts  = dbAllProducts.map(adaptProduct);
+
+  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
+  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+
+  const testimonials = getMockTestimonials();
+
+  let heroBanners: HeroBanner[] = [];
+  if (heroBannersRaw) {
+    try {
+      const all: unknown[] = JSON.parse(heroBannersRaw);
+      heroBanners = all
+        .filter(
+          (b): b is HeroBanner =>
+            typeof b === "object" &&
+            b !== null &&
+            (b as { isActive?: boolean }).isActive === true &&
+            typeof (b as { sortOrder?: unknown }).sortOrder === "number"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch { heroBanners = []; }
+  }
+
+  return (
+    <>
+      {/* LAYER 1 — HERO */}
+      <FixedHeroBackground>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
+      </FixedHeroBackground>
+
+      {/* LAYER 2 — CONTENT SHELL
+          - overflow-hidden clips the square backgrounds of Sale & Newsletter.
+          - Because this wrapper is BELOW the header, overflow-hidden here 
+            does NOT break the sticky header! */}
+      <div
+        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden"
+        style={{
+          boxShadow: "0 -12px 40px -20px rgba(0, 0, 0, 0.15)",
+        }}
+      >
+        <SaleCountdown />
+        <BrandTicker />
+        <NewArrivals
+          newArrivals={premiumProducts}
+          bestSellers={superPremiumProducts}
+        />
+        <FeaturedCollections collections={collections} />
+        <BrandStory />
+        <Testimonials testimonials={testimonials} />
+        <GallerySection />
+
+        <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">
+          <NewsletterSection />
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductCard.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Heart, ShoppingBag } from "lucide-react";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
+import { cn, getDiscountPercent } from "@/lib/utils";
+import type { Product } from "@/types";
+
+interface ProductCardProps {
+  product: Product;
+  className?: string;
+}
+
+const PLACEHOLDER_URL = "/uploads/placeholder.svg";
+
+function formatPKR(amount: number): string {
+  return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
+}
+
+export function ProductCard({ product, className }: ProductCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [mounted, setMounted]     = useState(false);
+
+  const addToCart      = useCartStore((s) => s.addItem);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const isInWishlist   = useWishlistStore((s) => s.isInWishlist(product.id));
+  const showToast      = useToastStore((s) => s.addToast);
+
+  useEffect(() => setMounted(true), []);
+
+  const sortedImages = [...(product.images ?? [])].sort(
+    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+  );
+  const primaryImage = sortedImages[0] ?? {
+    id: "placeholder", url: PLACEHOLDER_URL, alt: product.name, isPrimary: true,
+  };
+  const secondaryImage = sortedImages[1];
+  const hasSecondary   = Boolean(secondaryImage);
+
+  const hasDiscount = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPercent = hasDiscount
+    ? getDiscountPercent(product.compareAtPrice!, product.price)
+    : 0;
+
+  const uniqueColors = Array.from(
+    new Map(product.variants.map((v) => [v.colorHex, { hex: v.colorHex, name: v.color }])).values()
+  );
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const defaultVariant = product.variants[0];
+    if (!defaultVariant) return;
+
+    addToCart({
+      productId: product.id, variantId: defaultVariant.id,
+      name: product.name, image: primaryImage.url,
+      size: defaultVariant.size, color: defaultVariant.color,
+      colorHex: defaultVariant.colorHex, price: product.price,
+      quantity: 1, slug: product.slug,
+      bgColor: product.bgColor,
+    });
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      id: product.id, productId: product.id,
+      name: product.name, image: primaryImage.url,
+      price: product.price, slug: product.slug,
+      bgColor: product.bgColor,
+    });
+    showToast({
+      type: "success",
+      message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+    });
+  };
+
+  return (
+    <div
+      className={cn("group relative", className)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Link
+        href={`/products/${product.slug}`}
+        className="relative block mb-3 sm:mb-4"
+      >
+        <ProductBgWrapper
+          bgColor={product.bgColor}
+          className={cn(
+            "aspect-[4/5] rounded-xl sm:rounded-2xl",
+            !product.bgColor && "bg-[#f4f2ee]"
+          )}
+        >
+          {/* Primary image — subtle zoom on hover */}
+          <Image
+            src={primaryImage.url}
+            alt={primaryImage.alt}
+            fill
+            className={cn(
+              "object-cover transition-all duration-[900ms] ease-out",
+              hasSecondary && isHovered ? "opacity-0 scale-105" : "opacity-100 scale-100",
+              !hasSecondary && isHovered && "scale-105"
+            )}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            loading="lazy"
+            unoptimized={primaryImage.url === PLACEHOLDER_URL}
+          />
+
+          {/* Secondary image */}
+          {hasSecondary && (
+            <Image
+              src={secondaryImage.url}
+              alt={secondaryImage.alt || product.name}
+              fill
+              className={cn(
+                "object-cover transition-all duration-[900ms] ease-out",
+                isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
+              )}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
+            />
+          )}
+        </ProductBgWrapper>
+
+        {/* Corner accents that reveal on hover — nudged inward to sit inside the rounded corner */}
+        <div
+          className={cn(
+            "absolute top-3 left-3 w-4 h-4 border-t border-l border-[#3b5f8f] transition-all duration-500 pointer-events-none",
+            // Hide the top-left accent when SAVE badge is showing to avoid visual clutter
+            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#3b5f8f] transition-all duration-500 delay-100 pointer-events-none",
+            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
+          )}
+        />
+
+        {/* Wishlist — rounded to match card aesthetic */}
+        <button
+          onClick={handleWishlist}
+          aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          className={cn(
+            "absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300 active:scale-90",
+            isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none",
+            mounted && isInWishlist && "opacity-100 translate-x-0"
+          )}
+        >
+          <Heart
+            size={14}
+            className={cn(
+              "transition-all duration-300",
+              mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f] scale-110" : "text-[#1a1a1a]"
+            )}
+          />
+        </button>
+
+        {/* Quick Add bar — rounded bottom corners match container */}
+        <div
+          className={cn(
+            "absolute bottom-0 left-0 right-0 z-10 transition-all duration-400 ease-out overflow-hidden rounded-b-xl sm:rounded-b-2xl",
+            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full pointer-events-none"
+          )}
+        >
+          <button
+            onClick={handleQuickAdd}
+            className="shimmer-btn w-full bg-white/98 backdrop-blur-sm text-[#1a1a1a] text-[11px] font-semibold tracking-[0.15em] uppercase py-3 hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center justify-between px-4 border-t border-[#e5e7eb]/50"
+          >
+            <span>Add to Basket</span>
+            <ShoppingBag size={13} strokeWidth={1.75} className="transition-transform duration-300 group-hover:rotate-12" />
+          </button>
+        </div>
+      </Link>
+
+      <div className="px-0.5 space-y-1.5">
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#3b5f8f]">
+          {(product.brand && product.brand.trim()) || product.collection || "Denova"}
+        </p>
+
+        <Link href={`/products/${product.slug}`}>
+          <h3 className="text-xs sm:text-[13px] font-medium tracking-[0.08em] uppercase text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors duration-300 leading-snug line-clamp-1">
+            {product.name}
+          </h3>
+        </Link>
+
+        <div className="flex items-baseline gap-2 pt-0.5">
+          <span className="text-[13px] sm:text-sm font-bold text-[#1a1a1a] tracking-wide">
+            {formatPKR(product.price)}
+          </span>
+          {hasDiscount && (
+            <span className="text-[11px] text-[#9ca3af] line-through">
+              {formatPKR(product.compareAtPrice!)}
+            </span>
+          )}
+        </div>
+
+        {uniqueColors.length > 0 && (
+          <div className="flex items-center gap-1 pt-1">
+            {uniqueColors.slice(0, 6).map((color, i) => (
+              <span
+                key={color.hex}
+                className="w-2.5 h-2.5 border border-[#d1d5db] rounded-full transition-transform duration-300 hover:scale-125"
+                style={{
+                  backgroundColor: color.hex,
+                  transitionDelay: `${i * 30}ms`,
+                }}
+                title={color.name}
+              />
+            ))}
+            {uniqueColors.length > 6 && (
+              <span className="text-[9px] text-[#6b7280] ml-1">+{uniqueColors.length - 6}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductGrid.tsx
+================================================================================
+
+import { ProductCard }       from "./ProductCard";
+import { ProductCardSkeleton } from "@/components/ui/Skeleton";
+import { SlideUp }            from "@/components/animations/SlideUp";
+import type { Product }       from "@/types";
+
+interface ProductGridProps {
+  products:  Product[];
+  isLoading?: boolean;
+  columns?:  2 | 3 | 4;
+}
+
+const colClasses = {
+  2: "grid-cols-2",
+  3: "grid-cols-2 md:grid-cols-3",
+  4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6",
+};
+
+export function ProductGrid({
+  products,
+  isLoading = false,
+  columns = 4,
+}: ProductGridProps) {
+
+  if (isLoading) {
+    return (
+      <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-16 h-16 bg-[#f5f0e8] rounded-full flex items-center justify-center mb-4">
+          <svg
+            className="w-8 h-8 text-[#3b5f8f]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </div>
+        <h3 className="text-base font-semibold text-[#1a1a1a] mb-1">
+          No products found
+        </h3>
+        <p className="text-sm text-[#6b7280]">
+          Try adjusting your filters or search terms.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`grid ${colClasses[columns]} gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12`}>
+      {products.map((product, i) => (
+        <SlideUp key={product.id} stagger={60} index={i % 12}>
+          <ProductCard product={product} />
+        </SlideUp>
+      ))}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\lib\adapters.ts
+================================================================================
+
+/**
+ * Adapters to convert database types (paisa, unix timestamps, 0/1 booleans)
+ * to frontend types (rupees, dates, true/false).
+ */
+
+import type {
+  DbProduct, DbProductImage, DbProductVariant, DbCollection,
+} from "@/lib/db/types";
+import type { ProductWithRelations } from "@/lib/db/repositories/products";
+import type { Product, ProductImage, ProductVariant, Collection, Testimonial } from "@/types";
+import { tagsToArray } from "@/lib/db/helpers";
+
+// ─── Product ─────────────────────────────────────────────
+export function adaptProduct(p: ProductWithRelations): Product {
+  return {
+    id:             p.id,
+    name:           p.name,
+    slug:           p.slug,
+    description:    p.description,
+    price:          p.price / 100,
+    compareAtPrice: p.comparePrice ? p.comparePrice / 100 : undefined,
+    images:         p.images.map(adaptImage),
+    variants:       p.variants.map(adaptVariant),
+    collectionId:   p.collectionId ?? "",
+    collection:     p.collection?.name ?? "",
+    tags:           tagsToArray(p.tags),
+    isNew:          p.isNew === 1,
+    isFeatured:     p.isFeatured === 1,
+    isBestSeller:   p.isBestSeller === 1,
+    rating:         p.rating,
+    reviewCount:    p.reviewCount,
+    waist:          p.waist  ?? null,
+    length:         p.length ?? null,
+    bottom:         p.bottom ?? null,
+    bgColor:        p.bgColor ?? null,
+    brand:          p.brand ?? null,
+    sku:            p.sku,
+    createdAt:      new Date(p.createdAt * 1000).toISOString(),
+  };
+}
+
+function adaptImage(img: DbProductImage): ProductImage {
+  return {
+    id:        img.id,
+    url:       img.url,
+    alt:       img.alt,
+    isPrimary: img.isPrimary === 1,
+  };
+}
+
+function adaptVariant(v: DbProductVariant): ProductVariant {
+  return {
+    id:             v.id,
+    size:           v.size,
+    color:          v.color,
+    colorHex:       v.colorHex,
+    stock:          v.stock,
+    price:          v.price / 100,
+    compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : undefined,
+    sku:            v.sku,
+  };
+}
+
+// ─── Collection ──────────────────────────────────────────
+export function adaptCollection(
+  c: DbCollection & { productCount?: number; minPrice?: number | null; maxPrice?: number | null }
+): Collection {
+  return {
+    id:           c.id,
+    name:         c.name,
+    slug:         c.slug,
+    description:  c.description,
+    image:        c.image ?? "",
+    productCount: c.productCount ?? 0,
+    minPrice:     c.minPrice != null ? c.minPrice / 100 : undefined,
+    maxPrice:     c.maxPrice != null ? c.maxPrice / 100 : undefined,
+  };
+}
+
+// ─── Testimonials (denim-focused, brand-relevant) ────────
+export function getMockTestimonials(): Testimonial[] {
+  return [
+    {
+      id:       "t-1",
+      name:     "Ahmed Raza",
+      location: "Lahore",
+      rating:   5,
+      comment:  "Best denim I've owned. The fit is spot on, the fabric feels heavy and premium — you can tell it's export quality. Wore them for weeks straight and the colour hasn't faded a bit.",
+      date:     "2024-06-12",
+    },
+    {
+      id:       "t-2",
+      name:     "Usman Tariq",
+      location: "Karachi",
+      rating:   5,
+      comment:  "Finally jeans that fit Pakistani body types properly. Bought the mid-blue enzyme wash — the wash is beautiful and the stitching is on another level. Worth every rupee.",
+      date:     "2024-06-02",
+    },
+    {
+      id:       "t-3",
+      name:     "Bilal Ahmed",
+      location: "Islamabad",
+      rating:   5,
+      comment:  "I've been buying imported jeans for years. Denova PK matches that quality at half the price. The Super Premium range especially — feels like a proper Japanese denim experience.",
+      date:     "2024-06-18",
+    },
+    {
+      id:       "t-4",
+      name:     "Hamza Sheikh",
+      location: "Rawalpindi",
+      rating:   5,
+      comment:  "Ordered the black tapered fit and grey cargo pants. Delivery was fast, packaging was premium, and both pieces fit exactly as described. Denim quality is top-tier.",
+      date:     "2024-05-28",
+    },
+    {
+      id:       "t-5",
+      name:     "Zain Ali",
+      location: "Faisalabad",
+      rating:   5,
+      comment:  "Was skeptical about buying jeans online but Denova PK nailed it. Size guide is accurate, fabric is comfortable, and the loose-fit denim is exactly what I was looking for. Ordering another pair.",
+      date:     "2024-05-15",
+    },
+    {
+      id:       "t-6",
+      name:     "Faisal Khan",
+      location: "Lahore",
+      rating:   5,
+      comment:  "The garment-dyed cargo is unreal. Fits perfectly, colour is rich, and the pockets are actually functional. Denova is doing what no other Pakistani denim brand is doing right now.",
+      date:     "2024-04-30",
+    },
+  ];
+}
+
+================================================================================
+FILE: user-panel\src\types\index.ts
+================================================================================
+
+// ─── Product Types ───────────────────────────────────────────────
+export interface ProductImage {
+  id: string;
+  url: string;
+  alt: string;
+  isPrimary: boolean;
+}
+
+export interface ProductVariant {
+  id: string;
+  size: string;
+  color: string;
+  colorHex: string;
+  stock: number;
+  price: number;
+  compareAtPrice?: number;
+  sku: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  compareAtPrice?: number;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  collectionId: string;
+  collection: string;
+  tags: string[];
+  isNew: boolean;
+  isFeatured: boolean;
+  isBestSeller: boolean;
+  rating: number;
+  reviewCount: number;
+  waist:  number | null;
+  length: number | null;
+  bottom: number | null;
+  bgColor: string | null;   // hex e.g. "#f5f0e8" or null (keep original white background)
+  brand?: string | null;   // brand name (e.g. "Denova"), or null to fall back to collection
+  sku?: string;   // top-level product SKU (from DB)
+  createdAt: string;
+}
+
+// ─── Collection Types ────────────────────────────────────────────
+export interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  productCount: number;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+// ─── Cart Types ──────────────────────────────────────────────────
+export interface CartItem {
+  id: string;
+  productId: string;
+  variantId: string;
+  name: string;
+  image: string;
+  size: string;
+  color: string;
+  colorHex: string;
+  price: number;
+  quantity: number;
+  slug: string;
+  bgColor?: string | null;   // optional — captured at add-to-cart time
+}
+
+export interface Cart {
+  items: CartItem[];
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+}
+
+// ─── Wishlist Types ──────────────────────────────────────────────
+export interface WishlistItem {
+  id: string;
+  productId: string;
+  name: string;
+  image: string;
+  price: number;
+  slug: string;
+  bgColor?: string | null;
+}
+
+// ─── User / Auth Types ───────────────────────────────────────────
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  createdAt: string;
+}
+
+export interface Address {
+  id: string;
+  userId: string;
+  label: string;
+  fullName: string;
+  phone: string;
+  street: string;
+  apartment?: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  isDefault: boolean;
+}
+
+// ─── Order Types ─────────────────────────────────────────────────
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+export interface OrderItem {
+  id: string;
+  productId: string;
+  name: string;
+  image: string;
+  size: string;
+  color: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  items: OrderItem[];
+  status: OrderStatus;
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+  address: Address;
+  paymentMethod: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Testimonial Types ───────────────────────────────────────────
+export interface Testimonial {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  comment: string;
+  avatar?: string;
+  date: string;
+}
+
+// ─── Navigation Types ────────────────────────────────────────────
+export interface NavLink {
+  label: string;
+  href: string;
+  children?: NavLink[];
+}
+
+// ─── Animation Types ─────────────────────────────────────────────
+export type AnimationVariant = "fadeUp" | "fadeIn" | "slideLeft" | "slideRight";
+
+export interface DevicePerformance {
+  tier: "low" | "medium" | "high";
+  prefersReducedMotion: boolean;
+  shouldAnimate: boolean;
+}

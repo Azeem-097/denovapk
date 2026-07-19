@@ -1,6 +1,6 @@
 ================================================================================
 DENOVA PK PROJECT EXTRACT: User Panel (src/)
-Generated: 2026-07-19 22:00:19
+Generated: 2026-07-19 22:35:21
 Source: D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\user-panel\src
 Files: 176
 ================================================================================
@@ -2682,7 +2682,7 @@ export interface DbContactMessage {
 ================================================================================
 FILE: app\globals.css
 CATEGORY: Global Styles
-SIZE: 15.0 KB
+SIZE: 14.6 KB
 ================================================================================
 
 @import "tailwindcss";
@@ -2705,7 +2705,8 @@ SIZE: 15.0 KB
 * { box-sizing: border-box; }
 
 html {
-  scroll-behavior: smooth;
+  /* scroll-behavior: smooth REMOVED — was causing scroll jank.
+     If you need smooth anchor jumps, use element.scrollIntoView({behavior:"smooth"}) in JS. */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -2719,6 +2720,8 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  /* Isolate layout/paint = fewer reflows during scroll */
+  overscroll-behavior-y: none;
 }
 
 ::selection { background-color: #3b5f8f; color: #ffffff; }
@@ -2767,7 +2770,6 @@ img, video { max-width: 100%; height: auto; display: block; }
 @keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
 
-/* ── Live view counter pulse ── */
 @keyframes live-ping {
   0%   { transform: scale(1);   opacity: 0.75; }
   75%, 100% { transform: scale(2.4); opacity: 0; }
@@ -2863,22 +2865,13 @@ img, video { max-width: 100%; height: auto; display: block; }
 }
 @keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
-@keyframes hero-underline-draw {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-@keyframes hero-accent-bar-draw {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
-}
+@keyframes hero-underline-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hero-accent-bar-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes hero-shimmer-sweep {
   0%   { transform: translateX(-150%) skewX(-20deg); }
   100% { transform: translateX(250%)  skewX(-20deg); }
 }
-@keyframes hero-dot-pop {
-  from { opacity: 0; transform: scale(0); }
-  to   { opacity: 1; transform: scale(1); }
-}
+@keyframes hero-dot-pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
 
 @keyframes hero-sticker-diag {
   0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
@@ -2906,7 +2899,7 @@ img, video { max-width: 100%; height: auto; display: block; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ANNOUNCEMENT BAR — LUXURY ANIMATIONS (BLUE)
+   ANNOUNCEMENT BAR
    ═══════════════════════════════════════════════════════════ */
 
 @keyframes announcement-gradient-drift {
@@ -2960,7 +2953,6 @@ img, video { max-width: 100%; height: auto; display: block; }
   animation-play-state: paused;
 }
 
-/* Utility used by product sliders */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -2968,9 +2960,7 @@ img, video { max-width: 100%; height: auto; display: block; }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
-/* ═══════════════════════════════════════════════════════════
-   NO SCROLLBAR UTILITY (used for horizontal sliders)
-   ═══════════════════════════════════════════════════════════ */
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -2978,92 +2968,57 @@ img, video { max-width: 100%; height: auto; display: block; }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 /* ═══════════════════════════════════════════════════════════
-   HERO SLIDER — PREMIUM SLIDE TRANSITIONS
+   HERO SLIDER TRANSITIONS
    ═══════════════════════════════════════════════════════════ */
 
 @keyframes hero-slide-in-right {
   from { opacity: 0; transform: translateX(60px) scale(1.02); }
   to   { opacity: 1; transform: translateX(0)    scale(1);    }
 }
-
 @keyframes hero-slide-out-left {
   from { opacity: 1; transform: translateX(0)     scale(1);    }
   to   { opacity: 0; transform: translateX(-60px) scale(0.98); }
 }
-
 @keyframes hero-slide-in-left {
   from { opacity: 0; transform: translateX(-60px) scale(1.02); }
   to   { opacity: 1; transform: translateX(0)     scale(1);    }
 }
-
 @keyframes hero-slide-out-right {
   from { opacity: 1; transform: translateX(0)    scale(1);    }
   to   { opacity: 0; transform: translateX(60px) scale(0.98); }
 }
-
 @keyframes hero-ken-burns-active {
   from { transform: scale(1)    translate(0, 0); }
   to   { transform: scale(1.06) translate(-1%, -0.5%); }
 }
 
-.hero-slide-enter {
-  animation: hero-slide-in-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-}
-
-.hero-slide-exit {
-  animation: hero-slide-out-left 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-}
-
-.hero-slide-enter-prev {
-  animation: hero-slide-in-left 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-}
-
-.hero-slide-exit-next {
-  animation: hero-slide-out-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-}
+.hero-slide-enter { animation: hero-slide-in-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.hero-slide-exit  { animation: hero-slide-out-left  700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.hero-slide-enter-prev { animation: hero-slide-in-left  700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.hero-slide-exit-next  { animation: hero-slide-out-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
 
 .hero-image-ken-burns {
   animation: hero-ken-burns-active var(--hero-duration, 8s) ease-in-out both;
   will-change: transform;
 }
+
 /* ═══════════════════════════════════════════════════════════
-   HERO CINEMATIC TRANSITIONS (Editorial Luxury)
+   HERO CINEMATIC TRANSITIONS
    ═══════════════════════════════════════════════════════════ */
 
 @keyframes hero-cinematic-in {
-  from {
-    opacity: 0;
-    transform: scale(1.02);
-    filter: blur(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-    filter: blur(0);
-  }
+  from { opacity: 0; transform: scale(1.02); filter: blur(8px); }
+  to   { opacity: 1; transform: scale(1);    filter: blur(0);   }
 }
-
 @keyframes hero-cinematic-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-    filter: blur(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.01);
-    filter: blur(6px);
-  }
+  from { opacity: 1; transform: scale(1);    filter: blur(0);   }
+  to   { opacity: 0; transform: scale(1.01); filter: blur(6px); }
 }
 
-.hero-cinematic-enter {
-  animation: hero-cinematic-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.hero-cinematic-exit {
-  animation: hero-cinematic-out 700ms cubic-bezier(0.4, 0, 0.2, 1) both;
-}
+.hero-cinematic-enter { animation: hero-cinematic-in  900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-cinematic-exit  { animation: hero-cinematic-out 700ms cubic-bezier(0.4, 0, 0.2, 1) both; }
 
 
 ================================================================================
@@ -9451,7 +9406,7 @@ export default function NotFound() {
 ================================================================================
 FILE: app\page.tsx
 CATEGORY: Other
-SIZE: 4.8 KB
+SIZE: 3.5 KB
 ================================================================================
 
 import { HeroSection }           from "@/components/sections/HeroSection";
@@ -9510,45 +9465,22 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* LAYER 1 — HERO fixed at z-0 */}
+      {/* LAYER 1 — HERO */}
       <FixedHeroBackground>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
       </FixedHeroBackground>
 
-      {/* ═══════════════════════════════════════════════════════
-          SALE SECTION with SVG WAVE curve on top
-          ─────────────────────────────────────────────────────
-          - Sale wrapper is bg-white, normal positioning
-          - SVG wave sits ABOVE the sale content
-          - Wave is white, curves upward creating a rounded
-            transition from hero (behind) to white section
-          ═══════════════════════════════════════════════════════ */}
-      <div className="relative z-10 bg-white">
-
-        {/* SVG WAVE — creates visible curved top edge */}
-        <div
-          className="w-full overflow-hidden leading-none"
-          style={{
-            marginTop: "-1px",  // Prevents subpixel gap between SVG and section
-            lineHeight: 0,
-          }}
-        >
-          <svg
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-            className="block w-full h-[40px] sm:h-[60px] lg:h-[80px]"
-            style={{ display: "block", transform: "translateY(1px)" }}
-            aria-hidden="true"
-          >
-            {/* White curve pointing UP — hero shows through the empty top corners */}
-            <path
-              d="M0,120 L0,60 Q0,0 60,0 L1140,0 Q1200,0 1200,60 L1200,120 Z"
-              fill="#ffffff"
-            />
-          </svg>
-        </div>
-
+      {/* LAYER 2 — CONTENT SHELL
+          - overflow-hidden clips the square backgrounds of Sale & Newsletter.
+          - Because this wrapper is BELOW the header, overflow-hidden here 
+            does NOT break the sticky header! */}
+      <div
+        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden"
+        style={{
+          boxShadow: "0 -12px 40px -20px rgba(0, 0, 0, 0.15)",
+        }}
+      >
         <SaleCountdown />
         <BrandTicker />
         <NewArrivals
@@ -9560,11 +9492,8 @@ export default async function HomePage() {
         <Testimonials testimonials={testimonials} />
         <GallerySection />
 
-        {/* Newsletter — square top, rounded bottom */}
-        <div className="mt-12 sm:mt-16 lg:mt-20">
-          <div className="bg-[#f5f0e8] rounded-b-[40px] sm:rounded-b-[60px] lg:rounded-b-[80px] overflow-hidden">
-            <NewsletterSection />
-          </div>
+        <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">
+          <NewsletterSection />
         </div>
       </div>
     </>
@@ -15516,18 +15445,12 @@ function lighten(hex: string, amt: number): string { return shade(hex, amt); }
 ================================================================================
 FILE: components\layout\FixedFooterReveal.tsx
 CATEGORY: Other
-SIZE: 1.6 KB
+SIZE: 1.1 KB
 ================================================================================
 
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-/**
- * FixedFooterReveal
- * ────────────────────────────────────────────────────────────
- * Footer sits fixed at bottom (z-0, square edges).
- * Main content shell (z-10, bg-white) slides up over it.
- */
 export function FixedFooterReveal({
   children,
   footer,
@@ -15541,43 +15464,26 @@ export function FixedFooterReveal({
   useEffect(() => {
     const el = footerRef.current;
     if (!el) return;
-
     const measure = () => {
       const h = el.offsetHeight;
       if (h > 0) setFooterHeight(h);
     };
-
     measure();
-
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-
-    window.addEventListener("load", measure);
-    window.addEventListener("resize", measure);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("load", measure);
-      window.removeEventListener("resize", measure);
-    };
+    return () => ro.disconnect();
   }, []);
 
   return (
     <>
-      <div
-        ref={footerRef}
-        className="fixed bottom-0 left-0 right-0 z-0 w-full"
-      >
+      <div ref={footerRef} className="fixed bottom-0 left-0 right-0 z-0 w-full">
         {footer}
       </div>
-
       <div
-        className="relative z-10 bg-white"
+        className="relative z-10 bg-white rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px]"
         style={{
           marginBottom: footerHeight > 0 ? `${footerHeight}px` : undefined,
-          boxShadow:
-            "0 8px 40px -10px rgba(0, 0, 0, 0.12), " +
-            "0 -8px 40px -10px rgba(0, 0, 0, 0.12)",
+          boxShadow: "0 8px 40px -10px rgba(0, 0, 0, 0.12), 0 -8px 40px -10px rgba(0, 0, 0, 0.12)",
         }}
       >
         {children}
@@ -16095,7 +16001,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 ================================================================================
 FILE: components\layout\Navbar.tsx
 CATEGORY: Other
-SIZE: 11.5 KB
+SIZE: 12.3 KB
 ================================================================================
 
 "use client";
@@ -16123,11 +16029,13 @@ const LOGO_DESKTOP = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_160/${LOGO_
 const LOGO_MOBILE  = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_120/${LOGO_ID}`;
 
 export function Navbar() {
-  const [scrolled,     setScrolled]     = useState(false);
   const [mobileOpen,   setMobileOpen]   = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted,      setMounted]      = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const headerRef   = useRef<HTMLElement>(null);
+  const dividerRef  = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef<boolean>(false);
 
   const cartCount     = useCartStore((s) => s.getItemCount());
   const wishlistCount = useWishlistStore((s) => s.items.length);
@@ -16137,10 +16045,41 @@ export function Navbar() {
 
   useEffect(() => setMounted(true), []);
 
+  // ─── SCROLL — ZERO React re-renders ───────────────────
+  // Only mutates DOM class + divider opacity when scroll
+  // ACTUALLY crosses the 20px threshold (not every frame)
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    let rafId = 0;
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const isScrolled = window.scrollY > 20;
+        if (isScrolled !== scrolledRef.current) {
+          scrolledRef.current = isScrolled;
+          const header = headerRef.current;
+          const div    = dividerRef.current;
+          if (header) {
+            if (isScrolled) {
+              header.classList.add("shadow-sm", "border-[#e5e7eb]");
+              header.classList.remove("border-transparent");
+            } else {
+              header.classList.remove("shadow-sm", "border-[#e5e7eb]");
+              header.classList.add("border-transparent");
+            }
+          }
+          if (div) div.style.opacity = isScrolled ? "1" : "0";
+        }
+        rafId = 0;
+      });
+    };
+
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   useEffect(() => {
@@ -16163,19 +16102,17 @@ export function Navbar() {
   return (
     <>
       <header
+        ref={headerRef}
         className={cn(
           "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
-          // ── CRITICAL: solid bg always, overflow hidden so nothing bursts out ──
           "bg-white overflow-hidden",
-          scrolled
-            ? "shadow-sm border-b border-[#e5e7eb]"
-            : "border-b border-transparent"
+          "border-b border-transparent"
         )}
       >
         <div className="site-container">
 
           {/* ═══════════════════════════════════════════════════
-              MOBILE — 64px header, logo constrained to 40px
+              MOBILE
               ═══════════════════════════════════════════════════ */}
           <div className="lg:hidden relative flex items-center justify-between h-16">
             <button
@@ -16186,7 +16123,6 @@ export function Navbar() {
               <Menu size={22} />
             </button>
 
-            {/* Logo container with STRICT height cap */}
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center h-11 pointer-events-auto" aria-label="Denova PK home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -16215,11 +16151,10 @@ export function Navbar() {
           </div>
 
           {/* ═══════════════════════════════════════════════════
-              DESKTOP — 80px header, logo constrained to 56px
+              DESKTOP
               ═══════════════════════════════════════════════════ */}
           <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[88px] gap-8">
 
-            {/* Left nav */}
             <nav className="flex items-center justify-start gap-7">
               <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 Shop
@@ -16260,7 +16195,6 @@ export function Navbar() {
               </Link>
             </nav>
 
-            {/* CENTER — logo container with STRICT height cap */}
             <Link href="/" className="flex items-center h-16 flex-shrink-0 hover:opacity-80 transition-opacity duration-300" aria-label="Denova PK home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -16314,10 +16248,12 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className={cn(
-          "h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300",
-          scrolled ? "opacity-100" : "opacity-0"
-        )} />
+        {/* Divider - opacity controlled directly via ref */}
+        <div
+          ref={dividerRef}
+          className="h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300"
+          style={{ opacity: 0 }}
+        />
       </header>
 
       <NavbarMobile isOpen={mobileOpen} onClose={() => setMobileOpen(false)} cartCount={cartCount} />
@@ -19840,99 +19776,101 @@ function CollectionCard({ collection }: { collection: Collection }) {
 ================================================================================
 FILE: components\sections\FixedHeroBackground.tsx
 CATEGORY: Other
-SIZE: 3.3 KB
+SIZE: 3.4 KB
 ================================================================================
 
 "use client";
 import { useEffect, useRef, useState } from "react";
 
 export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const [heroHeight,    setHeroHeight]    = useState<number>(0);
-  const [headerBottom,  setHeaderBottom]  = useState<number>(0);
-  const [isHeroVisible, setIsHeroVisible] = useState(true);
-  const [isReady,       setIsReady]       = useState(false); // NEW: prevents glitch on load
+  const heroRef    = useRef<HTMLDivElement>(null);
+  const spacerRef  = useRef<HTMLDivElement>(null);
 
+  // Height state (used only to size the spacer)
+  const [heroHeight, setHeroHeight] = useState<number>(0);
+
+  // Internal refs — used by scroll handler (no re-renders)
+  const heroHeightRef = useRef<number>(0);
+  const isReadyRef    = useRef<boolean>(false);
+  const lastBottomRef = useRef<number>(-1);
+  const lastVisibleRef = useRef<boolean>(true);
+
+  // Keep heroHeightRef in sync with state
   useEffect(() => {
-    let rafId = 0;
+    heroHeightRef.current = heroHeight;
+  }, [heroHeight]);
 
-    const updateHeaderBottom = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        const header = document.querySelector("header");
-        if (header) {
-          const rect = header.getBoundingClientRect();
-          const bottom = Math.max(0, rect.bottom);
-          setHeaderBottom(bottom);
-          if (bottom > 0) setIsReady(true); // Only reveal once header is measured
-        }
-        rafId = 0;
-      });
-    };
-
-    updateHeaderBottom();
-
-    window.addEventListener("scroll", updateHeaderBottom, { passive: true });
-    window.addEventListener("resize", updateHeaderBottom, { passive: true });
-
-    const header = document.querySelector("header");
-    const ro = new ResizeObserver(updateHeaderBottom);
-    if (header) ro.observe(header);
-    ro.observe(document.body);
-
-    return () => {
-      window.removeEventListener("scroll", updateHeaderBottom);
-      window.removeEventListener("resize", updateHeaderBottom);
-      ro.disconnect();
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
-
+  // Measure hero height for spacer
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
 
-    const updateHeight = () => {
+    const measure = () => {
       const h = el.offsetHeight;
-      if (h > 0) setHeroHeight(h);
+      if (h > 0) {
+        setHeroHeight((prev) => (prev !== h ? h : prev));
+      }
     };
 
-    updateHeight();
-
-    const ro = new ResizeObserver(updateHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-
-    const images = el.querySelectorAll("img");
-    images.forEach((img) => {
-      if (!img.complete) img.addEventListener("load", updateHeight);
-    });
-
-    return () => {
-      ro.disconnect();
-      images.forEach((img) => img.removeEventListener("load", updateHeight));
-    };
+    return () => ro.disconnect();
   }, []);
 
+  // High-performance scroll tracking (mounted ONCE, uses refs)
   useEffect(() => {
-    if (heroHeight === 0) return;
     let rafId = 0;
 
-    const handleScroll = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        const shouldShow = window.scrollY < heroHeight * 1.2;
-        setIsHeroVisible((prev) => prev !== shouldShow ? shouldShow : prev);
-        rafId = 0;
-      });
+    const update = () => {
+      const hero = heroRef.current;
+      if (!hero) { rafId = 0; return; }
+
+      // 1. Sync top with header (fixes white gap when announcement bar scrolls away)
+      const header = document.querySelector("header");
+      if (header) {
+        const bottom = Math.max(0, header.getBoundingClientRect().bottom);
+        if (bottom !== lastBottomRef.current) {
+          lastBottomRef.current = bottom;
+          hero.style.top = `${bottom}px`;
+
+          if (bottom > 0 && !isReadyRef.current) {
+            isReadyRef.current = true;
+            hero.style.opacity    = "1";
+            hero.style.visibility = "visible";
+          }
+        }
+      }
+
+      // 2. Hide when scrolled past hero (fixes bleeding into footer area)
+      const h = heroHeightRef.current;
+      if (h > 0) {
+        const shouldShow = window.scrollY < h * 1.5;
+        if (shouldShow !== lastVisibleRef.current) {
+          lastVisibleRef.current = shouldShow;
+          hero.style.visibility = shouldShow ? "visible" : "hidden";
+          hero.style.opacity    = shouldShow ? "1" : "0";
+        }
+      }
+
+      rafId = 0;
     };
 
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(update);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [heroHeight]);
+  }, []); // ← EMPTY. Mounts once, uses refs to read latest values.
 
   return (
     <>
@@ -19940,18 +19878,19 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
         ref={heroRef}
         className="fixed left-0 w-full z-0 overflow-hidden"
         style={{
-          top:        `${headerBottom}px`,
-          // ── Fade in only once header measurement is complete ──
-          visibility: (isHeroVisible && isReady) ? "visible" : "hidden",
-          opacity:    (isHeroVisible && isReady) ? 1 : 0,
-          transition: "opacity 250ms ease",
-          willChange: "top",
+          top:        "0px",
+          opacity:    0,
+          visibility: "hidden",
+          transition: "opacity 200ms ease",
+          transform:  "translateZ(0)",
+          willChange: "transform",
         }}
       >
         {children}
       </div>
 
       <div
+        ref={spacerRef}
         aria-hidden="true"
         className="w-full pointer-events-none"
         style={{ height: heroHeight > 0 ? `${heroHeight}px` : "100vh" }}
