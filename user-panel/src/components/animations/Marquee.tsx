@@ -5,13 +5,13 @@ import { useDevicePerformance } from "./useDevicePerformance";
 interface MarqueeProps {
   items:      string[];
   className?: string;
-  duration?:  number;  // seconds
+  duration?:  number;
   pauseOnHover?: boolean;
 }
 
-/**
- * Infinite horizontal marquee. Duplicates items twice so the loop is seamless.
- */
+// Light denim blue — visible on dark backgrounds
+const ACCENT = "#7ea4d6";
+
 export function Marquee({
   items,
   className,
@@ -19,7 +19,6 @@ export function Marquee({
   pauseOnHover = true,
 }: MarqueeProps) {
   const { shouldAnimate } = useDevicePerformance();
-
   const doubled = [...items, ...items];
 
   return (
@@ -30,16 +29,18 @@ export function Marquee({
           shouldAnimate && "animate-marquee",
           pauseOnHover && "hover:[animation-play-state:paused]"
         )}
-        style={{
-          animationDuration: `${duration}s`,
-        }}
+        style={{ animationDuration: `${duration}s` }}
       >
         {doubled.map((item, i) => (
           <div
             key={i}
-            className="flex items-center gap-6 px-6 text-[11px] font-semibold tracking-[0.25em] uppercase text-[#c9a96e]/70 whitespace-nowrap"
+            className="flex items-center gap-6 px-6 text-[11px] font-semibold tracking-[0.25em] uppercase whitespace-nowrap"
+            style={{ color: ACCENT }}
           >
-            <span className="w-1 h-1 rounded-full bg-[#c9a96e]/60 flex-shrink-0" />
+            <span
+              className="w-1 h-1 rounded-full flex-shrink-0"
+              style={{ backgroundColor: ACCENT, boxShadow: `0 0 4px ${ACCENT}80` }}
+            />
             {item}
           </div>
         ))}

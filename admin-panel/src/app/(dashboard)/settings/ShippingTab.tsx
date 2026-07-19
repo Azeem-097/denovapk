@@ -30,7 +30,7 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className="flex-1 w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none disabled:bg-[#fafaf9] disabled:text-[#9ca3af] disabled:cursor-not-allowed"
+          className="flex-1 w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none disabled:bg-[#fafaf9] disabled:text-[#9ca3af] disabled:cursor-not-allowed"
         />
       </div>
       {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
@@ -63,7 +63,7 @@ export function ShippingTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Truck size={16} className="text-[#c9a96e]" />
+        <Truck size={16} className="text-[#3b5f8f]" />
         Shipping & Delivery
       </h2>
       <p className="text-xs text-[#6b7280] mb-6">
@@ -74,11 +74,11 @@ export function ShippingTab({ settings, onChange }: TabProps) {
 
         {/* MASTER TOGGLE */}
         <label className={`flex items-center gap-3 p-4 border cursor-pointer transition-colors ${
-          freeDelivery ? "border-[#c9a96e] bg-[#f5f0e8]/40" : "border-[#e5e7eb] bg-[#fafaf9]"
+          freeDelivery ? "border-[#3b5f8f] bg-[#f5f0e8]/40" : "border-[#e5e7eb] bg-[#fafaf9]"
         }`}>
           <input type="checkbox" checked={freeDelivery}
             onChange={(e) => onChange("free_delivery_all", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#c9a96e]" />
+            className="w-4 h-4 accent-[#3b5f8f]" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Free Delivery on All Orders</p>
             <p className="text-xs text-[#6b7280] mt-0.5">
@@ -86,7 +86,7 @@ export function ShippingTab({ settings, onChange }: TabProps) {
             </p>
           </div>
           {freeDelivery && (
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#c9a96e] text-white px-2 py-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#3b5f8f] text-white px-2 py-1">
               Active
             </span>
           )}
@@ -110,7 +110,7 @@ export function ShippingTab({ settings, onChange }: TabProps) {
 
         {/* COD FEE (toggle moved to Payment Methods tab) */}
         <div className="pt-4 border-t border-[#e5e7eb]">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">
             COD Handling Fee
           </h3>
           <p className="text-xs text-[#6b7280] mb-3">
@@ -127,8 +127,8 @@ export function ShippingTab({ settings, onChange }: TabProps) {
         {/* LIVE PREVIEW */}
         <div className="pt-4 border-t border-[#e5e7eb]">
           <div className="flex items-center gap-2 mb-3">
-            <Info size={14} className="text-[#c9a96e]" />
-            <h3 className="text-xs font-bold uppercase tracking-wide text-[#c9a96e]">Customer Preview</h3>
+            <Info size={14} className="text-[#3b5f8f]" />
+            <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f]">Customer Preview</h3>
           </div>
           <p className="text-xs text-[#6b7280] mb-4">This is what customers will see at checkout for different order sizes:</p>
 
@@ -170,7 +170,7 @@ export function ShippingTab({ settings, onChange }: TabProps) {
           )}
         </div>
 
-        <div className="bg-[#f5f0e8] border border-[#c9a96e]/30 p-4 text-xs text-[#1a1a1a]">
+        <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4 text-xs text-[#1a1a1a]">
           <p className="font-semibold mb-1">How it works</p>
           <ul className="text-[#6b7280] leading-relaxed space-y-1 list-disc list-inside">
             <li><strong>Free Delivery Master Switch</strong> overrides everything — all orders ship free.</li>

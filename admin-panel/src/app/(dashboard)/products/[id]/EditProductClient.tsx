@@ -337,7 +337,7 @@ export function EditProductClient({ product, collections }: Props) {
                     className="input font-mono" />
                   <button type="button"
                     onClick={() => updateField("slug", slugify(form.name))}
-                    className="text-[10px] font-semibold uppercase tracking-wider text-[#c9a96e] hover:text-[#b8955a] px-2 border border-[#e5e7eb] hover:border-[#c9a96e]">
+                    className="text-[10px] font-semibold uppercase tracking-wider text-[#3b5f8f] hover:text-[#2d4a72] px-2 border border-[#e5e7eb] hover:border-[#3b5f8f]">
                     Auto
                   </button>
                 </div>
@@ -416,7 +416,7 @@ export function EditProductClient({ product, collections }: Props) {
                         </span>
                       )}
                       {!v.id && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-[#f5f0e8] text-[#c9a96e] font-semibold uppercase tracking-wider">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-[#f5f0e8] text-[#3b5f8f] font-semibold uppercase tracking-wider">
                           New
                         </span>
                       )}
@@ -465,7 +465,7 @@ export function EditProductClient({ product, collections }: Props) {
                 </div>
               ))}
               <button onClick={addVariant}
-                className="w-full py-2.5 text-xs font-medium text-[#c9a96e] hover:text-[#b8955a] border border-dashed border-[#e5e7eb] hover:border-[#c9a96e] transition-colors flex items-center justify-center gap-1">
+                className="w-full py-2.5 text-xs font-medium text-[#3b5f8f] hover:text-[#2d4a72] border border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors flex items-center justify-center gap-1">
                 <Plus size={14} />Add Color Variant
               </button>
             </div>
@@ -494,7 +494,7 @@ export function EditProductClient({ product, collections }: Props) {
               ].map((opt) => (
                 <label key={opt.val} className="flex items-start gap-2 cursor-pointer">
                   <input type="radio" name="status" checked={form.status === opt.val}
-                    onChange={() => updateField("status", opt.val)} className="accent-[#c9a96e] mt-0.5" />
+                    onChange={() => updateField("status", opt.val)} className="accent-[#3b5f8f] mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
                     <p className="text-[11px] text-[#6b7280]">{opt.desc}</p>
@@ -528,7 +528,7 @@ export function EditProductClient({ product, collections }: Props) {
                   <input type="checkbox"
                     checked={form[key as keyof typeof form] as boolean}
                     onChange={(e) => updateField(key, e.target.checked)}
-                    className="accent-[#c9a96e]" />
+                    className="accent-[#3b5f8f]" />
                   <span className="text-sm text-[#1a1a1a]">{label}</span>
                 </label>
               ))}
@@ -581,7 +581,7 @@ export function EditProductClient({ product, collections }: Props) {
           outline: none;
           transition: border-color 0.15s;
         }
-        :global(.input:focus) { border-color: #c9a96e; }
+        :global(.input:focus) { border-color: #3b5f8f; }
       `}</style>
     </div>
   );
@@ -604,7 +604,7 @@ function FormField({ label, required, hint, children }: {
   return (
     <div>
       <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">
-        {label}{required && <span className="text-[#c9a96e] ml-0.5">*</span>}
+        {label}{required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
       </label>
       {children}
       {hint && <p className="mt-1 text-[10px] text-[#6b7280]">{hint}</p>}
@@ -635,11 +635,11 @@ function QuickAction({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#fafaf9] hover:text-[#c9a96e] transition-colors group"
+      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#fafaf9] hover:text-[#3b5f8f] transition-colors group"
     >
-      <Icon size={14} className="text-[#c9a96e]" />
+      <Icon size={14} className="text-[#3b5f8f]" />
       <span className="flex-1 text-left">{label}</span>
-      <ChevronRight size={14} className="text-[#c9a96e] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <ChevronRight size={14} className="text-[#3b5f8f] opacity-0 group-hover:opacity-100 transition-opacity" />
     </button>
   );
 }
@@ -712,7 +712,7 @@ function StockModal({
               value={values[v.id]}
               onChange={(e) => setValues((s) => ({ ...s, [v.id]: Number(e.target.value) }))}
               min={0}
-              className="w-20 px-2 py-1.5 text-sm text-center border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+              className="w-20 px-2 py-1.5 text-sm text-center border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
             />
             {savedId === v.id ? (
               <span className="text-xs text-green-600 flex items-center gap-1 w-14 justify-center">
@@ -722,7 +722,7 @@ function StockModal({
               <button
                 onClick={() => saveOne(v.id)}
                 disabled={saving || values[v.id] === v.stock}
-                className="text-xs font-semibold text-[#c9a96e] hover:text-[#b8955a] underline w-14 text-center disabled:opacity-30 disabled:no-underline"
+                className="text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline w-14 text-center disabled:opacity-30 disabled:no-underline"
               >
                 Save
               </button>
@@ -749,7 +749,7 @@ function CollectionModal({
         <select
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
         >
           <option value="">No collection</option>
           {collections.map((c) => (
@@ -763,7 +763,7 @@ function CollectionModal({
             Cancel
           </button>
           <button onClick={() => onSave(value)}
-            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors flex items-center justify-center gap-2">
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors flex items-center justify-center gap-2">
             <Save size={12} />Save
           </button>
         </div>
@@ -814,10 +814,10 @@ function DiscountModal({
             { val: "percent", label: "Discount by percentage",   desc: "e.g. 20% off" },
             { val: "custom",  label: "Set original price",       desc: "Show a custom struck-through price" },
           ].map((opt) => (
-            <label key={opt.val} className="flex items-start gap-2 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#c9a96e]">
+            <label key={opt.val} className="flex items-start gap-2 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#3b5f8f]">
               <input type="radio" name="mode" checked={mode === opt.val}
                 onChange={() => setMode(opt.val as typeof mode)}
-                className="accent-[#c9a96e] mt-0.5" />
+                className="accent-[#3b5f8f] mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
                 <p className="text-[10px] text-[#6b7280]">{opt.desc}</p>
@@ -834,12 +834,12 @@ function DiscountModal({
             <div className="relative">
               <input type="number" value={percent} min={1} max={90}
                 onChange={(e) => setPercent(Number(e.target.value))}
-                className="w-full px-3 py-2.5 pr-8 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+                className="w-full px-3 py-2.5 pr-8 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#6b7280]">%</span>
             </div>
             <p className="mt-1 text-[10px] text-[#6b7280]">
               Original price will show as{" "}
-              <span className="font-semibold text-[#c9a96e]">
+              <span className="font-semibold text-[#3b5f8f]">
                 Rs. {Math.round(priceRupees / (1 - percent / 100)).toLocaleString()}
               </span>
             </p>
@@ -854,7 +854,7 @@ function DiscountModal({
             <input type="number" value={custom} min={priceRupees + 1}
               onChange={(e) => setCustom(e.target.value)}
               placeholder="e.g. 4500"
-              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
             <p className="mt-1 text-[10px] text-[#6b7280]">Must be higher than current price</p>
           </div>
         )}
@@ -865,7 +865,7 @@ function DiscountModal({
             Cancel
           </button>
           <button onClick={submit}
-            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors flex items-center justify-center gap-2">
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors flex items-center justify-center gap-2">
             <Save size={12} />Save
           </button>
         </div>
@@ -893,10 +893,10 @@ function StatusModal({
       <div className="p-5 space-y-4">
         <div className="space-y-2">
           {options.map((opt) => (
-            <label key={opt.val} className="flex items-start gap-2 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#c9a96e]">
+            <label key={opt.val} className="flex items-start gap-2 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#3b5f8f]">
               <input type="radio" name="status" checked={value === opt.val}
                 onChange={() => setValue(opt.val)}
-                className="accent-[#c9a96e] mt-0.5" />
+                className="accent-[#3b5f8f] mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
                 <p className="text-[10px] text-[#6b7280]">{opt.desc}</p>
@@ -911,7 +911,7 @@ function StatusModal({
             Cancel
           </button>
           <button onClick={() => onSave(value)}
-            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors flex items-center justify-center gap-2">
+            className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors flex items-center justify-center gap-2">
             <Save size={12} />Save
           </button>
         </div>

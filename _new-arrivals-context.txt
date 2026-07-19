@@ -1,0 +1,1025 @@
+================================================================================
+SHOP BY WAIST — CONVERT TO HORIZONTAL SLIDER (MOBILE + DESKTOP)
+Generated: 2026-07-19 09:17:40
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\sections\NewArrivals.tsx
+================================================================================
+
+"use client";
+import Link from "next/link";
+import { useState, useMemo, useEffect } from "react";
+import { ArrowRight } from "lucide-react";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { TextReveal } from "@/components/animations/TextReveal";
+import { SlideUp } from "@/components/animations/SlideUp";
+import { ScaleIn } from "@/components/animations/ScaleIn";
+import { ProductCard } from "@/components/product/ProductCard";
+import { cn } from "@/lib/utils";
+import type { Product } from "@/types";
+
+type Tab = "new" | "bestsellers";
+
+interface Props {
+  newArrivals: Product[];
+  bestSellers: Product[];
+}
+
+export function NewArrivals({ newArrivals, bestSellers }: Props) {
+  const [activeTab,      setActiveTab]      = useState<Tab>("new");
+  const [selectedWaists, setSelectedWaists] = useState<number[]>([]);
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
+
+  const tabProducts = activeTab === "new" ? newArrivals : bestSellers;
+
+  const availableWaists = useMemo(() => {
+    const set = new Set<number>();
+    for (const p of tabProducts) {
+      if (p.waist !== null && p.waist !== undefined) set.add(p.waist);
+    }
+    return Array.from(set).sort((a, b) => a - b);
+  }, [tabProducts]);
+
+  useEffect(() => {
+    setSelectedWaists([]);
+    setIsTabSwitching(true);
+    const t = setTimeout(() => setIsTabSwitching(false), 400);
+    return () => clearTimeout(t);
+  }, [activeTab]);
+
+  useEffect(() => {
+    setSelectedWaists((prev) => prev.filter((w) => availableWaists.includes(w)));
+  }, [availableWaists]);
+
+  const toggleWaist = (waist: number) => {
+    setSelectedWaists((prev) =>
+      prev.includes(waist) ? prev.filter((w) => w !== waist) : [...prev, waist]
+    );
+  };
+
+  const clearWaists = () => setSelectedWaists([]);
+
+  const displayProducts = useMemo(() => {
+    if (selectedWaists.length === 0) return tabProducts;
+    return tabProducts.filter(
+      (p) => p.waist !== null && p.waist !== undefined && selectedWaists.includes(p.waist)
+    );
+  }, [tabProducts, selectedWaists]);
+
+  const viewAllHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedWaists.length > 0) {
+      params.set("waist", [...selectedWaists].sort((a, b) => a - b).join(","));
+    }
+    const collectionSlug = activeTab === "new" ? "premium" : "super-premium";
+    const query = params.toString();
+    return query ? `/collections/${collectionSlug}?${query}` : `/collections/${collectionSlug}`;
+  }, [activeTab, selectedWaists]);
+
+  const waistLabel = selectedWaists.length > 0
+    ? `(${[...selectedWaists].sort((a, b) => a - b).join(", ")}")`
+    : "";
+
+  return (
+    <section className="py-16 sm:py-20 lg:py-24 bg-[#fafaf9]">
+      <div className="site-container">
+
+        <div className="text-center mb-8 lg:mb-10">
+          <FadeIn>
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              Discover
+            </span>
+          </FadeIn>
+          <TextReveal as="h2" delay={100}>
+            <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mt-3 block">
+              Shop by Waist
+            </span>
+          </TextReveal>
+
+          <FadeIn delay={200}>
+            <div className="flex items-center justify-center gap-6 mt-6">
+              <button
+                onClick={() => setActiveTab("new")}
+                className={cn(
+                  "text-sm font-medium tracking-wide pb-1.5 border-b-2 transition-all duration-300",
+                  activeTab === "new"
+                    ? "border-[#3b5f8f] text-[#1a1a1a]"
+                    : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+                )}
+              >Premium</button>
+              <button
+                onClick={() => setActiveTab("bestsellers")}
+                className={cn(
+                  "text-sm font-medium tracking-wide pb-1.5 border-b-2 transition-all duration-300",
+                  activeTab === "bestsellers"
+                    ? "border-[#3b5f8f] text-[#1a1a1a]"
+                    : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+                )}
+              >Super Premium</button>
+            </div>
+          </FadeIn>
+        </div>
+
+        {availableWaists.length >= 2 && (
+          <FadeIn delay={250}>
+            <div className="flex items-center justify-center gap-2 mb-8 lg:mb-10 flex-wrap px-4">
+              <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#6b7280] mr-2">
+                Waist:
+              </span>
+
+              <ScaleIn from={0.7} delay={0}>
+                <button
+                  onClick={clearWaists}
+                  className={cn(
+                    "min-w-[44px] h-9 px-3 text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 border hover:scale-105 active:scale-95",
+                    selectedWaists.length === 0
+                      ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                      : "border-[#d1d5db] bg-white text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                  )}
+                >
+                  All
+                </button>
+              </ScaleIn>
+
+              {availableWaists.map((waist, i) => {
+                const isActive = selectedWaists.includes(waist);
+                return (
+                  <ScaleIn key={waist} from={0.7} delay={80 + i * 60}>
+                    <button
+                      onClick={() => toggleWaist(waist)}
+                      className={cn(
+                        "min-w-[44px] h-9 px-3 text-xs font-semibold tracking-[0.1em] transition-all duration-200 border hover:scale-105 active:scale-95",
+                        isActive
+                          ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                          : "border-[#d1d5db] bg-white text-[#6b7280] hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+                      )}
+                      aria-pressed={isActive}
+                    >
+                      {waist}
+                    </button>
+                  </ScaleIn>
+                );
+              })}
+
+              {selectedWaists.length > 0 && (
+                <button
+                  onClick={clearWaists}
+                  className="ml-2 text-[10px] text-[#3b5f8f] hover:text-[#2d4a72] underline animate-fade-zoom-in"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </FadeIn>
+        )}
+
+        {displayProducts.length > 0 ? (
+          <div
+            key={activeTab}
+            className={cn(
+              "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-10 lg:gap-x-6 lg:gap-y-12 transition-opacity duration-300",
+              isTabSwitching ? "opacity-0" : "opacity-100"
+            )}
+          >
+            {displayProducts.slice(0, 12).map((product, i) => (
+              <div
+                key={product.id}
+                className={cn(
+                  // Mobile shows only first 4; sm and up shows all
+                  i >= 4 && "hidden sm:block"
+                )}
+              >
+                <SlideUp stagger={70} index={i}>
+                  <ProductCard product={product} />
+                </SlideUp>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-zoom-in">
+            <div className="w-14 h-14 bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#3b5f8f]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-[#1a1a1a] mb-1">
+              No products in{" "}
+              {selectedWaists.length === 1
+                ? `waist size ${selectedWaists[0]}"`
+                : `waist sizes ${[...selectedWaists].sort((a, b) => a - b).join(", ")}"`}
+            </p>
+            <button onClick={clearWaists} className="text-xs text-[#3b5f8f] hover:text-[#2d4a72] underline mt-1">
+              Show all sizes
+            </button>
+          </div>
+        )}
+
+        {displayProducts.length > 0 && (
+          <FadeIn delay={500}>
+            <div className="text-center mt-10 lg:mt-14">
+              <Link
+                href={viewAllHref}
+                className="shimmer-btn group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 hover-lift"
+              >
+                <span>View All {activeTab === "new" ? "Premium" : "Super Premium"}</span>
+                {waistLabel && (
+                  <span className="text-[#3b5f8f] group-hover:text-white transition-colors">
+                    {waistLabel}
+                  </span>
+                )}
+                <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1.5" />
+              </Link>
+            </div>
+          </FadeIn>
+        )}
+      </div>
+    </section>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\product\ProductCard.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Heart, ShoppingBag } from "lucide-react";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
+import { cn } from "@/lib/utils";
+import type { Product } from "@/types";
+
+interface ProductCardProps {
+  product: Product;
+  className?: string;
+}
+
+const PLACEHOLDER_URL = "/uploads/placeholder.svg";
+
+function formatPKR(amount: number): string {
+  return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
+}
+
+export function ProductCard({ product, className }: ProductCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [mounted, setMounted]     = useState(false);
+
+  const addToCart      = useCartStore((s) => s.addItem);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const isInWishlist   = useWishlistStore((s) => s.isInWishlist(product.id));
+  const showToast      = useToastStore((s) => s.addToast);
+
+  useEffect(() => setMounted(true), []);
+
+  const sortedImages = [...(product.images ?? [])].sort(
+    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+  );
+  const primaryImage = sortedImages[0] ?? {
+    id: "placeholder", url: PLACEHOLDER_URL, alt: product.name, isPrimary: true,
+  };
+  const secondaryImage = sortedImages[1];
+  const hasSecondary   = Boolean(secondaryImage);
+
+  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+
+  const uniqueColors = Array.from(
+    new Map(product.variants.map((v) => [v.colorHex, { hex: v.colorHex, name: v.color }])).values()
+  );
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const defaultVariant = product.variants[0];
+    if (!defaultVariant) return;
+
+    addToCart({
+      productId: product.id, variantId: defaultVariant.id,
+      name: product.name, image: primaryImage.url,
+      size: defaultVariant.size, color: defaultVariant.color,
+      colorHex: defaultVariant.colorHex, price: product.price,
+      quantity: 1, slug: product.slug,
+      bgColor: product.bgColor,
+    });
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist({
+      id: product.id, productId: product.id,
+      name: product.name, image: primaryImage.url,
+      price: product.price, slug: product.slug,
+      bgColor: product.bgColor,
+    });
+    showToast({
+      type: "success",
+      message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+    });
+  };
+
+  return (
+    <div
+      className={cn("group relative", className)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Link
+        href={`/products/${product.slug}`}
+        className="relative block mb-3 sm:mb-4"
+      >
+        <ProductBgWrapper
+          bgColor={product.bgColor}
+          className={cn(
+            "aspect-[4/5] rounded-xl sm:rounded-2xl",
+            !product.bgColor && "bg-[#f4f2ee]"
+          )}
+        >
+          {/* Primary image — subtle zoom on hover */}
+          <Image
+            src={primaryImage.url}
+            alt={primaryImage.alt}
+            fill
+            className={cn(
+              "object-cover transition-all duration-[900ms] ease-out",
+              hasSecondary && isHovered ? "opacity-0 scale-105" : "opacity-100 scale-100",
+              !hasSecondary && isHovered && "scale-105"
+            )}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            loading="lazy"
+            unoptimized={primaryImage.url === PLACEHOLDER_URL}
+          />
+
+          {/* Secondary image */}
+          {hasSecondary && (
+            <Image
+              src={secondaryImage.url}
+              alt={secondaryImage.alt || product.name}
+              fill
+              className={cn(
+                "object-cover transition-all duration-[900ms] ease-out",
+                isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
+              )}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
+            />
+          )}
+        </ProductBgWrapper>
+
+        {/* Corner accents that reveal on hover — nudged inward to sit inside the rounded corner */}
+        <div
+          className={cn(
+            "absolute top-3 left-3 w-4 h-4 border-t border-l border-[#3b5f8f] transition-all duration-500 pointer-events-none",
+            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#3b5f8f] transition-all duration-500 delay-100 pointer-events-none",
+            isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
+          )}
+        />
+
+        {/* Wishlist — rounded to match card aesthetic */}
+        <button
+          onClick={handleWishlist}
+          aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          className={cn(
+            "absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300 active:scale-90",
+            isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none",
+            mounted && isInWishlist && "opacity-100 translate-x-0"
+          )}
+        >
+          <Heart
+            size={14}
+            className={cn(
+              "transition-all duration-300",
+              mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f] scale-110" : "text-[#1a1a1a]"
+            )}
+          />
+        </button>
+
+        {/* Quick Add bar — rounded bottom corners match container */}
+        <div
+          className={cn(
+            "absolute bottom-0 left-0 right-0 z-10 transition-all duration-400 ease-out overflow-hidden rounded-b-xl sm:rounded-b-2xl",
+            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-full pointer-events-none"
+          )}
+        >
+          <button
+            onClick={handleQuickAdd}
+            className="shimmer-btn w-full bg-white/98 backdrop-blur-sm text-[#1a1a1a] text-[11px] font-semibold tracking-[0.15em] uppercase py-3 hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center justify-between px-4 border-t border-[#e5e7eb]/50"
+          >
+            <span>Add to Basket</span>
+            <ShoppingBag size={13} strokeWidth={1.75} className="transition-transform duration-300 group-hover:rotate-12" />
+          </button>
+        </div>
+      </Link>
+
+      <div className="px-0.5 space-y-1.5">
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#3b5f8f]">
+          {product.collection || "Denova"}
+        </p>
+
+        <Link href={`/products/${product.slug}`}>
+          <h3 className="text-xs sm:text-[13px] font-medium tracking-[0.08em] uppercase text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors duration-300 leading-snug line-clamp-1">
+            {product.name}
+          </h3>
+        </Link>
+
+        <div className="flex items-baseline gap-2 pt-0.5">
+          <span className="text-[13px] sm:text-sm font-bold text-[#1a1a1a] tracking-wide">
+            {formatPKR(product.price)}
+          </span>
+          {hasDiscount && (
+            <span className="text-[11px] text-[#9ca3af] line-through">
+              {formatPKR(product.compareAtPrice!)}
+            </span>
+          )}
+        </div>
+
+        {uniqueColors.length > 0 && (
+          <div className="flex items-center gap-1 pt-1">
+            {uniqueColors.slice(0, 6).map((color, i) => (
+              <span
+                key={color.hex}
+                className="w-2.5 h-2.5 border border-[#d1d5db] rounded-full transition-transform duration-300 hover:scale-125"
+                style={{
+                  backgroundColor: color.hex,
+                  transitionDelay: `${i * 30}ms`,
+                }}
+                title={color.name}
+              />
+            ))}
+            {uniqueColors.length > 6 && (
+              <span className="text-[9px] text-[#6b7280] ml-1">+{uniqueColors.length - 6}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\SlideUp.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface SlideUpProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  stagger?: number; // extra delay per index
+  index?: number;
+}
+
+export function SlideUp({
+  children,
+  className,
+  delay = 0,
+  stagger = 0,
+  index = 0,
+}: SlideUpProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  const totalDelay = delay + stagger * index;
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(32px)",
+        transition: shouldAnimate
+          ? `opacity 600ms ease, transform 600ms ease`
+          : "none",
+        transitionDelay: `${totalDelay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\ScaleIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface ScaleInProps {
+  children:   React.ReactNode;
+  className?: string;
+  from?:      number;    // start scale (0-1)
+  delay?:     number;
+  duration?:  number;
+  threshold?: number;
+}
+
+export function ScaleIn({
+  children,
+  className,
+  from      = 0.85,
+  delay     = 0,
+  duration  = 600,
+  threshold = 0.2,
+}: ScaleInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "scale(1)" : `scale(${from})`,
+        transition: shouldAnimate
+          ? `opacity ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1), transform ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\FadeIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface FadeInProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;      // ms
+  duration?: number;   // ms
+  threshold?: number;  // 0-1
+  once?: boolean;
+}
+
+export function FadeIn({
+  children,
+  className,
+  delay = 0,
+  duration = 600,
+  threshold = 0.15,
+  once = true,
+}: FadeInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (once) observer.disconnect();
+        } else if (!once) {
+          setIsVisible(false);
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold, once]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(16px)",
+        transition: shouldAnimate
+          ? `opacity ${duration}ms ease, transform ${duration}ms ease`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\TextReveal.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface TextRevealProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  as?: "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
+}
+
+/**
+ * TextReveal — fades + slides text upward on scroll into view.
+ *
+ * NOTE on descenders:
+ *   We use `overflow-hidden` so the initial 24px offset doesn't
+ *   flash before animation. But `overflow-hidden` will clip
+ *   letter descenders (p, y, g, j, q).
+ *
+ *   Fix: add pb-[0.15em] so the container has room for descenders
+ *   without visibly increasing spacing (0.15em ≈ typical descender).
+ *   Also use leading-[1.15] to give a tiny bit of breathing room.
+ */
+export function TextReveal({
+  children,
+  className,
+  delay = 0,
+  as: Tag = "div",
+}: TextRevealProps) {
+  const ref = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
+  return (
+    <Tag
+      ref={ref as React.RefObject<HTMLHeadingElement>}
+      className={cn("overflow-hidden pb-[0.15em]", className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(24px)",
+        transition: shouldAnimate
+          ? `opacity 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             transform 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\globals.css
+================================================================================
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary:    #1a1a1a;
+  --color-brand-secondary:  #3b5f8f;
+  --color-brand-accent:     #f5f0e8;
+  --color-brand-surface:    #fafaf9;
+  --color-brand-muted:      #6b7280;
+  --color-brand-border:     #e5e7eb;
+
+  --font-sans:      var(--font-inter);
+  --font-serif:     var(--font-playfair);
+  --font-cormorant: var(--font-cormorant);
+
+  --breakpoint-3xl: 1920px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+::selection { background-color: #3b5f8f; color: #ffffff; }
+img, video { max-width: 100%; height: auto; display: block; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #fafaf9; }
+::-webkit-scrollbar-thumb { background: #3b5f8f; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #2d4a72; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.site-container {
+  width: 100%; margin-left: auto; margin-right: auto;
+  padding-left: 12px; padding-right: 12px;
+}
+@media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
+@media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
+@media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
+@media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+
+/* ═══════════════════════════════════════════════════════════
+   Existing animation keyframes
+   ═══════════════════════════════════════════════════════════ */
+@keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+@keyframes float-soft    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes pulse-gold    { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(59, 95, 143, 0); } }
+@keyframes marquee       { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes ken-burns     { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-1%, -1%); } }
+@keyframes letter-drop   { 0% { opacity: 0; transform: translateY(0.5em) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
+@keyframes draw-line     { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes tile-reveal   { 0% { opacity: 0; transform: scale(0.94) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes focus-ring    { 0% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.35); } 100% { box-shadow: 0 0 0 5px rgba(59, 95, 143, 0); } }
+@keyframes fade-zoom-in  { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── Live view counter pulse ── */
+@keyframes live-ping {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
+.animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
+.animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
+.animate-marquee      { animation: marquee 30s linear infinite; }
+.animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
+.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+.shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
+.shimmer-btn::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 800ms ease;
+  pointer-events: none; z-index: 1;
+}
+.shimmer-btn:hover::before { transform: translateX(200%); }
+.shimmer-btn > * { position: relative; z-index: 2; }
+
+.hover-lift {
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.hover-lift:hover { transform: translateY(-4px); }
+
+.gold-underline { position: relative; display: inline-block; }
+.gold-underline::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+  background-color: #3b5f8f;
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gold-underline:hover::after { transform: scaleX(1); }
+
+.input-focus-gold:focus { animation: focus-ring 1.4s ease-out; border-color: #3b5f8f; }
+
+.product-image-frame { overflow: hidden; }
+.product-image-frame img {
+  transition: transform 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.product-image-frame:hover img { transform: scale(1.06); }
+
+.marquee-track {
+  display: flex; width: max-content;
+  animation: marquee 30s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }
+
+.tilt-3d { transform-style: preserve-3d; perspective: 1000px; }
+
+.section-veil { position: relative; }
+.section-veil::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fafaf9 0%, transparent 15%, transparent 85%, #fafaf9 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
+@keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-left    { from { opacity: 0; transform: translateX(-40px); }    to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-slide-right   { from { opacity: 0; transform: translateX(40px); }     to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-scale-in      { from { opacity: 0; transform: scale(0.85); }          to { opacity: 1; transform: scale(1); } }
+@keyframes hero-scale-bounce  {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hero-blur-in {
+  from { opacity: 0; filter: blur(12px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+@keyframes hero-mask-reveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes hero-pulse-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(59,95,143,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+  50%      { text-shadow: 0 0 20px rgba(59,95,143,0.75), 0 2px 6px rgba(0,0,0,0.35); }
+}
+@keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+@keyframes hero-underline-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes hero-accent-bar-draw {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes hero-shimmer-sweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%)  skewX(-20deg); }
+}
+@keyframes hero-dot-pop {
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-sticker-diag {
+  0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1); }
+}
+@keyframes hero-sticker-diag-tl {
+  0%   { opacity: 0; transform: translate(-30%, -30%) rotate(-45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1); }
+}
+@keyframes hero-sticker-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes hero-sticker-slide-up {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hero-sticker-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-2deg); }
+  75%      { transform: rotate(2deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOUNCEMENT BAR — LUXURY ANIMATIONS (BLUE)
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes announcement-gradient-drift {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+
+@keyframes announcement-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.55; box-shadow: 0 0 0 0 currentColor; }
+  50%      { transform: scale(1.6); opacity: 1;    box-shadow: 0 0 6px currentColor; }
+}
+
+@keyframes announcement-glow-in {
+  0%   { text-shadow: 0 0 0 transparent; }
+  30%  { text-shadow: 0 0 12px rgba(59, 95, 143, 0.55); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+@keyframes announcement-icon-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(59, 95, 143, 0)); }
+  50%      { filter: drop-shadow(0 0 4px rgba(59, 95, 143, 0.7)); }
+}
+
+@keyframes announcement-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.announcement-bar-shell {
+  animation: announcement-gradient-drift 12s ease-in-out infinite;
+}
+
+.announcement-dot-pulse {
+  animation: announcement-dot-pulse 2.4s ease-in-out infinite;
+}
+
+.announcement-glow-in {
+  animation: announcement-glow-in 1.2s ease-out both;
+}
+
+.announcement-icon-glow {
+  animation: announcement-icon-glow 2.8s ease-in-out infinite;
+}
+
+.announcement-marquee {
+  animation: announcement-marquee 22s linear infinite;
+  will-change: transform;
+}
+.announcement-bar-shell:hover .announcement-marquee {
+  animation-play-state: paused;
+}

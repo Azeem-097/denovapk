@@ -1,4 +1,4 @@
-﻿import { getSetting } from "@/lib/db/repositories/settings";
+import { getSetting } from "@/lib/db/repositories/settings";
 import { AnnouncementBarClient } from "./AnnouncementBarClient";
 
 export const dynamic   = "force-dynamic";
@@ -10,7 +10,7 @@ const DEFAULT_CONFIG = {
   dismissible:       true,
   bgColor:           "#1a1a1a",
   textColor:         "#ffffff",
-  accentColor:       "#c9a96e",
+  accentColor:       "#3b5f8f",
   messages: [
     { id: "m1", text: "Free shipping on orders above PKR 5,000",   link: "",      isActive: true, sortOrder: 0 },
     { id: "m2", text: "New Summer Collection is now live",         link: "/shop", isActive: true, sortOrder: 1 },

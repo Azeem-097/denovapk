@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import {
@@ -109,7 +109,7 @@ export function GalleryClient({ initialConfig }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <LayoutGrid size={22} className="text-[#c9a96e]" />
+            <LayoutGrid size={22} className="text-[#3b5f8f]" />
             Gallery Section
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -131,18 +131,18 @@ export function GalleryClient({ initialConfig }: Props) {
         {/* Enabled toggle */}
         <label className={cn(
           "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
-          config.enabled ? "bg-[#f5f0e8]/40 border-[#c9a96e]" : "bg-[#fafaf9] border-[#e5e7eb]"
+          config.enabled ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
         )}>
           <input
             type="checkbox"
             checked={config.enabled}
             onChange={(e) => updateConfig("enabled", e.target.checked)}
-            className="w-4 h-4 accent-[#c9a96e]"
+            className="w-4 h-4 accent-[#3b5f8f]"
           />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
               {config.enabled
-                ? <><Eye size={13} className="text-[#c9a96e]" />Section visible on homepage</>
+                ? <><Eye size={13} className="text-[#3b5f8f]" />Section visible on homepage</>
                 : <><EyeOff size={13} className="text-[#6b7280]" />Section hidden from homepage</>
               }
             </p>
@@ -159,7 +159,7 @@ export function GalleryClient({ initialConfig }: Props) {
               value={config.sectionLabel}
               onChange={(e) => updateConfig("sectionLabel", e.target.value)}
               placeholder="e.g. @denovapk"
-              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
             />
           </div>
           <div>
@@ -171,7 +171,7 @@ export function GalleryClient({ initialConfig }: Props) {
               value={config.sectionTitle}
               onChange={(e) => updateConfig("sectionTitle", e.target.value)}
               placeholder="e.g. Style in Action"
-              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
             />
           </div>
         </div>
@@ -185,7 +185,7 @@ export function GalleryClient({ initialConfig }: Props) {
             onChange={(e) => updateConfig("sectionDescription", e.target.value)}
             placeholder="e.g. Follow us for daily style inspiration..."
             rows={2}
-            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none resize-y"
+            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
           />
         </div>
       </div>
@@ -342,7 +342,7 @@ function SlotCard({ slot, index, label, aspectClass, gridClass, onEdit, onToggle
 
       {/* Link indicator */}
       {slot.image && slot.link && (
-        <div className="absolute top-2 right-2 bg-[#c9a96e] text-white p-1" title={`Links to: ${slot.link}`}>
+        <div className="absolute top-2 right-2 bg-[#3b5f8f] text-white p-1" title={`Links to: ${slot.link}`}>
           <LinkIcon size={10} />
         </div>
       )}
@@ -360,7 +360,7 @@ function SlotCard({ slot, index, label, aspectClass, gridClass, onEdit, onToggle
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
         <button
           onClick={onEdit}
-          className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#c9a96e] hover:text-white transition-colors flex items-center gap-1.5"
+          className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#3b5f8f] hover:text-white transition-colors flex items-center gap-1.5"
         >
           <Edit size={12} />Edit
         </button>
@@ -370,7 +370,7 @@ function SlotCard({ slot, index, label, aspectClass, gridClass, onEdit, onToggle
             "px-3 py-2 text-xs font-semibold transition-colors flex items-center gap-1.5",
             slot.isActive
               ? "bg-white text-[#6b7280] hover:bg-[#6b7280] hover:text-white"
-              : "bg-[#c9a96e] text-white hover:bg-[#b8955a]"
+              : "bg-[#3b5f8f] text-white hover:bg-[#2d4a72]"
           )}
         >
           {slot.isActive
@@ -539,8 +539,8 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                   className={cn(
                     "border-2 border-dashed aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors",
                     dragOver
-                      ? "border-[#c9a96e] bg-[#f5f0e8]/50"
-                      : "border-[#e5e7eb] hover:border-[#c9a96e] bg-[#fafaf9]"
+                      ? "border-[#3b5f8f] bg-[#f5f0e8]/50"
+                      : "border-[#e5e7eb] hover:border-[#3b5f8f] bg-[#fafaf9]"
                   )}
                   onClick={() => fileRef.current?.click()}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -549,13 +549,13 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 >
                   {uploading ? (
                     <div className="flex flex-col items-center gap-2">
-                      <Loader size={24} className="text-[#c9a96e] animate-spin" />
+                      <Loader size={24} className="text-[#3b5f8f] animate-spin" />
                       <span className="text-xs text-[#6b7280]">Uploading &amp; optimizing...</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 p-4 text-center">
                       <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                        <ImageIcon size={18} className="text-[#c9a96e]" />
+                        <ImageIcon size={18} className="text-[#3b5f8f]" />
                       </div>
                       <span className="text-sm font-semibold text-[#1a1a1a]">
                         Click or drag image here
@@ -577,12 +577,12 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                       placeholder="https://images.unsplash.com/..."
-                      className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+                      className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
                     />
                     <button
                       onClick={handleUrlAdd}
                       disabled={!urlInput.trim() || uploading}
-                      className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-40"
+                      className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
                     >
                       {uploading ? <Loader size={12} className="animate-spin" /> : "Load"}
                     </button>
@@ -613,7 +613,7 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="/collections/premium  or  https://example.com"
-                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
               />
               <p className="mt-1 text-[10px] text-[#6b7280]">
                 Where to send visitors when they click this image. Leave empty for no link.
@@ -624,19 +624,19 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
             <label className={cn(
               "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
               isActive
-                ? "bg-[#f5f0e8]/40 border-[#c9a96e]"
+                ? "bg-[#f5f0e8]/40 border-[#3b5f8f]"
                 : "bg-[#fafaf9] border-[#e5e7eb]"
             )}>
               <input
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 accent-[#c9a96e]"
+                className="w-4 h-4 accent-[#3b5f8f]"
               />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
                   {isActive
-                    ? <><Eye size={13} className="text-[#c9a96e]" />Visible on website</>
+                    ? <><Eye size={13} className="text-[#3b5f8f]" />Visible on website</>
                     : <><EyeOff size={13} className="text-[#6b7280]" />Hidden from website</>
                   }
                 </p>
@@ -654,7 +654,7 @@ function SlotEditModal({ slot, label, onClose, onSave }: ModalProps) {
             </button>
             <button
               onClick={handleSubmit}
-              className="inline-flex items-center gap-2 bg-[#c9a96e] hover:bg-[#b8955a] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+              className="inline-flex items-center gap-2 bg-[#3b5f8f] hover:bg-[#2d4a72] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
               <Save size={12} />Apply Changes
             </button>

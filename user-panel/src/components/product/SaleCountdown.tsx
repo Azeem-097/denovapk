@@ -3,19 +3,6 @@ import { useEffect, useState } from "react";
 import { Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/**
- * Simulated sale countdown timer.
- *
- * On first visit: generates a random deadline 24-48 hours in the future
- * and stores it in localStorage keyed by product ID.
- *
- * On subsequent visits: reads the same deadline so the timer feels
- * consistent for the same user. When the countdown expires, a new
- * 24-48h deadline is generated automatically.
- *
- * Storage key:  denova_sale_expires_{productId}
- */
-
 interface Props {
   productId: string;
   className?: string;
@@ -27,7 +14,7 @@ const MAX_HOURS = 48;
 function getOrCreateDeadline(productId: string): number {
   if (typeof window === "undefined") return Date.now() + MIN_HOURS * 3_600_000;
 
-  const key = `denova_sale_expires_${productId}`;
+  const key = "denova_sale_expires_" + productId;
   const stored = window.localStorage.getItem(key);
 
   if (stored) {
@@ -35,7 +22,6 @@ function getOrCreateDeadline(productId: string): number {
     if (!isNaN(ts) && ts > Date.now()) return ts;
   }
 
-  // Generate a new deadline between MIN_HOURS and MAX_HOURS from now
   const hours    = MIN_HOURS + Math.random() * (MAX_HOURS - MIN_HOURS);
   const deadline = Date.now() + hours * 3_600_000;
   window.localStorage.setItem(key, String(deadline));
@@ -70,21 +56,18 @@ export function SaleCountdown({ productId, className }: Props) {
     days: 0, hours: 0, minutes: 0, seconds: 0, expired: false,
   });
 
-  // Init on mount
   useEffect(() => {
     setMounted(true);
     setDeadline(getOrCreateDeadline(productId));
   }, [productId]);
 
-  // Tick every second
   useEffect(() => {
     if (!deadline) return;
     const update = () => {
       const next = computeParts(deadline);
       if (next.expired) {
-        // Generate a new deadline for this product and keep going
         const newDeadline = Date.now() + (MIN_HOURS + Math.random() * (MAX_HOURS - MIN_HOURS)) * 3_600_000;
-        window.localStorage.setItem(`denova_sale_expires_${productId}`, String(newDeadline));
+        window.localStorage.setItem("denova_sale_expires_" + productId, String(newDeadline));
         setDeadline(newDeadline);
         setParts(computeParts(newDeadline));
       } else {
@@ -97,12 +80,11 @@ export function SaleCountdown({ productId, className }: Props) {
     return () => clearInterval(id);
   }, [deadline, productId]);
 
-  // SSR-safe placeholder to prevent hydration mismatch
   if (!mounted) {
     return (
       <div
         className={cn(
-          "border border-[#e5e7eb] bg-[#fafaf9] p-2 sm:p-2.5",
+          "border border-[#e5d3b3] bg-[#fdfbf7] p-3 sm:p-4 mb-6 shadow-[0_4px_20px_-10px_rgba(217,119,6,0.15)]",
           className
         )}
         aria-hidden
@@ -122,34 +104,34 @@ export function SaleCountdown({ productId, className }: Props) {
   return (
     <div
       className={cn(
-        "w-fit border border-[#c9a96e]/30 bg-gradient-to-br from-[#faf7f2] via-white to-[#f9f4ec] p-2 sm:p-2.5",
+        "w-fit border border-[#e5d3b3] bg-[#fdfbf7] p-3 sm:p-4 mb-6 shadow-[0_4px_20px_-10px_rgba(217,119,6,0.15)]",
         className
       )}
     >
-      <div className="flex items-center gap-1.5 mb-1.5">
+      <div className="flex items-center gap-1.5 mb-2.5">
         <Zap
-          size={10}
-          strokeWidth={2.25}
-          className="text-[#c9a96e] fill-[#c9a96e]/20"
+          size={12}
+          strokeWidth={2.5}
+          className="text-[#d97706] fill-[#d97706]/20"
         />
-        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#c9a96e]">
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#d97706]">
           Sale Ends In
         </span>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-2 sm:gap-3">
         {cells.map((cell, i) => (
-          <div key={cell.label} className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex flex-col items-center min-w-[30px] sm:min-w-[34px]">
-              <span className="font-[family-name:var(--font-playfair)] text-sm sm:text-base font-bold text-[#1a1a1a] leading-none tabular-nums">
+          <div key={cell.label} className="flex items-center gap-2 sm:gap-3">
+            <div className="flex flex-col items-center min-w-[34px] sm:min-w-[40px]">
+              <span className="font-[family-name:var(--font-playfair)] text-base sm:text-lg font-bold text-[#1a1a1a] leading-none tabular-nums">
                 {String(cell.value).padStart(2, "0")}
               </span>
-              <span className="text-[8px] font-medium tracking-wider uppercase text-[#6b7280] mt-0.5">
+              <span className="text-[8px] font-bold tracking-wider uppercase text-[#6b7280] mt-1">
                 {cell.label}
               </span>
             </div>
             {i < cells.length - 1 && (
-              <span className="text-[#c9a96e] text-sm font-light leading-none pb-2">
+              <span className="text-[#d97706]/50 text-sm font-light leading-none pb-2">
                 :
               </span>
             )}

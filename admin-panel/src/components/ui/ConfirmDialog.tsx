@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect } from "react";
 import { AlertTriangle, HelpCircle, Info, X } from "lucide-react";
 import { useConfirmStore } from "@/store/confirmStore";
@@ -14,13 +14,13 @@ const VARIANT_CONFIG = {
     icon: AlertTriangle,
     iconBg: "bg-orange-50",
     iconColor: "text-orange-500",
-    button: "bg-[#1a1a1a] hover:bg-[#c9a96e] text-white",
+    button: "bg-[#1a1a1a] hover:bg-[#3b5f8f] text-white",
   },
   info: {
     icon: HelpCircle,
     iconBg: "bg-[#f5f0e8]",
-    iconColor: "text-[#c9a96e]",
-    button: "bg-[#1a1a1a] hover:bg-[#c9a96e] text-white",
+    iconColor: "text-[#3b5f8f]",
+    button: "bg-[#1a1a1a] hover:bg-[#3b5f8f] text-white",
   },
 } as const;
 

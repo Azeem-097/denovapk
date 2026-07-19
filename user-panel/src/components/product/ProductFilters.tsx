@@ -127,7 +127,7 @@ export function ProductFilters({
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[#1a1a1a]">Filters</span>
             {activeCount > 0 && (
-              <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
+              <span className="w-5 h-5 flex items-center justify-center bg-[#3b5f8f] text-white text-[10px] font-bold rounded-full">
                 {activeCount}
               </span>
             )}
@@ -147,7 +147,7 @@ export function ProductFilters({
                 Filters
               </span>
               {activeCount > 0 && (
-                <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
+                <span className="w-5 h-5 flex items-center justify-center bg-[#3b5f8f] text-white text-[10px] font-bold rounded-full">
                   {activeCount}
                 </span>
               )}
@@ -155,7 +155,7 @@ export function ProductFilters({
             {activeCount > 0 && (
               <button
                 onClick={clearAll}
-                className="text-[10px] text-[#6b7280] hover:text-[#c9a96e] transition-colors underline"
+                className="text-[10px] text-[#6b7280] hover:text-[#3b5f8f] transition-colors underline"
               >
                 Clear all
               </button>
@@ -171,8 +171,8 @@ export function ProductFilters({
                   className={cn(
                     "w-4 h-4 rounded-full border-2 transition-all duration-150 flex-shrink-0",
                     filters.sortBy === opt.value
-                      ? "border-[#c9a96e] bg-[#c9a96e]"
-                      : "border-[#e5e7eb] group-hover:border-[#c9a96e]"
+                      ? "border-[#3b5f8f] bg-[#3b5f8f]"
+                      : "border-[#e5e7eb] group-hover:border-[#3b5f8f]"
                   )}
                   onClick={() => onChange({ ...filters, sortBy: opt.value })}
                 />
@@ -198,8 +198,8 @@ export function ProductFilters({
                     className={cn(
                       "w-4 h-4 border-2 transition-all duration-150 flex-shrink-0 flex items-center justify-center",
                       filters.collections.includes(col)
-                        ? "border-[#c9a96e] bg-[#c9a96e]"
-                        : "border-[#e5e7eb] group-hover:border-[#c9a96e]"
+                        ? "border-[#3b5f8f] bg-[#3b5f8f]"
+                        : "border-[#e5e7eb] group-hover:border-[#3b5f8f]"
                     )}
                     onClick={() => toggle("collections", col)}
                   >
@@ -233,8 +233,8 @@ export function ProductFilters({
                   className={cn(
                     "w-7 h-7 rounded-full border-2 transition-all duration-150",
                     filters.colors.includes(color.name)
-                      ? "border-[#c9a96e] scale-110"
-                      : "border-[#e5e7eb] hover:border-[#c9a96e]"
+                      ? "border-[#3b5f8f] scale-110"
+                      : "border-[#e5e7eb] hover:border-[#3b5f8f]"
                   )}
                   style={{ backgroundColor: color.hex }}
                 />
@@ -280,7 +280,7 @@ export function ProductFilters({
               {priceFilterActive && (
                 <button
                   onClick={() => onChange({ ...filters, priceMin: catalogMin, priceMax: catalogMax })}
-                  className="mt-3 text-[10px] text-[#c9a96e] hover:text-[#b8955a] underline"
+                  className="mt-3 text-[10px] text-[#3b5f8f] hover:text-[#2d4a72] underline"
                 >
                   Reset price range
                 </button>
@@ -301,7 +301,7 @@ export function ProductFilters({
           </button>
           <button
             onClick={onClose}
-            className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors"
+            className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors"
           >
             Apply Filters
           </button>
@@ -332,7 +332,7 @@ function DualRangeSlider({
   if (max <= min) {
     return (
       <div className="w-full h-1.5 bg-[#e5e7eb] relative rounded-full">
-        <div className="absolute inset-0 bg-[#c9a96e] rounded-full" />
+        <div className="absolute inset-0 bg-[#3b5f8f] rounded-full" />
       </div>
     );
   }
@@ -349,7 +349,7 @@ function DualRangeSlider({
 
       {/* Filled portion */}
       <div
-        className="absolute h-1 bg-[#c9a96e] rounded-full pointer-events-none"
+        className="absolute h-1 bg-[#3b5f8f] rounded-full pointer-events-none"
         style={{
           left:  `${leftPct}%`,
           right: `${100 - rightPct}%`,
@@ -391,7 +391,7 @@ function DualRangeSlider({
           height: 18px;
           border-radius: 50%;
           background: white;
-          border: 2px solid #c9a96e;
+          border: 2px solid #3b5f8f;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
           cursor: grab;
           transition: transform 0.15s;
@@ -409,7 +409,7 @@ function DualRangeSlider({
           height: 18px;
           border-radius: 50%;
           background: white;
-          border: 2px solid #c9a96e;
+          border: 2px solid #3b5f8f;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
           cursor: grab;
           transition: transform 0.15s;

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
 import { useToastStore, type Toast, type ToastType } from "@/store/toastStore";
@@ -11,8 +11,8 @@ const CONFIG: Record<ToastType, {
 }> = {
   success: {
     icon: CheckCircle,
-    accent: "border-l-[#c9a96e]",
-    iconColor: "text-[#c9a96e]",
+    accent: "border-l-[#3b5f8f]",
+    iconColor: "text-[#3b5f8f]",
     bgTint: "bg-[#f5f0e8]/30",
   },
   error: {

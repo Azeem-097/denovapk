@@ -227,7 +227,7 @@ function Row({
       <span className="text-[#6b7280]">{label}</span>
       <span className={cn(
         "font-medium",
-        accent === "brand" ? "text-[#c9a96e]" :
+        accent === "brand" ? "text-[#3b5f8f]" :
         accent === "green" ? "text-green-600" :
         "text-[#1a1a1a]"
       )}>

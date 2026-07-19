@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useRef } from "react";
 import {
   Megaphone, Plus, GripVertical, Trash2, Eye, EyeOff,
@@ -162,7 +162,7 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <Megaphone size={22} className="text-[#c9a96e]" />
+            <Megaphone size={22} className="text-[#3b5f8f]" />
             Announcement Bar
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -189,7 +189,7 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
                   onClick={() => setPreviewIdx(i)}
                   className={cn(
                     "w-2 h-2 rounded-full transition-colors",
-                    i === previewIdx ? "bg-[#c9a96e]" : "bg-[#e5e7eb] hover:bg-[#6b7280]"
+                    i === previewIdx ? "bg-[#3b5f8f]" : "bg-[#e5e7eb] hover:bg-[#6b7280]"
                   )}
                   aria-label={`Preview message ${i + 1}`}
                 />
@@ -228,25 +228,25 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
       {/* ── Global settings ───────────────────────────── */}
       <div className="bg-white border border-[#e5e7eb] p-5 space-y-4">
         <h2 className="text-base font-bold text-[#1a1a1a] flex items-center gap-2">
-          <Palette size={16} className="text-[#c9a96e]" />
+          <Palette size={16} className="text-[#3b5f8f]" />
           Settings
         </h2>
 
         {/* Enabled toggle */}
         <label className={cn(
           "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
-          config.enabled ? "bg-[#f5f0e8]/40 border-[#c9a96e]" : "bg-[#fafaf9] border-[#e5e7eb]"
+          config.enabled ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
         )}>
           <input
             type="checkbox"
             checked={config.enabled}
             onChange={(e) => updateConfig("enabled", e.target.checked)}
-            className="w-4 h-4 accent-[#c9a96e]"
+            className="w-4 h-4 accent-[#3b5f8f]"
           />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
               {config.enabled
-                ? <><Eye size={13} className="text-[#c9a96e]" />Enabled (visible on storefront)</>
+                ? <><Eye size={13} className="text-[#3b5f8f]" />Enabled (visible on storefront)</>
                 : <><EyeOff size={13} className="text-[#6b7280]" />Disabled (hidden from customers)</>
               }
             </p>
@@ -254,12 +254,12 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
         </label>
 
         {/* Dismissible toggle */}
-        <label className="flex items-center gap-3 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#c9a96e] transition-colors">
+        <label className="flex items-center gap-3 p-3 border border-[#e5e7eb] cursor-pointer hover:border-[#3b5f8f] transition-colors">
           <input
             type="checkbox"
             checked={config.dismissible}
             onChange={(e) => updateConfig("dismissible", e.target.checked)}
-            className="w-4 h-4 accent-[#c9a96e]"
+            className="w-4 h-4 accent-[#3b5f8f]"
           />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Allow customers to dismiss</p>
@@ -278,7 +278,7 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
             max={60}
             value={config.autoRotateSeconds}
             onChange={(e) => updateConfig("autoRotateSeconds", Math.max(1, Number(e.target.value) || 5))}
-            className="w-32 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+            className="w-32 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
           />
           <p className="mt-1 text-[10px] text-[#6b7280]">
             How long each message stays visible before rotating. Only applies when there are 2+ active messages.
@@ -326,7 +326,7 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
           </h2>
           <button
             onClick={addMessage}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#c9a96e] hover:text-[#b8955a]"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72]"
           >
             <Plus size={14} />Add Message
           </button>
@@ -361,7 +361,7 @@ export function AnnouncementBarClient({ initialConfig }: Props) {
         {config.messages.length > 0 && (
           <button
             onClick={addMessage}
-            className="w-full py-3 border-2 border-dashed border-[#e5e7eb] hover:border-[#c9a96e] text-sm font-medium text-[#6b7280] hover:text-[#c9a96e] transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] text-sm font-medium text-[#6b7280] hover:text-[#3b5f8f] transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={16} />Add Another Message
           </button>
@@ -407,7 +407,7 @@ function ColorField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="#000000"
-          className="flex-1 px-3 py-2 text-xs font-mono border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none uppercase"
+          className="flex-1 px-3 py-2 text-xs font-mono border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none uppercase"
         />
       </div>
     </div>
@@ -446,7 +446,7 @@ function MessageRow({
 
         {/* Drag handle + index */}
         <div className="flex flex-col items-center gap-1 pt-2 flex-shrink-0">
-          <div className="cursor-grab active:cursor-grabbing text-[#6b7280] hover:text-[#c9a96e]">
+          <div className="cursor-grab active:cursor-grabbing text-[#6b7280] hover:text-[#3b5f8f]">
             <GripVertical size={16} />
           </div>
           <span className="text-[10px] font-bold text-[#6b7280]">#{index + 1}</span>
@@ -461,11 +461,11 @@ function MessageRow({
             value={message.text}
             onChange={(e) => onUpdate("text", e.target.value)}
             placeholder="e.g. Free shipping on orders above PKR 5,000"
-            className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+            className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
           />
 
           {/* Optional link */}
-          <div className="flex items-center border border-[#e5e7eb] focus-within:border-[#c9a96e]">
+          <div className="flex items-center border border-[#e5e7eb] focus-within:border-[#3b5f8f]">
             <span className="px-2 text-[#6b7280] flex-shrink-0">
               <LinkIcon size={12} />
             </span>
@@ -486,7 +486,7 @@ function MessageRow({
             className={cn(
               "p-2 transition-colors",
               message.isActive
-                ? "text-[#c9a96e] hover:text-[#b8955a]"
+                ? "text-[#3b5f8f] hover:text-[#2d4a72]"
                 : "text-[#6b7280] hover:text-[#1a1a1a]"
             )}
             title={message.isActive ? "Disable" : "Enable"}

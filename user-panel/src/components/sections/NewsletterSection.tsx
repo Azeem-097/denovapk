@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { Send, CheckCircle, Sparkles, ArrowRight } from "lucide-react";
@@ -132,7 +132,7 @@ export function NewsletterSection() {
         <div className="site-container flex justify-center pt-8 sm:pt-10">
           <Link
             href="/shop"
-            className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#c9a96e] transition-all duration-300 shadow-md"
+            className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#3b5f8f] transition-all duration-300 shadow-md"
           >
             Shop Now
             <ArrowRight size={14} />
@@ -182,11 +182,11 @@ export function NewsletterSection() {
 
         {/* Decorative floating circles */}
         <div
-          className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#c9a96e]/8 animate-float-soft pointer-events-none"
+          className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#3b5f8f]/8 animate-float-soft pointer-events-none"
           style={{ animationDuration: "8s" }}
         />
         <div
-          className="absolute bottom-[10%] left-[8%] w-32 h-32 rounded-full bg-[#c9a96e]/6 animate-float-soft pointer-events-none"
+          className="absolute bottom-[10%] left-[8%] w-32 h-32 rounded-full bg-[#3b5f8f]/6 animate-float-soft pointer-events-none"
           style={{ animationDuration: "10s", animationDelay: "1s" }}
         />
 
@@ -241,7 +241,7 @@ function NewsletterContent({
     <div className={`flex flex-col ${flexAlign} ${textAlign}`}>
 
       <FadeIn>
-        <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#c9a96e]">
+        <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#3b5f8f]">
           <Sparkles size={12} className="opacity-80" />
           Join the Community
         </span>
@@ -254,7 +254,7 @@ function NewsletterContent({
         >
           Dress the Part.
           <br />
-          <span className="text-[#c9a96e] italic font-normal">Live the Legacy.</span>
+          <span className="text-[#3b5f8f] italic font-normal">Live the Legacy.</span>
         </span>
       </TextReveal>
 
@@ -274,7 +274,7 @@ function NewsletterContent({
               "Insider styling tips & lookbooks",
             ].map((perk) => (
               <li key={perk} className="flex items-center gap-2.5 text-sm text-[#4a4a4a]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#c9a96e] flex-shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3b5f8f] flex-shrink-0" />
                 {perk}
               </li>
             ))}
@@ -298,11 +298,11 @@ function NewsletterContent({
               required
               autoComplete="email"
               aria-label="Email address for newsletter"
-              className="input-focus-gold w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none transition-all duration-300 placeholder:text-[#6b7280]/60 rounded-none"
+              className="input-focus-gold w-full px-5 py-3.5 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none transition-all duration-300 placeholder:text-[#6b7280]/60 rounded-none"
               disabled={status === "loading" || status === "success"}
             />
             <span
-              className="absolute bottom-0 left-0 h-[2px] bg-[#c9a96e] transition-transform duration-500 origin-left w-full"
+              className="absolute bottom-0 left-0 h-[2px] bg-[#3b5f8f] transition-transform duration-500 origin-left w-full"
               style={{ transform: isFocused ? "scaleX(1)" : "scaleX(0)" }}
             />
           </div>
@@ -310,7 +310,7 @@ function NewsletterContent({
           <button
             type="submit"
             disabled={status === "loading" || status === "success"}
-            className="shimmer-btn inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 hover-lift"
+            className="shimmer-btn inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 hover-lift"
           >
             {status === "loading" ? (
               <>
@@ -333,7 +333,7 @@ function NewsletterContent({
       </ScaleIn>
 
       {status === "success" && (
-        <div className={`mt-4 text-sm text-[#c9a96e] font-medium animate-fade-zoom-in ${isLeft ? "" : "text-center"}`}>
+        <div className={`mt-4 text-sm text-[#3b5f8f] font-medium animate-fade-zoom-in ${isLeft ? "" : "text-center"}`}>
           Thank you! You&apos;re now part of the Denova community. 🎉
         </div>
       )}
@@ -341,7 +341,7 @@ function NewsletterContent({
       <FadeIn delay={450}>
         <p className={`mt-4 text-[11px] text-[#6b7280]/80 tracking-wide ${isLeft ? "" : "text-center"}`}>
           No spam, ever. Unsubscribe anytime. By subscribing you agree to our{" "}
-          <a href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#c9a96e] transition-colors">
+          <a href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#3b5f8f] transition-colors">
             privacy policy
           </a>.
         </p>

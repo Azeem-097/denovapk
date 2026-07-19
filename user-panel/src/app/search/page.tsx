@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -35,7 +35,7 @@ function SearchContent() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#c9a96e]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
               Search Results
             </span>
           </FadeIn>
@@ -57,12 +57,12 @@ function SearchContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
         {!query.trim() ? (
           <div className="text-center py-16">
-            <SearchIcon size={40} className="text-[#c9a96e] mx-auto mb-4" />
+            <SearchIcon size={40} className="text-[#3b5f8f] mx-auto mb-4" />
             <p className="text-sm text-[#6b7280]">Enter a search term to find products.</p>
           </div>
         ) : results.length === 0 ? (
           <div className="text-center py-16 max-w-md mx-auto">
-            <SearchIcon size={40} className="text-[#c9a96e] mx-auto mb-4" />
+            <SearchIcon size={40} className="text-[#3b5f8f] mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-[#1a1a1a] mb-2">
               No results found
             </h2>
@@ -71,7 +71,7 @@ function SearchContent() {
             </p>
             <Link
               href="/shop"
-              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#c9a96e] transition-colors"
+              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#3b5f8f] transition-colors"
             >
               Browse All Products
               <ArrowRight size={14} />

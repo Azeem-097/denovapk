@@ -1,3 +1,12 @@
+================================================================================
+HERO TRANSITION — CONTEXT EXTRACT
+Generated: 2026-07-19 09:27:41
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\sections\HeroSection.tsx
+================================================================================
+
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -454,8 +463,8 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
   const containerClass = cn(
     "top-0 left-0 w-full",
     isActive
-      ? cn("relative z-10", shouldAnimate && "hero-cinematic-enter")
-      : cn("absolute z-0 pointer-events-none", shouldAnimate && "hero-cinematic-exit")
+      ? cn("relative z-10", shouldAnimate && "hero-slide-enter")
+      : "absolute z-0 pointer-events-none opacity-0"
   );
 
   const inner = (
@@ -820,4 +829,607 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(c.substr(2, 2), 16);
   const b = parseInt(c.substr(4, 2), 16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\FixedHeroBackground.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * FixedHeroBackground — dynamically tracks header bottom edge
+ * ─────────────────────────────────────────────────────────────
+ * The header stack changes height as user scrolls:
+ *   • At scroll=0: announcement bar (36px) + navbar (72px) = 108px
+ *   • After scroll: announcement bar scrolls off, only navbar
+ *     stays sticky → header bottom is now just 72px from top
+ *
+ * If we set the hero's `top` to a static value (measured at
+ * scroll=0), a white gap appears once the announcement bar
+ * scrolls away because the hero stays at 108px but the sticky
+ * navbar is at 72px.
+ *
+ * Solution: continuously measure the sticky navbar's actual
+ * `getBoundingClientRect().bottom` on every scroll frame and
+ * update the hero's `top` to match. Zero gap, no matter the
+ * scroll speed or which parts of the header are sticky.
+ */
+export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [heroHeight, setHeroHeight] = useState<number>(0);
+  const [headerBottom, setHeaderBottom] = useState<number>(0);
+  const [isHeroVisible, setIsHeroVisible] = useState(true);
+
+  // ─── Track the sticky header's actual bottom edge in viewport
+  useEffect(() => {
+    let rafId = 0;
+
+    const updateHeaderBottom = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const header = document.querySelector("header");
+        if (header) {
+          // Use viewport-relative bottom (accounts for any sticky offset shift)
+          const rect = header.getBoundingClientRect();
+          // Clamp to >= 0 so we never position above viewport top
+          const bottom = Math.max(0, rect.bottom);
+          setHeaderBottom(bottom);
+        }
+        rafId = 0;
+      });
+    };
+
+    updateHeaderBottom();
+
+    // Listen to everything that can change the header's position
+    window.addEventListener("scroll",  updateHeaderBottom, { passive: true });
+    window.addEventListener("resize",  updateHeaderBottom, { passive: true });
+
+    // Also watch header size changes (announcement dismissal, mobile toggle)
+    const header = document.querySelector("header");
+    const ro = new ResizeObserver(updateHeaderBottom);
+    if (header) ro.observe(header);
+    ro.observe(document.body);
+
+    return () => {
+      window.removeEventListener("scroll",  updateHeaderBottom);
+      window.removeEventListener("resize",  updateHeaderBottom);
+      ro.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // ─── Measure hero's natural rendered height ──────────────
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+
+    const updateHeight = () => {
+      const h = el.offsetHeight;
+      if (h > 0) setHeroHeight(h);
+    };
+
+    updateHeight();
+
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(el);
+
+    const images = el.querySelectorAll("img");
+    images.forEach((img) => {
+      if (!img.complete) img.addEventListener("load", updateHeight);
+    });
+
+    return () => {
+      ro.disconnect();
+      images.forEach((img) => img.removeEventListener("load", updateHeight));
+    };
+  }, []);
+
+  // ─── Fade out hero once scrolled well past it ────────────
+  useEffect(() => {
+    if (heroHeight === 0) return;
+    let rafId = 0;
+
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const shouldShow = window.scrollY < heroHeight * 1.2;
+        setIsHeroVisible((prev) => prev !== shouldShow ? shouldShow : prev);
+        rafId = 0;
+      });
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [heroHeight]);
+
+  return (
+    <>
+      {/* FIXED LAYER — hero aligned to sticky header's bottom edge */}
+      <div
+        ref={heroRef}
+        className="fixed left-0 w-full z-0 overflow-hidden"
+        style={{
+          top:        `${headerBottom}px`,
+          visibility: isHeroVisible ? "visible" : "hidden",
+          opacity:    isHeroVisible ? 1 : 0,
+          transition: "opacity 300ms ease, visibility 300ms",
+          willChange: "top",
+        }}
+      >
+        {children}
+      </div>
+
+      {/* SPACER — matches hero's measured height in document flow */}
+      <div
+        aria-hidden="true"
+        className="w-full pointer-events-none"
+        style={{ height: heroHeight > 0 ? `${heroHeight}px` : "100vh" }}
+      />
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\useDevicePerformance.ts
+================================================================================
+
+"use client";
+import { useState, useEffect } from "react";
+import type { DevicePerformance } from "@/types";
+
+export function useDevicePerformance(): DevicePerformance {
+  const [performance, setPerformance] = useState<DevicePerformance>({
+    tier: "high",
+    prefersReducedMotion: false,
+    shouldAnimate: true,
+  });
+
+  useEffect(() => {
+    // Check prefers-reduced-motion
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    // Check hardware concurrency (CPU cores)
+    const cores = navigator.hardwareConcurrency || 4;
+
+    // Check device memory (GB) - not available in all browsers
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4;
+
+    // Determine tier
+    let tier: "low" | "medium" | "high" = "high";
+    if (cores <= 2 || memory <= 2) {
+      tier = "low";
+    } else if (cores <= 4 || memory <= 4) {
+      tier = "medium";
+    }
+
+    setPerformance({
+      tier,
+      prefersReducedMotion: reducedMotion,
+      shouldAnimate: !reducedMotion && tier !== "low",
+    });
+  }, []);
+
+  return performance;
+}
+
+================================================================================
+FILE: user-panel\src\app\api\hero-banners\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { getSetting } from "@/lib/db/repositories/settings";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Public endpoint - returns active banners + global rotation duration
+export async function GET() {
+  try {
+    const [rawBanners, rawRotation] = await Promise.all([
+      getSetting("hero_banners"),
+      getSetting("hero_rotation_seconds"),
+    ]);
+
+    let banners: HeroBanner[] = [];
+    if (rawBanners) {
+      try {
+        const all: HeroBanner[] = JSON.parse(rawBanners);
+        banners = all
+          .filter((b) => b.isActive)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+      } catch {}
+    }
+
+    const rotationSeconds = rawRotation ? Number(rawRotation) : 8;
+
+    return NextResponse.json({
+      banners,
+      rotationSeconds: isNaN(rotationSeconds) ? 8 : rotationSeconds,
+    });
+  } catch {
+    return NextResponse.json({ banners: [], rotationSeconds: 8 });
+  }
+}
+
+interface HeroBanner {
+  id:                   string;
+  image:                string;
+  imageMobile?:         string;
+  title:                string;
+  subtitle:             string;
+  description:          string;
+  buttonLabel:          string;
+  buttonHref:           string;
+  buttonSecondaryLabel: string;
+  buttonSecondaryHref:  string;
+  isActive:             boolean;
+  sortOrder:            number;
+
+  // ── New overlay fields ──
+  brand?:            string;
+  productTitle?:     string;
+  currentPrice?:     string;
+  originalPrice?:    string;
+  discountPercent?:  string;
+  contentPosition?:  string;
+  textTheme?:        "light" | "dark";
+  overlayDarkness?:  number;
+  countdownEnabled?: boolean;
+  countdownEndsAt?:  string;
+}
+
+================================================================================
+FILE: user-panel\src\app\globals.css
+================================================================================
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary:    #1a1a1a;
+  --color-brand-secondary:  #3b5f8f;
+  --color-brand-accent:     #f5f0e8;
+  --color-brand-surface:    #fafaf9;
+  --color-brand-muted:      #6b7280;
+  --color-brand-border:     #e5e7eb;
+
+  --font-sans:      var(--font-inter);
+  --font-serif:     var(--font-playfair);
+  --font-cormorant: var(--font-cormorant);
+
+  --breakpoint-3xl: 1920px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+::selection { background-color: #3b5f8f; color: #ffffff; }
+img, video { max-width: 100%; height: auto; display: block; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #fafaf9; }
+::-webkit-scrollbar-thumb { background: #3b5f8f; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #2d4a72; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.site-container {
+  width: 100%; margin-left: auto; margin-right: auto;
+  padding-left: 12px; padding-right: 12px;
+}
+@media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
+@media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
+@media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
+@media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+
+/* ═══════════════════════════════════════════════════════════
+   Existing animation keyframes
+   ═══════════════════════════════════════════════════════════ */
+@keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+@keyframes float-soft    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes pulse-gold    { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(59, 95, 143, 0); } }
+@keyframes marquee       { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes ken-burns     { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-1%, -1%); } }
+@keyframes letter-drop   { 0% { opacity: 0; transform: translateY(0.5em) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
+@keyframes draw-line     { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes tile-reveal   { 0% { opacity: 0; transform: scale(0.94) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes focus-ring    { 0% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.35); } 100% { box-shadow: 0 0 0 5px rgba(59, 95, 143, 0); } }
+@keyframes fade-zoom-in  { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── Live view counter pulse ── */
+@keyframes live-ping {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
+.animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
+.animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
+.animate-marquee      { animation: marquee 30s linear infinite; }
+.animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
+.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+.shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
+.shimmer-btn::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 800ms ease;
+  pointer-events: none; z-index: 1;
+}
+.shimmer-btn:hover::before { transform: translateX(200%); }
+.shimmer-btn > * { position: relative; z-index: 2; }
+
+.hover-lift {
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.hover-lift:hover { transform: translateY(-4px); }
+
+.gold-underline { position: relative; display: inline-block; }
+.gold-underline::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+  background-color: #3b5f8f;
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gold-underline:hover::after { transform: scaleX(1); }
+
+.input-focus-gold:focus { animation: focus-ring 1.4s ease-out; border-color: #3b5f8f; }
+
+.product-image-frame { overflow: hidden; }
+.product-image-frame img {
+  transition: transform 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.product-image-frame:hover img { transform: scale(1.06); }
+
+.marquee-track {
+  display: flex; width: max-content;
+  animation: marquee 30s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }
+
+.tilt-3d { transform-style: preserve-3d; perspective: 1000px; }
+
+.section-veil { position: relative; }
+.section-veil::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fafaf9 0%, transparent 15%, transparent 85%, #fafaf9 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
+@keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-left    { from { opacity: 0; transform: translateX(-40px); }    to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-slide-right   { from { opacity: 0; transform: translateX(40px); }     to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-scale-in      { from { opacity: 0; transform: scale(0.85); }          to { opacity: 1; transform: scale(1); } }
+@keyframes hero-scale-bounce  {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hero-blur-in {
+  from { opacity: 0; filter: blur(12px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+@keyframes hero-mask-reveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes hero-pulse-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(59,95,143,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+  50%      { text-shadow: 0 0 20px rgba(59,95,143,0.75), 0 2px 6px rgba(0,0,0,0.35); }
+}
+@keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+@keyframes hero-underline-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes hero-accent-bar-draw {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes hero-shimmer-sweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%)  skewX(-20deg); }
+}
+@keyframes hero-dot-pop {
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hero-sticker-diag {
+  0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1); }
+}
+@keyframes hero-sticker-diag-tl {
+  0%   { opacity: 0; transform: translate(-30%, -30%) rotate(-45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1); }
+}
+@keyframes hero-sticker-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes hero-sticker-slide-up {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hero-sticker-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-2deg); }
+  75%      { transform: rotate(2deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOUNCEMENT BAR — LUXURY ANIMATIONS (BLUE)
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes announcement-gradient-drift {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+
+@keyframes announcement-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.55; box-shadow: 0 0 0 0 currentColor; }
+  50%      { transform: scale(1.6); opacity: 1;    box-shadow: 0 0 6px currentColor; }
+}
+
+@keyframes announcement-glow-in {
+  0%   { text-shadow: 0 0 0 transparent; }
+  30%  { text-shadow: 0 0 12px rgba(59, 95, 143, 0.55); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+@keyframes announcement-icon-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(59, 95, 143, 0)); }
+  50%      { filter: drop-shadow(0 0 4px rgba(59, 95, 143, 0.7)); }
+}
+
+@keyframes announcement-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.announcement-bar-shell {
+  animation: announcement-gradient-drift 12s ease-in-out infinite;
+}
+
+.announcement-dot-pulse {
+  animation: announcement-dot-pulse 2.4s ease-in-out infinite;
+}
+
+.announcement-glow-in {
+  animation: announcement-glow-in 1.2s ease-out both;
+}
+
+.announcement-icon-glow {
+  animation: announcement-icon-glow 2.8s ease-in-out infinite;
+}
+
+.announcement-marquee {
+  animation: announcement-marquee 22s linear infinite;
+  will-change: transform;
+}
+.announcement-bar-shell:hover .announcement-marquee {
+  animation-play-state: paused;
+}
+
+/* Utility used by product sliders */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+/* ═══════════════════════════════════════════════════════════
+   NO SCROLLBAR UTILITY (used for horizontal sliders)
+   ═══════════════════════════════════════════════════════════ */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* ═══════════════════════════════════════════════════════════
+   HERO SLIDER — PREMIUM SLIDE TRANSITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-slide-in-right {
+  from { opacity: 0; transform: translateX(60px) scale(1.02); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+
+@keyframes hero-slide-out-left {
+  from { opacity: 1; transform: translateX(0)     scale(1);    }
+  to   { opacity: 0; transform: translateX(-60px) scale(0.98); }
+}
+
+@keyframes hero-slide-in-left {
+  from { opacity: 0; transform: translateX(-60px) scale(1.02); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);    }
+}
+
+@keyframes hero-slide-out-right {
+  from { opacity: 1; transform: translateX(0)    scale(1);    }
+  to   { opacity: 0; transform: translateX(60px) scale(0.98); }
+}
+
+@keyframes hero-ken-burns-active {
+  from { transform: scale(1)    translate(0, 0); }
+  to   { transform: scale(1.06) translate(-1%, -0.5%); }
+}
+
+.hero-slide-enter {
+  animation: hero-slide-in-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-slide-exit {
+  animation: hero-slide-out-left 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-slide-enter-prev {
+  animation: hero-slide-in-left 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-slide-exit-next {
+  animation: hero-slide-out-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hero-image-ken-burns {
+  animation: hero-ken-burns-active var(--hero-duration, 8s) ease-in-out both;
+  will-change: transform;
 }

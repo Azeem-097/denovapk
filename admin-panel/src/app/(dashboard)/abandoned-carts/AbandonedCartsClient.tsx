@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import {
@@ -99,7 +99,7 @@ export function AbandonedCartsClient({ initialCarts, initialStats, waMessageTemp
 
       <div>
         <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-          <ShoppingBag size={22} className="text-[#c9a96e]" />
+          <ShoppingBag size={22} className="text-[#3b5f8f]" />
           Abandoned Carts
         </h1>
         <p className="text-sm text-[#6b7280] mt-0.5">
@@ -108,7 +108,7 @@ export function AbandonedCartsClient({ initialCarts, initialStats, waMessageTemp
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Active Carts"      value={stats.totalAbandoned.toString()} color="text-[#c9a96e]" />
+        <StatCard label="Active Carts"      value={stats.totalAbandoned.toString()} color="text-[#3b5f8f]" />
         <StatCard label="Guest Carts"       value={stats.guestCarts.toString()} />
         <StatCard label="Registered"        value={stats.registeredCarts.toString()} />
         <StatCard label="Total Lost Value"  value={formatPrice(stats.totalLostValue / 100)} color="text-orange-600" />
@@ -127,7 +127,7 @@ export function AbandonedCartsClient({ initialCarts, initialStats, waMessageTemp
             className={cn(
               "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
               filter === f.val
-                ? "border-[#c9a96e] text-[#c9a96e]"
+                ? "border-[#3b5f8f] text-[#3b5f8f]"
                 : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
             )}
           >
@@ -142,14 +142,14 @@ export function AbandonedCartsClient({ initialCarts, initialStats, waMessageTemp
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, or phone..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
           />
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="bg-white border border-[#e5e7eb] p-12 text-center">
-          <ShoppingBag size={40} className="text-[#c9a96e] mx-auto mb-3" />
+          <ShoppingBag size={40} className="text-[#3b5f8f] mx-auto mb-3" />
           <p className="text-sm font-medium text-[#1a1a1a]">No abandoned carts</p>
           <p className="text-xs text-[#6b7280] mt-1">Great! Everyone is completing their orders.</p>
         </div>
@@ -208,7 +208,7 @@ function AbandonedCartRow({
           </span>
         </div>
 
-        <p className="text-lg font-bold text-[#c9a96e]">
+        <p className="text-lg font-bold text-[#3b5f8f]">
           {formatPrice(cart.totalValue / 100)}
         </p>
       </div>
@@ -219,28 +219,28 @@ function AbandonedCartRow({
           <div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <div className="flex items-start gap-2 text-sm">
-                <User size={13} className="text-[#c9a96e] flex-shrink-0 mt-0.5" />
+                <User size={13} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">Name</p>
                   <p className="text-[#1a1a1a] font-medium">{cart.fullName ?? "Not provided"}</p>
                 </div>
               </div>
               <div className="flex items-start gap-2 text-sm">
-                <Phone size={13} className="text-[#c9a96e] flex-shrink-0 mt-0.5" />
+                <Phone size={13} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">Phone</p>
                   <p className="text-[#1a1a1a] font-medium">{cart.phone ?? "Not provided"}</p>
                 </div>
               </div>
               <div className="flex items-start gap-2 text-sm">
-                <Mail size={13} className="text-[#c9a96e] flex-shrink-0 mt-0.5" />
+                <Mail size={13} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">Email</p>
                   <p className="text-[#1a1a1a] font-medium truncate">{cart.email ?? "Not provided"}</p>
                 </div>
               </div>
               <div className="flex items-start gap-2 text-sm">
-                <MapPin size={13} className="text-[#c9a96e] flex-shrink-0 mt-0.5" />
+                <MapPin size={13} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">City</p>
                   <p className="text-[#1a1a1a] font-medium">{cart.city ?? "Not provided"}</p>

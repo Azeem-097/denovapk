@@ -36,13 +36,13 @@ export function Header({ onMenuClick, title }: HeaderProps) {
           <div className="relative w-full">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
             <input type="text" placeholder="Search orders, products, customers..."
-              className="w-full pl-9 pr-4 py-2 text-sm bg-[#f8f9fa] border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none placeholder:text-[#6b7280]/60" />
+              className="w-full pl-9 pr-4 py-2 text-sm bg-[#f8f9fa] border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
           <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[#6b7280] hover:text-[#c9a96e] border border-[#e5e7eb] px-3 py-2 transition-colors">
+            className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-[#6b7280] hover:text-[#3b5f8f] border border-[#e5e7eb] px-3 py-2 transition-colors">
             <ExternalLink size={13} />View Store
           </a>
 
@@ -53,7 +53,7 @@ export function Header({ onMenuClick, title }: HeaderProps) {
 
           <div className="relative">
             <button onClick={() => { setShowProfile(!showProfile); setShowNotifs(false); }} className="flex items-center gap-2 p-1">
-              <div className="w-8 h-8 rounded-full bg-[#c9a96e] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-[#3b5f8f] flex items-center justify-center">
                 <span className="text-white text-xs font-bold">{getInitials(admin?.name || "A")}</span>
               </div>
               <span className="hidden sm:block text-sm font-medium text-[#1a1a1a]">{admin?.name?.split(" ")[0]}</span>

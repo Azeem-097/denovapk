@@ -119,7 +119,7 @@ export default function OrdersPage() {
                   type="text" value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by order number..."
-                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none placeholder:text-[#6b7280]/60"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60"
                 />
               </div>
 
@@ -143,12 +143,12 @@ export default function OrdersPage() {
             {/* Orders list */}
             {loading ? (
               <div className="bg-white border border-[#e5e7eb] p-10 text-center">
-                <div className="w-8 h-8 border-2 border-[#c9a96e] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-[#3b5f8f] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-sm text-[#6b7280]">Loading your orders...</p>
               </div>
             ) : filteredOrders.length === 0 ? (
               <div className="bg-white border border-[#e5e7eb] p-10 text-center">
-                <ShoppingBag size={40} className="text-[#c9a96e] mx-auto mb-4" />
+                <ShoppingBag size={40} className="text-[#3b5f8f] mx-auto mb-4" />
                 <h3 className="text-base font-semibold text-[#1a1a1a] mb-1">
                   {orders.length === 0 ? "No orders yet" : "No orders match your filter"}
                 </h3>
@@ -159,7 +159,7 @@ export default function OrdersPage() {
                 </p>
                 <Link
                   href="/shop"
-                  className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#c9a96e] transition-colors"
+                  className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#3b5f8f] transition-colors"
                 >
                   {orders.length === 0 ? "Start Shopping" : "Browse Products"}
                   <ArrowRight size={14} />
@@ -171,7 +171,7 @@ export default function OrdersPage() {
                   <FadeIn key={order.id} delay={i * 60}>
                     <Link
                       href={`/account/orders/${order.id}`}
-                      className="block bg-white border border-[#e5e7eb] hover:border-[#c9a96e] transition-colors"
+                      className="block bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors"
                     >
                       <div className="px-5 py-3 border-b border-[#e5e7eb] bg-[#fafaf9] flex items-center justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-3 flex-wrap">
@@ -218,7 +218,7 @@ export default function OrdersPage() {
                             {order.itemCount} {order.itemCount === 1 ? "item" : "items"} · {order.paymentMethod}
                           </p>
                         </div>
-                        <ArrowRight size={16} className="text-[#c9a96e] flex-shrink-0" />
+                        <ArrowRight size={16} className="text-[#3b5f8f] flex-shrink-0" />
                       </div>
                     </Link>
                   </FadeIn>

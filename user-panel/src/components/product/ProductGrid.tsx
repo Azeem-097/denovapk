@@ -36,7 +36,7 @@ export function ProductGrid({
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="w-16 h-16 bg-[#f5f0e8] rounded-full flex items-center justify-center mb-4">
           <svg
-            className="w-8 h-8 text-[#c9a96e]"
+            className="w-8 h-8 text-[#3b5f8f]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

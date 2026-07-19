@@ -51,7 +51,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md mx-auto">
 
           <FadeIn>
-            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#c9a96e] transition-colors mb-8">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#3b5f8f] transition-colors mb-8">
               <ArrowLeft size={13} />
               Back to home
             </Link>
@@ -62,7 +62,7 @@ export default function LoginPage() {
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-[#1a1a1a]">
                 DENOVA
               </span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#c9a96e] uppercase">
+              <span className="text-[9px] font-medium tracking-[0.35em] text-[#3b5f8f] uppercase">
                 Pakistan
               </span>
             </Link>
@@ -70,7 +70,7 @@ export default function LoginPage() {
 
           <FadeIn delay={100}>
             <div className="mb-8">
-              <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#c9a96e]">
+              <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
                 Welcome Back
               </span>
               <h1 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2">
@@ -83,13 +83,13 @@ export default function LoginPage() {
           </FadeIn>
 
           <FadeIn delay={150}>
-            <div className="mb-6 p-3 bg-[#f5f0e8] border border-[#c9a96e]/30 text-xs text-[#1a1a1a]">
+            <div className="mb-6 p-3 bg-[#f5f0e8] border border-[#3b5f8f]/30 text-xs text-[#1a1a1a]">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-[#c9a96e] uppercase tracking-wider text-[10px]">Demo Account</p>
+                  <p className="font-semibold text-[#3b5f8f] uppercase tracking-wider text-[10px]">Demo Account</p>
                   <p className="mt-1">{DEMO.email} / {DEMO.password}</p>
                 </div>
-                <button type="button" onClick={fillDemo} className="text-xs font-semibold text-[#c9a96e] hover:text-[#b8955a] underline">
+                <button type="button" onClick={fillDemo} className="text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline">
                   Fill
                 </button>
               </div>
@@ -122,19 +122,19 @@ export default function LoginPage() {
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <div onClick={() => setRemember(!remember)}
                     className={`w-4 h-4 border-2 flex items-center justify-center transition-all ${
-                      remember ? "border-[#c9a96e] bg-[#c9a96e]" : "border-[#e5e7eb] group-hover:border-[#c9a96e]"
+                      remember ? "border-[#3b5f8f] bg-[#3b5f8f]" : "border-[#e5e7eb] group-hover:border-[#3b5f8f]"
                     }`}>
                     {remember && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
                   <span className="text-xs text-[#6b7280]">Remember me</span>
                 </label>
-                <Link href="/account/forgot-password" className="text-xs text-[#c9a96e] hover:underline">
+                <Link href="/account/forgot-password" className="text-xs text-[#3b5f8f] hover:underline">
                   Forgot password?
                 </Link>
               </div>
 
               <button type="submit" disabled={isSubmitting}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors disabled:opacity-60 mt-2">
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors disabled:opacity-60 mt-2">
                 {isSubmitting ? (
                   <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in...</>
                 ) : (
@@ -147,7 +147,7 @@ export default function LoginPage() {
           <FadeIn delay={300}>
             <p className="mt-8 text-center text-sm text-[#6b7280]">
               Don&apos;t have an account?{" "}
-              <Link href="/account/register" className="text-[#c9a96e] font-semibold hover:underline">
+              <Link href="/account/register" className="text-[#3b5f8f] font-semibold hover:underline">
                 Create one
               </Link>
             </p>
@@ -166,7 +166,7 @@ export default function LoginPage() {
             &ldquo;Discover clothing that speaks to who you are, and who you aspire to be.&rdquo;
           </p>
           <div className="mt-6 flex items-center gap-3">
-            <div className="w-10 h-px bg-[#c9a96e]" />
+            <div className="w-10 h-px bg-[#3b5f8f]" />
             <p className="text-xs tracking-[0.25em] uppercase text-white/70">Denova PK</p>
           </div>
         </div>

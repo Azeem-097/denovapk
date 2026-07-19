@@ -20,10 +20,10 @@ function Field({
       </label>
       {rows ? (
         <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none resize-y" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y" />
       ) : (
         <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
       )}
       {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
     </div>
@@ -36,7 +36,7 @@ export function FirstOrderTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Gift size={16} className="text-[#c9a96e]" />
+        <Gift size={16} className="text-[#3b5f8f]" />
         First Order Discount
       </h2>
       <p className="text-xs text-[#6b7280] mb-6">
@@ -47,7 +47,7 @@ export function FirstOrderTab({ settings, onChange }: TabProps) {
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("first_order_enabled", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#c9a96e]" />
+            className="w-4 h-4 accent-[#3b5f8f]" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Enable First Order Discount</p>
             <p className="text-xs text-[#6b7280] mt-0.5">Automatically applied to customers with zero previous orders</p>
@@ -75,7 +75,7 @@ export function FirstOrderTab({ settings, onChange }: TabProps) {
           onChange={(v) => onChange("first_order_message", v)}
           rows={3} hint="Shown to new customers at checkout. Use {{discount}} for the discount amount" />
 
-        <div className="bg-[#f5f0e8] border border-[#c9a96e]/30 p-4 text-xs text-[#1a1a1a]">
+        <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4 text-xs text-[#1a1a1a]">
           <p className="font-semibold mb-1">Priority Rule</p>
           <p className="text-[#6b7280] leading-relaxed">
             If a customer qualifies for both First Order Discount and Birthday Discount,

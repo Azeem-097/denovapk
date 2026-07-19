@@ -177,7 +177,7 @@ export function Footer() {
   return (
     <footer className="bg-[#1a1a1a] text-white">
 
-      <div className="h-px bg-gradient-to-r from-transparent via-[#c9a96e] to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#3b5f8f] to-transparent" />
 
       <div className="site-container py-14 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 lg:gap-8">
@@ -187,7 +187,7 @@ export function Footer() {
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-white">
                 DENOVA
               </span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#c9a96e] uppercase -mt-0.5">
+              <span className="text-[9px] font-medium tracking-[0.35em] text-[#3b5f8f] uppercase -mt-0.5">
                 Pakistan
               </span>
             </Link>
@@ -199,21 +199,21 @@ export function Footer() {
             <div className="flex flex-col gap-3 mb-6">
               {data.contact.phone && (
                 <a href={`tel:${data.contact.phone}`}
-                  className="flex items-center gap-2.5 text-sm text-white/60 hover:text-[#c9a96e] transition-colors">
-                  <Phone size={14} className="text-[#c9a96e] flex-shrink-0" />
+                  className="flex items-center gap-2.5 text-sm text-white/60 hover:text-[#3b5f8f] transition-colors">
+                  <Phone size={14} className="text-[#3b5f8f] flex-shrink-0" />
                   {data.contact.phone}
                 </a>
               )}
               {data.contact.email && (
                 <a href={`mailto:${data.contact.email}`}
-                  className="flex items-center gap-2.5 text-sm text-white/60 hover:text-[#c9a96e] transition-colors">
-                  <Mail size={14} className="text-[#c9a96e] flex-shrink-0" />
+                  className="flex items-center gap-2.5 text-sm text-white/60 hover:text-[#3b5f8f] transition-colors">
+                  <Mail size={14} className="text-[#3b5f8f] flex-shrink-0" />
                   {data.contact.email}
                 </a>
               )}
               {data.contact.address && (
                 <div className="flex items-start gap-2.5 text-sm text-white/60">
-                  <MapPin size={14} className="text-[#c9a96e] flex-shrink-0 mt-0.5" />
+                  <MapPin size={14} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
                   {data.contact.address}
                 </div>
               )}
@@ -227,7 +227,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="w-9 h-9 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:border-[#c9a96e] hover:text-[#c9a96e] transition-all duration-200"
+                  className="w-9 h-9 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:border-[#3b5f8f] hover:text-[#3b5f8f] transition-all duration-200"
                 >
                   {social.icon}
                 </a>
@@ -237,7 +237,7 @@ export function Footer() {
 
           {data.columns.map((col, i) => (
             <div key={i} className="lg:col-span-1">
-              <h4 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#c9a96e] mb-4">
+              <h4 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#3b5f8f] mb-4">
                 {col.title}
               </h4>
               <ul className="flex flex-col gap-2.5">
@@ -286,7 +286,7 @@ export function Footer() {
               href="https://devnixstudios.tech"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#c9a96e] hover:text-white transition-colors duration-200"
+              className="font-semibold text-[#3b5f8f] hover:text-white transition-colors duration-200"
             >
               Devnix Studios
             </a>

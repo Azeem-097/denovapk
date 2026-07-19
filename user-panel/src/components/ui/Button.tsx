@@ -1,4 +1,4 @@
-﻿import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -27,13 +27,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         "bg-[#1a1a1a] text-white hover:bg-[#333333] focus:ring-[#1a1a1a] active:scale-[0.98]",
       secondary:
-        "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df] focus:ring-[#c9a96e] active:scale-[0.98]",
+        "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df] focus:ring-[#3b5f8f] active:scale-[0.98]",
       outline:
         "border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white focus:ring-[#1a1a1a] active:scale-[0.98]",
       ghost:
-        "text-[#1a1a1a] hover:bg-[#f5f0e8] focus:ring-[#c9a96e] active:scale-[0.98]",
+        "text-[#1a1a1a] hover:bg-[#f5f0e8] focus:ring-[#3b5f8f] active:scale-[0.98]",
       gold:
-        "bg-[#c9a96e] text-white hover:bg-[#b8955a] focus:ring-[#c9a96e] active:scale-[0.98]",
+        "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] focus:ring-[#3b5f8f] active:scale-[0.98]",
     };
 
     const sizes = {

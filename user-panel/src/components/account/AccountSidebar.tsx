@@ -41,7 +41,7 @@ export function AccountSidebar() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-[#c9a96e]">{initials}</span>
+              <span className="text-sm font-bold text-[#3b5f8f]">{initials}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -59,9 +59,9 @@ export function AccountSidebar() {
             <Link key={item.href} href={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 text-sm transition-colors rounded",
-                active ? "bg-[#f5f0e8] text-[#c9a96e] font-semibold" : "text-[#1a1a1a] hover:bg-[#fafaf9]"
+                active ? "bg-[#f5f0e8] text-[#3b5f8f] font-semibold" : "text-[#1a1a1a] hover:bg-[#fafaf9]"
               )}>
-              <Icon size={16} className={active ? "text-[#c9a96e]" : "text-[#6b7280]"} />
+              <Icon size={16} className={active ? "text-[#3b5f8f]" : "text-[#6b7280]"} />
               <span>{item.label}</span>
             </Link>
           );
@@ -84,7 +84,7 @@ export function NotLoggedInState() {
     <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
       <div className="max-w-md mx-auto px-4 text-center">
         <div className="w-24 h-24 mx-auto bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-6">
-          <User size={36} className="text-[#c9a96e]" />
+          <User size={36} className="text-[#3b5f8f]" />
         </div>
         <h1 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] mb-3">
           Sign in to your account
@@ -93,7 +93,7 @@ export function NotLoggedInState() {
           Access your orders, wishlist, addresses, and personalized experience.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/account/login" className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors">
+          <Link href="/account/login" className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors">
             Sign In
           </Link>
           <Link href="/account/register" className="inline-flex items-center justify-center border border-[#1a1a1a] text-[#1a1a1a] px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#1a1a1a] hover:text-white transition-colors">

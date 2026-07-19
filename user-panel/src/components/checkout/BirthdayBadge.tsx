@@ -69,13 +69,13 @@ export function BirthdayBadge({ subtotal, onDiscountApplied }: Props) {
   const meetsMin = subtotal >= minOrder;
 
   return (
-    <div className="border-2 border-[#c9a96e] bg-gradient-to-r from-[#f5f0e8] to-[#f5f0e8]/50 p-4 relative overflow-hidden">
+    <div className="border-2 border-[#3b5f8f] bg-gradient-to-r from-[#f5f0e8] to-[#f5f0e8]/50 p-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 opacity-10">
-        <Cake size={100} className="text-[#c9a96e] -mt-2 -mr-2" />
+        <Cake size={100} className="text-[#3b5f8f] -mt-2 -mr-2" />
       </div>
 
       <div className="relative flex items-start gap-3">
-        <div className="w-11 h-11 rounded-full bg-[#c9a96e] flex items-center justify-center flex-shrink-0">
+        <div className="w-11 h-11 rounded-full bg-[#3b5f8f] flex items-center justify-center flex-shrink-0">
           {meetsMin ? (
             <CheckCircle size={20} className="text-white" />
           ) : (
@@ -89,7 +89,7 @@ export function BirthdayBadge({ subtotal, onDiscountApplied }: Props) {
           </p>
 
           {meetsMin ? (
-            <p className="text-sm text-[#c9a96e] font-semibold mt-1">
+            <p className="text-sm text-[#3b5f8f] font-semibold mt-1">
               Your{" "}
               {check.fixedAmount && check.fixedAmount > 0
                 ? formatPrice(check.fixedAmount)
@@ -99,7 +99,7 @@ export function BirthdayBadge({ subtotal, onDiscountApplied }: Props) {
           ) : (
             <p className="text-sm text-[#6b7280] mt-1">
               You qualify for a{" "}
-              <span className="font-semibold text-[#c9a96e]">
+              <span className="font-semibold text-[#3b5f8f]">
                 {check.fixedAmount && check.fixedAmount > 0
                   ? formatPrice(check.fixedAmount)
                   : `${check.discountPct}%`}

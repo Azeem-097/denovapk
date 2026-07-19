@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { Cake, MessageCircle, Phone, Mail, Calendar, Gift, Settings, Users } from "lucide-react";
@@ -72,7 +72,7 @@ export function BirthdaysClient({ today, upcoming, settings }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <Cake size={22} className="text-[#c9a96e]" />
+            <Cake size={22} className="text-[#3b5f8f]" />
             Birthday Rewards
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -94,14 +94,14 @@ export function BirthdaysClient({ today, upcoming, settings }: Props) {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard icon={Cake}     label="Birthdays Today"     value={today.length.toString()}    color="text-[#c9a96e]" />
+        <StatCard icon={Cake}     label="Birthdays Today"     value={today.length.toString()}    color="text-[#3b5f8f]" />
         <StatCard icon={Users}    label="Upcoming"           value={upcoming.length.toString()} />
         <StatCard icon={Gift}     label="Discount"           value={settings.fixedAmount > 0 ? `Rs. ${settings.fixedAmount}` : `${settings.discountPct}%`} />
         <StatCard icon={Calendar} label="Valid For"           value={`${settings.validityDays} days`} />
       </div>
 
-      <div className="bg-[#f5f0e8]/50 border border-[#c9a96e]/30 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#c9a96e] mb-3">
+      <div className="bg-[#f5f0e8]/50 border border-[#3b5f8f]/30 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#3b5f8f] mb-3">
           Current Program Rules
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -131,13 +131,13 @@ export function BirthdaysClient({ today, upcoming, settings }: Props) {
           onClick={() => setTab("today")}
           className={cn(
             "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-            tab === "today" ? "border-[#c9a96e] text-[#c9a96e]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+            tab === "today" ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
           )}
         >
           Today
           <span className={cn(
             "ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
-            tab === "today" ? "bg-[#c9a96e]/20 text-[#c9a96e]" : "bg-[#e5e7eb] text-[#6b7280]"
+            tab === "today" ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]"
           )}>
             {today.length}
           </span>
@@ -146,13 +146,13 @@ export function BirthdaysClient({ today, upcoming, settings }: Props) {
           onClick={() => setTab("upcoming")}
           className={cn(
             "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-            tab === "upcoming" ? "border-[#c9a96e] text-[#c9a96e]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+            tab === "upcoming" ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
           )}
         >
           Upcoming ({settings.reminderDays} days)
           <span className={cn(
             "ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
-            tab === "upcoming" ? "bg-[#c9a96e]/20 text-[#c9a96e]" : "bg-[#e5e7eb] text-[#6b7280]"
+            tab === "upcoming" ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]"
           )}>
             {upcoming.length}
           </span>
@@ -161,7 +161,7 @@ export function BirthdaysClient({ today, upcoming, settings }: Props) {
 
       {list.length === 0 ? (
         <div className="bg-white border border-[#e5e7eb] p-12 text-center">
-          <Cake size={40} className="text-[#c9a96e] mx-auto mb-3" />
+          <Cake size={40} className="text-[#3b5f8f] mx-auto mb-3" />
           <p className="text-sm font-medium text-[#1a1a1a]">
             {tab === "today" ? "No birthdays today" : "No upcoming birthdays"}
           </p>
@@ -194,7 +194,7 @@ function StatCard({ icon: Icon, label, value, color = "text-[#1a1a1a]" }: {
   return (
     <div className="bg-white border border-[#e5e7eb] p-4">
       <div className="flex items-center gap-2 mb-1">
-        <Icon size={14} className="text-[#c9a96e]" />
+        <Icon size={14} className="text-[#3b5f8f]" />
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">{label}</p>
       </div>
       <p className={cn("text-2xl font-bold", color)}>{value}</p>
@@ -215,13 +215,13 @@ function BirthdayCard({ user, isToday, onWhatsApp }: {
     <div className={cn(
       "border p-5",
       isToday
-        ? "bg-gradient-to-br from-[#f5f0e8] to-[#f5f0e8]/50 border-[#c9a96e]"
+        ? "bg-gradient-to-br from-[#f5f0e8] to-[#f5f0e8]/50 border-[#3b5f8f]"
         : "bg-white border-[#e5e7eb]"
     )}>
       <div className="flex items-start gap-3 mb-4">
         <div className={cn(
           "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
-          isToday ? "bg-[#c9a96e] text-white" : "bg-[#f5f0e8] text-[#c9a96e]"
+          isToday ? "bg-[#3b5f8f] text-white" : "bg-[#f5f0e8] text-[#3b5f8f]"
         )}>
           <span className="text-sm font-bold">{getInitials(user.name)}</span>
         </div>
@@ -240,12 +240,12 @@ function BirthdayCard({ user, isToday, onWhatsApp }: {
 
       <div className="space-y-1.5 mb-4 text-xs">
         <div className="flex items-center gap-2 text-[#6b7280]">
-          <Mail size={11} className="text-[#c9a96e]" />
+          <Mail size={11} className="text-[#3b5f8f]" />
           <span className="truncate">{user.email}</span>
         </div>
         {user.phone && (
           <div className="flex items-center gap-2 text-[#6b7280]">
-            <Phone size={11} className="text-[#c9a96e]" />
+            <Phone size={11} className="text-[#3b5f8f]" />
             <span>{user.phone}</span>
           </div>
         )}
@@ -254,7 +254,7 @@ function BirthdayCard({ user, isToday, onWhatsApp }: {
       {!isToday && user.daysUntil > 0 && (
         <div className="mb-3 text-center bg-white border border-[#e5e7eb] py-2">
           <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">Coming In</p>
-          <p className="text-lg font-bold text-[#c9a96e]">
+          <p className="text-lg font-bold text-[#3b5f8f]">
             {user.daysUntil} {user.daysUntil === 1 ? "Day" : "Days"}
           </p>
         </div>

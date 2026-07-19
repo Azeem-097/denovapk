@@ -1,3 +1,292 @@
+================================================================================
+BRAND TICKER — MAKE BLUE DOTS/TEXT MORE VISIBLE ON BLACK BG
+Generated: 2026-07-19 09:13:42
+================================================================================
+
+================================================================================
+FILE: user-panel\src\components\sections\BrandTicker.tsx
+================================================================================
+
+"use client";
+import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
+
+/**
+ * BrandTicker
+ * ─────────────────────────────────────────────────────────────
+ * Premium horizontal marquee displaying international brand
+ * collaborations. Placed between Featured Collections and
+ * New Arrivals — acts as a trust-building bridge before
+ * users start browsing products.
+ *
+ * Design:
+ *   • Dark background (#1a1a1a) — creates a premium divider
+ *     between the white Collections and off-white NewArrivals
+ *   • "DENOVA X" prefix in muted gold — brand identity
+ *   • Brand name in bright white — main focus
+ *   • "(COUNTRY)" in small gold — subtle context
+ *   • Continuous right-to-left scroll — natural reading direction
+ *   • Diamond separators between entries — luxury aesthetic
+ *   • Duplicated content for seamless infinite loop
+ */
+
+interface BrandEntry {
+  brand:   string;
+  country: string;
+}
+
+const BRAND_COLLABORATIONS: BrandEntry[] = [
+  { brand: "ZARA",           country: "SPAIN"    },
+  { brand: "GUESS",          country: "USA"      },
+  { brand: "JACK & JONES",   country: "DENMARK"  },
+  { brand: "CROOP",          country: "POLAND"   },
+  { brand: "MANGUNN",        country: "GERMANY"  },
+  { brand: "EXPORT ARTICLE", country: ""         },
+];
+
+export function BrandTicker() {
+  const { shouldAnimate } = useDevicePerformance();
+
+  // Duplicate the array so the loop is seamless (no visible restart)
+  const doubled = [...BRAND_COLLABORATIONS, ...BRAND_COLLABORATIONS];
+
+  return (
+    <section
+      className="relative w-full bg-[#1a1a1a] overflow-hidden select-none"
+      aria-label="International brand collaborations"
+    >
+      {/* Top gold hairline accent */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/60 to-transparent" />
+
+      {/* Marquee container — vertically padded for breathing room */}
+      <div className="py-6 sm:py-7 lg:py-8 overflow-hidden">
+        <div
+          className={`flex w-max ${shouldAnimate ? "animate-marquee" : ""} hover:[animation-play-state:paused]`}
+          style={{ animationDuration: "40s" }}
+        >
+          {doubled.map((entry, i) => (
+            <BrandItem key={i} entry={entry} />
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom gold hairline accent */}
+      <div className="h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/60 to-transparent" />
+
+      {/* Edge fade — soft vignette on left/right so items appear/disappear elegantly */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 lg:w-32 bg-gradient-to-r from-[#1a1a1a] to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 lg:w-32 bg-gradient-to-l from-[#1a1a1a] to-transparent" />
+    </section>
+  );
+}
+
+function BrandItem({ entry }: { entry: BrandEntry }) {
+  return (
+    <div className="flex items-center gap-6 sm:gap-8 lg:gap-10 px-6 sm:px-8 lg:px-10 whitespace-nowrap">
+      {/* Diamond separator (leading) */}
+      <span
+        aria-hidden="true"
+        className="w-1.5 h-1.5 bg-[#3b5f8f] rotate-45 flex-shrink-0 opacity-70"
+      />
+
+      {/* Text block: DENOVA X BRAND (COUNTRY) */}
+      <div className="flex items-baseline gap-2 sm:gap-3">
+        {/* "DENOVA X" prefix — subtle gold, thin letter-spacing */}
+        <span className="font-[family-name:var(--font-playfair)] text-xs sm:text-sm lg:text-base font-normal tracking-[0.25em] uppercase text-[#3b5f8f]/80">
+          DENOVA
+        </span>
+
+        <span className="text-xs sm:text-sm lg:text-base text-[#3b5f8f]/60 font-light">
+          &times;
+        </span>
+
+        {/* Brand name — bold, prominent */}
+        <span className="font-[family-name:var(--font-playfair)] text-lg sm:text-xl lg:text-2xl font-bold tracking-[0.08em] uppercase text-white">
+          {entry.brand}
+        </span>
+
+        {/* Country tag — small, muted gold */}
+        {entry.country && (
+          <span className="text-[10px] sm:text-xs lg:text-sm font-medium tracking-[0.2em] uppercase text-[#3b5f8f]/70">
+            ({entry.country})
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\Marquee.tsx
+================================================================================
+
+"use client";
+import { cn } from "@/lib/utils";
+import { useDevicePerformance } from "./useDevicePerformance";
+
+interface MarqueeProps {
+  items:      string[];
+  className?: string;
+  duration?:  number;  // seconds
+  pauseOnHover?: boolean;
+}
+
+/**
+ * Infinite horizontal marquee. Duplicates items twice so the loop is seamless.
+ */
+export function Marquee({
+  items,
+  className,
+  duration = 30,
+  pauseOnHover = true,
+}: MarqueeProps) {
+  const { shouldAnimate } = useDevicePerformance();
+
+  const doubled = [...items, ...items];
+
+  return (
+    <div className={cn("overflow-hidden", className)} aria-hidden="true">
+      <div
+        className={cn(
+          "flex w-max",
+          shouldAnimate && "animate-marquee",
+          pauseOnHover && "hover:[animation-play-state:paused]"
+        )}
+        style={{
+          animationDuration: `${duration}s`,
+        }}
+      >
+        {doubled.map((item, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-6 px-6 text-[11px] font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]/70 whitespace-nowrap"
+          >
+            <span className="w-1 h-1 rounded-full bg-[#3b5f8f]/60 flex-shrink-0" />
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\page.tsx
+================================================================================
+
+import { HeroSection }           from "@/components/sections/HeroSection";
+import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
+import { SaleCountdown }         from "@/components/sections/SaleCountdown";
+import { FeaturedCollections }   from "@/components/sections/FeaturedCollections";
+import { BrandTicker }           from "@/components/sections/BrandTicker";
+import { NewArrivals }           from "@/components/sections/NewArrivals";
+import { BrandStory }            from "@/components/sections/BrandStory";
+import { Testimonials }          from "@/components/sections/Testimonials";
+import { GallerySection }        from "@/components/sections/GallerySection";
+import { NewsletterSection }     from "@/components/sections/NewsletterSection";
+import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
+import { getProducts }              from "@/lib/db/repositories/products";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
+import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
+
+type HeroBanner = {
+  isActive: true;
+  sortOrder: number;
+};
+
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
+    getCollectionsWithCounts(),
+    getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
+    getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
+  ]);
+
+  const collections  = dbCollections.map(adaptCollection);
+  const allProducts  = dbAllProducts.map(adaptProduct);
+
+  // Split products by collection name for the two tabs
+  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
+  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+
+  const testimonials = getMockTestimonials();
+
+  let heroBanners: HeroBanner[] = [];
+  if (heroBannersRaw) {
+    try {
+      const all: unknown[] = JSON.parse(heroBannersRaw);
+      heroBanners = all
+        .filter(
+          (b): b is HeroBanner =>
+            typeof b === "object" &&
+            b !== null &&
+            (b as { isActive?: boolean }).isActive === true &&
+            typeof (b as { sortOrder?: unknown }).sortOrder === "number"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch { heroBanners = []; }
+  }
+
+  return (
+    <>
+      {/* ═══════════════════════════════════════════════════════
+          HERO — position:fixed, cannot move
+          ═══════════════════════════════════════════════════════ */}
+      <FixedHeroBackground>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
+      </FixedHeroBackground>
+
+      {/* ═══════════════════════════════════════════════════════
+          REVEAL LAYER — slides up over the fixed hero on scroll.
+          Contains only SaleCountdown now (Collections moved down).
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white rounded-t-[32px] sm:rounded-t-[44px] lg:rounded-t-[56px] overflow-hidden shadow-[0_-30px_60px_-20px_rgba(0,0,0,0.3)]">
+        <SaleCountdown />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          BRAND TICKER — international brand collaborations
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10">
+        <BrandTicker />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          SHOP BY WAIST — now with Premium / Super Premium tabs
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white">
+        <NewArrivals
+          newArrivals={premiumProducts}
+          bestSellers={superPremiumProducts}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          OUR COLLECTIONS — moved to appear AFTER Shop by Waist
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10">
+        <FeaturedCollections collections={collections} />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          Remaining sections
+          ═══════════════════════════════════════════════════════ */}
+      <div className="relative z-10 bg-white">
+        <BrandStory />
+        <Testimonials testimonials={testimonials} />
+        <GallerySection />
+        <NewsletterSection />
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\HeroSection.tsx
+================================================================================
+
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -420,42 +709,26 @@ function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: Banner
   const rawOverlay: OverlayV2 = slide.overlayV2 ?? legacyToOverlayV2(slide);
   const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
 
-  // Ken Burns: reset key on each activation so animation restarts
-  const [kenBurnsKey, setKenBurnsKey] = useState(0);
-  useEffect(() => {
-    if (isActive) setKenBurnsKey((k) => k + 1);
-  }, [isActive]);
-
+  // <picture> ensures mobile browsers get the mobile image via a media source.
   const imgElement = (
-    <div className="overflow-hidden w-full">
-      <picture>
-        <source media="(max-width: 767px)" srcSet={mobileSrc} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          key={kenBurnsKey}
-          src={slide.image}
-          alt={slide.title || `Banner ${index + 1}`}
-          className={cn(
-            "block w-full h-auto origin-center",
-            shouldAnimate && isActive && "hero-image-ken-burns"
-          )}
-          style={shouldAnimate && isActive
-            ? { "--hero-duration": "9s" } as React.CSSProperties
-            : undefined
-          }
-          draggable={false}
-          loading={index === 0 ? "eager" : "lazy"}
-          fetchPriority={index === 0 ? "high" : "auto"}
-        />
-      </picture>
-    </div>
+    <picture>
+      <source media="(max-width: 767px)" srcSet={mobileSrc} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={slide.image}
+        alt={slide.title || `Banner ${index + 1}`}
+        className="block w-full h-auto"
+        draggable={false}
+        loading={index === 0 ? "eager" : "lazy"}
+        fetchPriority={index === 0 ? "high" : "auto"}
+      />
+    </picture>
   );
 
   const containerClass = cn(
-    "top-0 left-0 w-full",
-    isActive
-      ? cn("relative z-10", shouldAnimate && "hero-cinematic-enter")
-      : cn("absolute z-0 pointer-events-none", shouldAnimate && "hero-cinematic-exit")
+    "top-0 left-0 w-full transition-opacity",
+    shouldAnimate ? "duration-700" : "duration-0",
+    isActive ? "relative opacity-100 z-10" : "absolute opacity-0 z-0 pointer-events-none"
   );
 
   const inner = (
@@ -820,4 +1093,149 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(c.substr(2, 2), 16);
   const b = parseInt(c.substr(4, 2), 16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\FixedHeroBackground.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * FixedHeroBackground — dynamically tracks header bottom edge
+ * ─────────────────────────────────────────────────────────────
+ * The header stack changes height as user scrolls:
+ *   • At scroll=0: announcement bar (36px) + navbar (72px) = 108px
+ *   • After scroll: announcement bar scrolls off, only navbar
+ *     stays sticky → header bottom is now just 72px from top
+ *
+ * If we set the hero's `top` to a static value (measured at
+ * scroll=0), a white gap appears once the announcement bar
+ * scrolls away because the hero stays at 108px but the sticky
+ * navbar is at 72px.
+ *
+ * Solution: continuously measure the sticky navbar's actual
+ * `getBoundingClientRect().bottom` on every scroll frame and
+ * update the hero's `top` to match. Zero gap, no matter the
+ * scroll speed or which parts of the header are sticky.
+ */
+export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [heroHeight, setHeroHeight] = useState<number>(0);
+  const [headerBottom, setHeaderBottom] = useState<number>(0);
+  const [isHeroVisible, setIsHeroVisible] = useState(true);
+
+  // ─── Track the sticky header's actual bottom edge in viewport
+  useEffect(() => {
+    let rafId = 0;
+
+    const updateHeaderBottom = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const header = document.querySelector("header");
+        if (header) {
+          // Use viewport-relative bottom (accounts for any sticky offset shift)
+          const rect = header.getBoundingClientRect();
+          // Clamp to >= 0 so we never position above viewport top
+          const bottom = Math.max(0, rect.bottom);
+          setHeaderBottom(bottom);
+        }
+        rafId = 0;
+      });
+    };
+
+    updateHeaderBottom();
+
+    // Listen to everything that can change the header's position
+    window.addEventListener("scroll",  updateHeaderBottom, { passive: true });
+    window.addEventListener("resize",  updateHeaderBottom, { passive: true });
+
+    // Also watch header size changes (announcement dismissal, mobile toggle)
+    const header = document.querySelector("header");
+    const ro = new ResizeObserver(updateHeaderBottom);
+    if (header) ro.observe(header);
+    ro.observe(document.body);
+
+    return () => {
+      window.removeEventListener("scroll",  updateHeaderBottom);
+      window.removeEventListener("resize",  updateHeaderBottom);
+      ro.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // ─── Measure hero's natural rendered height ──────────────
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+
+    const updateHeight = () => {
+      const h = el.offsetHeight;
+      if (h > 0) setHeroHeight(h);
+    };
+
+    updateHeight();
+
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(el);
+
+    const images = el.querySelectorAll("img");
+    images.forEach((img) => {
+      if (!img.complete) img.addEventListener("load", updateHeight);
+    });
+
+    return () => {
+      ro.disconnect();
+      images.forEach((img) => img.removeEventListener("load", updateHeight));
+    };
+  }, []);
+
+  // ─── Fade out hero once scrolled well past it ────────────
+  useEffect(() => {
+    if (heroHeight === 0) return;
+    let rafId = 0;
+
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const shouldShow = window.scrollY < heroHeight * 1.2;
+        setIsHeroVisible((prev) => prev !== shouldShow ? shouldShow : prev);
+        rafId = 0;
+      });
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [heroHeight]);
+
+  return (
+    <>
+      {/* FIXED LAYER — hero aligned to sticky header's bottom edge */}
+      <div
+        ref={heroRef}
+        className="fixed left-0 w-full z-0 overflow-hidden"
+        style={{
+          top:        `${headerBottom}px`,
+          visibility: isHeroVisible ? "visible" : "hidden",
+          opacity:    isHeroVisible ? 1 : 0,
+          transition: "opacity 300ms ease, visibility 300ms",
+          willChange: "top",
+        }}
+      >
+        {children}
+      </div>
+
+      {/* SPACER — matches hero's measured height in document flow */}
+      <div
+        aria-hidden="true"
+        className="w-full pointer-events-none"
+        style={{ height: heroHeight > 0 ? `${heroHeight}px` : "100vh" }}
+      />
+    </>
+  );
 }

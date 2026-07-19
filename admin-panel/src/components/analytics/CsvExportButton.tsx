@@ -46,7 +46,7 @@ export function CsvExportButton<T extends Record<string, unknown>>({
     <button
       onClick={handleClick}
       disabled={rows.length === 0}
-      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#c9a96e] hover:text-[#b8955a] disabled:opacity-40 disabled:cursor-not-allowed"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <Download size={12} />
       {label}

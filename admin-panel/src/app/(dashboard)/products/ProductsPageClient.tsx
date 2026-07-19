@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React from "react";
 import { useState, useMemo } from "react";
 import Image from "next/image";
@@ -132,10 +132,10 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         {STATUS_FILTERS.map((s) => (
           <button key={s} onClick={() => setStatus(s)}
             className={cn("px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px",
-              status === s ? "border-[#c9a96e] text-[#c9a96e]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
+              status === s ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
             {s}
             <span className={cn("ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
-              status === s ? "bg-[#c9a96e]/20 text-[#c9a96e]" : "bg-[#e5e7eb] text-[#6b7280]")}>
+              status === s ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]")}>
               {statusCounts[s]}
             </span>
           </button>
@@ -146,7 +146,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         <div className="relative flex-1 min-w-[240px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, SKU, collection..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none placeholder:text-[#6b7280]/60" />
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
         </div>
 
         {selected.length > 0 && (
@@ -164,7 +164,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
           <button onClick={() => setView("grid")}  className={cn("p-1.5", view === "grid"  ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><Grid3x3 size={14} /></button>
         </div>
         <select value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}
-          className="text-xs border border-[#e5e7eb] px-3 py-2 focus:border-[#c9a96e] focus:outline-none bg-white">
+          className="text-xs border border-[#e5e7eb] px-3 py-2 focus:border-[#3b5f8f] focus:outline-none bg-white">
           <option value="all">All Collections</option>
           <option value="Premium">Premium</option>
           <option value="Super Premium">Super Premium</option>
@@ -175,7 +175,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         <div className="bg-white border border-[#e5e7eb] overflow-hidden">
           {filtered.length === 0 ? (
             <div className="p-12 text-center">
-              <Package size={40} className="text-[#c9a96e] mx-auto mb-3" />
+              <Package size={40} className="text-[#3b5f8f] mx-auto mb-3" />
               <p className="text-sm font-medium text-[#1a1a1a]">No products found</p>
             </div>
           ) : (
@@ -183,7 +183,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
-                    <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#c9a96e]" /></th>
+                    <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#3b5f8f]" /></th>
                     {["Product","SKU","Collection","Price","Stock","Sold","Status","Updated"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
                     ))}
@@ -227,14 +227,14 @@ function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; 
 
   return (
     <tr className={cn("hover:bg-[#fafaf9] transition-colors", isSelected && "bg-[#f5f0e8]/30")}>
-      <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#c9a96e]" /></td>
+      <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#3b5f8f]" /></td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="relative w-11 h-14 flex-shrink-0 bg-[#fafaf9]">
             {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="45px" />}
           </div>
           <div className="min-w-0">
-            <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#c9a96e] transition-colors line-clamp-1">
+            <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors line-clamp-1">
               {product.name}
             </Link>
             {product.isNew      && <Badge variant="gold" className="mr-1 mt-1">New</Badge>}
@@ -285,7 +285,7 @@ function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; 
 
 function ProductCard({ product }: { product: AdminProduct }) {
   return (
-    <Link href={`/products/${product.id}`} className="group bg-white border border-[#e5e7eb] hover:border-[#c9a96e] transition-colors overflow-hidden">
+    <Link href={`/products/${product.id}`} className="group bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden">
       <div className="relative aspect-[3/4] bg-[#fafaf9]">
         {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="250px" />}
         <div className="absolute top-2 right-2">
@@ -295,8 +295,8 @@ function ProductCard({ product }: { product: AdminProduct }) {
         </div>
       </div>
       <div className="p-3">
-        <p className="text-[10px] text-[#c9a96e] uppercase tracking-wider mb-1">{product.collection}</p>
-        <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#c9a96e]">{product.name}</p>
+        <p className="text-[10px] text-[#3b5f8f] uppercase tracking-wider mb-1">{product.collection}</p>
+        <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#3b5f8f]">{product.name}</p>
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
           <span className={cn("text-xs font-bold", product.stock === 0 ? "text-red-500" : product.stock < 10 ? "text-orange-500" : "text-green-600")}>

@@ -28,8 +28,8 @@ export function RevenueAreaChart({ data, height = 260 }: Props) {
       <AreaChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="goldFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#c9a96e" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#c9a96e" stopOpacity={0} />
+            <stop offset="0%"   stopColor="#3b5f8f" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#3b5f8f" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
@@ -57,7 +57,7 @@ export function RevenueAreaChart({ data, height = 260 }: Props) {
             fontSize:   12,
             color:      "#fff",
           }}
-          labelStyle={{ color: "#c9a96e", fontWeight: 600 }}
+          labelStyle={{ color: "#3b5f8f", fontWeight: 600 }}
           formatter={(value, name) => {
             const num = typeof value === "number" ? value : Number(value) || 0;
             if (name === "revenueRupees") return [formatPaisa(num * 100), "Revenue"];
@@ -67,10 +67,10 @@ export function RevenueAreaChart({ data, height = 260 }: Props) {
         <Area
           type="monotone"
           dataKey="revenueRupees"
-          stroke="#c9a96e"
+          stroke="#3b5f8f"
           strokeWidth={2}
           fill="url(#goldFill)"
-          activeDot={{ r: 5, fill: "#c9a96e", stroke: "#fff", strokeWidth: 2 }}
+          activeDot={{ r: 5, fill: "#3b5f8f", stroke: "#fff", strokeWidth: 2 }}
         />
       </AreaChart>
     </ResponsiveContainer>

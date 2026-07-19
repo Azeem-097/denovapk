@@ -163,7 +163,7 @@ export function ImageLightbox({
       {/* ═══ IMAGE COUNTER (top-left, only if multiple) ════ */}
       {images.length > 1 && (
         <div className="absolute top-5 left-5 sm:top-7 sm:left-7 z-20 text-[#1a1a1a]/70 text-sm font-medium tracking-wide tabular-nums">
-          {currentIdx + 1} <span className="text-[#c9a96e] mx-1">/</span> {images.length}
+          {currentIdx + 1} <span className="text-[#3b5f8f] mx-1">/</span> {images.length}
         </div>
       )}
 
@@ -176,7 +176,7 @@ export function ImageLightbox({
         {images.length > 1 && (
           <button
             onClick={(e) => { e.stopPropagation(); goPrev(); }}
-            className="absolute left-3 sm:left-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full text-[#1a1a1a] border border-[#e5e7eb] bg-white hover:bg-[#f5f0e8] hover:border-[#c9a96e] shadow-sm transition-all duration-200 active:scale-95"
+            className="absolute left-3 sm:left-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full text-[#1a1a1a] border border-[#e5e7eb] bg-white hover:bg-[#f5f0e8] hover:border-[#3b5f8f] shadow-sm transition-all duration-200 active:scale-95"
             aria-label="Previous image (Left arrow)"
           >
             <ChevronLeft size={20} strokeWidth={1.75} />
@@ -213,7 +213,7 @@ export function ImageLightbox({
         {images.length > 1 && (
           <button
             onClick={(e) => { e.stopPropagation(); goNext(); }}
-            className="absolute right-3 sm:right-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full text-[#1a1a1a] border border-[#e5e7eb] bg-white hover:bg-[#f5f0e8] hover:border-[#c9a96e] shadow-sm transition-all duration-200 active:scale-95"
+            className="absolute right-3 sm:right-8 top-1/2 -translate-y-1/2 z-10 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full text-[#1a1a1a] border border-[#e5e7eb] bg-white hover:bg-[#f5f0e8] hover:border-[#3b5f8f] shadow-sm transition-all duration-200 active:scale-95"
             aria-label="Next image (Right arrow)"
           >
             <ChevronRight size={20} strokeWidth={1.75} />
@@ -231,7 +231,7 @@ export function ImageLightbox({
               className={cn(
                 "flex-shrink-0 relative w-12 h-14 sm:w-14 sm:h-16 overflow-hidden rounded-lg transition-all duration-200",
                 i === currentIdx
-                  ? "ring-2 ring-[#c9a96e] ring-offset-2 ring-offset-white opacity-100"
+                  ? "ring-2 ring-[#3b5f8f] ring-offset-2 ring-offset-white opacity-100"
                   : "opacity-50 hover:opacity-90"
               )}
               aria-label={`View image ${i + 1}`}

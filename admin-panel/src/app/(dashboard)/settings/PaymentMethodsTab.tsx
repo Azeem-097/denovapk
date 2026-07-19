@@ -62,7 +62,7 @@ export function PaymentMethodsTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <CreditCard size={16} className="text-[#c9a96e]" />
+        <CreditCard size={16} className="text-[#3b5f8f]" />
         Payment Methods
       </h2>
       <p className="text-xs text-[#6b7280] mb-6">
@@ -93,7 +93,7 @@ export function PaymentMethodsTab({ settings, onChange }: TabProps) {
               key={method.id}
               className={`flex items-center gap-4 p-4 border cursor-pointer transition-colors ${
                 enabled
-                  ? "border-[#c9a96e] bg-[#f5f0e8]/40"
+                  ? "border-[#3b5f8f] bg-[#f5f0e8]/40"
                   : "border-[#e5e7eb] bg-[#fafaf9]"
               }`}
             >
@@ -101,12 +101,12 @@ export function PaymentMethodsTab({ settings, onChange }: TabProps) {
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => onChange(method.key, e.target.checked ? "true" : "false")}
-                className="w-4 h-4 accent-[#c9a96e]"
+                className="w-4 h-4 accent-[#3b5f8f]"
               />
 
               <Icon
                 size={22}
-                className={enabled ? "text-[#c9a96e]" : "text-[#6b7280]"}
+                className={enabled ? "text-[#3b5f8f]" : "text-[#6b7280]"}
                 strokeWidth={1.75}
               />
 
@@ -118,7 +118,7 @@ export function PaymentMethodsTab({ settings, onChange }: TabProps) {
               <span
                 className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 ${
                   enabled
-                    ? "bg-[#c9a96e] text-white"
+                    ? "bg-[#3b5f8f] text-white"
                     : "bg-[#e5e7eb] text-[#6b7280]"
                 }`}
               >
@@ -130,7 +130,7 @@ export function PaymentMethodsTab({ settings, onChange }: TabProps) {
       </div>
 
       {/* ─── Info box ─── */}
-      <div className="mt-6 bg-[#f5f0e8] border border-[#c9a96e]/30 p-4 text-xs text-[#1a1a1a]">
+      <div className="mt-6 bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4 text-xs text-[#1a1a1a]">
         <p className="font-semibold mb-1">How it works</p>
         <ul className="text-[#6b7280] leading-relaxed space-y-1 list-disc list-inside">
           <li>Only <strong>enabled</strong> payment methods appear at checkout.</li>

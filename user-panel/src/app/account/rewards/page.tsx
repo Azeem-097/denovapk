@@ -83,12 +83,12 @@ export default function RewardsPage() {
           <div className="space-y-6">
             {loading ? (
               <div className="bg-white border border-[#e5e7eb] p-12 text-center">
-                <div className="w-8 h-8 border-2 border-[#c9a96e] border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="w-8 h-8 border-2 border-[#3b5f8f] border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-sm text-[#6b7280] mt-3">Loading rewards...</p>
               </div>
             ) : !data || !data.enabled ? (
-              <div className="bg-[#f5f0e8] border border-[#c9a96e]/30 p-8 text-center">
-                <Gift size={40} className="text-[#c9a96e] mx-auto mb-3" />
+              <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-8 text-center">
+                <Gift size={40} className="text-[#3b5f8f] mx-auto mb-3" />
                 <p className="text-lg font-bold text-[#1a1a1a]">Rewards Program Not Available</p>
                 <p className="text-sm text-[#6b7280] mt-2">
                   The loyalty program is currently disabled. Check back soon!
@@ -103,14 +103,14 @@ export default function RewardsPage() {
                       <Award size={200} />
                     </div>
                     <div className="relative">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[#c9a96e] mb-2">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#3b5f8f] mb-2">
                         {data.settings.programName}
                       </p>
                       <p className="text-5xl sm:text-6xl font-bold text-white mb-1">
                         {data.points}
                       </p>
                       <p className="text-sm text-white/70 uppercase tracking-wider">Points</p>
-                      <p className="text-lg text-[#c9a96e] font-semibold mt-3">
+                      <p className="text-lg text-[#3b5f8f] font-semibold mt-3">
                         Worth {formatPrice(data.points * data.settings.pointValue)}
                       </p>
                     </div>
@@ -175,7 +175,7 @@ export default function RewardsPage() {
                     </div>
                     {data.history.length === 0 ? (
                       <div className="p-10 text-center">
-                        <Award size={32} className="text-[#c9a96e] mx-auto mb-3" />
+                        <Award size={32} className="text-[#3b5f8f] mx-auto mb-3" />
                         <p className="text-sm text-[#6b7280]">No transactions yet</p>
                         <p className="text-xs text-[#6b7280] mt-1">Complete your first order to start earning!</p>
                       </div>
@@ -204,7 +204,7 @@ function InfoCard({ icon: Icon, label, value, subtitle }: {
   return (
     <div className="bg-white border border-[#e5e7eb] p-5">
       <div className="flex items-center gap-2 mb-2">
-        <Icon size={15} className="text-[#c9a96e]" />
+        <Icon size={15} className="text-[#3b5f8f]" />
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">{label}</p>
       </div>
       <p className="text-2xl font-bold text-[#1a1a1a]">{value}</p>
@@ -216,7 +216,7 @@ function InfoCard({ icon: Icon, label, value, subtitle }: {
 function StepCard({ num, title, desc }: { num: string; title: string; desc: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-9 h-9 rounded-full bg-[#c9a96e] text-white flex items-center justify-center flex-shrink-0 font-bold">
+      <div className="w-9 h-9 rounded-full bg-[#3b5f8f] text-white flex items-center justify-center flex-shrink-0 font-bold">
         {num}
       </div>
       <div>

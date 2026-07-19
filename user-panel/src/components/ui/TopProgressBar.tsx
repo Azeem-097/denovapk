@@ -115,14 +115,14 @@ export function TopProgressBar() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-[#c9a96e]"
+        className="h-full bg-[#3b5f8f]"
         style={{
           width:      `${progress}%`,
           opacity:    visible ? 1 : 0,
           transition: progress === 100
             ? "width 200ms ease-out, opacity 300ms ease-out 200ms"
             : "width 200ms ease-out, opacity 150ms ease-out",
-          boxShadow:  "0 0 8px rgba(201, 169, 110, 0.6), 0 0 4px rgba(201, 169, 110, 0.4)",
+          boxShadow:  "0 0 8px rgba(59, 95, 143, 0.6), 0 0 4px rgba(59, 95, 143, 0.4)",
         }}
       />
     </div>

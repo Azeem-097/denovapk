@@ -2,7 +2,7 @@
 
 @theme {
   --color-brand-primary:   #1a1a1a;
-  --color-brand-gold:      #c9a96e;
+  --color-brand-gold:      #3b5f8f;
   --color-brand-accent:    #f5f0e8;
   --color-admin-bg:        #f8f9fa;
   --color-admin-sidebar:   #111111;
@@ -32,13 +32,13 @@ body {
 }
 
 ::selection {
-  background-color: #c9a96e;
+  background-color: #3b5f8f;
   color: #ffffff;
 }
 
 ::-webkit-scrollbar        { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track  { background: #f1f1f1; }
-::-webkit-scrollbar-thumb  { background: #c9a96e; border-radius: 3px; }
+::-webkit-scrollbar-thumb  { background: #3b5f8f; border-radius: 3px; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -101,12 +101,12 @@ body {
 @keyframes hero-pulse-glow {
   0%, 100% {
     text-shadow:
-      0 0 8px rgba(201,169,110,0.35),
+      0 0 8px rgba(59,95,143,0.35),
       0 2px 6px rgba(0,0,0,0.35);
   }
   50% {
     text-shadow:
-      0 0 20px rgba(201,169,110,0.75),
+      0 0 20px rgba(59,95,143,0.75),
       0 2px 6px rgba(0,0,0,0.35);
   }
 }

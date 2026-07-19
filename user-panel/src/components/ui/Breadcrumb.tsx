@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
             ) : (
               <Link
                 href={item.href}
-                className="text-xs text-[#6b7280] hover:text-[#c9a96e] transition-colors tracking-wide"
+                className="text-xs text-[#6b7280] hover:text-[#3b5f8f] transition-colors tracking-wide"
               >
                 {item.label}
               </Link>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
@@ -80,7 +80,7 @@ export function Navbar() {
           <div className="lg:hidden relative flex items-center justify-between h-16">
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 -ml-2 text-[#1a1a1a] hover:text-[#c9a96e]"
+              className="p-2 -ml-2 text-[#1a1a1a] hover:text-[#3b5f8f]"
               aria-label="Open menu"
             >
               <Menu size={22} />
@@ -100,13 +100,13 @@ export function Navbar() {
             </Link>
 
             <div className="flex items-center gap-1">
-              <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#c9a96e]" aria-label="Search">
+              <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Search">
                 <Search size={20} />
               </button>
-              <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#c9a96e]" aria-label="Cart">
+              <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Cart">
                 <ShoppingBag size={20} />
                 {mounted && cartCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#c9a96e] text-white text-[9px] font-bold rounded-full">
+                  <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
                     {cartCount > 9 ? "9+" : cartCount}
                   </span>
                 )}
@@ -121,15 +121,15 @@ export function Navbar() {
 
             {/* Left nav */}
             <nav className="flex items-center justify-start gap-7">
-              <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 Shop
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#c9a96e] transition-all duration-300 group-hover:w-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
               </Link>
 
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 whitespace-nowrap"
+                  className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 whitespace-nowrap"
                 >
                   Collections
                   <ChevronDown size={14} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
@@ -141,12 +141,12 @@ export function Navbar() {
                 )}>
                   <div className="py-2">
                     {collectionsDropdown.map((item) => (
-                      <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#f5f0e8] hover:text-[#c9a96e] transition-colors">
+                      <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#f5f0e8] hover:text-[#3b5f8f] transition-colors">
                         {item.label}
                       </Link>
                     ))}
                     <div className="border-t border-[#e5e7eb] mt-1 pt-1">
-                      <Link href="/collections" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-[#c9a96e] hover:bg-[#f5f0e8] transition-colors">
+                      <Link href="/collections" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-[#3b5f8f] hover:bg-[#f5f0e8] transition-colors">
                         View All Collections →
                       </Link>
                     </div>
@@ -154,9 +154,9 @@ export function Navbar() {
                 </div>
               </div>
 
-              <Link href="/shop?filter=new" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/shop?filter=new" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 New Arrivals
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#c9a96e] transition-all duration-300 group-hover:w-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
               </Link>
             </nav>
 
@@ -174,37 +174,37 @@ export function Navbar() {
             </Link>
 
             <div className="flex items-center justify-end gap-7">
-              <Link href="/shop?filter=sale" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/shop?filter=sale" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 Sale
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#c9a96e] transition-all duration-300 group-hover:w-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
               </Link>
-              <Link href="/about" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#c9a96e] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/about" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 About
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#c9a96e] transition-all duration-300 group-hover:w-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
               </Link>
 
               <div className="flex items-center gap-1 ml-3 pl-3 border-l border-[#e5e7eb]">
-                <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#c9a96e]" aria-label="Search">
+                <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Search">
                   <Search size={19} />
                 </button>
-                <Link href="/wishlist" className="relative p-2 text-[#1a1a1a] hover:text-[#c9a96e]" aria-label="Wishlist">
+                <Link href="/wishlist" className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Wishlist">
                   <Heart size={19} />
                   {mounted && wishlistCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#c9a96e] text-white text-[9px] font-bold rounded-full">
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
                       {wishlistCount > 9 ? "9+" : wishlistCount}
                     </span>
                   )}
                 </Link>
-                <Link href={accountHref} className="p-2 text-[#1a1a1a] hover:text-[#c9a96e] relative" aria-label="Account">
+                <Link href={accountHref} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f] relative" aria-label="Account">
                   <User size={19} />
                   {mounted && isLoggedIn && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#c9a96e]" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#3b5f8f]" />
                   )}
                 </Link>
-                <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#c9a96e]" aria-label="Cart">
+                <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Cart">
                   <ShoppingBag size={19} />
                   {mounted && cartCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#c9a96e] text-white text-[9px] font-bold rounded-full">
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
                       {cartCount > 9 ? "9+" : cartCount}
                     </span>
                   )}
@@ -215,7 +215,7 @@ export function Navbar() {
         </div>
 
         <div className={cn(
-          "h-px bg-gradient-to-r from-transparent via-[#c9a96e]/40 to-transparent transition-opacity duration-300",
+          "h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300",
           scrolled ? "opacity-100" : "opacity-0"
         )} />
       </header>

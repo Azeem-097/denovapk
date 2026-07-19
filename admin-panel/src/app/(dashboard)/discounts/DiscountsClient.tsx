@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, MoreVertical, Trash, Edit, X, Save, Tag } from "lucide-react";
@@ -116,7 +116,7 @@ export function DiscountsClient({ initialDiscounts }: { initialDiscounts: DbDisc
       <div className="bg-white border border-[#e5e7eb] overflow-hidden">
         {discounts.length === 0 ? (
           <div className="p-12 text-center">
-            <Tag size={40} className="text-[#c9a96e] mx-auto mb-3" />
+            <Tag size={40} className="text-[#3b5f8f] mx-auto mb-3" />
             <p className="text-sm font-medium text-[#1a1a1a]">No discount codes yet</p>
             <p className="text-xs text-[#6b7280] mt-1">Create your first discount code to attract customers.</p>
           </div>
@@ -135,7 +135,7 @@ export function DiscountsClient({ initialDiscounts }: { initialDiscounts: DbDisc
                   <tr key={d.id} className="hover:bg-[#fafaf9]">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-[#c9a96e]">{d.code}</span>
+                        <span className="font-mono text-sm font-bold text-[#3b5f8f]">{d.code}</span>
                         <button onClick={() => copyCode(d.code)} className="text-[#6b7280] hover:text-[#1a1a1a]">
                           <Copy size={12} />
                         </button>
@@ -149,7 +149,7 @@ export function DiscountsClient({ initialDiscounts }: { initialDiscounts: DbDisc
                     <td className="px-4 py-3">
                       <p className="text-xs font-medium text-[#1a1a1a]">{d.usedCount} / {d.maxUses}</p>
                       <div className="w-20 h-1 bg-[#e5e7eb] mt-1">
-                        <div className="h-full bg-[#c9a96e]" style={{ width: `${Math.min((d.usedCount / d.maxUses) * 100, 100)}%` }} />
+                        <div className="h-full bg-[#3b5f8f]" style={{ width: `${Math.min((d.usedCount / d.maxUses) * 100, 100)}%` }} />
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-[#6b7280]">
@@ -276,7 +276,7 @@ function DiscountModal({
               <input type="text" value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                 placeholder="e.g. SUMMER20" required
-                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none font-mono uppercase" />
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none font-mono uppercase" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -285,7 +285,7 @@ function DiscountModal({
                   Type *
                 </label>
                 <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none">
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
                   <option value="PERCENTAGE">Percentage (%)</option>
                   <option value="FIXED">Fixed Amount (Rs.)</option>
                 </select>
@@ -297,7 +297,7 @@ function DiscountModal({
                 <input type="number" value={form.value}
                   onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
                   min={0} required
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
               </div>
             </div>
 
@@ -309,7 +309,7 @@ function DiscountModal({
                 <input type="number" value={form.minOrder}
                   onChange={(e) => setForm({ ...form, minOrder: Number(e.target.value) })}
                   min={0}
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
@@ -318,7 +318,7 @@ function DiscountModal({
                 <input type="number" value={form.maxUses}
                   onChange={(e) => setForm({ ...form, maxUses: Number(e.target.value) })}
                   min={1}
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
               </div>
             </div>
 
@@ -329,14 +329,14 @@ function DiscountModal({
                 </label>
                 <input type="date" value={form.expiresAt}
                   onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none" />
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-[#1a1a1a] mb-1.5">
                   Status
                 </label>
                 <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none">
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
                   <option value="ACTIVE">Active</option>
                   <option value="DISABLED">Disabled</option>
                 </select>
@@ -346,7 +346,7 @@ function DiscountModal({
             <div className="bg-[#fafaf9] border border-[#e5e7eb] p-4 text-xs text-[#6b7280]">
               <p className="font-semibold text-[#1a1a1a] mb-1">Preview</p>
               <p>
-                Code <span className="font-mono font-bold text-[#c9a96e]">{form.code || "CODE"}</span> gives{" "}
+                Code <span className="font-mono font-bold text-[#3b5f8f]">{form.code || "CODE"}</span> gives{" "}
                 <span className="font-bold text-[#1a1a1a]">
                   {form.type === "PERCENTAGE" ? `${form.value}% off` : `Rs. ${form.value} off`}
                 </span>
@@ -362,7 +362,7 @@ function DiscountModal({
                 Cancel
               </button>
               <button type="submit" disabled={saving}
-                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 <Save size={14} />
                 {saving ? "Saving..." : (discount ? "Update" : "Create")}
               </button>

@@ -86,14 +86,14 @@ export default function CartPage() {
                   </p>
                   <div className="mt-2 h-1 bg-[#e5e7eb] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#c9a96e] transition-all duration-500 rounded-full"
+                      className="h-full bg-[#3b5f8f] transition-all duration-500 rounded-full"
                       style={{ width: `${(subtotal / config.threshold) * 100}%` }}
                     />
                   </div>
                 </div>
               ) : alreadyQualifies ? (
                 <div className="px-5 py-3 bg-[#f5f0e8] border-b border-[#e5e7eb]">
-                  <p className="text-xs text-[#c9a96e] font-semibold">
+                  <p className="text-xs text-[#3b5f8f] font-semibold">
                     🎉 {config.freeDeliveryAll ? "FREE shipping on every order" : "You qualify for FREE shipping!"}
                   </p>
                 </div>
@@ -146,7 +146,7 @@ export default function CartPage() {
                   <input
                     type="text"
                     placeholder="Enter code"
-                    className="flex-1 px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none placeholder:text-[#6b7280]/60"
+                    className="flex-1 px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60"
                   />
                   <button className="px-4 py-2.5 text-xs font-semibold tracking-wide uppercase border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors">
                     Apply
@@ -160,7 +160,7 @@ export default function CartPage() {
                   <span className="text-2xl font-bold text-[#1a1a1a]">{formatPrice(total)}</span>
                 </div>
 
-                <Link href="/checkout" className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors duration-300">
+                <Link href="/checkout" className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors duration-300">
                   Proceed to Checkout
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -169,7 +169,7 @@ export default function CartPage() {
               <div className="mt-6 pt-5 border-t border-[#e5e7eb] space-y-2.5">
                 {trustBadges.map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-2.5 text-xs text-[#6b7280]">
-                    <Icon size={14} className="text-[#c9a96e] flex-shrink-0" />
+                    <Icon size={14} className="text-[#3b5f8f] flex-shrink-0" />
                     <span>{text}</span>
                   </div>
                 ))}
@@ -189,7 +189,7 @@ function SummaryRow({
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-[#6b7280]">{label}</span>
-      <span className={`font-medium ${muted ? "text-[#6b7280] text-xs" : highlight ? "text-[#c9a96e]" : "text-[#1a1a1a]"}`}>
+      <span className={`font-medium ${muted ? "text-[#6b7280] text-xs" : highlight ? "text-[#3b5f8f]" : "text-[#1a1a1a]"}`}>
         {value}
       </span>
     </div>
@@ -201,7 +201,7 @@ function EmptyCartPage() {
     <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
       <div className="max-w-md mx-auto px-4 text-center">
         <div className="w-24 h-24 mx-auto bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-6">
-          <ShoppingBag size={36} className="text-[#c9a96e]" />
+          <ShoppingBag size={36} className="text-[#3b5f8f]" />
         </div>
         <h1 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] mb-3">
           Your cart is empty
@@ -209,7 +209,7 @@ function EmptyCartPage() {
         <p className="text-sm text-[#6b7280] mb-8 leading-relaxed">
           Looks like you have not added anything to your cart yet. Explore our collections and find your next favorite piece.
         </p>
-        <Link href="/shop" className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors duration-300">
+        <Link href="/shop" className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors duration-300">
           Start Shopping
           <ArrowRight size={16} />
         </Link>

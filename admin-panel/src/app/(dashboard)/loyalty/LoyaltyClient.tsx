@@ -45,7 +45,7 @@ export function LoyaltyClient({ initialCustomers, stats, settings }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <Award size={22} className="text-[#c9a96e]" />
+            <Award size={22} className="text-[#3b5f8f]" />
             {settings.programName}
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -73,14 +73,14 @@ export function LoyaltyClient({ initialCustomers, stats, settings }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard icon={Users}       label="Active Members"     value={stats.membersWithPoints.toString()} />
-        <StatCard icon={Award}       label="Outstanding Points" value={stats.totalOutstanding.toLocaleString()} color="text-[#c9a96e]" />
+        <StatCard icon={Award}       label="Outstanding Points" value={stats.totalOutstanding.toLocaleString()} color="text-[#3b5f8f]" />
         <StatCard icon={TrendingUp}  label="Total Earned"       value={stats.totalEverEarned.toLocaleString()}   color="text-green-600" />
         <StatCard icon={ArrowDown}   label="Total Redeemed"     value={stats.totalEverRedeemed.toLocaleString()} color="text-orange-600" />
       </div>
 
       {/* Program Rules */}
-      <div className="bg-[#f5f0e8]/50 border border-[#c9a96e]/30 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#c9a96e] mb-3">
+      <div className="bg-[#f5f0e8]/50 border border-[#3b5f8f]/30 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#3b5f8f] mb-3">
           Current Program Rules
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -110,7 +110,7 @@ export function LoyaltyClient({ initialCustomers, stats, settings }: Props) {
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search customers by name, email, or phone..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
           />
         </div>
       </div>
@@ -119,7 +119,7 @@ export function LoyaltyClient({ initialCustomers, stats, settings }: Props) {
       <div className="bg-white border border-[#e5e7eb] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <Award size={40} className="text-[#c9a96e] mx-auto mb-3" />
+            <Award size={40} className="text-[#3b5f8f] mx-auto mb-3" />
             <p className="text-sm font-medium text-[#1a1a1a]">No customers with points</p>
           </div>
         ) : (
@@ -140,9 +140,9 @@ export function LoyaltyClient({ initialCustomers, stats, settings }: Props) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                          <span className="text-xs font-bold text-[#c9a96e]">{getInitials(c.name)}</span>
+                          <span className="text-xs font-bold text-[#3b5f8f]">{getInitials(c.name)}</span>
                         </div>
-                        <Link href={`/customers/${c.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#c9a96e]">
+                        <Link href={`/customers/${c.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#3b5f8f]">
                           {c.name}
                         </Link>
                       </div>
@@ -152,7 +152,7 @@ export function LoyaltyClient({ initialCustomers, stats, settings }: Props) {
                       {c.phone && <p className="text-[10px] text-[#6b7280]">{c.phone}</p>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-lg font-bold text-[#c9a96e]">{c.loyaltyPoints}</span>
+                      <span className="text-lg font-bold text-[#3b5f8f]">{c.loyaltyPoints}</span>
                       <span className="text-xs text-[#6b7280] ml-1">pts</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-green-600 font-semibold">
@@ -186,7 +186,7 @@ function StatCard({ icon: Icon, label, value, color = "text-[#1a1a1a]" }: {
   return (
     <div className="bg-white border border-[#e5e7eb] p-4">
       <div className="flex items-center gap-2 mb-1">
-        <Icon size={14} className="text-[#c9a96e]" />
+        <Icon size={14} className="text-[#3b5f8f]" />
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">{label}</p>
       </div>
       <p className={cn("text-2xl font-bold", color)}>{value}</p>

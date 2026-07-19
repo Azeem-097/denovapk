@@ -153,7 +153,7 @@ export default function AddressesPage() {
             <FadeIn delay={150}>
               <button
                 onClick={handleAdd}
-                className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-3 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors"
+                className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-3 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors"
               >
                 <Plus size={16} />
                 Add Address
@@ -170,7 +170,7 @@ export default function AddressesPage() {
           <div>
             {addresses.length === 0 ? (
               <div className="bg-white border border-[#e5e7eb] p-10 text-center">
-                <MapPin size={40} className="text-[#c9a96e] mx-auto mb-4" />
+                <MapPin size={40} className="text-[#3b5f8f] mx-auto mb-4" />
                 <h3 className="text-base font-semibold text-[#1a1a1a] mb-1">
                   No addresses yet
                 </h3>
@@ -179,7 +179,7 @@ export default function AddressesPage() {
                 </p>
                 <button
                   onClick={handleAdd}
-                  className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#c9a96e] transition-colors"
+                  className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#3b5f8f] transition-colors"
                 >
                   <Plus size={14} />
                   Add Address
@@ -191,14 +191,14 @@ export default function AddressesPage() {
                   <FadeIn key={addr.id} delay={i * 60}>
                     <div className="bg-white border border-[#e5e7eb] p-5 relative">
                       {addr.isDefault && (
-                        <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-[#f5f0e8] text-[#c9a96e] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-[#f5f0e8] text-[#3b5f8f] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                           <Star size={10} fill="currentColor" />
                           Default
                         </span>
                       )}
 
                       <div className="flex items-center gap-2 mb-3">
-                        <MapPin size={14} className="text-[#c9a96e]" />
+                        <MapPin size={14} className="text-[#3b5f8f]" />
                         <span className="text-xs font-semibold tracking-wide uppercase text-[#1a1a1a]">
                           {addr.label}
                         </span>
@@ -215,7 +215,7 @@ export default function AddressesPage() {
                         {!addr.isDefault && (
                           <button
                             onClick={() => handleSetDefault(addr.id)}
-                            className="text-xs text-[#c9a96e] hover:text-[#b8955a] font-semibold underline"
+                            className="text-xs text-[#3b5f8f] hover:text-[#2d4a72] font-semibold underline"
                           >
                             Set as default
                           </button>
@@ -343,7 +343,7 @@ function AddressModal({
               <div
                 onClick={() => { setIsDefault(!isDefault); setValue("isDefault", !isDefault); }}
                 className={`w-4 h-4 border-2 flex items-center justify-center transition-all ${
-                  isDefault ? "border-[#c9a96e] bg-[#c9a96e]" : "border-[#e5e7eb]"
+                  isDefault ? "border-[#3b5f8f] bg-[#3b5f8f]" : "border-[#e5e7eb]"
                 }`}
               >
                 {isDefault && <Check size={10} className="text-white" />}
@@ -357,7 +357,7 @@ function AddressModal({
                 Cancel
               </button>
               <button type="submit" disabled={saving}
-                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#c9a96e] transition-colors disabled:opacity-50">
+                className="flex-1 py-3 text-sm font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-50">
                 {saving
                   ? "Saving..."
                   : (address ? "Update Address" : "Save Address")}

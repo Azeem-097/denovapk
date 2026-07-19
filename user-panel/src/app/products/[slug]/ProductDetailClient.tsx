@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown } from "lucide-react";
+import { ShoppingBag, CheckCircle, Plus, Minus, ChevronDown, Flame } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ProductImages } from "@/components/product/ProductImages";
 import { ColorSelector } from "@/components/product/ColorSelector";
@@ -8,7 +8,6 @@ import { SizeSelector } from "@/components/product/SizeSelector";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { SaleCountdown } from "@/components/product/SaleCountdown";
 import { LiveViewCounter } from "@/components/product/LiveViewCounter";
-// DiscountInlinePill import removed — replaced with focused savings badge inline
 import { FadeIn } from "@/components/animations/FadeIn";
 import { useCartStore } from "@/store/cartStore";
 import { useToastStore } from "@/store/toastStore";
@@ -153,37 +152,66 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   {product.name}
                 </h1>
 
-                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-4">
+                <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6b7280] mb-5">
                   {product.collection || "Premium"}
                 </p>
 
-                {/* Price row — bold, elegant, with clear strikethrough */}
-                <div className="flex items-end gap-3 flex-wrap mb-2">
-                  <span className="text-3xl sm:text-[38px] font-bold text-[#1a1a1a] tracking-tight leading-none">
+                {/* MEGA DEAL LIVE BANNER */}
+                {hasDiscount && (
+                  <div className="mb-5 w-full max-w-md border border-[#e32c52]/30 shadow-[0_8px_30px_-12px_rgba(227,44,82,0.25)] bg-white overflow-hidden">
+                    <div className="bg-[#e32c52] px-4 py-2 flex justify-between items-center text-white">
+                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase flex items-center gap-1.5">
+                        <Flame size={12} fill="currentColor" /> Mega Deal Live
+                      </span>
+                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-white/90">
+                        Limited Time
+                      </span>
+                    </div>
+                    <div className="p-4 sm:p-5 flex flex-col items-center justify-center text-center bg-gradient-to-b from-[#fff0f3] to-white">
+                      <div className="flex items-center gap-3">
+                        <span className="font-[family-name:var(--font-playfair)] text-[42px] sm:text-[52px] font-bold text-[#e32c52] leading-none">
+                          {discountPercent}%
+                        </span>
+                        <div className="flex flex-col items-start leading-none gap-1.5">
+                          <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight uppercase">
+                            OFF TODAY
+                          </span>
+                          <span className="text-[11px] sm:text-xs font-bold text-[#d97706] uppercase tracking-wide">
+                            You save {formatPKR(savedAmount)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full h-px bg-[#e32c52]/15 my-3 sm:my-4" />
+                      <p className="text-[9px] sm:text-[10px] font-bold tracking-[0.15em] text-[#e32c52] uppercase">
+                        Price dropped from {formatPKR(product.compareAtPrice!)} to {formatPKR(product.price)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Price row */}
+                <div className="flex items-end gap-3 flex-wrap mb-3">
+                  <span className="text-4xl sm:text-[42px] font-extrabold text-[#1a1a1a] tracking-tight leading-none">
                     {formatPKR(product.price)}
                   </span>
                   {hasDiscount && (
-                    <span className="text-lg sm:text-xl text-[#9ca3af] line-through decoration-[#9ca3af]/70 decoration-[1.5px] font-medium leading-none pb-1">
+                    <span className="text-xl sm:text-2xl text-[#9ca3af] line-through decoration-[#e32c52]/70 decoration-[2.5px] font-semibold leading-none pb-1">
                       {formatPKR(product.compareAtPrice!)}
                     </span>
                   )}
                 </div>
 
-                {/* Single focused savings line — the ONE loud element */}
+                {/* Red Pill & Savings Text */}
                 {hasDiscount && (
-                  <div className="mb-6 inline-flex items-center gap-3 pl-3 pr-5 py-2.5 bg-[#1a1a1a] shadow-[0_10px_30px_-15px_rgba(201,169,110,0.6)]">
-                    <span className="font-[family-name:var(--font-playfair)] text-2xl sm:text-[28px] font-bold text-[#c9a96e] leading-none tabular-nums">
+                  <div className="mb-6 space-y-2">
+                    <div className="inline-flex items-center gap-1.5 bg-[#feecf0] px-2.5 py-1 text-[#e32c52] text-[10px] font-bold tracking-widest uppercase rounded-sm">
+                      <Flame size={12} fill="currentColor" />
                       {discountPercent}% OFF
-                    </span>
-                    <span className="h-8 w-px bg-white/20" />
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-white/60">
-                        You Save
-                      </span>
-                      <span className="text-sm font-bold text-white tracking-wide">
-                        {formatPKR(savedAmount)}
-                      </span>
                     </div>
+                    <p className="text-xs font-bold text-[#e32c52] flex items-center gap-1.5">
+                      <Flame size={14} fill="currentColor" className="text-[#f59e0b]"/>
+                      You save {formatPKR(savedAmount)} on this deal
+                    </p>
                   </div>
                 )}
 
@@ -193,7 +221,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 </div>
 
                 {/* Sale countdown */}
-                <div className="mb-6 max-w-md">
+                <div className="max-w-md">
                   <SaleCountdown productId={product.id} />
                 </div>
 
@@ -242,7 +270,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     </button>
                   </div>
                   {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
-                    <span className="text-xs text-[#c9a96e] font-medium">
+                    <span className="text-xs text-[#e32c52] font-bold">
                       Only {selectedVariant.stock} left
                     </span>
                   )}
@@ -256,7 +284,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     isOutOfStock
                       ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
                       : addedToCart
-                      ? "bg-[#c9a96e] text-white"
+                      ? "bg-[#3b5f8f] text-white"
                       : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
                   )}
                 >
@@ -392,7 +420,7 @@ function AccordionItem({
           <span className="text-[#1a1a1a] text-lg font-light w-4">
             {isOpen ? "-" : "+"}
           </span>
-          <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] group-hover:text-[#c9a96e] transition-colors">
+          <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors">
             {title}
           </span>
         </div>

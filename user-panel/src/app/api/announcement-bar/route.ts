@@ -1,8 +1,10 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getSetting } from "@/lib/db/repositories/settings";
 
 export const dynamic   = "force-dynamic";
 export const revalidate = 0;
+
+const BRAND_ACCENT = "#3b5f8f"; // Denova Blue — always used as accent
 
 const DEFAULT_CONFIG = {
   enabled:           true,
@@ -10,7 +12,7 @@ const DEFAULT_CONFIG = {
   dismissible:       true,
   bgColor:           "#1a1a1a",
   textColor:         "#ffffff",
-  accentColor:       "#c9a96e",
+  accentColor:       BRAND_ACCENT,
   messages: [] as AnnouncementMessage[],
 };
 
@@ -22,7 +24,6 @@ interface AnnouncementMessage {
   sortOrder: number;
 }
 
-// Public endpoint — returns config with only ACTIVE messages, sorted
 export async function GET() {
   try {
     const raw = await getSetting("announcement_bar");
@@ -40,7 +41,7 @@ export async function GET() {
         dismissible:       all.dismissible !== false,
         bgColor:           all.bgColor     || "#1a1a1a",
         textColor:         all.textColor   || "#ffffff",
-        accentColor:       all.accentColor || "#c9a96e",
+        accentColor:       BRAND_ACCENT, // Always blue, ignore DB value
         messages:          activeMessages,
       },
     });

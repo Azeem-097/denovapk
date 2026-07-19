@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,13 +33,13 @@ export default function ConfirmationPage() {
 
             {/* Icon */}
             <div className="w-20 h-20 mx-auto bg-[#f5f0e8] rounded-full flex items-center justify-center mb-6 relative">
-              <CheckCircle size={40} className="text-[#c9a96e]" strokeWidth={1.5} />
-              <div className="absolute inset-0 rounded-full border-4 border-[#c9a96e]/20 animate-ping" />
+              <CheckCircle size={40} className="text-[#3b5f8f]" strokeWidth={1.5} />
+              <div className="absolute inset-0 rounded-full border-4 border-[#3b5f8f]/20 animate-ping" />
             </div>
 
             {/* Message */}
             <FadeIn delay={200}>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#c9a96e]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
                 Order Confirmed
               </span>
             </FadeIn>
@@ -81,7 +81,7 @@ export default function ConfirmationPage() {
 
               {/* Shipping Address */}
               <div>
-                <p className="text-xs font-medium tracking-wide uppercase text-[#c9a96e] mb-2">
+                <p className="text-xs font-medium tracking-wide uppercase text-[#3b5f8f] mb-2">
                   Shipping Address
                 </p>
                 <p className="text-sm text-[#1a1a1a] font-medium">
@@ -100,14 +100,14 @@ export default function ConfirmationPage() {
               {/* Delivery + Payment */}
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs font-medium tracking-wide uppercase text-[#c9a96e] mb-2">
+                  <p className="text-xs font-medium tracking-wide uppercase text-[#3b5f8f] mb-2">
                     Delivery Method
                   </p>
                   <p className="text-sm text-[#1a1a1a] font-medium">{shippingMethod.name}</p>
                   <p className="text-xs text-[#6b7280]">{shippingMethod.time}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium tracking-wide uppercase text-[#c9a96e] mb-2">
+                  <p className="text-xs font-medium tracking-wide uppercase text-[#3b5f8f] mb-2">
                     Payment Method
                   </p>
                   <p className="text-sm text-[#1a1a1a] font-medium capitalize">
@@ -152,7 +152,7 @@ export default function ConfirmationPage() {
             <Link
               href="/shop"
               onClick={() => reset()}
-              className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#c9a96e] transition-colors"
+              className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors"
             >
               <ShoppingBag size={16} />
               Continue Shopping
@@ -170,7 +170,7 @@ export default function ConfirmationPage() {
         {/* Help */}
         <FadeIn delay={900}>
           <p className="mt-6 text-center text-xs text-[#6b7280]">
-            Need help? <a href="/contact" className="text-[#c9a96e] hover:underline">Contact our support team</a>
+            Need help? <a href="/contact" className="text-[#3b5f8f] hover:underline">Contact our support team</a>
           </p>
         </FadeIn>
       </div>
@@ -188,7 +188,7 @@ function NextStep({
   return (
     <div className="flex items-start gap-4">
       <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
-        <Icon size={16} className="text-[#c9a96e]" />
+        <Icon size={16} className="text-[#3b5f8f]" />
       </div>
       <div className="flex-1 pt-1">
         <p className="text-sm font-semibold text-[#1a1a1a]">{title}</p>

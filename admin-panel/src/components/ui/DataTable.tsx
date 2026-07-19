@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -76,8 +76,8 @@ export function DataTable<T>({
                     {col.label}
                     {col.sortable && (
                       <div className="flex flex-col opacity-40">
-                        <ChevronUp size={10} className={sort?.key === col.key && sort.direction === "asc" ? "opacity-100 text-[#c9a96e]" : ""} />
-                        <ChevronDown size={10} className={cn("-mt-1", sort?.key === col.key && sort.direction === "desc" ? "opacity-100 text-[#c9a96e]" : "")} />
+                        <ChevronUp size={10} className={sort?.key === col.key && sort.direction === "asc" ? "opacity-100 text-[#3b5f8f]" : ""} />
+                        <ChevronDown size={10} className={cn("-mt-1", sort?.key === col.key && sort.direction === "desc" ? "opacity-100 text-[#3b5f8f]" : "")} />
                       </div>
                     )}
                   </div>

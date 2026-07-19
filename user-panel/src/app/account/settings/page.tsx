@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -134,7 +134,7 @@ function ProfileForm({
   return (
     <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
-        <User size={16} className="text-[#c9a96e]" />
+        <User size={16} className="text-[#3b5f8f]" />
         <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
           Profile Information
         </h2>
@@ -163,7 +163,7 @@ function ProfileForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-[#c9a96e] transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-[#3b5f8f] transition-colors disabled:opacity-60"
         >
           <Save size={13} />
           {isSubmitting ? "Saving..." : "Save Changes"}
@@ -188,7 +188,7 @@ function PasswordForm({ onSave }: { onSave: () => void }) {
   return (
     <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
-        <Lock size={16} className="text-[#c9a96e]" />
+        <Lock size={16} className="text-[#3b5f8f]" />
         <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
           Change Password
         </h2>
@@ -219,7 +219,7 @@ function PasswordForm({ onSave }: { onSave: () => void }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-[#c9a96e] transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wide hover:bg-[#3b5f8f] transition-colors disabled:opacity-60"
         >
           <Lock size={13} />
           {isSubmitting ? "Updating..." : "Update Password"}
@@ -247,7 +247,7 @@ function NotificationsSection({ showToast }: {
   return (
     <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
       <div className="flex items-center gap-2 mb-5">
-        <Bell size={16} className="text-[#c9a96e]" />
+        <Bell size={16} className="text-[#3b5f8f]" />
         <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
           Email Notifications
         </h2>
@@ -272,7 +272,7 @@ function NotificationsSection({ showToast }: {
               type="button"
               onClick={() => toggle(item.key as keyof typeof prefs)}
               className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 mt-1 ${
-                prefs[item.key as keyof typeof prefs] ? "bg-[#c9a96e]" : "bg-[#e5e7eb]"
+                prefs[item.key as keyof typeof prefs] ? "bg-[#3b5f8f]" : "bg-[#e5e7eb]"
               }`}
             >
               <div

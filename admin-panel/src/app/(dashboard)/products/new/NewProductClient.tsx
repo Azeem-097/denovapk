@@ -259,7 +259,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
                 </div>
               ))}
               <button onClick={addVariant}
-                className="w-full py-2.5 text-xs font-medium text-[#c9a96e] hover:text-[#b8955a] border border-dashed border-[#e5e7eb] hover:border-[#c9a96e] transition-colors flex items-center justify-center gap-1">
+                className="w-full py-2.5 text-xs font-medium text-[#3b5f8f] hover:text-[#2d4a72] border border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors flex items-center justify-center gap-1">
                 <Plus size={14} />Add Color Variant
               </button>
             </div>
@@ -276,7 +276,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
               ].map((opt) => (
                 <label key={opt.val} className="flex items-start gap-2 cursor-pointer">
                   <input type="radio" name="status" checked={form.status === opt.val}
-                    onChange={() => updateField("status", opt.val)} className="accent-[#c9a96e] mt-0.5" />
+                    onChange={() => updateField("status", opt.val)} className="accent-[#3b5f8f] mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-[#1a1a1a]">{opt.label}</p>
                     <p className="text-[11px] text-[#6b7280]">{opt.desc}</p>
@@ -310,7 +310,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
                   <input type="checkbox"
                     checked={form[key as keyof typeof form] as boolean}
                     onChange={(e) => updateField(key, e.target.checked)}
-                    className="accent-[#c9a96e]" />
+                    className="accent-[#3b5f8f]" />
                   <span className="text-sm text-[#1a1a1a]">{label}</span>
                 </label>
               ))}
@@ -329,7 +329,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
           outline: none;
           transition: border-color 0.15s;
         }
-        :global(.input:focus) { border-color: #c9a96e; }
+        :global(.input:focus) { border-color: #3b5f8f; }
       `}</style>
     </div>
   );
@@ -352,7 +352,7 @@ function FormField({ label, required, hint, children }: {
   return (
     <div>
       <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">
-        {label}{required && <span className="text-[#c9a96e] ml-0.5">*</span>}
+        {label}{required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
       </label>
       {children}
       {hint && <p className="mt-1 text-[10px] text-[#6b7280]">{hint}</p>}

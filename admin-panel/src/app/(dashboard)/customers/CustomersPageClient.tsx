@@ -47,7 +47,7 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <QuickStat label="Total Customers"   value={stats.total.toString()} />
         <QuickStat label="Active"            value={stats.active.toString()}   color="text-green-600" />
-        <QuickStat label="VIP (100K+)"       value={stats.vip.toString()}      color="text-[#c9a96e]" />
+        <QuickStat label="VIP (100K+)"       value={stats.vip.toString()}      color="text-[#3b5f8f]" />
         <QuickStat label="Combined Revenue"  value={formatPrice(stats.revenue)} color="text-[#1a1a1a]" />
       </div>
 
@@ -60,7 +60,7 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
         ].map((f) => (
           <button key={f.val} onClick={() => setFilter(f.val as typeof filter)}
             className={cn("px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-              filter === f.val ? "border-[#c9a96e] text-[#c9a96e]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
+              filter === f.val ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
             {f.label}
           </button>
         ))}
@@ -70,14 +70,14 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, email, or city..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#c9a96e] focus:outline-none placeholder:text-[#6b7280]/60" />
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
         </div>
       </div>
 
       <div className="bg-white border border-[#e5e7eb] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <Users size={40} className="text-[#c9a96e] mx-auto mb-3" />
+            <Users size={40} className="text-[#3b5f8f] mx-auto mb-3" />
             <p className="text-sm font-medium text-[#1a1a1a]">No customers found</p>
           </div>
         ) : (
@@ -96,10 +96,10 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-[#c9a96e]">{getInitials(c.name)}</span>
+                          <span className="text-xs font-bold text-[#3b5f8f]">{getInitials(c.name)}</span>
                         </div>
                         <div>
-                          <Link href={`/customers/${c.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#c9a96e]">
+                          <Link href={`/customers/${c.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#3b5f8f]">
                             {c.name}
                           </Link>
                           {c.totalSpent > 100000 && <Badge variant="gold" className="ml-1">VIP</Badge>}
@@ -108,13 +108,13 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
-                        <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#c9a96e]"><Mail size={11} />{c.email}</a>
-                        {c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#c9a96e]"><Phone size={11} />{c.phone}</a>}
+                        <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#3b5f8f]"><Mail size={11} />{c.email}</a>
+                        {c.phone && <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#3b5f8f]"><Phone size={11} />{c.phone}</a>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-[#1a1a1a]">{c.city || "-"}</td>
                     <td className="px-4 py-3 text-xs font-bold text-[#1a1a1a]">{c.totalOrders}</td>
-                    <td className="px-4 py-3 text-xs font-bold text-[#c9a96e]">{formatPrice(c.totalSpent)}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-[#3b5f8f]">{formatPrice(c.totalSpent)}</td>
                     <td className="px-4 py-3 text-xs text-[#6b7280]">{formatDate(c.lastOrder)}</td>
                     <td className="px-4 py-3">
                       <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide",
@@ -138,7 +138,7 @@ export function CustomersPageClient({ initialCustomers }: { initialCustomers: Ad
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <Link href={`/customers/${c.id}`} className="text-[#6b7280] hover:text-[#c9a96e]"><ChevronRight size={16} /></Link>
+                      <Link href={`/customers/${c.id}`} className="text-[#6b7280] hover:text-[#3b5f8f]"><ChevronRight size={16} /></Link>
                     </td>
                   </tr>
                 ))}

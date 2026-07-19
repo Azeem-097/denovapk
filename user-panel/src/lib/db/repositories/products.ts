@@ -158,6 +158,11 @@ export async function getProductCount(opts: GetProductsOptions = {}): Promise<nu
   return Number(result.rows[0].count);
 }
 
+/**
+ * Fetch related products in the same collection.
+ * Includes ALL images (sorted primary first) + variants so the ProductCard
+ * hover-swap effect works properly.
+ */
 export async function getRelatedProducts(
   productId: string, collectionId: string, limit = 4
 ): Promise<ProductWithRelations[]> {
@@ -170,12 +175,26 @@ export async function getRelatedProducts(
 
   const productIds   = products.map((p) => p.id);
   const placeholders = productIds.map(() => "?").join(",");
-  const imgResult    = await db.execute({
-    sql:  `SELECT * FROM product_images WHERE productId IN (${placeholders}) AND isPrimary = 1`,
-    args: productIds,
-  });
-  const images = imgResult.rows as unknown as DbProductImage[];
-  return products.map((p) => ({ ...p, images: images.filter((i) => i.productId === p.id), variants: [] }));
+
+  const [imgResult, varResult] = await Promise.all([
+    db.execute({
+      sql:  `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`,
+      args: productIds,
+    }),
+    db.execute({
+      sql:  `SELECT * FROM product_variants WHERE productId IN (${placeholders})`,
+      args: productIds,
+    }),
+  ]);
+
+  const images   = imgResult.rows as unknown as DbProductImage[];
+  const variants = varResult.rows as unknown as DbProductVariant[];
+
+  return products.map((p) => ({
+    ...p,
+    images:   images.filter((i) => i.productId === p.id),
+    variants: variants.filter((v) => v.productId === p.id),
+  }));
 }
 
 void generateId; void now; void tagsToArray;

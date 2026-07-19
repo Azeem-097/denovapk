@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Package, Heart } from "lucide-react";
@@ -45,7 +45,6 @@ export function ProductImages({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [mobileIndex, setMobileIndex] = useState(0);
 
-  // ─── Lightbox state ──────────────────────────────────────
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx,  setLightboxIdx]  = useState(0);
 
@@ -98,7 +97,7 @@ export function ProductImages({
 
   return (
     <>
-      {/* DESKTOP — 2x2 grid, click any image to open lightbox */}
+      {/* DESKTOP — 2x2 grid with zoom-on-hover */}
       <div className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3">
         {sortedImages.map((img, i) => (
           <div key={img.id + i} className="relative group">
@@ -108,19 +107,19 @@ export function ProductImages({
               disabled={isPlaceholder(img.url)}
               className={cn(
                 "block w-full relative cursor-zoom-in disabled:cursor-default rounded-xl lg:rounded-2xl overflow-hidden",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a96e] focus-visible:ring-offset-2"
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3b5f8f] focus-visible:ring-offset-2"
               )}
               aria-label={`View image ${i + 1} in full screen`}
             >
               <ProductBgWrapper
                 bgColor={bgColor}
                 className={cn(
-                  "aspect-[4/5]",
+                  "aspect-[4/5] overflow-hidden",
                   !bgColor && "bg-[#f4f2ee]"
                 )}
               >
                 {isPlaceholder(img.url) ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
                     <Package size={48} strokeWidth={1.5} />
                     <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
                       Image coming soon
@@ -131,7 +130,7 @@ export function ProductImages({
                     src={img.url}
                     alt={img.alt || productName}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                     sizes="(max-width: 1024px) 50vw, 45vw"
                     priority={i === 0}
                     loading={i === 0 ? "eager" : "lazy"}
@@ -139,8 +138,6 @@ export function ProductImages({
                   />
                 )}
               </ProductBgWrapper>
-
-              {/* Hover overlay removed — image click still opens lightbox via the parent button */}
             </button>
 
             {/* Discount ribbon — only on primary image */}
@@ -162,7 +159,7 @@ export function ProductImages({
                   size={16}
                   className={cn(
                     "transition-colors",
-                    mounted && isInWishlist ? "text-[#c9a96e] fill-[#c9a96e]" : "text-[#1a1a1a]"
+                    mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
                   )}
                 />
               </button>
@@ -171,7 +168,7 @@ export function ProductImages({
         ))}
       </div>
 
-      {/* MOBILE — swipeable carousel; tap image to open lightbox */}
+      {/* MOBILE — swipeable carousel */}
       <div className="sm:hidden">
         <div className="relative">
           <button
@@ -183,12 +180,11 @@ export function ProductImages({
               size={16}
               className={cn(
                 "transition-colors",
-                mounted && isInWishlist ? "text-[#c9a96e] fill-[#c9a96e]" : "text-[#1a1a1a]"
+                mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
               )}
             />
           </button>
 
-          {/* Mobile discount ribbon */}
           {hasDiscount && (
             <DiscountBadge percent={discountPercent!} />
           )}
@@ -211,12 +207,12 @@ export function ProductImages({
                 <ProductBgWrapper
                   bgColor={bgColor}
                   className={cn(
-                    "aspect-[4/5] rounded-xl",
+                    "aspect-[4/5] rounded-xl overflow-hidden",
                     !bgColor && "bg-[#f4f2ee]"
                   )}
                 >
                   {isPlaceholder(img.url) ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[#c9a96e] gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
                       <Package size={48} strokeWidth={1.5} />
                       <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
                         Image coming soon
@@ -267,7 +263,6 @@ export function ProductImages({
         )}
       </div>
 
-      {/* ═══ LIGHTBOX ═══════════════════════════════════════ */}
       <ImageLightbox
         images={sortedImages.filter((img) => !isPlaceholder(img.url))}
         initialIdx={lightboxIdx}

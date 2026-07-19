@@ -1,4 +1,4 @@
-﻿import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface BadgeProps {
   children:  React.ReactNode;
@@ -13,7 +13,7 @@ const VARIANTS = {
   warning: "bg-yellow-100 text-yellow-700",
   danger:  "bg-red-100 text-red-700",
   info:    "bg-blue-100 text-blue-700",
-  gold:    "bg-[#f5f0e8] text-[#c9a96e]",
+  gold:    "bg-[#f5f0e8] text-[#3b5f8f]",
 };
 
 export function Badge({

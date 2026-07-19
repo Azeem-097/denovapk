@@ -55,10 +55,10 @@ export function CollectionDetailClient({ collection, products }: Props) {
                 { label: "Home",        href: "/" },
                 { label: "Collections", href: "/collections" },
                 { label: collection.name },
-              ]} className="mb-3 [&_span]:text-white/70 [&_a]:text-white/70 [&_a:hover]:text-[#c9a96e] [&_svg]:text-white/50" />
+              ]} className="mb-3 [&_span]:text-white/70 [&_a]:text-white/70 [&_a:hover]:text-[#3b5f8f] [&_svg]:text-white/50" />
             </FadeIn>
             <FadeIn delay={50}>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#c9a96e]">Collection</span>
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">Collection</span>
             </FadeIn>
             <TextReveal as="h1" delay={100}>
               <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-6xl font-bold text-white mt-2 block leading-tight">
@@ -93,7 +93,7 @@ export function CollectionDetailClient({ collection, products }: Props) {
                   {SORT_OPTIONS.map((opt) => (
                     <button key={opt.value} onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
                       className={cn("block w-full text-left px-4 py-2 text-sm transition-colors",
-                        sortBy === opt.value ? "bg-[#f5f0e8] text-[#c9a96e] font-medium" : "text-[#1a1a1a] hover:bg-[#fafaf9]")}>
+                        sortBy === opt.value ? "bg-[#f5f0e8] text-[#3b5f8f] font-medium" : "text-[#1a1a1a] hover:bg-[#fafaf9]")}>
                       {opt.label}
                     </button>
                   ))}

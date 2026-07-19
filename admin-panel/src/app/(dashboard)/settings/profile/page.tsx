@@ -113,15 +113,15 @@ export default function ProfileSettingsPage() {
 
       {/* Avatar + Role */}
       <div className="bg-white border border-[#e5e7eb] p-5 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-[#c9a96e] flex items-center justify-center flex-shrink-0">
+        <div className="w-16 h-16 rounded-full bg-[#3b5f8f] flex items-center justify-center flex-shrink-0">
           <span className="text-white text-xl font-bold">{getInitials(admin.name)}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-base font-bold text-[#1a1a1a]">{admin.name}</p>
           <p className="text-xs text-[#6b7280]">{admin.email}</p>
           <div className="flex items-center gap-1.5 mt-1.5">
-            <Shield size={11} className="text-[#c9a96e]" />
-            <span className="text-[10px] px-2 py-0.5 bg-[#f5f0e8] text-[#c9a96e] font-semibold uppercase tracking-wider">
+            <Shield size={11} className="text-[#3b5f8f]" />
+            <span className="text-[10px] px-2 py-0.5 bg-[#f5f0e8] text-[#3b5f8f] font-semibold uppercase tracking-wider">
               {admin.role.replace("_", " ").toLowerCase()}
             </span>
           </div>
@@ -208,7 +208,7 @@ export default function ProfileSettingsPage() {
           outline: none;
           transition: border-color 0.15s;
         }
-        :global(.input:focus) { border-color: #c9a96e; }
+        :global(.input:focus) { border-color: #3b5f8f; }
       `}</style>
     </div>
   );
@@ -224,7 +224,7 @@ function Section({
   return (
     <div className="bg-white border border-[#e5e7eb]">
       <div className="px-5 py-3 border-b border-[#e5e7eb] flex items-center gap-2">
-        <Icon size={14} className="text-[#c9a96e]" />
+        <Icon size={14} className="text-[#3b5f8f]" />
         <h2 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">{title}</h2>
       </div>
       <div className="p-5 space-y-4">{children}</div>
@@ -243,7 +243,7 @@ function FormField({
   return (
     <div>
       <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">
-        {label}{required && <span className="text-[#c9a96e] ml-0.5">*</span>}
+        {label}{required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
       </label>
       {children}
       {hint && <p className="mt-1 text-[10px] text-[#6b7280]">{hint}</p>}

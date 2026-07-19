@@ -204,7 +204,7 @@ export function ShopPageClient({ products }: Props) {
               >
                 <SlidersHorizontal size={15} /> Filters
                 {activeCount > 0 && (
-                  <span className="w-5 h-5 flex items-center justify-center bg-[#c9a96e] text-white text-[10px] font-bold rounded-full">
+                  <span className="w-5 h-5 flex items-center justify-center bg-[#3b5f8f] text-white text-[10px] font-bold rounded-full">
                     {activeCount}
                   </span>
                 )}
@@ -269,7 +269,7 @@ export function ShopPageClient({ products }: Props) {
                     {filters.sizes.length > 0 && (
                       <button
                         onClick={() => handleFilterChange({ ...filters, sizes: [] })}
-                        className="text-xs text-[#6b7280] hover:text-[#c9a96e] underline transition-colors ml-2"
+                        className="text-xs text-[#6b7280] hover:text-[#3b5f8f] underline transition-colors ml-2"
                       >
                         Clear
                       </button>
