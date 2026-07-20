@@ -46,6 +46,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
     ? getDiscountPercent(product.compareAtPrice!, product.price)
     : 0;
 
+  const uniqueColors = Array.from(
+    new Map(product.variants.map((v) => [v.colorHex, { hex: v.colorHex, name: v.color }])).values()
+  );
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -199,7 +202,24 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
         </div>
 
-
+        {uniqueColors.length > 0 && (
+          <div className="flex items-center gap-1 pt-1">
+            {uniqueColors.slice(0, 6).map((color, i) => (
+              <span
+                key={color.hex}
+                className="w-2.5 h-2.5 border border-[#d1d5db] rounded-full transition-transform duration-300 hover:scale-125"
+                style={{
+                  backgroundColor: color.hex,
+                  transitionDelay: `${i * 30}ms`,
+                }}
+                title={color.name}
+              />
+            ))}
+            {uniqueColors.length > 6 && (
+              <span className="text-[9px] text-[#6b7280] ml-1">+{uniqueColors.length - 6}</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
