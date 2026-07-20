@@ -403,6 +403,8 @@ FILES:
 .\components\checkout\OrderSummary.tsx
 .\components\checkout\PromotionBanner.tsx
 .\components\layout\AnnouncementBar.tsx
+.\components\layout\AnnouncementBar.tsx.bak-20260720-140900
+.\components\layout\AnnouncementBar.tsx.bak-20260720-141111
 .\components\layout\FixedFooterReveal.tsx
 .\components\layout\FixedSectionBackground.tsx
 .\components\layout\Footer.tsx
@@ -418,6 +420,7 @@ FILES:
 .\components\product\LiveViewCounter.tsx
 .\components\product\ProductBgWrapper.tsx
 .\components\product\ProductCard.tsx
+.\components\product\ProductCard.tsx.bak-20260720-142231
 .\components\product\ProductFilters.tsx
 .\components\product\ProductGrid.tsx
 .\components\product\ProductImages.tsx

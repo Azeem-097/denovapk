@@ -31,135 +31,62 @@ const PLACEHOLDER: ProductImageType = {
 // ═══════════════════════════════════════════════════════════
 //  ZOOM CONFIG
 // ═══════════════════════════════════════════════════════════
-const ZOOM_LEVEL_TARGET   = 2.5;   // desired magnification
-const PANEL_MARGIN        = 24;    // horizontal margin
-const PANEL_BOTTOM        = 0;     // px from viewport bottom
-
-// Lens size will be derived, but with these guards:
-const LENS_MIN            = 80;    // px  — smallest permitted lens edge
-const LENS_MAX_RATIO      = 0.65;  // never let lens exceed 65% of the source dimension
+const ZOOM_LEVEL      = 2.5;
+const LENS_WIDTH      = 180;
+const LENS_HEIGHT     = 220;
+const PANEL_MARGIN    = 24;   // horizontal margin between gallery column and panel
+const PANEL_BOTTOM    = 0;    // px above viewport bottom edge (0 = flush to bottom)
 
 interface ZoomState {
   active:      boolean;
   imageUrl:    string;
   imageAlt:    string;
-  lensX:       number;         // cursor x inside source
-  lensY:       number;         // cursor y inside source
+  lensX:       number;
+  lensY:       number;
   sourceRect:  DOMRect | null;
   hostRect:    DOMRect | null;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  compute panel + lens dimensions (single source of truth)
+//  ZOOM PANEL — floating portal
+//  Aligned to the top of the hovered image, extends down to
+//  the bottom of the viewport.
 // ═══════════════════════════════════════════════════════════
-interface Layout {
-  panelLeft:   number;
-  panelTop:    number;
-  panelWidth:  number;
-  panelHeight: number;
-  lensWidth:   number;
-  lensHeight:  number;
-  zoomLevel:   number;         // may be bumped if lens would be too big
-}
+function ZoomPanel({ state }: { state: ZoomState }) {
+  if (!state.active || !state.sourceRect || !state.hostRect) return null;
 
-function computeLayout(sourceRect: DOMRect, hostRect: DOMRect): Layout {
-  // ─── Horizontal ─────────────────────────────────────────
-  const rawLeft  = hostRect.right + PANEL_MARGIN;
-  const rawRight = window.innerWidth - PANEL_MARGIN;
-  let   panelWidth = rawRight - rawLeft;
-  let   panelLeft  = rawLeft;
+  const { imageUrl, imageAlt, lensX, lensY, sourceRect, hostRect } = state;
+
+  const bgX = (lensX / sourceRect.width)  * 100;
+  const bgY = (lensY / sourceRect.height) * 100;
+
+  const bgSizeX = sourceRect.width  * ZOOM_LEVEL;
+  const bgSizeY = sourceRect.height * ZOOM_LEVEL;
+
+  // ─── Horizontal placement ───────────────────────────────
+  const panelLeftRaw  = hostRect.right + PANEL_MARGIN;
+  const panelRightRaw = window.innerWidth - PANEL_MARGIN;
+  let   panelWidth    = panelRightRaw - panelLeftRaw;
+  let   actualLeft    = panelLeftRaw;
 
   if (panelWidth < 320) {
+    // Fallback: force usable width, pin to right
     panelWidth = Math.max(400, Math.round(window.innerWidth * 0.45));
-    panelLeft  = window.innerWidth - panelWidth - PANEL_MARGIN;
+    actualLeft = window.innerWidth - panelWidth - PANEL_MARGIN;
   }
 
-  // ─── Vertical ───────────────────────────────────────────
-  // Rules:
-  //   1. Never overlap the sticky <header>
-  //   2. Top:    max(sourceRect.top,    headerBottom)
-  //   3. Bottom: min(sourceRect.bottom, viewportBottom)
-  const headerEl     = typeof document !== "undefined" ? document.querySelector("header") : null;
-  const headerBottom = headerEl ? headerEl.getBoundingClientRect().bottom : 0;
+  // ─── Vertical placement ─────────────────────────────────
+  // Top edge of the panel aligns with the top edge of the hovered image.
+  // Height extends from there down to (viewport bottom - PANEL_BOTTOM).
+  let panelTop    = Math.max(0, sourceRect.top);
+  let panelHeight = window.innerHeight - panelTop - PANEL_BOTTOM;
 
-  const panelTop    = Math.max(sourceRect.top,    headerBottom);
-  const panelBottom = Math.min(sourceRect.bottom, window.innerHeight);
-  let   panelHeight = panelBottom - panelTop;
-
-  // Guard: if the hovered image is (almost) entirely outside the visible
-  // safe area, panelHeight would be zero or negative. Force a minimum
-  // so React doesn't render a degenerate box; the panel will still be
-  // hidden by the caller's activation state.
-  if (panelHeight < 120) panelHeight = 120;
-  // ─── Zoom level & lens size ─────────────────────────────
-  //
-  // Ideal relationship:
-  //   lens_width  * ZOOM_LEVEL = panel_width
-  //   lens_height * ZOOM_LEVEL = panel_height
-  //
-  // So the region UNDER the lens is exactly what the panel shows.
-  //
-  // If, at the target zoom, the lens would exceed LENS_MAX_RATIO of
-  // the source image, bump ZOOM_LEVEL until it fits. This guarantees
-  // a lens the user can actually see and reposition.
-  //
-  let zoomLevel  = ZOOM_LEVEL_TARGET;
-  let lensWidth  = panelWidth  / zoomLevel;
-  let lensHeight = panelHeight / zoomLevel;
-
-  const maxLensW = sourceRect.width  * LENS_MAX_RATIO;
-  const maxLensH = sourceRect.height * LENS_MAX_RATIO;
-
-  if (lensWidth > maxLensW || lensHeight > maxLensH) {
-    const zoomForW = panelWidth  / maxLensW;
-    const zoomForH = panelHeight / maxLensH;
-    zoomLevel  = Math.max(zoomForW, zoomForH);
-    lensWidth  = panelWidth  / zoomLevel;
-    lensHeight = panelHeight / zoomLevel;
+  // Safety: enforce a minimum panel height
+  if (panelHeight < 300) {
+    panelHeight = 300;
+    panelTop    = window.innerHeight - panelHeight - PANEL_BOTTOM;
+    if (panelTop < 0) panelTop = 0;
   }
-
-  // Enforce lens minimum (rare, but for tiny gallery tiles)
-  if (lensWidth  < LENS_MIN) lensWidth  = LENS_MIN;
-  if (lensHeight < LENS_MIN) lensHeight = LENS_MIN;
-
-  return {
-    panelLeft, panelTop, panelWidth, panelHeight,
-    lensWidth, lensHeight, zoomLevel,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════
-//  ZOOM PANEL — floating portal
-// ═══════════════════════════════════════════════════════════
-function ZoomPanel({ state, layout }: { state: ZoomState; layout: Layout }) {
-  if (!state.active || !state.sourceRect) return null;
-
-  const { imageUrl, imageAlt, lensX, lensY, sourceRect } = state;
-  const { panelLeft, panelTop, panelWidth, panelHeight, lensWidth, lensHeight, zoomLevel } = layout;
-
-  // The panel shows the source image scaled by zoomLevel.
-  // We need the point in the SCALED image that corresponds to
-  // the cursor, then position the background so that point is
-  // in the center of the panel.
-
-  // Clamp the "focus point" so the lens stays inside the source rect,
-  // matching the clamping the lens does visually. This keeps them in sync.
-  let focusX = lensX;
-  let focusY = lensY;
-  const halfLW = lensWidth  / 2;
-  const halfLH = lensHeight / 2;
-  if (focusX < halfLW) focusX = halfLW;
-  if (focusY < halfLH) focusY = halfLH;
-  if (focusX > sourceRect.width  - halfLW) focusX = sourceRect.width  - halfLW;
-  if (focusY > sourceRect.height - halfLH) focusY = sourceRect.height - halfLH;
-
-  const bgSizeX = sourceRect.width  * zoomLevel;
-  const bgSizeY = sourceRect.height * zoomLevel;
-
-  // Position: shift the background so that the focus point sits at the
-  // center of the panel.
-  const bgPosX = -(focusX * zoomLevel) + panelWidth  / 2;
-  const bgPosY = -(focusY * zoomLevel) + panelHeight / 2;
 
   return createPortal(
     <div
@@ -167,13 +94,13 @@ function ZoomPanel({ state, layout }: { state: ZoomState; layout: Layout }) {
       style={{
         position:      "fixed",
         top:           `${panelTop}px`,
-        left:          `${panelLeft}px`,
+        left:          `${actualLeft}px`,
         width:         `${panelWidth}px`,
         height:        `${panelHeight}px`,
         backgroundImage:    `url(${imageUrl})`,
         backgroundRepeat:   "no-repeat",
         backgroundSize:     `${bgSizeX}px ${bgSizeY}px`,
-        backgroundPosition: `${bgPosX}px ${bgPosY}px`,
+        backgroundPosition: `${bgX}% ${bgY}%`,
         backgroundColor:    "#ffffff",
         border:        "1px solid #e5e7eb",
         boxShadow:     "0 20px 50px -12px rgba(0,0,0,0.22), 0 8px 20px -8px rgba(0,0,0,0.14)",
@@ -192,21 +119,19 @@ function ZoomPanel({ state, layout }: { state: ZoomState; layout: Layout }) {
 //  LENS
 // ═══════════════════════════════════════════════════════════
 function ZoomLens({
-  x, y, containerWidth, containerHeight, lensWidth, lensHeight,
+  x, y, containerWidth, containerHeight,
 }: {
   x: number;
   y: number;
   containerWidth:  number;
   containerHeight: number;
-  lensWidth:       number;
-  lensHeight:      number;
 }) {
-  let left = x - lensWidth  / 2;
-  let top  = y - lensHeight / 2;
+  let left = x - LENS_WIDTH  / 2;
+  let top  = y - LENS_HEIGHT / 2;
   if (left < 0) left = 0;
   if (top  < 0) top  = 0;
-  if (left + lensWidth  > containerWidth)  left = containerWidth  - lensWidth;
-  if (top  + lensHeight > containerHeight) top  = containerHeight - lensHeight;
+  if (left + LENS_WIDTH  > containerWidth)  left = containerWidth  - LENS_WIDTH;
+  if (top  + LENS_HEIGHT > containerHeight) top  = containerHeight - LENS_HEIGHT;
 
   return (
     <div
@@ -215,8 +140,8 @@ function ZoomLens({
         position:       "absolute",
         top:            `${top}px`,
         left:           `${left}px`,
-        width:          `${lensWidth}px`,
-        height:         `${lensHeight}px`,
+        width:          `${LENS_WIDTH}px`,
+        height:         `${LENS_HEIGHT}px`,
         border:         "1.5px solid rgba(26,26,26,0.55)",
         backgroundColor:"rgba(255,255,255,0.28)",
         pointerEvents:  "none",
@@ -383,14 +308,9 @@ export function ProductImages({
     return () => window.removeEventListener("scroll", dismiss);
   }, [zoom.active]);
 
-  // Compute layout ONCE per render when zoom is active — single source of truth
-  const layout = (zoom.active && zoom.sourceRect && zoom.hostRect)
-    ? computeLayout(zoom.sourceRect, zoom.hostRect)
-    : null;
-
   return (
     <>
-      {/* DESKTOP */}
+      {/* DESKTOP - 2x2 grid with hover-zoom + click-to-lightbox */}
       <div
         ref={galleryRef}
         className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3"
@@ -451,14 +371,12 @@ export function ProductImages({
                 </ProductBgWrapper>
               </button>
 
-              {isActive && layout && zoom.sourceRect && (
+              {isActive && zoom.sourceRect && (
                 <ZoomLens
                   x={zoom.lensX}
                   y={zoom.lensY}
                   containerWidth={zoom.sourceRect.width}
                   containerHeight={zoom.sourceRect.height}
-                  lensWidth={layout.lensWidth}
-                  lensHeight={layout.lensHeight}
                 />
               )}
 
@@ -593,7 +511,7 @@ export function ProductImages({
         onClose={closeLightbox}
       />
 
-      {mounted && layout && <ZoomPanel state={zoom} layout={layout} />}
+      {mounted && <ZoomPanel state={zoom} />}
 
       <style jsx global>{`
         .scrollbar-hide {

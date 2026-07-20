@@ -75,22 +75,10 @@ function computeLayout(sourceRect: DOMRect, hostRect: DOMRect): Layout {
   }
 
   // ─── Vertical ───────────────────────────────────────────
-  // Rules:
-  //   1. Never overlap the sticky <header>
-  //   2. Top:    max(sourceRect.top,    headerBottom)
-  //   3. Bottom: min(sourceRect.bottom, viewportBottom)
-  const headerEl     = typeof document !== "undefined" ? document.querySelector("header") : null;
-  const headerBottom = headerEl ? headerEl.getBoundingClientRect().bottom : 0;
-
-  const panelTop    = Math.max(sourceRect.top,    headerBottom);
-  const panelBottom = Math.min(sourceRect.bottom, window.innerHeight);
-  let   panelHeight = panelBottom - panelTop;
-
-  // Guard: if the hovered image is (almost) entirely outside the visible
-  // safe area, panelHeight would be zero or negative. Force a minimum
-  // so React doesn't render a degenerate box; the panel will still be
-  // hidden by the caller's activation state.
-  if (panelHeight < 120) panelHeight = 120;
+  // Panel ALWAYS spans the full viewport height, regardless of
+  // which image row (top or bottom) is being hovered.
+  const panelTop    = 0;
+  const panelHeight = window.innerHeight;
   // ─── Zoom level & lens size ─────────────────────────────
   //
   // Ideal relationship:

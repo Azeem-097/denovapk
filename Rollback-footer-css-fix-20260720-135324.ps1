@@ -1,4 +1,0 @@
-Write-Host "Rolling back footer CSS fix from 20260720-135324..." -ForegroundColor Yellow
-Copy-Item -LiteralPath "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\_backups\footer-css-fix-20260720-135324\user-panel__src__components__layout__FixedFooterReveal.tsx" -Destination "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\user-panel\src\components\layout\FixedFooterReveal.tsx" -Force; Write-Host "  Restored user-panel\src\components\layout\FixedFooterReveal.tsx" -ForegroundColor Green
-Copy-Item -LiteralPath "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\_backups\footer-css-fix-20260720-135324\user-panel__src__app__globals.css" -Destination "D:\Web Development\Websites\Clients\E-Commerce\Clothing\denovapk\user-panel\src\app\globals.css" -Force; Write-Host "  Restored globals.css" -ForegroundColor Green
-Write-Host "Done." -ForegroundColor Green
