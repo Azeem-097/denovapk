@@ -1,19 +1,7 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import type { DevicePerformance } from "@/types";
 
-/**
- * Device performance detection.
- *
- * IMPORTANT: `shouldAnimate` defaults to `true` on first render (SSR + first paint)
- * so that content is always visible even before the effect runs. If we defaulted
- * to false, animation components would render content at opacity: 0 and never
- * transition it in.
- *
- * On truly low-end devices (2 cores AND 2GB RAM AND prefers-reduced-motion),
- * we disable animations after mount. But for the vast majority of devices,
- * animations are enabled and use lightweight CSS transitions.
- */
 export function useDevicePerformance(): DevicePerformance {
   const [performance, setPerformance] = useState<DevicePerformance>({
     tier: "high",
@@ -22,13 +10,18 @@ export function useDevicePerformance(): DevicePerformance {
   });
 
   useEffect(() => {
+    // Check prefers-reduced-motion
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
+    // Check hardware concurrency (CPU cores)
     const cores = navigator.hardwareConcurrency || 4;
+
+    // Check device memory (GB) - not available in all browsers
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4;
 
+    // Determine tier
     let tier: "low" | "medium" | "high" = "high";
     if (cores <= 2 || memory <= 2) {
       tier = "low";
@@ -36,13 +29,10 @@ export function useDevicePerformance(): DevicePerformance {
       tier = "medium";
     }
 
-    // Only disable animations for users who EXPLICITLY prefer reduced motion.
-    // Low-tier devices still get animations because our transitions are cheap
-    // and disabling them causes bigger UX problems (content hidden bug).
     setPerformance({
       tier,
       prefersReducedMotion: reducedMotion,
-      shouldAnimate: !reducedMotion,
+      shouldAnimate: !reducedMotion && tier !== "low",
     });
   }, []);
 

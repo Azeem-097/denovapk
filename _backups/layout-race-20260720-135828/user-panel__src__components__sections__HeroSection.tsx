@@ -269,12 +269,8 @@ function animationCSS(anim: AnimationConfig | undefined, shouldAnim: boolean): {
 
 // ═══════════════════════════════════════════════════════════
 //  MAIN
-//
-//  HYDRATION-SAFE `isMobile`:
-//    Both server and initial client render use `false` (desktop).
-//    After mount, we detect actual viewport and update state.
-//    This causes one extra render on mobile but eliminates
-//    hydration mismatch entirely.
+//  Fix: If server provided banners, TRUST them. Only fetch as fallback.
+//       This eliminates the flash-of-wrong-content on first mobile load.
 // ═══════════════════════════════════════════════════════════
 export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: HeroSectionProps) {
   const hasServerBanners = !!(initialBanners && initialBanners.length > 0);
@@ -285,10 +281,6 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   const [rotation, setRotation] = useState(rotationSeconds);
   const [current, setCurrent]   = useState(0);
   const [progress, setProgress] = useState(0);
-
-  // Hydration-safe mobile detection: start false (matches SSR), update after mount.
-  // Overlay config uses this — desktop overlay renders first for everyone,
-  // mobile overlay swaps in after mount if on mobile viewport.
   const [isMobile, setIsMobile] = useState(false);
   const { shouldAnimate } = useDevicePerformance();
 
@@ -305,13 +297,17 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   useEffect(() => { shouldAnimateRef.current = shouldAnimate;           }, [shouldAnimate]);
 
   useEffect(() => {
+    const check = () => setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    check();
     const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const listener = () => check();
+    mq.addEventListener("change", listener);
+    return () => mq.removeEventListener("change", listener);
   }, []);
 
+  // ─── Only fetch from API if server did NOT provide banners ────
+  // This eliminates the flash where SSR renders one thing and
+  // client-side fetch replaces it a moment later.
   useEffect(() => {
     if (hasServerBanners) return;
 
@@ -446,6 +442,11 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   );
 }
 
+// ═══════════════════════════════════════════════════════════
+//  BannerSlide
+//  Fix: First slide (index 0) skips all mount-gated animations
+//       so it renders correctly on very first paint.
+// ═══════════════════════════════════════════════════════════
 interface BannerSlideProps {
   slide: HeroBanner; isActive: boolean; isFirst: boolean; index: number;
   shouldAnimate: boolean; isMobile: boolean;
@@ -458,9 +459,10 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
   const rawOverlay: OverlayV2 = slide.overlayV2 ?? legacyToOverlayV2(slide);
   const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
 
+  // First slide (LCP) mounts immediately; other slides use the hasMounted gate
   const [hasMounted, setHasMounted] = useState(isFirst);
   useEffect(() => {
-    if (isFirst) return;
+    if (isFirst) return; // Already true
     setHasMounted(true);
   }, [isFirst]);
 
@@ -494,6 +496,7 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
     </div>
   );
 
+  // First slide: no cinematic-enter animation. Just render immediately.
   const containerClass = cn(
     "top-0 left-0 w-full",
     isActive
@@ -540,6 +543,7 @@ const ELEMENT_ORDER: ElementKey[] = ["brand", "tagline", "productDesc", "origina
 function BannerOverlayV2({ config, slide, isActive, shouldAnimate, isMobile, isFirst }: {
   config: OverlayConfig; slide: HeroBanner; isActive: boolean; shouldAnimate: boolean; isMobile: boolean; isFirst: boolean;
 }) {
+  // First slide skips entrance animations so text is visible on initial paint
   const shouldAnim = shouldAnimate && isActive && !isFirst;
   return (
     <div className="absolute inset-0 pointer-events-none">

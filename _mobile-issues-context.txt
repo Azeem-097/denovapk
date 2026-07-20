@@ -1,0 +1,4249 @@
+================================================================================
+MOBILE ISSUES INVESTIGATION
+  1. Product page: content below image hidden until scroll
+  2. Hero banner: intermittent zoom/crop/missing text on first load
+Generated: 2026-07-20 13:19:29
+================================================================================
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\page.tsx
+================================================================================
+
+import { notFound } from "next/navigation";
+import { getProductBySlug, getRelatedProducts } from "@/lib/db/repositories/products";
+import { adaptProduct } from "@/lib/adapters";
+import { ProductDetailClient } from "./ProductDetailClient";
+
+// ISR: 60s cache. Stock levels update within 1 minute for browsing users.
+// (Real stock validation happens at checkout — this is safe.)
+export const revalidate = 60;
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+// Placeholder image shown when a product has no images uploaded yet
+const PLACEHOLDER_IMAGE = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
+export default async function ProductDetailPage({ params }: Props) {
+  const { slug } = await params;
+
+  let dbProduct;
+  try {
+    dbProduct = await getProductBySlug(slug);
+  } catch (err) {
+    console.error("Failed to load product:", err);
+    notFound();
+  }
+
+  if (!dbProduct) notFound();
+
+  const product = adaptProduct(dbProduct);
+
+  // Ensure we always have at least one image so the UI never crashes
+  if (product.images.length === 0) {
+    product.images = [PLACEHOLDER_IMAGE];
+  }
+
+  let relatedProducts: ReturnType<typeof adaptProduct>[] = [];
+  try {
+    if (dbProduct.collectionId) {
+      const dbRelated = await getRelatedProducts(dbProduct.id, dbProduct.collectionId, 4);
+      relatedProducts = dbRelated.map((p) => {
+        const adapted = adaptProduct({ ...p, collection: dbProduct.collection });
+        if (adapted.images.length === 0) adapted.images = [PLACEHOLDER_IMAGE];
+        return adapted;
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load related products:", err);
+  }
+
+  return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;
+}
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\ProductDetailClient.tsx
+================================================================================
+
+"use client";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ShoppingBag, CheckCircle, ChevronDown, Plus, Minus, Truck,
+} from "lucide-react";
+import { ProductImages } from "@/components/product/ProductImages";
+import { ColorSelector } from "@/components/product/ColorSelector";
+import { SizeSelector } from "@/components/product/SizeSelector";
+import { RelatedProducts } from "@/components/product/RelatedProducts";
+import { LiveViewCounter } from "@/components/product/LiveViewCounter";
+
+import { FadeIn } from "@/components/animations/FadeIn";
+import { useCartStore } from "@/store/cartStore";
+import { useToastStore } from "@/store/toastStore";
+import { cn, getDiscountPercent } from "@/lib/utils";
+import type { Product } from "@/types";
+
+function formatPKR(amount: number): string {
+  return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
+}
+
+interface Props {
+  product:         Product;
+  relatedProducts: Product[];
+}
+
+// ══════════════════════════════════════════════════════════
+//  RECENTLY VIEWED
+// ══════════════════════════════════════════════════════════
+const RECENTLY_VIEWED_KEY = "denova_recently_viewed_v1";
+const MAX_RECENT = 8;
+
+function pushRecentlyViewed(product: Product) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(RECENTLY_VIEWED_KEY);
+    const list: Product[] = raw ? JSON.parse(raw) : [];
+    const filtered = list.filter((p) => p.id !== product.id);
+    filtered.unshift(product);
+    window.localStorage.setItem(
+      RECENTLY_VIEWED_KEY,
+      JSON.stringify(filtered.slice(0, MAX_RECENT))
+    );
+  } catch {}
+}
+
+// ══════════════════════════════════════════════════════════
+//  ELO-STYLE COUNTDOWN — clean centered plain numbers
+// ══════════════════════════════════════════════════════════
+const COUNTDOWN_MIN_HOURS = 24;
+const COUNTDOWN_MAX_HOURS = 72;
+
+function getSaleDeadline(productId: string): number {
+  if (typeof window === "undefined") return Date.now() + COUNTDOWN_MIN_HOURS * 3_600_000;
+  const key = "denova_sale_expires_" + productId;
+  const stored = window.localStorage.getItem(key);
+  if (stored) {
+    const ts = Number(stored);
+    if (!isNaN(ts) && ts > Date.now()) return ts;
+  }
+  const hours = COUNTDOWN_MIN_HOURS + Math.random() * (COUNTDOWN_MAX_HOURS - COUNTDOWN_MIN_HOURS);
+  const deadline = Date.now() + hours * 3_600_000;
+  window.localStorage.setItem(key, String(deadline));
+  return deadline;
+}
+
+interface Parts { d: number; h: number; m: number; s: number; expired: boolean }
+
+function computeTime(deadline: number): Parts {
+  const diff = deadline - Date.now();
+  if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, expired: true };
+  return {
+    d: Math.floor(diff / 86_400_000),
+    h: Math.floor((diff % 86_400_000) / 3_600_000),
+    m: Math.floor((diff % 3_600_000) / 60_000),
+    s: Math.floor((diff % 60_000) / 1000),
+    expired: false,
+  };
+}
+
+function EloCountdown({ productId }: { productId: string }) {
+  const [mounted, setMounted] = useState(false);
+  const [dl, setDl] = useState(0);
+  const [t, setT] = useState<Parts>({ d: 0, h: 0, m: 0, s: 0, expired: false });
+
+  useEffect(() => {
+    setMounted(true);
+    setDl(getSaleDeadline(productId));
+  }, [productId]);
+
+  useEffect(() => {
+    if (!dl) return;
+    const tick = () => {
+      const next = computeTime(dl);
+      if (next.expired) {
+        const fresh = Date.now() + (COUNTDOWN_MIN_HOURS + Math.random() * (COUNTDOWN_MAX_HOURS - COUNTDOWN_MIN_HOURS)) * 3_600_000;
+        window.localStorage.setItem("denova_sale_expires_" + productId, String(fresh));
+        setDl(fresh);
+        setT(computeTime(fresh));
+      } else {
+        setT(next);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [dl, productId]);
+
+  if (!mounted) return <div className="h-[120px]" aria-hidden />;
+
+  const cells = [
+    { label: "Days",    v: t.d },
+    { label: "Hours",   v: t.h },
+    { label: "Minutes", v: t.m },
+    { label: "Seconds", v: t.s },
+  ];
+
+  return (
+    <div className="text-center py-4">
+      <h2 className="text-2xl sm:text-3xl font-semibold text-[#1a1a1a] mb-5 tracking-tight">
+        Sale ends in
+      </h2>
+      <div className="flex items-start justify-center gap-6 sm:gap-10">
+        {cells.map((c) => (
+          <div key={c.label} className="flex flex-col items-center">
+            <span className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] leading-none tabular-nums">
+              {String(c.v).padStart(2, "0")}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.2em] uppercase text-[#6b7280] mt-2">
+              {c.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+//  MAIN
+// ══════════════════════════════════════════════════════════
+export function ProductDetailClient({ product, relatedProducts }: Props) {
+  const router = useRouter();
+
+  useEffect(() => {
+    pushRecentlyViewed(product);
+  }, [product]);
+
+  const uniqueColors = useMemo(() =>
+    Array.from(
+      new Map(product.variants.map((v) => [v.color, { name: v.color, hex: v.colorHex }])).values()
+    ),
+    [product.variants]
+  );
+
+  const firstInStockColor = useMemo(() => {
+    const inStock = product.variants.find((v) => v.stock > 0);
+    return inStock?.color ?? uniqueColors[0]?.name ?? "";
+  }, [product.variants, uniqueColors]);
+
+  const [selectedColor, setSelectedColor] = useState(firstInStockColor);
+
+  const sizesForColor = useMemo(() => {
+    const variants = product.variants.filter((v) => v.color === selectedColor);
+    return Array.from(new Set(variants.map((v) => v.size)));
+  }, [product.variants, selectedColor]);
+
+  const outOfStockSizes = useMemo(() => {
+    return product.variants
+      .filter((v) => v.color === selectedColor && v.stock === 0)
+      .map((v) => v.size);
+  }, [product.variants, selectedColor]);
+
+  const firstInStockSize = useMemo(() => {
+    const v = product.variants.find((x) => x.color === selectedColor && x.stock > 0);
+    return v?.size ?? sizesForColor[0] ?? "";
+  }, [product.variants, selectedColor, sizesForColor]);
+
+  const [selectedSize, setSelectedSize] = useState(firstInStockSize);
+
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    const firstAvail = product.variants.find((v) => v.color === color && v.stock > 0);
+    setSelectedSize(firstAvail?.size ?? "");
+  };
+
+  const [quantity, setQuantity]           = useState(1);
+  const [addedToCart, setAddedToCart]     = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("description");
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
+
+  const addToCart = useCartStore((s) => s.addItem);
+  const showToast = useToastStore((s) => s.addToast);
+
+  const selectedVariant = useMemo(() =>
+    product.variants.find((v) => v.color === selectedColor && v.size === selectedSize),
+    [product.variants, selectedColor, selectedSize]
+  );
+
+  const isOutOfStock    = !selectedVariant || selectedVariant.stock === 0;
+  const maxQty          = selectedVariant?.stock ?? 1;
+  const hasDiscount     = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const discountPercent = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
+
+  useEffect(() => {
+    if (quantity > maxQty) setQuantity(Math.max(1, maxQty));
+  }, [maxQty, quantity]);
+
+  const brandLine = (product.brand && product.brand.trim().length > 0)
+    ? product.brand.trim()
+    : (product.collection || "Denova");
+
+  const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+  const displaySku = product.sku || selectedVariant?.sku || "";
+
+  const measurements = [
+    { label: "Waist",  value: product.waist,  unit: '"' },
+    { label: "Length", value: product.length, unit: '"' },
+    { label: "Bottom", value: product.bottom, unit: '"' },
+  ].filter((m) => m.value != null);
+
+  const doAddToCart = async () => {
+    if (!selectedVariant) {
+      showToast({ type: "error", message: "Please select a size" });
+      return false;
+    }
+    await addToCart({
+      productId: product.id,
+      variantId: selectedVariant.id,
+      name:      product.name,
+      image:     primaryImage.url,
+      size:      selectedVariant.size,
+      color:     selectedColor,
+      colorHex:  selectedVariant.colorHex,
+      price:     product.price,
+      quantity,
+      slug:      product.slug,
+      bgColor:   product.bgColor,
+    });
+    return true;
+  };
+
+  const handleAddToCart = async () => {
+    const ok = await doAddToCart();
+    if (!ok) return;
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2500);
+  };
+
+  const handleBuyNow = async () => {
+    const ok = await doAddToCart();
+    if (!ok) return;
+    router.push("/checkout");
+  };
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordion((prev) => (prev === key ? null : key));
+  };
+
+  return (
+    <>
+      <div className="pt-6 sm:pt-8 pb-16 border-t border-[#e5e7eb]">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+          <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-8 lg:gap-20 xl:gap-28 2xl:gap-32">
+
+            {/* ═══ LEFT: Image gallery ══════════════════════ */}
+            <FadeIn>
+              <div className="w-full">
+                <ProductImages
+                  images={product.images}
+                  productName={product.name}
+                  productId={product.id}
+                  productSlug={product.slug}
+                  productPrice={product.price}
+                  bgColor={product.bgColor}
+                  discountPercent={discountPercent}
+                />
+              </div>
+            </FadeIn>
+
+            {/* ═══ RIGHT: Info column ═══════════════════════ */}
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <FadeIn delay={100}>
+
+                {/* 1. COUNTDOWN — clean, centered, plain numbers (ELO exact) */}
+                {hasDiscount && (
+                  <div className="pb-6 mb-6 border-b border-[#e5e7eb]">
+                    <EloCountdown productId={product.id} />
+                  </div>
+                )}
+
+                {/* 2. PRODUCT NAME — simple sentence-case, no letter-spacing */}
+                <h1 className="text-2xl sm:text-[26px] font-semibold text-[#1a1a1a] leading-tight mb-3">
+                  {product.name}
+                </h1>
+
+                {/* 3. DEAL PILLS — orange "{discountPercent}% OFF" + green "Bundle Offer" (ELO exact) */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {hasDiscount && (
+                    <span className="inline-flex items-center bg-[#ff6a1a] text-white px-3 py-1 text-[11px] font-bold tracking-wide rounded-sm">
+                      {discountPercent}% OFF
+                    </span>
+                  )}
+                  <span className="inline-flex items-center bg-[#12b76a] text-white px-3 py-1 text-[11px] font-bold tracking-wide rounded-sm">
+                    Free Delivery
+                  </span>
+                </div>
+
+                {/* 4. BRAND — subtle brand line under pills */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#3b5f8f]">
+                    {brandLine}
+                  </span>
+                </div>
+
+                {/* 5. REAL SKU — plain gray text like ELO */}
+                {displaySku && (
+                  <p className="text-sm text-[#1a1a1a] mb-3">
+                    SKU: <span className="text-[#1a1a1a]">{displaySku}</span>
+                  </p>
+                )}
+
+                {/* 6. PRICE — current + strikethrough + small black "Save X%" chip */}
+                <div className="flex items-center gap-2.5 flex-wrap mb-6">
+                  <span className="text-xl sm:text-2xl font-semibold text-[#1a1a1a] leading-none">
+                    {formatPKR(product.price)}
+                  </span>
+                  {hasDiscount && (
+                    <>
+                      <span className="text-base sm:text-lg text-[#9ca3af] line-through leading-none">
+                        {formatPKR(product.compareAtPrice!)}
+                      </span>
+                      <span className="inline-flex items-center bg-[#1a1a1a] text-white text-[11px] font-semibold px-2 py-1 leading-none rounded-sm">
+                        Save {discountPercent}%
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* 7. COLOR SELECTOR — rectangular labeled buttons */}
+                {uniqueColors.length > 0 && (
+                  <div className="mb-6">
+                    <ColorSelector
+                      colors={uniqueColors}
+                      selectedColor={selectedColor}
+                      onSelect={handleColorChange}
+                    />
+                  </div>
+                )}
+
+                {/* 8. WAIST SELECTOR — rectangular labeled buttons */}
+                {sizesForColor.length > 0 && (
+                  <div className="mb-4">
+                    <SizeSelector
+                      sizes={sizesForColor}
+                      selectedSize={selectedSize}
+                      onSelect={setSelectedSize}
+                      outOfStock={outOfStockSizes}
+                      label="Waist"
+                    />
+                  </div>
+                )}
+
+
+
+                {/* 10. QUANTITY STEPPER */}
+                <div className="mb-5">
+                  <div className="mb-3">
+                    <span className="text-xs font-bold tracking-[0.15em] uppercase text-[#1a1a1a]">
+                      Quantity
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="inline-flex items-center border border-[#1a1a1a] rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        disabled={quantity <= 1 || isOutOfStock}
+                        className="w-11 h-11 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={14} strokeWidth={2} />
+                      </button>
+                      <span className="w-14 h-11 flex items-center justify-center text-sm font-bold text-[#1a1a1a] border-x border-[#1a1a1a] tabular-nums">
+                        {quantity}
+                      </span>
+                      <button
+                        onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                        disabled={quantity >= maxQty || isOutOfStock}
+                        className="w-11 h-11 flex items-center justify-center text-[#1a1a1a] hover:bg-[#fafaf9] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={14} strokeWidth={2} />
+                      </button>
+                    </div>
+                    {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
+                      <span className="text-xs text-[#e32c52] font-bold whitespace-nowrap">
+                        Only {selectedVariant.stock} left
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 11 + 12. ADD TO CART + BUY IT NOW */}
+                <div className="space-y-2.5 mb-5">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isOutOfStock}
+                    className={cn(
+                      "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
+                      isOutOfStock
+                        ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                        : addedToCart
+                        ? "bg-[#1a1a1a] text-white"
+                        : "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] active:scale-[0.99]"
+                    )}
+                  >
+                    {addedToCart ? (
+                      <>
+                        <CheckCircle size={17} strokeWidth={2.25} />
+                        <span>Added to Cart</span>
+                      </>
+                    ) : isOutOfStock ? (
+                      <span>Out of Stock</span>
+                    ) : (
+                      <>
+                        <ShoppingBag size={17} strokeWidth={1.75} />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isOutOfStock}
+                    className={cn(
+                      "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
+                      isOutOfStock
+                        ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
+                        : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
+                    )}
+                  >
+                    Buy It Now
+                  </button>
+                </div>
+
+                {/* 13. LIVE VIEWERS */}
+                <div className="mb-6 flex items-center justify-between gap-3 py-3 border-t border-b border-[#e5e7eb]">
+                  <LiveViewCounter productId={product.id} />
+                </div>
+
+
+
+
+
+                {/* 15. ACCORDIONS */}
+                <div className="border-t border-[#e5e7eb]">
+                  <AccordionItem
+                    id="description"
+                    title="Description"
+                    isOpen={openAccordion === "description"}
+                    onToggle={() => toggleAccordion("description")}
+                  >
+                    <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                      {product.description}
+                    </p>
+                  </AccordionItem>
+
+                  <AccordionItem
+                    id="details"
+                    title="Product Details"
+                    isOpen={openAccordion === "details"}
+                    onToggle={() => toggleAccordion("details")}
+                  >
+                    <div className="space-y-4">
+                      {measurements.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Measurements
+                          </p>
+                          <div className="divide-y divide-[#e5e7eb] border border-[#e5e7eb]">
+                            {measurements.map((m) => (
+                              <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
+                                <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">
+                                  {m.label}
+                                </span>
+                                <span className="text-sm font-semibold text-[#1a1a1a]">
+                                  {m.value}{m.unit}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {product.tags.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold tracking-wide text-[#1a1a1a] uppercase mb-2">
+                            Style Tags
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {product.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-[10px] font-medium tracking-wide uppercase px-2.5 py-1 bg-[#fafaf9] border border-[#e5e7eb] text-[#6b7280]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionItem>
+
+                  <AccordionItem
+                    id="shipping"
+                    title="Delivery Details"
+                    isOpen={openAccordion === "shipping"}
+                    onToggle={() => toggleAccordion("shipping")}
+                  >
+                    <div className="space-y-3 text-sm text-[#6b7280] leading-relaxed">
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Free Shipping</span>
+                        <span> across Pakistan. Standard delivery within 3-5 business days.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Easy Returns</span>
+                        <span> within 7 days of delivery. Items must be unworn with original tags.</span>
+                      </div>
+                      <div>
+                        <span className="text-[#1a1a1a] font-semibold">Authentic Quality</span>
+                        <span> - 100% guaranteed. Every piece is quality-inspected before shipping.</span>
+                      </div>
+                    </div>
+                  </AccordionItem>
+                </div>
+
+              </FadeIn>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <RelatedProducts products={relatedProducts} currentProductId={product.id} />
+      
+    </>
+  );
+}
+
+function AccordionItem({
+  id, title, isOpen, onToggle, children,
+}: {
+  id:       string;
+  title:    string;
+  isOpen:   boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-[#e5e7eb]">
+      <button
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={`accordion-${id}`}
+        className="w-full flex items-center justify-between py-4 text-left group"
+      >
+        <span className="text-sm font-semibold text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors">
+          {title}
+        </span>
+        <ChevronDown
+          size={16}
+          className={cn(
+            "text-[#6b7280] transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+
+      <div
+        id={`accordion-${id}`}
+        className={cn(
+          "grid transition-all duration-300 ease-out",
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="pb-5 pr-2">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\products\[slug]\loading.tsx
+================================================================================
+
+import { SkelBar, SkelBlock } from "@/components/ui/SkeletonPrimitives";
+
+export default function LoadingProductDetail() {
+  return (
+    <div className="pt-24 sm:pt-28 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-14">
+
+          {/* Image gallery skeleton */}
+          <div className="grid grid-cols-2 gap-2 lg:gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkelBlock key={i} className="aspect-[4/5]" />
+            ))}
+          </div>
+
+          {/* Info column skeleton */}
+          <div className="space-y-4">
+            <SkelBar w="80%" h="18px" />
+            <SkelBar w="40%" h="12px" />
+            <SkelBar w="55%" h="28px" className="mt-4" />
+
+            <div className="pt-6">
+              <SkelBar w="60px" h="12px" className="mb-3" />
+              <div className="flex gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SkelBlock key={i} className="w-10 h-10 rounded-full" />
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <SkelBar w="60px" h="12px" className="mb-3" />
+              <div className="flex gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkelBlock key={i} className="w-14 h-14" />
+                ))}
+              </div>
+            </div>
+
+            <SkelBlock className="h-14 mt-6" />
+            <SkelBar w="90%" h="12px" className="mt-4" />
+            <SkelBar w="80%" h="12px" />
+            <SkelBar w="85%" h="12px" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\FadeIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface FadeInProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;      // ms
+  duration?: number;   // ms
+  threshold?: number;  // 0-1
+  once?: boolean;
+}
+
+export function FadeIn({
+  children,
+  className,
+  delay = 0,
+  duration = 600,
+  threshold = 0.15,
+  once = true,
+}: FadeInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (once) observer.disconnect();
+        } else if (!once) {
+          setIsVisible(false);
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold, once]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(16px)",
+        transition: shouldAnimate
+          ? `opacity ${duration}ms ease, transform ${duration}ms ease`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\SlideIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface SlideInProps {
+  children:   React.ReactNode;
+  className?: string;
+  from?:      "left" | "right" | "top" | "bottom";
+  distance?:  number;    // px
+  delay?:     number;
+  duration?:  number;
+  threshold?: number;
+}
+
+export function SlideIn({
+  children,
+  className,
+  from      = "left",
+  distance  = 40,
+  delay     = 0,
+  duration  = 700,
+  threshold = 0.15,
+}: SlideInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold]);
+
+  const getTransform = () => {
+    if (isVisible) return "translate(0, 0)";
+    switch (from) {
+      case "left":   return `translate(-${distance}px, 0)`;
+      case "right":  return `translate(${distance}px, 0)`;
+      case "top":    return `translate(0, -${distance}px)`;
+      case "bottom": return `translate(0, ${distance}px)`;
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: getTransform(),
+        transition: shouldAnimate
+          ? `opacity ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\SlideUp.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface SlideUpProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  stagger?: number; // extra delay per index
+  index?: number;
+}
+
+export function SlideUp({
+  children,
+  className,
+  delay = 0,
+  stagger = 0,
+  index = 0,
+}: SlideUpProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  const totalDelay = delay + stagger * index;
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(32px)",
+        transition: shouldAnimate
+          ? `opacity 600ms ease, transform 600ms ease`
+          : "none",
+        transitionDelay: `${totalDelay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\ScaleIn.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface ScaleInProps {
+  children:   React.ReactNode;
+  className?: string;
+  from?:      number;    // start scale (0-1)
+  delay?:     number;
+  duration?:  number;
+  threshold?: number;
+}
+
+export function ScaleIn({
+  children,
+  className,
+  from      = 0.85,
+  delay     = 0,
+  duration  = 600,
+  threshold = 0.2,
+}: ScaleInProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold]);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "scale(1)" : `scale(${from})`,
+        transition: shouldAnimate
+          ? `opacity ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1), transform ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\TextReveal.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface TextRevealProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  as?: "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
+}
+
+/**
+ * TextReveal — fades + slides text upward on scroll into view.
+ *
+ * NOTE on descenders:
+ *   We use `overflow-hidden` so the initial 24px offset doesn't
+ *   flash before animation. But `overflow-hidden` will clip
+ *   letter descenders (p, y, g, j, q).
+ *
+ *   Fix: add pb-[0.15em] so the container has room for descenders
+ *   without visibly increasing spacing (0.15em ≈ typical descender).
+ *   Also use leading-[1.15] to give a tiny bit of breathing room.
+ */
+export function TextReveal({
+  children,
+  className,
+  delay = 0,
+  as: Tag = "div",
+}: TextRevealProps) {
+  const ref = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate]);
+
+  return (
+    <Tag
+      ref={ref as React.RefObject<HTMLHeadingElement>}
+      className={cn("overflow-hidden pb-[0.15em]", className)}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(24px)",
+        transition: shouldAnimate
+          ? `opacity 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             transform 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+          : "none",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\LetterReveal.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useDevicePerformance } from "./useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+interface LetterRevealProps {
+  text:       string;
+  className?: string;
+  delay?:     number;     // start delay
+  stagger?:   number;     // ms between letters
+  threshold?: number;
+  as?:        "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
+}
+
+export function LetterReveal({
+  text,
+  className,
+  delay     = 0,
+  stagger   = 40,
+  threshold = 0.3,
+  as: Tag   = "span",
+}: LetterRevealProps) {
+  const ref = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  useEffect(() => {
+    if (!shouldAnimate) { setIsVisible(true); return; }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [shouldAnimate, threshold]);
+
+  // Split into words to preserve line breaks
+  const words = text.split(" ");
+
+  return (
+    <Tag
+      ref={ref as React.RefObject<HTMLHeadingElement>}
+      className={cn("inline-block", className)}
+      aria-label={text}
+    >
+      {words.map((word, wi) => (
+        <span key={wi} className="inline-block whitespace-nowrap" aria-hidden="true">
+          {word.split("").map((char, ci) => {
+            const index = words.slice(0, wi).reduce((sum, w) => sum + w.length, 0) + ci;
+            return (
+              <span
+                key={ci}
+                className="inline-block"
+                style={{
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? "translateY(0)" : "translateY(0.5em)",
+                  transition: shouldAnimate
+                    ? `opacity 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+                    : "none",
+                  transitionDelay: `${delay + index * stagger}ms`,
+                }}
+              >
+                {char}
+              </span>
+            );
+          })}
+          {wi < words.length - 1 && <span>&nbsp;</span>}
+        </span>
+      ))}
+    </Tag>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\animations\useDevicePerformance.ts
+================================================================================
+
+"use client";
+import { useState, useEffect } from "react";
+import type { DevicePerformance } from "@/types";
+
+export function useDevicePerformance(): DevicePerformance {
+  const [performance, setPerformance] = useState<DevicePerformance>({
+    tier: "high",
+    prefersReducedMotion: false,
+    shouldAnimate: true,
+  });
+
+  useEffect(() => {
+    // Check prefers-reduced-motion
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    // Check hardware concurrency (CPU cores)
+    const cores = navigator.hardwareConcurrency || 4;
+
+    // Check device memory (GB) - not available in all browsers
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4;
+
+    // Determine tier
+    let tier: "low" | "medium" | "high" = "high";
+    if (cores <= 2 || memory <= 2) {
+      tier = "low";
+    } else if (cores <= 4 || memory <= 4) {
+      tier = "medium";
+    }
+
+    setPerformance({
+      tier,
+      prefersReducedMotion: reducedMotion,
+      shouldAnimate: !reducedMotion && tier !== "low",
+    });
+  }, []);
+
+  return performance;
+}
+
+================================================================================
+FILE: user-panel\src\components\product\SaleCountdown.tsx
+================================================================================
+
+"use client";
+import { useEffect, useState } from "react";
+import { Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  productId: string;
+  className?: string;
+}
+
+const MIN_HOURS = 24;
+const MAX_HOURS = 48;
+
+function getOrCreateDeadline(productId: string): number {
+  if (typeof window === "undefined") return Date.now() + MIN_HOURS * 3_600_000;
+
+  const key = "denova_sale_expires_" + productId;
+  const stored = window.localStorage.getItem(key);
+
+  if (stored) {
+    const ts = Number(stored);
+    if (!isNaN(ts) && ts > Date.now()) return ts;
+  }
+
+  const hours    = MIN_HOURS + Math.random() * (MAX_HOURS - MIN_HOURS);
+  const deadline = Date.now() + hours * 3_600_000;
+  window.localStorage.setItem(key, String(deadline));
+  return deadline;
+}
+
+interface TimeParts {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  expired: boolean;
+}
+
+function computeParts(deadline: number): TimeParts {
+  const diff = deadline - Date.now();
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+  }
+
+  const days    = Math.floor(diff / 86_400_000);
+  const hours   = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  const seconds = Math.floor((diff % 60_000) / 1000);
+  return { days, hours, minutes, seconds, expired: false };
+}
+
+export function SaleCountdown({ productId, className }: Props) {
+  const [mounted,  setMounted]  = useState(false);
+  const [deadline, setDeadline] = useState<number>(0);
+  const [parts,    setParts]    = useState<TimeParts>({
+    days: 0, hours: 0, minutes: 0, seconds: 0, expired: false,
+  });
+
+  useEffect(() => {
+    setMounted(true);
+    setDeadline(getOrCreateDeadline(productId));
+  }, [productId]);
+
+  useEffect(() => {
+    if (!deadline) return;
+    const update = () => {
+      const next = computeParts(deadline);
+      if (next.expired) {
+        const newDeadline = Date.now() + (MIN_HOURS + Math.random() * (MAX_HOURS - MIN_HOURS)) * 3_600_000;
+        window.localStorage.setItem("denova_sale_expires_" + productId, String(newDeadline));
+        setDeadline(newDeadline);
+        setParts(computeParts(newDeadline));
+      } else {
+        setParts(next);
+      }
+    };
+
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [deadline, productId]);
+
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          "border border-[#e5d3b3] bg-[#fdfbf7] p-3 sm:p-4 mb-6 shadow-[0_4px_20px_-10px_rgba(217,119,6,0.15)]",
+          className
+        )}
+        aria-hidden
+      >
+        <div className="h-[32px]" />
+      </div>
+    );
+  }
+
+  const cells: Array<{ label: string; value: number }> = [
+    { label: "Days",    value: parts.days },
+    { label: "Hours",   value: parts.hours },
+    { label: "Minutes", value: parts.minutes },
+    { label: "Seconds", value: parts.seconds },
+  ];
+
+  return (
+    <div
+      className={cn(
+        "w-fit border border-[#e5d3b3] bg-[#fdfbf7] p-3 sm:p-4 mb-6 shadow-[0_4px_20px_-10px_rgba(217,119,6,0.15)]",
+        className
+      )}
+    >
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Zap
+          size={12}
+          strokeWidth={2.5}
+          className="text-[#d97706] fill-[#d97706]/20"
+        />
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#d97706]">
+          Sale Ends In
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        {cells.map((cell, i) => (
+          <div key={cell.label} className="flex items-center gap-2 sm:gap-3">
+            <div className="flex flex-col items-center min-w-[34px] sm:min-w-[40px]">
+              <span className="font-[family-name:var(--font-playfair)] text-base sm:text-lg font-bold text-[#1a1a1a] leading-none tabular-nums">
+                {String(cell.value).padStart(2, "0")}
+              </span>
+              <span className="text-[8px] font-bold tracking-wider uppercase text-[#6b7280] mt-1">
+                {cell.label}
+              </span>
+            </div>
+            {i < cells.length - 1 && (
+              <span className="text-[#d97706]/50 text-sm font-light leading-none pb-2">
+                :
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\HeroSection.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
+import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
+import { cn } from "@/lib/utils";
+
+// ═══════════════════════════════════════════════════════════
+//  Types
+// ═══════════════════════════════════════════════════════════
+export type ElementKey    = "brand" | "tagline" | "productDesc" | "originalPrice" | "currentPrice" | "countdown";
+export type EntranceAnim  = "fade-in" | "slide-up" | "slide-down" | "slide-left" | "slide-right"
+                          | "scale-in" | "scale-bounce" | "blur-in" | "mask-reveal" | "none";
+export type DecorativeAcc = "none" | "underline-draw" | "accent-bar-left" | "shimmer-sweep" | "accent-dots";
+export type LoopAnim      = "none" | "float-soft" | "pulse-glow" | "breathe";
+export type Speed         = "fast" | "normal" | "slow";
+export type DelayLevel    = "immediate" | "short" | "medium" | "long";
+
+export interface AnimationConfig {
+  entrance:   EntranceAnim;
+  decorative: DecorativeAcc;
+  loop:       LoopAnim;
+  speed:      Speed;
+  delay:      DelayLevel;
+}
+
+export interface ElementStyle {
+  enabled:       boolean;
+  text:          string;
+  x:             number;
+  y:             number;
+  anchor:        "start" | "center" | "end";
+  fontSize:      number;
+  fontWeight:    number;
+  fontFamily:    "serif" | "sans";
+  color:         string;
+  textAlign:     "left" | "center" | "right";
+  lineHeight:    number;
+  letterSpacing: number;
+  maxWidth:      number;
+  textShadow:    boolean;
+  uppercase:     boolean;
+  strikethrough: boolean;
+  nowPrefix:     boolean;
+  animation?:    AnimationConfig;
+}
+
+export interface CountdownStyle extends ElementStyle {
+  bgColor?:       string;
+  bgOpacity?:     number;
+  borderRadius?:  number;
+  paddingX?:      number;
+  paddingY?:      number;
+  showDays?:      boolean;
+  showHours?:     boolean;
+  showMinutes?:   boolean;
+  showSeconds?:   boolean;
+  labelStyle?:    "below" | "beside" | "none";
+  separator?:     "colon" | "space" | "none";
+  digitStyle?:    "minimal" | "boxed" | "pill";
+  endsAt?:        string;
+}
+
+export interface OverlayConfig {
+  brand:         ElementStyle;
+  tagline:       ElementStyle;
+  productDesc:   ElementStyle;
+  originalPrice: ElementStyle;
+  currentPrice:  ElementStyle;
+  countdown:     CountdownStyle;
+}
+
+export interface OverlayV2 {
+  desktop: OverlayConfig;
+  mobile:  OverlayConfig;
+}
+
+export type StickerKind    = "50-off" | "free-delivery";
+export type LegacyCorner   = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type StickerSize    = "sm" | "md" | "lg" | "xl";
+
+export interface StickerPosition {
+  x:      number;
+  y:      number;
+  anchor: "start" | "center" | "end";
+}
+
+export interface Sticker {
+  enabled:         boolean;
+  kind:            StickerKind;
+  size:            StickerSize;
+  positionDesktop?: StickerPosition;
+  positionMobile?:  StickerPosition;
+  corner?: LegacyCorner;
+  offset?: number;
+}
+
+interface HeroBanner {
+  id:                   string;
+  image:                string;
+  imageMobile?:         string;
+  title:                string;
+  subtitle:             string;
+  description:          string;
+  buttonLabel:          string;
+  buttonHref:           string;
+  buttonSecondaryLabel: string;
+  buttonSecondaryHref:  string;
+  isActive:             boolean;
+  sortOrder:            number;
+
+  overlayV2?:        OverlayV2;
+  overlayDarkness?:  number;
+  stickers?:         Sticker[];
+
+  countdownEnabled?: boolean;
+  countdownEndsAt?:  string;
+  brand?:            string;
+  productTitle?:     string;
+  currentPrice?:     string;
+  originalPrice?:    string;
+  discountPercent?:  string;
+  contentPosition?:  string;
+  textTheme?:        "light" | "dark";
+}
+
+interface HeroSectionProps {
+  banners?:         HeroBanner[];
+  rotationSeconds?: number;
+}
+
+const FALLBACK: HeroBanner[] = [
+  {
+    id: "fallback-1",
+    image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80",
+    imageMobile: "",
+    title: "Denova PK", subtitle: "", description: "",
+    buttonLabel: "", buttonHref: "/shop",
+    buttonSecondaryLabel: "", buttonSecondaryHref: "",
+    isActive: true, sortOrder: 0,
+  },
+];
+
+export function defaultAnimation(): AnimationConfig {
+  return { entrance: "slide-up", decorative: "none", loop: "none", speed: "normal", delay: "short" };
+}
+
+export function defaultElementStyle(overrides: Partial<ElementStyle> = {}): ElementStyle {
+  return {
+    enabled: false, text: "",
+    x: 5, y: 10, anchor: "start",
+    fontSize: 24, fontWeight: 500, fontFamily: "sans",
+    color: "#ffffff",
+    textAlign: "left", lineHeight: 1.2, letterSpacing: 0, maxWidth: 45,
+    textShadow: true, uppercase: false, strikethrough: false, nowPrefix: false,
+    animation: defaultAnimation(),
+    ...overrides,
+  };
+}
+
+function defaultCountdownStyle(overrides: Partial<CountdownStyle> = {}): CountdownStyle {
+  return {
+    ...defaultElementStyle({
+      x: 90, y: 8, anchor: "end", fontSize: 20, fontWeight: 700, fontFamily: "sans",
+      color: "#ffffff", maxWidth: 40,
+    }),
+    bgColor: "#000000", bgOpacity: 60, borderRadius: 8, paddingX: 12, paddingY: 8,
+    showDays: true, showHours: true, showMinutes: true, showSeconds: true,
+    labelStyle: "below", separator: "none", digitStyle: "minimal",
+    endsAt: "",
+    ...overrides,
+  };
+}
+
+function cornerToPosition(corner: LegacyCorner | undefined): StickerPosition {
+  switch (corner) {
+    case "top-left":     return { x: 5,  y: 5,  anchor: "start" };
+    case "top-right":    return { x: 95, y: 5,  anchor: "end"   };
+    case "bottom-left":  return { x: 5,  y: 95, anchor: "start" };
+    case "bottom-right": return { x: 95, y: 95, anchor: "end"   };
+    default:             return { x: 95, y: 5,  anchor: "end"   };
+  }
+}
+
+function normalizeSticker(s: Sticker): Sticker {
+  const fallback = cornerToPosition(s.corner);
+  return {
+    ...s,
+    positionDesktop: s.positionDesktop ?? fallback,
+    positionMobile:  s.positionMobile  ?? fallback,
+  };
+}
+
+function legacyToOverlayV2(banner: HeroBanner): OverlayV2 {
+  const isLight = (banner.textTheme ?? "light") === "light";
+  const color   = isLight ? "#ffffff" : "#1a1a1a";
+  const pos     = banner.contentPosition ?? "center-left";
+  const xy      = getLegacyXY(pos);
+  const anchor  = xy.anchor;
+
+  const makeEl = (extra: Partial<ElementStyle>): ElementStyle =>
+    defaultElementStyle({
+      color, anchor,
+      textAlign: anchor === "end" ? "right" : anchor === "center" ? "center" : "left",
+      ...extra,
+    });
+
+  const config: OverlayConfig = {
+    brand:         makeEl({ enabled: !!banner.brand,         text: banner.brand ?? "",         x: xy.x, y: Math.max(5, xy.y - 20), fontSize: 56, fontWeight: 700, fontFamily: "serif" }),
+    tagline:       makeEl({ enabled: false, text: "" }),
+    productDesc:   makeEl({ enabled: !!banner.productTitle,  text: banner.productTitle ?? "",  x: xy.x, y: xy.y,                    fontSize: 32, fontWeight: 600, fontFamily: "serif" }),
+    originalPrice: makeEl({ enabled: !!banner.originalPrice, text: banner.originalPrice ?? "", x: xy.x, y: Math.min(85, xy.y + 20), fontSize: 20, fontWeight: 400, strikethrough: true }),
+    currentPrice:  makeEl({ enabled: !!banner.currentPrice,  text: banner.currentPrice ?? "",  x: xy.x, y: Math.min(90, xy.y + 28), fontSize: 40, fontWeight: 700, nowPrefix: !!banner.originalPrice }),
+    countdown:     defaultCountdownStyle({ enabled: !!banner.countdownEnabled, endsAt: banner.countdownEndsAt ?? "" }),
+  };
+
+  return { desktop: config, mobile: config };
+}
+
+function getLegacyXY(pos: string): { x: number; y: number; anchor: "start" | "center" | "end" } {
+  switch (pos) {
+    case "top-left":      return { x: 5,  y: 15, anchor: "start"  };
+    case "top-center":    return { x: 50, y: 15, anchor: "center" };
+    case "top-right":     return { x: 95, y: 15, anchor: "end"    };
+    case "center-left":   return { x: 5,  y: 50, anchor: "start"  };
+    case "center":        return { x: 50, y: 50, anchor: "center" };
+    case "center-right":  return { x: 95, y: 50, anchor: "end"    };
+    case "bottom-left":   return { x: 5,  y: 85, anchor: "start"  };
+    case "bottom-center": return { x: 50, y: 85, anchor: "center" };
+    case "bottom-right":  return { x: 95, y: 85, anchor: "end"    };
+    default:              return { x: 5,  y: 50, anchor: "start"  };
+  }
+}
+
+function ensureCountdownInConfig(cfg: OverlayConfig | undefined, legacy: HeroBanner): OverlayConfig {
+  if (!cfg) return legacyToOverlayV2(legacy).desktop;
+  if (!cfg.countdown) {
+    return { ...cfg, countdown: defaultCountdownStyle({ enabled: !!legacy.countdownEnabled, endsAt: legacy.countdownEndsAt ?? "" }) };
+  }
+  const patched: OverlayConfig = { ...cfg };
+  (["brand", "tagline", "productDesc", "originalPrice", "currentPrice", "countdown"] as ElementKey[]).forEach((k) => {
+    if (!patched[k].animation) patched[k].animation = defaultAnimation();
+  });
+  return patched;
+}
+
+const SPEED_MS: Record<Speed, number> = { fast: 400, normal: 700, slow: 1100 };
+const DELAY_MS: Record<DelayLevel, number> = { immediate: 0, short: 200, medium: 500, long: 900 };
+
+function animationCSS(anim: AnimationConfig | undefined, shouldAnim: boolean): {
+  entranceStyle: React.CSSProperties;
+  loopStyle:     React.CSSProperties;
+  decoDelay:     number;
+  totalMs:       number;
+} {
+  const a = anim ?? defaultAnimation();
+  if (!shouldAnim || a.entrance === "none") {
+    return { entranceStyle: {}, loopStyle: {}, decoDelay: 0, totalMs: 0 };
+  }
+  const durMs = SPEED_MS[a.speed];
+  const delMs = DELAY_MS[a.delay];
+  const entrance: React.CSSProperties = {
+    animation: `hero-${a.entrance} ${durMs}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${delMs}ms both`,
+  };
+  const loop: React.CSSProperties = a.loop === "none" ? {} : {
+    animation: `${entrance.animation}, hero-${a.loop} ${a.loop === "float-soft" ? 4 : 3}s ease-in-out infinite ${delMs + durMs}ms`,
+  };
+  return { entranceStyle: loop.animation ? loop : entrance, loopStyle: {}, decoDelay: delMs + durMs + 100, totalMs: delMs + durMs };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAIN — REBUILT AUTO-ROTATION LOGIC (bulletproof)
+// ═══════════════════════════════════════════════════════════
+export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: HeroSectionProps) {
+  const [slides, setSlides] = useState<HeroBanner[]>(
+    initialBanners && initialBanners.length > 0 ? initialBanners : FALLBACK
+  );
+  const [rotation, setRotation] = useState(rotationSeconds);
+  const [current, setCurrent]   = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const { shouldAnimate } = useDevicePerformance();
+
+  // ─── Timer state (all refs — no re-render trigger) ────
+  const rafRef            = useRef<number | null>(null);
+  const cycleStartRef     = useRef<number>(0);       // when THIS cycle began
+  const accumulatedRef    = useRef<number>(0);       // ms elapsed in current cycle before pause
+  const isPausedRef       = useRef<boolean>(false);
+  const rotationRef       = useRef<number>(rotationSeconds);
+  const slidesLengthRef   = useRef<number>(slides.length);
+  const shouldAnimateRef  = useRef<boolean>(true);
+
+  // Keep refs in sync with state (no effect re-runs)
+  useEffect(() => { rotationRef.current      = rotation;                }, [rotation]);
+  useEffect(() => { slidesLengthRef.current  = slides.length;           }, [slides.length]);
+  useEffect(() => { shouldAnimateRef.current = shouldAnimate;           }, [shouldAnimate]);
+
+  // ─── Mobile detection ─────────────────────────────────
+  useEffect(() => {
+    const check = () => setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    check();
+    const mq = window.matchMedia("(max-width: 767px)");
+    const listener = () => check();
+    mq.addEventListener("change", listener);
+    return () => mq.removeEventListener("change", listener);
+  }, []);
+
+  // ─── Fetch banners + rotation from API (always overrides) ──
+  useEffect(() => {
+    fetch("/api/hero-banners", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.banners?.length > 0) setSlides(data.banners);
+        if (data?.rotationSeconds && Number(data.rotationSeconds) > 0) {
+          setRotation(Number(data.rotationSeconds));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Reset current index if slides array shrinks
+  useEffect(() => {
+    if (current >= slides.length) setCurrent(0);
+  }, [slides.length, current]);
+
+  // Preload next image
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const next = slides[(current + 1) % slides.length];
+    if (next?.image)       { const img = new window.Image(); img.src = next.image; }
+    if (next?.imageMobile) { const img = new window.Image(); img.src = next.imageMobile; }
+  }, [current, slides]);
+
+  // ═══════════════════════════════════════════════════════
+  //  BULLETPROOF ROTATION TIMER
+  //
+  //  Runs ONCE on mount. Never restarts when `current` changes.
+  //  Uses refs for all mutable state so the RAF loop is stable.
+  //  Pause accumulates elapsed time; resume continues from there.
+  // ═══════════════════════════════════════════════════════
+  useEffect(() => {
+    // Init cycle start on first mount
+    cycleStartRef.current  = performance.now();
+    accumulatedRef.current = 0;
+
+    const tick = (now: number) => {
+      if (slidesLengthRef.current <= 1 || !shouldAnimateRef.current) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (isPausedRef.current) {
+        // Timer is paused — do nothing, just keep the RAF alive
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const durationMs = Math.max(2, rotationRef.current) * 1000;
+      const elapsed    = accumulatedRef.current + (now - cycleStartRef.current);
+      const pct        = Math.min(elapsed / durationMs, 1);
+      setProgress(pct * 100);
+
+      if (elapsed >= durationMs) {
+        setCurrent((c) => (c + 1) % slidesLengthRef.current);
+        cycleStartRef.current  = performance.now();
+        accumulatedRef.current = 0;
+        setProgress(0);
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []); // ← EMPTY DEPS. Runs ONCE for the entire component lifetime.
+
+  // ─── Pause / Resume handlers (accumulate elapsed, don't reset) ──
+  const handlePause = useCallback(() => {
+    if (isPausedRef.current) return;
+    // Save elapsed time before pausing
+    accumulatedRef.current += performance.now() - cycleStartRef.current;
+    isPausedRef.current = true;
+  }, []);
+
+  const handleResume = useCallback(() => {
+    if (!isPausedRef.current) return;
+    // Restart the reference point; elapsed time is already saved
+    cycleStartRef.current = performance.now();
+    isPausedRef.current = false;
+  }, []);
+
+  // Auto-pause when tab is hidden
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) handlePause();
+      else handleResume();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [handlePause, handleResume]);
+
+  if (slides.length === 0) return null;
+
+  const goToSlide = (i: number) => {
+    if (i === current) return;
+    setCurrent(i);
+    cycleStartRef.current  = performance.now();
+    accumulatedRef.current = 0;
+    setProgress(0);
+  };
+
+  return (
+    <section
+      className="relative w-full bg-white overflow-hidden group/hero"
+      onMouseEnter={handlePause}
+      onMouseLeave={handleResume}
+    >
+      {slides.map((slide, i) => (
+        <BannerSlide
+          key={slide.id}
+          slide={slide}
+          isActive={i === current}
+          index={i}
+          shouldAnimate={shouldAnimate}
+          isMobile={isMobile}
+        />
+      ))}
+
+      {slides.length > 1 && (
+        <div className="absolute bottom-0 left-0 right-0 z-30 h-[3px] bg-black/20">
+          <div className="h-full bg-[#3b5f8f] shadow-[0_0_8px_rgba(59,95,143,0.6)]"
+            style={{ width: `${progress}%`, transition: progress === 0 ? "none" : "width 100ms linear" }} />
+        </div>
+      )}
+
+      {slides.length > 1 && (
+        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+          {slides.map((_, i) => (
+            <button key={i} onClick={() => goToSlide(i)} className="group/dot py-2 px-0.5" aria-label={`Go to slide ${i + 1}`}>
+              <div className={cn(
+                "h-1.5 rounded-full transition-all duration-500",
+                i === current ? "w-8 bg-white" : "w-1.5 bg-white/60 group-hover/dot:bg-white/90"
+              )} style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BannerSlide (unchanged)
+// ═══════════════════════════════════════════════════════════
+interface BannerSlideProps {
+  slide: HeroBanner; isActive: boolean; index: number;
+  shouldAnimate: boolean; isMobile: boolean;
+}
+
+function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: BannerSlideProps) {
+  const hasLink   = !!slide.buttonHref;
+  const mobileSrc = slide.imageMobile || slide.image;
+
+  const rawOverlay: OverlayV2 = slide.overlayV2 ?? legacyToOverlayV2(slide);
+  const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
+
+  // Track first mount to skip entrance/ken-burns animations on initial load
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    // Mark as mounted after first paint. Any subsequent isActive toggle
+    // (i.e. a real slide change) will trigger cinematic transition.
+    const t = setTimeout(() => setHasMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  const [kenBurnsKey, setKenBurnsKey] = useState(0);
+  useEffect(() => {
+    if (isActive && hasMounted) setKenBurnsKey((k) => k + 1);
+  }, [isActive, hasMounted]);
+
+  const imgElement = (
+    <div className="overflow-hidden w-full">
+      <picture>
+        <source media="(max-width: 767px)" srcSet={mobileSrc} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          key={kenBurnsKey}
+          src={slide.image}
+          alt={slide.title || `Banner ${index + 1}`}
+          className={cn(
+            "block w-full h-auto origin-center",
+            shouldAnimate && isActive && hasMounted && "hero-image-ken-burns"
+          )}
+          style={shouldAnimate && isActive && hasMounted
+            ? { "--hero-duration": "9s" } as React.CSSProperties
+            : undefined
+          }
+          draggable={false}
+          loading={index === 0 ? "eager" : "lazy"}
+          fetchPriority={index === 0 ? "high" : "auto"}
+        />
+      </picture>
+    </div>
+  );
+
+  const containerClass = cn(
+    "top-0 left-0 w-full",
+    isActive
+      ? cn("relative z-10", shouldAnimate && hasMounted && "hero-cinematic-enter")
+      : cn("absolute z-0 pointer-events-none opacity-0", shouldAnimate && hasMounted && "hero-cinematic-exit")
+  );
+
+  const inner = (
+    <div className="relative">
+      {imgElement}
+
+      {slide.overlayDarkness !== undefined && slide.overlayDarkness > 0 && (
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ backgroundColor: `rgba(0,0,0,${slide.overlayDarkness / 100})` }} />
+      )}
+
+      <BannerOverlayV2 config={config} slide={slide} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} />
+
+      {(slide.stickers ?? []).filter((s) => s.enabled).map((s, i) => (
+        <StickerLayer key={`${s.kind}-${i}`} sticker={normalizeSticker(s)} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} />
+      ))}
+    </div>
+  );
+
+  if (hasLink) {
+    return (
+      <Link href={slide.buttonHref} aria-label={slide.title || `Banner ${index + 1}`}
+        className={cn(containerClass, "block cursor-pointer")}>
+        {inner}
+      </Link>
+    );
+  }
+  return <div className={containerClass}>{inner}</div>;
+}
+
+const ELEMENT_ORDER: ElementKey[] = ["brand", "tagline", "productDesc", "originalPrice", "currentPrice", "countdown"];
+
+function BannerOverlayV2({ config, slide, isActive, shouldAnimate, isMobile }: {
+  config: OverlayConfig; slide: HeroBanner; isActive: boolean; shouldAnimate: boolean; isMobile: boolean;
+}) {
+  const shouldAnim = shouldAnimate && isActive;
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {ELEMENT_ORDER.map((key) => {
+        const el = config[key];
+        if (!el.enabled) return null;
+        if (key !== "countdown" && !el.text.trim()) return null;
+
+        if (key === "countdown") {
+          const cd = el as CountdownStyle;
+          if (!cd.endsAt) return null;
+          return <CountdownElement key={`${key}-${slide.id}-${isActive}`} style={cd} shouldAnim={shouldAnim} isMobile={isMobile} />;
+        }
+
+        return (
+          <OverlayElement
+            key={`${key}-${slide.id}-${isActive}`}
+            elementKey={key}
+            style={el}
+            shouldAnim={shouldAnim}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function OverlayElement({ elementKey, style, shouldAnim }: {
+  elementKey: ElementKey; style: ElementStyle; shouldAnim: boolean;
+}) {
+  const translateX = style.anchor === "center" ? "-50%" : style.anchor === "end" ? "-100%" : "0";
+  const fontVar = style.fontFamily === "serif"
+    ? "var(--font-playfair), Georgia, serif"
+    : "var(--font-inter), system-ui, sans-serif";
+
+  const isDark = isColorDark(style.color);
+  const shadow = style.textShadow
+    ? isDark ? "0 1px 3px rgba(255,255,255,0.4)" : "0 2px 8px rgba(0,0,0,0.4)"
+    : "none";
+
+  const isPrice    = elementKey === "currentPrice";
+  const isOriginal = elementKey === "originalPrice";
+
+  const content = isPrice && style.nowPrefix ? (
+    <span className="inline-flex items-baseline gap-2">
+      <span style={{
+        fontSize: `${Math.round(style.fontSize * 0.55)}px`, fontWeight: 600,
+        letterSpacing: "0.15em", opacity: 0.85,
+      }}>NOW</span>
+      <span>{style.text}</span>
+    </span>
+  ) : (
+    style.text
+  );
+
+  const { entranceStyle, decoDelay } = animationCSS(style.animation, shouldAnim);
+  const deco = style.animation?.decorative ?? "none";
+
+  return (
+    <div
+      className="absolute pointer-events-none whitespace-pre-line"
+      style={{
+        left: `${style.x}%`, top: `${style.y}%`,
+        transform: `translate(${translateX}, 0)`,
+        maxWidth: `${style.maxWidth}%`,
+        fontSize:
+          `clamp(${Math.max(10, Math.round(style.fontSize * 0.4))}px,` +
+          ` ${(style.fontSize / 19.2).toFixed(2)}vw,` +
+          ` ${style.fontSize}px)`,
+        fontWeight: style.fontWeight, fontFamily: fontVar,
+        color: style.color, textAlign: style.textAlign,
+        lineHeight: style.lineHeight, letterSpacing: `${style.letterSpacing}em`,
+        textTransform: style.uppercase ? "uppercase" : "none",
+        textDecoration: (isOriginal && style.strikethrough) ? "line-through" : "none",
+        textShadow: shadow,
+        position: "absolute",
+        ...entranceStyle,
+      }}
+    >
+      <span style={{ position: "relative", display: "inline-block" }}>
+        {content}
+
+        {deco === "underline-draw" && (
+          <span aria-hidden="true"
+            style={{
+              position: "absolute", left: 0, right: 0, bottom: "-0.15em",
+              height: "3px", background: style.color, borderRadius: "2px",
+              transformOrigin: "left center",
+              animation: shouldAnim ? `hero-underline-draw 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both` : "none",
+            }} />
+        )}
+
+        {deco === "accent-bar-left" && (
+          <span aria-hidden="true"
+            style={{
+              position: "absolute", left: "-0.5em", top: 0, bottom: 0,
+              width: "3px", background: "#3b5f8f", borderRadius: "2px",
+              transformOrigin: "top center",
+              animation: shouldAnim ? `hero-accent-bar-draw 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both` : "none",
+            }} />
+        )}
+
+        {deco === "shimmer-sweep" && (
+          <span aria-hidden="true"
+            style={{
+              position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none",
+            }}>
+            <span
+              style={{
+                position: "absolute", top: 0, left: 0, width: "40%", height: "100%",
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)",
+                animation: shouldAnim ? `hero-shimmer-sweep 1600ms ease-in-out ${decoDelay}ms both` : "none",
+                mixBlendMode: "overlay",
+              }} />
+          </span>
+        )}
+
+        {deco === "accent-dots" && (
+          <span aria-hidden="true"
+            style={{
+              display: "inline-flex", gap: "0.35em", marginLeft: "0.5em", verticalAlign: "middle",
+            }}>
+            {[0, 1, 2].map((i) => (
+              <span key={i}
+                style={{
+                  display: "inline-block", width: "0.35em", height: "0.35em",
+                  borderRadius: "9999px", background: "#3b5f8f",
+                  animation: shouldAnim ? `hero-dot-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${decoDelay + i * 150}ms both` : "none",
+                }} />
+            ))}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function CountdownElement({ style, shouldAnim }: {
+  style: CountdownStyle; shouldAnim: boolean; isMobile: boolean;
+}) {
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0, expired: false });
+
+  useEffect(() => {
+    if (!style.endsAt) return;
+    const calc = () => {
+      const diff = new Date(style.endsAt!).getTime() - Date.now();
+      if (diff <= 0) { setTime({ d: 0, h: 0, m: 0, s: 0, expired: true }); return; }
+      setTime({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff / 3600000) % 24),
+        m: Math.floor((diff / 60000) % 60),
+        s: Math.floor((diff / 1000) % 60),
+        expired: false,
+      });
+    };
+    calc();
+    const int = setInterval(calc, 1000);
+    return () => clearInterval(int);
+  }, [style.endsAt]);
+
+  if (!style.endsAt || time.expired) return null;
+
+  const translateX = style.anchor === "center" ? "-50%" : style.anchor === "end" ? "-100%" : "0";
+  const fontVar = style.fontFamily === "serif"
+    ? "var(--font-playfair), Georgia, serif"
+    : "var(--font-inter), system-ui, sans-serif";
+
+  const { entranceStyle } = animationCSS(style.animation, shouldAnim);
+  const bgAlpha = ((style.bgOpacity ?? 60) / 100).toFixed(2);
+  const bg      = style.bgColor && style.bgColor !== ""
+    ? hexToRgba(style.bgColor, Number(bgAlpha))
+    : "transparent";
+
+  const units: Array<{ v: number; label: string; show: boolean }> = [
+    { v: time.d, label: "D", show: !!style.showDays  && time.d > 0 },
+    { v: time.h, label: "H", show: !!style.showHours   },
+    { v: time.m, label: "M", show: !!style.showMinutes },
+    { v: time.s, label: "S", show: !!style.showSeconds },
+  ].filter((u) => u.show);
+
+  const digitStyle: React.CSSProperties = {
+    fontSize: `${style.fontSize}px`, fontWeight: style.fontWeight,
+    fontFamily: fontVar, color: style.color, lineHeight: 1,
+    fontVariantNumeric: "tabular-nums",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: `${Math.max(9, Math.round(style.fontSize * 0.32))}px`,
+    letterSpacing: "0.15em", opacity: 0.75, textTransform: "uppercase",
+    color: style.color, fontWeight: 600,
+  };
+
+  const cellClass = "flex flex-col items-center";
+
+  const cellBg = (extraStyle: React.CSSProperties = {}) => ({
+    background: style.digitStyle === "boxed" || style.digitStyle === "pill" ? bg : "transparent",
+    border: style.digitStyle === "boxed" ? `1px solid ${hexToRgba(style.color, 0.25)}` : "none",
+    borderRadius: style.digitStyle === "pill" ? "9999px" : `${style.borderRadius ?? 0}px`,
+    padding: `${style.paddingY ?? 8}px ${style.paddingX ?? 12}px`,
+    minWidth: `${style.fontSize * 1.4}px`,
+    ...extraStyle,
+  });
+
+  const outerBg = style.digitStyle === "minimal" ? {
+    background: bg,
+    borderRadius: `${style.borderRadius ?? 0}px`,
+    padding: `${style.paddingY ?? 8}px ${style.paddingX ?? 12}px`,
+  } : {};
+
+  return (
+    <div className="absolute pointer-events-none"
+      style={{
+        left: `${style.x}%`, top: `${style.y}%`,
+        transform: `translate(${translateX}, 0)`,
+        maxWidth: `${style.maxWidth}%`,
+        ...entranceStyle,
+      }}>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: `${Math.max(4, style.fontSize * 0.15)}px`, ...outerBg }}>
+        {units.map((u, i) => (
+          <div key={u.label} style={{ display: "flex", alignItems: "center" }}>
+            <div className={cellClass} style={cellBg()}>
+              {style.labelStyle === "beside" ? (
+                <span style={{ display: "inline-flex", alignItems: "baseline", gap: "0.15em" }}>
+                  <span style={digitStyle}>{String(u.v).padStart(2, "0")}</span>
+                  <span style={{ ...labelStyle, fontSize: `${Math.max(10, Math.round(style.fontSize * 0.4))}px` }}>
+                    {u.label.toLowerCase()}
+                  </span>
+                </span>
+              ) : (
+                <>
+                  <span style={digitStyle}>{String(u.v).padStart(2, "0")}</span>
+                  {style.labelStyle === "below" && (
+                    <span style={{ ...labelStyle, marginTop: "0.3em" }}>{u.label}</span>
+                  )}
+                </>
+              )}
+            </div>
+            {i < units.length - 1 && style.separator === "colon" && (
+              <span style={{ ...digitStyle, margin: `0 ${Math.max(4, style.fontSize * 0.1)}px`, opacity: 0.5 }}>:</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const STICKER_SIZES: Record<StickerSize, { w: number; wMobile: number }> = {
+  sm: { w: 140, wMobile: 90  },
+  md: { w: 200, wMobile: 130 },
+  lg: { w: 280, wMobile: 170 },
+  xl: { w: 360, wMobile: 220 },
+};
+
+function StickerLayer({ sticker, isActive, shouldAnimate, isMobile }: {
+  sticker: Sticker; isActive: boolean; shouldAnimate: boolean; isMobile: boolean;
+}) {
+  const src = sticker.kind === "50-off"
+    ? "https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto/v1784388357/denovapk/general/50-off_1784388351902.png"
+    : "https://res.cloudinary.com/djy5qqco7/image/upload/f_auto,q_auto/v1784388363/denovapk/general/free-delivery_1784388357255.png";
+
+  const width = isMobile ? STICKER_SIZES[sticker.size].wMobile : STICKER_SIZES[sticker.size].w;
+  const pos   = (isMobile ? sticker.positionMobile : sticker.positionDesktop) ?? cornerToPosition(sticker.corner);
+  const translateX = pos.anchor === "center" ? "-50%" : pos.anchor === "end" ? "-100%" : "0";
+
+  const shouldAnim = shouldAnimate && isActive;
+  const animName = pos.y < 50 ? "hero-sticker-pop" : "hero-sticker-slide-up";
+
+  return (
+    <div style={{
+      position: "absolute",
+      left: `${pos.x}%`, top: `${pos.y}%`,
+      transform: `translate(${translateX}, 0)`,
+      width,
+      zIndex: 20,
+      pointerEvents: "none",
+    }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={sticker.kind === "50-off" ? "50% off" : "Free delivery"}
+        style={{
+          width: "100%", height: "auto", display: "block",
+          animation: shouldAnim ? `${animName} 900ms cubic-bezier(0.34, 1.56, 0.64, 1) 400ms both` : "none",
+          transformOrigin: pos.y < 50 ? "top center" : "bottom center",
+          filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.25))",
+        }}
+        draggable={false}
+      />
+    </div>
+  );
+}
+
+function isColorDark(hex: string): boolean {
+  const c = hex.replace("#", "");
+  if (c.length !== 6) return false;
+  const r = parseInt(c.substr(0, 2), 16);
+  const g = parseInt(c.substr(2, 2), 16);
+  const b = parseInt(c.substr(4, 2), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.5;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const c = hex.replace("#", "");
+  if (c.length !== 6) return `rgba(0,0,0,${alpha})`;
+  const r = parseInt(c.substr(0, 2), 16);
+  const g = parseInt(c.substr(2, 2), 16);
+  const b = parseInt(c.substr(4, 2), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\FixedHeroBackground.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+
+export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
+  const heroRef    = useRef<HTMLDivElement>(null);
+  const spacerRef  = useRef<HTMLDivElement>(null);
+
+  // Height state (used only to size the spacer)
+  const [heroHeight, setHeroHeight] = useState<number>(0);
+
+  // Internal refs — used by scroll handler (no re-renders)
+  const heroHeightRef = useRef<number>(0);
+  const isReadyRef    = useRef<boolean>(false);
+  const lastBottomRef = useRef<number>(-1);
+  const lastVisibleRef = useRef<boolean>(true);
+
+  // Keep heroHeightRef in sync with state
+  useEffect(() => {
+    heroHeightRef.current = heroHeight;
+  }, [heroHeight]);
+
+  // Measure hero height for spacer
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const h = el.offsetHeight;
+      if (h > 0) {
+        setHeroHeight((prev) => (prev !== h ? h : prev));
+      }
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // High-performance scroll tracking (mounted ONCE, uses refs)
+  useEffect(() => {
+    let rafId = 0;
+
+    const update = () => {
+      const hero = heroRef.current;
+      if (!hero) { rafId = 0; return; }
+
+      // 1. Sync top with header (fixes white gap when announcement bar scrolls away)
+      const header = document.querySelector("header");
+      if (header) {
+        const bottom = Math.max(0, header.getBoundingClientRect().bottom);
+        if (bottom !== lastBottomRef.current) {
+          lastBottomRef.current = bottom;
+          hero.style.top = `${bottom}px`;
+
+          if (bottom > 0 && !isReadyRef.current) {
+            isReadyRef.current = true;
+            hero.style.opacity    = "1";
+            hero.style.visibility = "visible";
+          }
+        }
+      }
+
+      // 2. Hide when scrolled past hero (fixes bleeding into footer area)
+      const h = heroHeightRef.current;
+      if (h > 0) {
+        const shouldShow = window.scrollY < h * 1.5;
+        if (shouldShow !== lastVisibleRef.current) {
+          lastVisibleRef.current = shouldShow;
+          hero.style.visibility = shouldShow ? "visible" : "hidden";
+          hero.style.opacity    = shouldShow ? "1" : "0";
+        }
+      }
+
+      rafId = 0;
+    };
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(update);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []); // ← EMPTY. Mounts once, uses refs to read latest values.
+
+  return (
+    <>
+      <div
+        ref={heroRef}
+        className="fixed left-0 w-full z-0 overflow-hidden"
+        style={{
+          top:        "0px",
+          opacity:    0,
+          visibility: "hidden",
+          transition: "opacity 200ms ease",
+          transform:  "translateZ(0)",
+          willChange: "transform",
+        }}
+      >
+        {children}
+      </div>
+
+      <div
+        ref={spacerRef}
+        aria-hidden="true"
+        className="w-full pointer-events-none"
+        style={{ height: heroHeight > 0 ? `${heroHeight}px` : "100vh" }}
+      />
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\sections\SaleCountdown.tsx
+================================================================================
+
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { FadeIn } from "@/components/animations/FadeIn";
+import { SlideIn } from "@/components/animations/SlideIn";
+import { cn } from "@/lib/utils";
+
+/**
+ * SaleCountdown
+ * ─────────────────────────────────────────────────────────────
+ * Premium "limited-time offer" section between Hero and
+ * Featured Collections.
+ */
+
+// ─── Countdown target: Guarantees homepage timer is always > 4 days ─
+function getSaleEndsAt(): Date {
+  const now = new Date();
+  const windowMs = 7 * 24 * 60 * 60 * 1000; // 7-day rolling window
+  
+  // Find the end of the current 7-day cycle
+  let endsAt = new Date((Math.floor(now.getTime() / windowMs) + 1) * windowMs);
+
+  // GUARANTEE: If the cycle ends in less than 4 days, push it to the NEXT cycle.
+  // This ensures the sitewide sale always shows 4 to 11 days remaining,
+  // making it strictly greater than the 1-2 day product-specific timers.
+  if (endsAt.getTime() - now.getTime() < 4 * 24 * 60 * 60 * 1000) {
+    endsAt = new Date(endsAt.getTime() + windowMs);
+  }
+  
+  return endsAt;
+}
+
+interface TimeLeft {
+  days:    number;
+  hours:   number;
+  minutes: number;
+  seconds: number;
+}
+
+function calculateTimeLeft(endsAt: Date): TimeLeft {
+  const diff = Math.max(0, endsAt.getTime() - Date.now());
+  return {
+    days:    Math.floor(diff / (1000 * 60 * 60 * 24)),
+    hours:   Math.floor((diff / (1000 * 60 * 60)) % 24),
+    minutes: Math.floor((diff / (1000 * 60)) % 60),
+    seconds: Math.floor((diff / 1000) % 60),
+  };
+}
+
+export function SaleCountdown() {
+  const [mounted, setMounted] = useState(false);
+  const [time,    setTime]    = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    setMounted(true);
+    const endsAt = getSaleEndsAt();
+
+    const update = () => setTime(calculateTimeLeft(endsAt));
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <section className="relative w-full bg-white py-10 sm:py-12 lg:py-14 overflow-hidden">
+
+      {/* Subtle top border accent */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent" />
+
+      <div className="site-container">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] items-center gap-8 lg:gap-16">
+
+          {/* ── LEFT: Label + Heading + CTA ─────────────── */}
+          <div className="text-center lg:text-left">
+            <FadeIn>
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+                Shop Before It Ends
+              </span>
+            </FadeIn>
+
+            <FadeIn delay={100}>
+              <h2 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1a1a1a] mt-2 sm:mt-3 leading-tight">
+                Save Minimum{" "}
+                <span className="relative inline-block">
+                  50%
+                  {/* Hand-drawn gold circle around percentage */}
+                  <svg
+                    className="absolute -inset-x-2 -inset-y-1 w-[calc(100%+16px)] h-[calc(100%+8px)] pointer-events-none"
+                    viewBox="0 0 100 60"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <ellipse
+                      cx="50"
+                      cy="30"
+                      rx="46"
+                      ry="24"
+                      fill="none"
+                      stroke="#3b5f8f"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeDasharray="220"
+                      strokeDashoffset="0"
+                      style={{
+                        transformOrigin: "center",
+                        animation: "draw-circle 1.4s ease-out 400ms both",
+                      }}
+                    />
+                  </svg>
+                </span>{" "}
+                on Crazy Deal
+              </h2>
+            </FadeIn>
+
+            <FadeIn delay={200}>
+              <Link
+                href="/shop?filter=sale"
+                className="group inline-flex items-center gap-2 mt-4 sm:mt-5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] border-b border-[#1a1a1a] pb-0.5 hover:text-[#3b5f8f] hover:border-[#3b5f8f] transition-all duration-300"
+              >
+                Shop The Sale
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </FadeIn>
+          </div>
+
+          {/* ── RIGHT: Live Countdown ────────────────────── */}
+          <SlideIn from="right" distance={40} delay={150}>
+            <div className="flex items-start justify-center lg:justify-end gap-2 sm:gap-3 lg:gap-4">
+              <CountdownUnit value={time.days}    label="Days"    mounted={mounted} />
+              <CountdownSeparator />
+              <CountdownUnit value={time.hours}   label="Hours"   mounted={mounted} />
+              <CountdownSeparator />
+              <CountdownUnit value={time.minutes} label="Minutes" mounted={mounted} />
+              <CountdownSeparator />
+              <CountdownUnit value={time.seconds} label="Seconds" mounted={mounted} pulseOnTick />
+            </div>
+          </SlideIn>
+
+        </div>
+      </div>
+
+      {/* Bottom border accent */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent" />
+
+      {/* ─── Countdown animation keyframes (scoped inline) ─── */}
+      <style jsx>{`
+        @keyframes draw-circle {
+          from { stroke-dashoffset: 220; opacity: 0; }
+          to   { stroke-dashoffset: 0;   opacity: 1; }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+/* ─── Countdown Unit ─────────────────────────────────────── */
+interface CountdownUnitProps {
+  value:        number;
+  label:        string;
+  mounted:      boolean;
+  pulseOnTick?: boolean;
+}
+
+function CountdownUnit({ value, label, mounted, pulseOnTick }: CountdownUnitProps) {
+  const [prevValue, setPrevValue] = useState(value);
+  const [isFlipping, setIsFlipping] = useState(false);
+
+  useEffect(() => {
+    if (value !== prevValue) {
+      setIsFlipping(true);
+      const t = setTimeout(() => {
+        setPrevValue(value);
+        setIsFlipping(false);
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [value, prevValue]);
+
+  // Prevent hydration mismatch — render placeholder before mount
+  const displayValue = mounted ? String(value).padStart(2, "0") : "--";
+
+  return (
+    <div className="flex flex-col items-center min-w-[52px] sm:min-w-[64px] lg:min-w-[76px]">
+      <div className="relative overflow-hidden">
+        <span
+          className={cn(
+            "font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] tabular-nums leading-none block transition-all duration-300",
+            isFlipping && "opacity-70 -translate-y-1",
+            pulseOnTick && mounted && "text-[#3b5f8f]"
+          )}
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
+          {displayValue}
+        </span>
+      </div>
+      <span className="text-[9px] sm:text-[10px] lg:text-xs font-semibold tracking-[0.2em] uppercase text-[#6b7280] mt-2 sm:mt-3">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* ─── Colon Separator between units ──────────────────────── */
+function CountdownSeparator() {
+  return (
+    <span
+      className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl lg:text-4xl font-light text-[#3b5f8f]/40 leading-none mt-1 sm:mt-1.5 lg:mt-2 hidden sm:block"
+      aria-hidden="true"
+    >
+      :
+    </span>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\app\page.tsx
+================================================================================
+
+import { HeroSection }           from "@/components/sections/HeroSection";
+import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
+import { SaleCountdown }         from "@/components/sections/SaleCountdown";
+import { FeaturedCollections }   from "@/components/sections/FeaturedCollections";
+import { BrandTicker }           from "@/components/sections/BrandTicker";
+import { NewArrivals }           from "@/components/sections/NewArrivals";
+import { BrandStory }            from "@/components/sections/BrandStory";
+import { Testimonials }          from "@/components/sections/Testimonials";
+import { GallerySection }        from "@/components/sections/GallerySection";
+import { NewsletterSection }     from "@/components/sections/NewsletterSection";
+import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
+import { getProducts }              from "@/lib/db/repositories/products";
+import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
+import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
+
+type HeroBanner = {
+  isActive: true;
+  sortOrder: number;
+};
+
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
+    getCollectionsWithCounts(),
+    getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
+    getSetting("hero_banners"),
+    getNumberSetting("hero_rotation_seconds", 8),
+  ]);
+
+  const collections  = dbCollections.map(adaptCollection);
+  const allProducts  = dbAllProducts.map(adaptProduct);
+
+  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
+  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+
+  const testimonials = getMockTestimonials();
+
+  let heroBanners: HeroBanner[] = [];
+  if (heroBannersRaw) {
+    try {
+      const all: unknown[] = JSON.parse(heroBannersRaw);
+      heroBanners = all
+        .filter(
+          (b): b is HeroBanner =>
+            typeof b === "object" &&
+            b !== null &&
+            (b as { isActive?: boolean }).isActive === true &&
+            typeof (b as { sortOrder?: unknown }).sortOrder === "number"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch { heroBanners = []; }
+  }
+
+  return (
+    <>
+      {/* LAYER 1 — HERO */}
+      <FixedHeroBackground>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <HeroSection banners={heroBanners as any} rotationSeconds={heroRotation} />
+      </FixedHeroBackground>
+
+      {/* LAYER 2 — CONTENT SHELL
+          - overflow-hidden clips the square backgrounds of Sale & Newsletter.
+          - Because this wrapper is BELOW the header, overflow-hidden here 
+            does NOT break the sticky header! */}
+      <div
+        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden"
+        style={{
+          boxShadow: "0 -12px 40px -20px rgba(0, 0, 0, 0.15)",
+        }}
+      >
+        <SaleCountdown />
+        <BrandTicker />
+        <NewArrivals
+          newArrivals={premiumProducts}
+          bestSellers={superPremiumProducts}
+        />
+        <FeaturedCollections collections={collections} />
+        <BrandStory />
+        <Testimonials testimonials={testimonials} />
+        <GallerySection />
+
+        <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">
+          <NewsletterSection />
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\layout\AnnouncementBar.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import Link from "next/link";
+import { X, ChevronLeft, ChevronRight, Truck, Flame, Gift, Sparkles, Gem, Zap, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface AnnouncementMessage {
+  id:        string;
+  text:      string;
+  link:      string;
+  isActive:  boolean;
+  sortOrder: number;
+}
+
+interface AnnouncementConfig {
+  enabled:           boolean;
+  autoRotateSeconds: number;
+  dismissible:       boolean;
+  bgColor:           string;
+  textColor:         string;
+  accentColor:       string;
+  messages:          AnnouncementMessage[];
+}
+
+const FALLBACK_CONFIG: AnnouncementConfig = {
+  enabled:           true,
+  autoRotateSeconds: 5,
+  dismissible:       true,
+  bgColor:           "#0d0d0d",
+  textColor:         "#ffffff",
+  accentColor:       "#3b5f8f",
+  messages: [
+    { id: "m1", text: "Free shipping on orders above PKR 5,000", link: "", isActive: true, sortOrder: 0 },
+  ],
+};
+
+function pickIcon(text: string) {
+  const t = text.toLowerCase();
+  if (/(ship|delivery|deliver|courier)/.test(t))         return Truck;
+  if (/(sale|off|discount|deal|save)/.test(t))            return Flame;
+  if (/(gift|reward|bonus|free)/.test(t))                 return Gift;
+  if (/(new|arrival|launch|drop|introducing)/.test(t))    return Sparkles;
+  if (/(premium|luxury|exclusive|selvedge)/.test(t))      return Gem;
+  if (/(limited|hurry|ends|last chance|today)/.test(t))   return Zap;
+  return Star;
+}
+
+export function AnnouncementBar() {
+  const [config,    setConfig]    = useState<AnnouncementConfig | null>(null);
+  const [current,   setCurrent]   = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const [animDir,   setAnimDir]   = useState<"up" | "down">("up");
+  const [paused,    setPaused]    = useState(false);
+  const [progress,  setProgress]  = useState(0);
+
+  // Touch swipe refs
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const swiping     = useRef(false);
+
+  useEffect(() => {
+    fetch("/api/announcement-bar")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.config) setConfig(data.config);
+        else setConfig(FALLBACK_CONFIG);
+      })
+      .catch(() => setConfig(FALLBACK_CONFIG));
+  }, []);
+
+  const rotateMs = useMemo(() => {
+    if (!config) return 5000;
+    return Math.max(2000, config.autoRotateSeconds * 1000);
+  }, [config]);
+
+  const hasMany = config ? config.messages.length > 1 : false;
+
+  // Navigate to next/prev with animation direction
+  const goNext = useCallback(() => {
+    if (!config || !hasMany || animating) return;
+    setAnimDir("up");
+    setAnimating(true);
+    setTimeout(() => {
+      setCurrent((c) => (c + 1) % config.messages.length);
+      setAnimating(false);
+    }, 350);
+  }, [config, hasMany, animating]);
+
+  const goPrev = useCallback(() => {
+    if (!config || !hasMany || animating) return;
+    setAnimDir("down");
+    setAnimating(true);
+    setTimeout(() => {
+      setCurrent((c) => (c - 1 + config.messages.length) % config.messages.length);
+      setAnimating(false);
+    }, 350);
+  }, [config, hasMany, animating]);
+
+  // Progress bar
+  useEffect(() => {
+    if (!config || !hasMany || paused) return;
+    setProgress(0);
+    const startedAt = Date.now();
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const pct = Math.min(100, (elapsed / rotateMs) * 100);
+      setProgress(pct);
+    }, 33);
+    return () => clearInterval(id);
+  }, [current, rotateMs, config, paused, hasMany]);
+
+  // Auto-rotate
+  useEffect(() => {
+    if (!config || !hasMany || paused) return;
+    const t = setTimeout(() => goNext(), rotateMs);
+    return () => clearTimeout(t);
+  }, [config, current, rotateMs, paused, hasMany, goNext]);
+
+  // Touch handlers for swipe
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!hasMany) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    swiping.current = false;
+  }, [hasMany]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!hasMany) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    // Only count as horizontal swipe if dx > dy
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 20) {
+      swiping.current = true;
+    }
+  }, [hasMany]);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!hasMany || !swiping.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (dx < -40) goNext();      // swipe left → next
+    else if (dx > 40) goPrev();  // swipe right → prev
+    swiping.current = false;
+  }, [hasMany, goNext, goPrev]);
+
+  if (!config || !config.enabled || dismissed || config.messages.length === 0) return null;
+
+  const message = config.messages[current];
+  const Icon    = pickIcon(message.text);
+  const bg      = config.bgColor      || "#0d0d0d";
+  const fg      = config.textColor    || "#ffffff";
+  const accent  = config.accentColor  || "#3b5f8f";
+
+  const isLong  = message.text.length > 70;
+
+  const messageInner = (
+    <div className="flex items-center gap-1.5 sm:gap-2.5 leading-none">
+      <Icon
+        size={13}
+        strokeWidth={2}
+        className="flex-shrink-0 announcement-icon-glow"
+        style={{ color: accent }}
+      />
+      <p className="font-semibold tracking-[0.18em] uppercase text-[10px] sm:text-[12px] whitespace-nowrap">
+        {message.text}
+      </p>
+      <Icon
+        size={13}
+        strokeWidth={2}
+        className="flex-shrink-0 announcement-icon-glow hidden sm:inline-block"
+        style={{ color: accent }}
+      />
+    </div>
+  );
+
+  return (
+    <div
+      className="relative w-full overflow-hidden select-none announcement-bar-shell"
+      style={{
+        background: `linear-gradient(90deg, ${bg} 0%, ${bg} 40%, ${shade(bg, 12)} 50%, ${bg} 60%, ${bg} 100%)`,
+        backgroundSize: "200% 100%",
+        color: fg,
+      }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-px opacity-60"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+      />
+
+      <div className="site-container h-10 sm:h-11 relative">
+        <div className="h-full flex items-center justify-center relative">
+
+          {/* Left arrow (desktop only, when multiple messages) */}
+          {hasMany && (
+            <button
+              onClick={goPrev}
+              className="hidden sm:flex absolute left-1 z-10 w-7 h-7 items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+              style={{ color: fg }}
+              aria-label="Previous announcement"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
+
+          {/* Decorative dots */}
+          <div className="hidden sm:flex absolute left-10 items-center gap-2 opacity-70">
+            <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent }} />
+            <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} />
+          </div>
+
+          <div className="hidden sm:flex absolute right-14 items-center gap-2 opacity-70">
+            <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent})` }} />
+            <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent, animationDelay: "0.9s" }} />
+          </div>
+
+          {/* Message area */}
+          <div className="flex-1 flex items-center justify-center overflow-hidden px-8 sm:px-20 min-w-0">
+            {isLong ? (
+              <div className="w-full overflow-hidden">
+                <div className="flex whitespace-nowrap announcement-marquee">
+                  <div className="flex items-center gap-16 pr-16">
+                    {messageInner}{messageInner}{messageInner}{messageInner}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                key={message.id + current}
+                className={cn(
+                  "transition-all duration-350 ease-out",
+                  animating
+                    ? animDir === "up"
+                      ? "opacity-0 -translate-y-3 blur-[2px]"
+                      : "opacity-0 translate-y-3 blur-[2px]"
+                    : "opacity-100 translate-y-0 blur-0 announcement-glow-in"
+                )}
+              >
+                {message.link ? (
+                  <Link href={message.link} className="transition-all hover:opacity-90" style={{ color: fg }}>
+                    {messageInner}
+                  </Link>
+                ) : messageInner}
+              </div>
+            )}
+          </div>
+
+          {/* Right arrow (desktop only, when multiple messages) */}
+          {hasMany && (
+            <button
+              onClick={goNext}
+              className="hidden sm:flex absolute right-8 z-10 w-7 h-7 items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
+              style={{ color: fg }}
+              aria-label="Next announcement"
+            >
+              <ChevronRight size={14} />
+            </button>
+          )}
+
+          {/* Dismiss button */}
+          {config.dismissible && (
+            <button
+              onClick={() => setDismissed(true)}
+              className="absolute right-2 sm:right-2 opacity-50 hover:opacity-100 transition-all hover:scale-110 hover:rotate-90 z-10"
+              style={{ color: fg }}
+              aria-label="Dismiss"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {hasMany && (
+        <div
+          className="absolute bottom-0 left-0 h-px transition-all duration-100 ease-linear"
+          style={{
+            width: `${progress}%`,
+            background: `linear-gradient(90deg, ${accent}, ${lighten(accent, 30)})`,
+            boxShadow: `0 0 8px ${accent}, 0 0 4px ${accent}`,
+          }}
+        />
+      )}
+
+      {/* Dot indicators (centered, only when multiple) */}
+      {hasMany && (
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 pb-[2px]">
+          {config.messages.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                if (animating || i === current) return;
+                setAnimDir(i > current ? "up" : "down");
+                setAnimating(true);
+                setTimeout(() => { setCurrent(i); setAnimating(false); }, 350);
+              }}
+              className={cn(
+                "transition-all duration-300",
+                i === current
+                  ? "w-4 h-[3px] rounded-full"
+                  : "w-[5px] h-[3px] rounded-full opacity-40 hover:opacity-70"
+              )}
+              style={{ backgroundColor: i === current ? accent : fg }}
+              aria-label={`Go to announcement ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const num = parseInt(full, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+function rgbToHex(r: number, g: number, b: number): string {
+  const to = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return "#" + to(r) + to(g) + to(b);
+}
+function shade(hex: string, amt: number): string {
+  try {
+    const [r, g, b] = hexToRgb(hex);
+    return rgbToHex(r + amt, g + amt, b + amt);
+  } catch { return hex; }
+}
+function lighten(hex: string, amt: number): string { return shade(hex, amt); }
+
+================================================================================
+FILE: user-panel\src\components\layout\Navbar.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { NavbarMobile } from "./NavbarMobile";
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useAuthStore } from "@/store/authStore";
+import { useSearchStore } from "@/store/searchStore";
+
+const collectionsDropdown = [
+  { label: "Premium",       href: "/collections/premium" },
+  { label: "Super Premium", href: "/collections/super-premium" },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  Cloudinary logo (transparent, 612 x 408 source)
+// ═══════════════════════════════════════════════════════════
+const LOGO_BASE = "https://res.cloudinary.com/djy5qqco7/image/upload";
+const LOGO_ID   = "v1784388373/denovapk/general/logo-without-bg_1784388368531";
+const LOGO_DESKTOP = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_160/${LOGO_ID}`;
+const LOGO_MOBILE  = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_120/${LOGO_ID}`;
+
+export function Navbar() {
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mounted,      setMounted]      = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const headerRef   = useRef<HTMLElement>(null);
+  const dividerRef  = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef<boolean>(false);
+
+  const cartCount     = useCartStore((s) => s.getItemCount());
+  const wishlistCount = useWishlistStore((s) => s.items.length);
+  const openCart      = useCartStore((s) => s.openCart);
+  const isLoggedIn    = useAuthStore((s) => s.isLoggedIn);
+  const openSearch    = useSearchStore((s) => s.openSearch);
+
+  useEffect(() => setMounted(true), []);
+
+  // ─── SCROLL — ZERO React re-renders ───────────────────
+  // Only mutates DOM class + divider opacity when scroll
+  // ACTUALLY crosses the 20px threshold (not every frame)
+  useEffect(() => {
+    let rafId = 0;
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        const isScrolled = window.scrollY > 20;
+        if (isScrolled !== scrolledRef.current) {
+          scrolledRef.current = isScrolled;
+          const header = headerRef.current;
+          const div    = dividerRef.current;
+          if (header) {
+            if (isScrolled) {
+              header.classList.add("shadow-sm", "border-[#e5e7eb]");
+              header.classList.remove("border-transparent");
+            } else {
+              header.classList.remove("shadow-sm", "border-[#e5e7eb]");
+              header.classList.add("border-transparent");
+            }
+          }
+          if (div) div.style.opacity = isScrolled ? "1" : "0";
+        }
+        rafId = 0;
+      });
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  const accountHref = mounted && isLoggedIn ? "/account/dashboard" : "/account/login";
+
+  return (
+    <>
+      <header
+        ref={headerRef}
+        className={cn(
+          "sticky top-0 left-0 right-0 z-40 transition-all duration-300",
+          "bg-white overflow-hidden",
+          "border-b border-transparent"
+        )}
+      >
+        <div className="site-container">
+
+          {/* ═══════════════════════════════════════════════════
+              MOBILE
+              ═══════════════════════════════════════════════════ */}
+          <div className="lg:hidden relative flex items-center justify-between h-16">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-2 -ml-2 text-[#1a1a1a] hover:text-[#3b5f8f]"
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center h-11 pointer-events-auto" aria-label="Denova PK home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={LOGO_MOBILE}
+                alt="Denova PK"
+                className="block h-full w-auto max-h-11 object-contain"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </Link>
+
+            <div className="flex items-center gap-1">
+              <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Search">
+                <Search size={20} />
+              </button>
+              <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Cart">
+                <ShoppingBag size={20} />
+                {mounted && cartCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
+                    {cartCount > 9 ? "9+" : cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════
+              DESKTOP
+              ═══════════════════════════════════════════════════ */}
+          <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[88px] gap-8">
+
+            <nav className="flex items-center justify-start gap-7">
+              <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
+                Shop
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
+              </Link>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 whitespace-nowrap"
+                >
+                  Collections
+                  <ChevronDown size={14} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
+                </button>
+
+                <div className={cn(
+                  "absolute top-full left-0 mt-3 w-56 bg-white border border-[#e5e7eb] shadow-lg transition-all duration-200 origin-top z-50",
+                  dropdownOpen ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-95 pointer-events-none"
+                )}>
+                  <div className="py-2">
+                    {collectionsDropdown.map((item) => (
+                      <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#f5f0e8] hover:text-[#3b5f8f] transition-colors">
+                        {item.label}
+                      </Link>
+                    ))}
+                    <div className="border-t border-[#e5e7eb] mt-1 pt-1">
+                      <Link href="/collections" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-[#3b5f8f] hover:bg-[#f5f0e8] transition-colors">
+                        View All Collections →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Link href="/shop?filter=new" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
+                New Arrivals
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
+              </Link>
+            </nav>
+
+            <Link href="/" className="flex items-center h-16 flex-shrink-0 hover:opacity-80 transition-opacity duration-300" aria-label="Denova PK home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={LOGO_DESKTOP}
+                alt="Denova PK"
+                className="block h-full w-auto max-h-11 object-contain"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </Link>
+
+            <div className="flex items-center justify-end gap-7">
+              <Link href="/shop?filter=sale" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
+                Sale
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
+              </Link>
+              <Link href="/about" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
+                About
+                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
+              </Link>
+
+              <div className="flex items-center gap-1 ml-3 pl-3 border-l border-[#e5e7eb]">
+                <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Search">
+                  <Search size={19} />
+                </button>
+                <Link href="/wishlist" className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Wishlist">
+                  <Heart size={19} />
+                  {mounted && wishlistCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
+                      {wishlistCount > 9 ? "9+" : wishlistCount}
+                    </span>
+                  )}
+                </Link>
+                <Link href={accountHref} className="p-2 text-[#1a1a1a] hover:text-[#3b5f8f] relative" aria-label="Account">
+                  <User size={19} />
+                  {mounted && isLoggedIn && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#3b5f8f]" />
+                  )}
+                </Link>
+                <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#3b5f8f]" aria-label="Cart">
+                  <ShoppingBag size={19} />
+                  {mounted && cartCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
+                      {cartCount > 9 ? "9+" : cartCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider - opacity controlled directly via ref */}
+        <div
+          ref={dividerRef}
+          className="h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent transition-opacity duration-300"
+          style={{ opacity: 0 }}
+        />
+      </header>
+
+      <NavbarMobile isOpen={mobileOpen} onClose={() => setMobileOpen(false)} cartCount={cartCount} />
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\layout\NavbarMobile.tsx
+================================================================================
+
+"use client";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { X, ShoppingBag, Heart, User, ChevronRight, Phone, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { navLinks } from "@/lib/data";
+
+const collectionsDropdown = [
+  { label: "Premium",       href: "/collections/premium" },
+  { label: "Super Premium", href: "/collections/super-premium" },
+];
+
+const LOGO_MOBILE = "https://res.cloudinary.com/djy5qqco7/image/upload/e_trim:10/f_auto,q_auto,c_limit,h_120/v1784388373/denovapk/general/logo-without-bg_1784388368531";
+
+interface NavbarMobileProps {
+  isOpen: boolean;
+  onClose: () => void;
+  cartCount: number;
+}
+
+export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <>
+      <div
+        className={cn(
+          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <div
+        ref={panelRef}
+        className={cn(
+          "fixed top-0 left-0 bottom-0 z-50 w-[85vw] max-w-sm bg-white flex flex-col",
+          "transition-transform duration-300 ease-in-out shadow-2xl",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+      >
+
+        {/* Header — logo with strict height cap */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#e5e7eb]">
+          <Link href="/" onClick={onClose} className="flex items-center h-11" aria-label="Denova PK home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={LOGO_MOBILE}
+              alt="Denova PK"
+              className="block h-full w-auto max-h-11 object-contain"
+              loading="eager"
+              decoding="async"
+            />
+          </Link>
+          <button
+            onClick={onClose}
+            className="p-2 -mr-2 text-[#6b7280] hover:text-[#1a1a1a] transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="flex border-b border-[#e5e7eb]">
+          <Link href="/account/dashboard" onClick={onClose} className="flex-1 flex flex-col items-center gap-1 py-3 text-[#6b7280] hover:text-[#3b5f8f] transition-colors">
+            <User size={18} />
+            <span className="text-[10px] tracking-wide">Account</span>
+          </Link>
+          <Link href="/wishlist" onClick={onClose} className="flex-1 flex flex-col items-center gap-1 py-3 text-[#6b7280] hover:text-[#3b5f8f] transition-colors border-x border-[#e5e7eb]">
+            <Heart size={18} />
+            <span className="text-[10px] tracking-wide">Wishlist</span>
+          </Link>
+          <Link href="/cart" onClick={onClose} className="flex-1 flex flex-col items-center gap-1 py-3 text-[#6b7280] hover:text-[#3b5f8f] transition-colors relative">
+            <ShoppingBag size={18} />
+            <span className="text-[10px] tracking-wide">Cart</span>
+            {mounted && cartCount > 0 && (
+              <span className="absolute top-2 right-6 w-4 h-4 flex items-center justify-center bg-[#3b5f8f] text-white text-[9px] font-bold rounded-full">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto py-2">
+          {navLinks.map((link) => (
+            <div key={link.label}>
+              <Link href={link.href} onClick={onClose} className="flex items-center justify-between px-5 py-4 text-sm font-medium text-[#1a1a1a] hover:text-[#3b5f8f] hover:bg-[#fafaf9] transition-colors border-b border-[#f5f5f4]">
+                <span className="tracking-wide">{link.label}</span>
+                <ChevronRight size={16} className="text-[#6b7280]" />
+              </Link>
+            </div>
+          ))}
+
+          <div className="mt-1">
+            <p className="px-5 py-2 text-[10px] font-semibold tracking-[0.15em] text-[#6b7280] uppercase">
+              Collections
+            </p>
+            {collectionsDropdown.map((item) => (
+              <Link key={item.href} href={item.href} onClick={onClose} className="flex items-center px-5 py-3 text-sm text-[#6b7280] hover:text-[#3b5f8f] hover:bg-[#fafaf9] transition-colors">
+                <span className="w-2 h-px bg-[#3b5f8f] mr-3 flex-shrink-0" />
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+
+        <div className="border-t border-[#e5e7eb] px-5 py-4 bg-[#fafaf9]">
+          <p className="text-[10px] font-semibold tracking-[0.15em] text-[#6b7280] uppercase mb-3">
+            Get in Touch
+          </p>
+          <div className="flex flex-col gap-2">
+            <a href="tel:+923001234567" className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#3b5f8f] transition-colors">
+              <Phone size={14} />
+              +92 300 123 4567
+            </a>
+            <a href="mailto:hello@denovapk.com" className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#3b5f8f] transition-colors">
+              <Mail size={14} />
+              hello@denovapk.com
+            </a>
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <a href="https://instagram.com/denovapk" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full border border-[#e5e7eb] text-[#6b7280] hover:border-[#3b5f8f] hover:text-[#3b5f8f] transition-colors" aria-label="Instagram">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
+              </svg>
+            </a>
+            <a href="https://facebook.com/denovapk" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full border border-[#e5e7eb] text-[#6b7280] hover:border-[#3b5f8f] hover:text-[#3b5f8f] transition-colors" aria-label="Facebook">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+              </svg>
+            </a>
+            <a href="https://tiktok.com/@denovapk" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center rounded-full border border-[#e5e7eb] text-[#6b7280] hover:border-[#3b5f8f] hover:text-[#3b5f8f] transition-colors" aria-label="TikTok">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\components\layout\LayoutShell.tsx
+================================================================================
+
+"use client";
+import { usePathname } from "next/navigation";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
+import { Navbar }          from "@/components/layout/Navbar";
+import { Footer }          from "@/components/layout/Footer";
+import { CartDrawer }      from "@/components/cart/CartDrawer";
+import { SearchModal }     from "@/components/layout/SearchModal";
+import { WhatsAppWidget }  from "@/components/layout/WhatsAppWidget";
+import { FixedFooterReveal } from "@/components/layout/FixedFooterReveal";
+
+const MINIMAL_ROUTES: string[] = [];
+
+export function LayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? "";
+  const isMinimal = MINIMAL_ROUTES.some((r) =>
+    pathname === r || pathname.startsWith(r + "/")
+  );
+
+  if (isMinimal) {
+    return <main className="min-h-screen">{children}</main>;
+  }
+
+  return (
+    <>
+      <FixedFooterReveal footer={<Footer />}>
+        <AnnouncementBar />
+        <Navbar />
+        <main className="min-h-screen">{children}</main>
+      </FixedFooterReveal>
+
+      <CartDrawer />
+      <SearchModal />
+      <WhatsAppWidget />
+    </>
+  );
+}
+
+================================================================================
+FILE: user-panel\src\lib\cloudinaryLoader.ts
+================================================================================
+
+/**
+ * Cloudinary loader for next/image.
+ *
+ * Bypasses Next.js's built-in image optimizer (which runs on our
+ * hostonme.dev server and adds latency). Instead, Cloudinary handles
+ * everything — resizing, format conversion, quality — at their global CDN.
+ *
+ * How it works:
+ *   Any <Image src="https://res.cloudinary.com/..." /> gets rewritten
+ *   to include Cloudinary transforms based on the width Next.js requests.
+ *
+ * If a src is NOT a Cloudinary URL (Unsplash, localhost, etc.), we pass
+ * it through unchanged.
+ *
+ * Transforms applied to Cloudinary URLs:
+ *   f_auto        → AVIF for modern browsers, WebP fallback, JPG for old
+ *   q_auto        → Cloudinary picks the best quality/size ratio
+ *   c_limit       → never upscales beyond source resolution
+ *   w_<width>     → matches the width Next.js requests based on `sizes`
+ *   dpr_auto      → respects device pixel ratio (crisp on Retina)
+ */
+
+interface LoaderProps {
+  src:     string;
+  width:   number;
+  quality?: number;
+}
+
+export default function cloudinaryLoader({ src, width, quality }: LoaderProps): string {
+  // Non-Cloudinary URLs (Unsplash, local, etc.) — return as-is.
+  // Next.js will still try to optimize them via /_next/image but
+  // that's fine because they're not our main product images.
+  if (!src.includes("res.cloudinary.com")) {
+    return src;
+  }
+
+  // Parse Cloudinary URL: split into base + version/publicId
+  // Example:
+  //   https://res.cloudinary.com/djy5qqco7/image/upload/v123/folder/name.jpg
+  //   base = https://res.cloudinary.com/djy5qqco7/image/upload
+  //   rest = v123/folder/name.jpg
+  const uploadIdx = src.indexOf("/upload/");
+  if (uploadIdx === -1) return src; // Malformed URL — don't touch it
+
+  const base = src.substring(0, uploadIdx + 8); // includes "/upload/"
+  let rest   = src.substring(uploadIdx + 8);
+
+  // If the URL already has transforms (starts with letters like "f_", "w_",
+  // "e_trim", etc. before the version "v..."), remove them so we can
+  // apply our own. Our transforms take precedence and produce the
+  // right size for the requested `width` prop.
+  //
+  // A transform section always ends before a "/vNUMBER/" segment.
+  const versionMatch = rest.match(/^([^/]+)\/(v\d+\/.+)$/);
+  if (versionMatch && !versionMatch[1].startsWith("v")) {
+    // First segment is transforms (e.g. "f_auto,q_auto:best,c_limit,w_1600")
+    // Drop it. Keep everything from "v..." onwards.
+    rest = versionMatch[2];
+  }
+
+  // Build our transforms
+  const q = quality ?? 75;
+  const transforms = [
+    "f_auto",         // Best format per browser
+    `q_auto:good`,    // Smart quality (or use quality prop if provided)
+    "c_limit",        // Don't upscale
+    `w_${width}`,     // Match Next.js's requested width
+    "dpr_auto",       // Retina support
+  ];
+
+  // If a specific quality is requested (e.g. quality={90}), use it
+  if (quality && quality !== 75) {
+    transforms[1] = `q_${quality}`;
+  }
+
+  return `${base}${transforms.join(",")}/${rest}`;
+}
+
+================================================================================
+FILE: user-panel\src\app\api\hero-banners\route.ts
+================================================================================
+
+import { NextResponse } from "next/server";
+import { getSetting } from "@/lib/db/repositories/settings";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Public endpoint - returns active banners + global rotation duration
+export async function GET() {
+  try {
+    const [rawBanners, rawRotation] = await Promise.all([
+      getSetting("hero_banners"),
+      getSetting("hero_rotation_seconds"),
+    ]);
+
+    let banners: HeroBanner[] = [];
+    if (rawBanners) {
+      try {
+        const all: HeroBanner[] = JSON.parse(rawBanners);
+        banners = all
+          .filter((b) => b.isActive)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+      } catch {}
+    }
+
+    const rotationSeconds = rawRotation ? Number(rawRotation) : 8;
+
+    return NextResponse.json({
+      banners,
+      rotationSeconds: isNaN(rotationSeconds) ? 8 : rotationSeconds,
+    });
+  } catch {
+    return NextResponse.json({ banners: [], rotationSeconds: 8 });
+  }
+}
+
+interface HeroBanner {
+  id:                   string;
+  image:                string;
+  imageMobile?:         string;
+  title:                string;
+  subtitle:             string;
+  description:          string;
+  buttonLabel:          string;
+  buttonHref:           string;
+  buttonSecondaryLabel: string;
+  buttonSecondaryHref:  string;
+  isActive:             boolean;
+  sortOrder:            number;
+
+  // ── New overlay fields ──
+  brand?:            string;
+  productTitle?:     string;
+  currentPrice?:     string;
+  originalPrice?:    string;
+  discountPercent?:  string;
+  contentPosition?:  string;
+  textTheme?:        "light" | "dark";
+  overlayDarkness?:  number;
+  countdownEnabled?: boolean;
+  countdownEndsAt?:  string;
+}
+
+================================================================================
+FILE: user-panel\src\app\globals.css
+================================================================================
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary:    #1a1a1a;
+  --color-brand-secondary:  #3b5f8f;
+  --color-brand-accent:     #f5f0e8;
+  --color-brand-surface:    #fafaf9;
+  --color-brand-muted:      #6b7280;
+  --color-brand-border:     #e5e7eb;
+
+  --font-sans:      var(--font-inter);
+  --font-serif:     var(--font-playfair);
+  --font-cormorant: var(--font-cormorant);
+
+  --breakpoint-3xl: 1920px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  /* scroll-behavior: smooth REMOVED — was causing scroll jank.
+     If you need smooth anchor jumps, use element.scrollIntoView({behavior:"smooth"}) in JS. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  /* Isolate layout/paint = fewer reflows during scroll */
+  overscroll-behavior-y: none;
+}
+
+::selection { background-color: #3b5f8f; color: #ffffff; }
+img, video { max-width: 100%; height: auto; display: block; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #fafaf9; }
+::-webkit-scrollbar-thumb { background: #3b5f8f; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #2d4a72; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.site-container {
+  width: 100%; margin-left: auto; margin-right: auto;
+  padding-left: 12px; padding-right: 12px;
+}
+@media (min-width: 640px)  { .site-container { padding-left: 14px; padding-right: 14px; } }
+@media (min-width: 1024px) { .site-container { padding-left: 16px; padding-right: 16px; } }
+@media (min-width: 1280px) { .site-container { padding-left: 20px; padding-right: 20px; } }
+@media (min-width: 1536px) { .site-container { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1920px) { .site-container { padding-left: 28px; padding-right: 28px; } }
+
+/* ═══════════════════════════════════════════════════════════
+   Existing animation keyframes
+   ═══════════════════════════════════════════════════════════ */
+@keyframes shimmer-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+@keyframes float-soft    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes pulse-gold    { 0%, 100% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(59, 95, 143, 0); } }
+@keyframes marquee       { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes ken-burns     { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.08) translate(-1%, -1%); } }
+@keyframes letter-drop   { 0% { opacity: 0; transform: translateY(0.5em) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
+@keyframes draw-line     { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes tile-reveal   { 0% { opacity: 0; transform: scale(0.94) rotate(-1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes focus-ring    { 0% { box-shadow: 0 0 0 0 rgba(59, 95, 143, 0.35); } 100% { box-shadow: 0 0 0 5px rgba(59, 95, 143, 0); } }
+@keyframes fade-zoom-in  { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes fadeSlideLeft  { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+@keyframes live-ping {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+.animate-float-soft   { animation: float-soft 4s ease-in-out infinite; }
+.animate-pulse-gold   { animation: pulse-gold 2.4s ease-in-out infinite; }
+.animate-ken-burns    { animation: ken-burns 20s ease-in-out infinite alternate; }
+.animate-marquee      { animation: marquee 30s linear infinite; }
+.animate-tile-reveal  { animation: tile-reveal 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-zoom-in { animation: fade-zoom-in 500ms ease both; }
+.animate-live-ping    { animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+.shimmer-btn { position: relative; overflow: hidden; isolation: isolate; }
+.shimmer-btn::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 800ms ease;
+  pointer-events: none; z-index: 1;
+}
+.shimmer-btn:hover::before { transform: translateX(200%); }
+.shimmer-btn > * { position: relative; z-index: 2; }
+
+.hover-lift {
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.hover-lift:hover { transform: translateY(-4px); }
+
+.gold-underline { position: relative; display: inline-block; }
+.gold-underline::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+  background-color: #3b5f8f;
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gold-underline:hover::after { transform: scaleX(1); }
+
+.input-focus-gold:focus { animation: focus-ring 1.4s ease-out; border-color: #3b5f8f; }
+
+.product-image-frame { overflow: hidden; }
+.product-image-frame img {
+  transition: transform 900ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.product-image-frame:hover img { transform: scale(1.06); }
+
+.marquee-track {
+  display: flex; width: max-content;
+  animation: marquee 30s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }
+
+.tilt-3d { transform-style: preserve-3d; perspective: 1000px; }
+
+.section-veil { position: relative; }
+.section-veil::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #fafaf9 0%, transparent 15%, transparent 85%, #fafaf9 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO OVERLAY — PREMIUM ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-fade-in       { from { opacity: 0; }                                  to { opacity: 1; } }
+@keyframes hero-slide-up      { from { opacity: 0; transform: translateY(30px); }     to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-down    { from { opacity: 0; transform: translateY(-30px); }    to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-slide-left    { from { opacity: 0; transform: translateX(-40px); }    to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-slide-right   { from { opacity: 0; transform: translateX(40px); }     to { opacity: 1; transform: translateX(0); } }
+@keyframes hero-scale-in      { from { opacity: 0; transform: scale(0.85); }          to { opacity: 1; transform: scale(1); } }
+@keyframes hero-scale-bounce  {
+  0%   { opacity: 0; transform: scale(0.5); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hero-blur-in {
+  from { opacity: 0; filter: blur(12px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+@keyframes hero-mask-reveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hero-float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes hero-pulse-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(59,95,143,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+  50%      { text-shadow: 0 0 20px rgba(59,95,143,0.75), 0 2px 6px rgba(0,0,0,0.35); }
+}
+@keyframes hero-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+@keyframes hero-underline-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes hero-accent-bar-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes hero-shimmer-sweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%)  skewX(-20deg); }
+}
+@keyframes hero-dot-pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+
+@keyframes hero-sticker-diag {
+  0%   { opacity: 0; transform: translate(30%, -30%) rotate(45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(45deg) scale(1); }
+}
+@keyframes hero-sticker-diag-tl {
+  0%   { opacity: 0; transform: translate(-30%, -30%) rotate(-45deg) scale(0.4); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1.05); }
+  100% { opacity: 1; transform: translate(0, 0) rotate(-45deg) scale(1); }
+}
+@keyframes hero-sticker-pop {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes hero-sticker-slide-up {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hero-sticker-wiggle {
+  0%, 100% { transform: rotate(0); }
+  25%      { transform: rotate(-2deg); }
+  75%      { transform: rotate(2deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOUNCEMENT BAR
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes announcement-gradient-drift {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+
+@keyframes announcement-dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.55; box-shadow: 0 0 0 0 currentColor; }
+  50%      { transform: scale(1.6); opacity: 1;    box-shadow: 0 0 6px currentColor; }
+}
+
+@keyframes announcement-glow-in {
+  0%   { text-shadow: 0 0 0 transparent; }
+  30%  { text-shadow: 0 0 12px rgba(59, 95, 143, 0.55); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+@keyframes announcement-icon-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(59, 95, 143, 0)); }
+  50%      { filter: drop-shadow(0 0 4px rgba(59, 95, 143, 0.7)); }
+}
+
+@keyframes announcement-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.announcement-bar-shell {
+  animation: announcement-gradient-drift 12s ease-in-out infinite;
+}
+
+.announcement-dot-pulse {
+  animation: announcement-dot-pulse 2.4s ease-in-out infinite;
+}
+
+.announcement-glow-in {
+  animation: announcement-glow-in 1.2s ease-out both;
+}
+
+.announcement-icon-glow {
+  animation: announcement-icon-glow 2.8s ease-in-out infinite;
+}
+
+.announcement-marquee {
+  animation: announcement-marquee 22s linear infinite;
+  will-change: transform;
+}
+.announcement-bar-shell:hover .announcement-marquee {
+  animation-play-state: paused;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO SLIDER TRANSITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-slide-in-right {
+  from { opacity: 0; transform: translateX(60px) scale(1.02); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+@keyframes hero-slide-out-left {
+  from { opacity: 1; transform: translateX(0)     scale(1);    }
+  to   { opacity: 0; transform: translateX(-60px) scale(0.98); }
+}
+@keyframes hero-slide-in-left {
+  from { opacity: 0; transform: translateX(-60px) scale(1.02); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);    }
+}
+@keyframes hero-slide-out-right {
+  from { opacity: 1; transform: translateX(0)    scale(1);    }
+  to   { opacity: 0; transform: translateX(60px) scale(0.98); }
+}
+@keyframes hero-ken-burns-active {
+  from { transform: scale(1)    translate(0, 0); }
+  to   { transform: scale(1.06) translate(-1%, -0.5%); }
+}
+
+.hero-slide-enter { animation: hero-slide-in-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.hero-slide-exit  { animation: hero-slide-out-left  700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.hero-slide-enter-prev { animation: hero-slide-in-left  700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.hero-slide-exit-next  { animation: hero-slide-out-right 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+
+.hero-image-ken-burns {
+  animation: hero-ken-burns-active var(--hero-duration, 8s) ease-in-out both;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO CINEMATIC TRANSITIONS
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes hero-cinematic-in {
+  from { opacity: 0; transform: scale(1.02); filter: blur(8px); }
+  to   { opacity: 1; transform: scale(1);    filter: blur(0);   }
+}
+@keyframes hero-cinematic-out {
+  from { opacity: 1; transform: scale(1);    filter: blur(0);   }
+  to   { opacity: 0; transform: scale(1.01); filter: blur(6px); }
+}
+
+.hero-cinematic-enter { animation: hero-cinematic-in  900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-cinematic-exit  { animation: hero-cinematic-out 700ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+================================================================================
+FILE: user-panel\src\components\product\ProductImages.tsx
+================================================================================
+
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
+import { Package, Heart } from "lucide-react";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useToastStore } from "@/store/toastStore";
+import { ProductBgWrapper } from "./ProductBgWrapper";
+import { DiscountBadge } from "./DiscountBadge";
+import { ImageLightbox } from "./ImageLightbox";
+import { cn } from "@/lib/utils";
+import type { ProductImage as ProductImageType } from "@/types";
+
+interface ProductImagesProps {
+  images:           ProductImageType[];
+  productName:      string;
+  productId:        string;
+  productSlug:      string;
+  productPrice:     number;
+  bgColor?:         string | null;
+  discountPercent?: number;
+}
+
+const PLACEHOLDER: ProductImageType = {
+  id:        "placeholder",
+  url:       "/uploads/placeholder.svg",
+  alt:       "Product image coming soon",
+  isPrimary: true,
+};
+
+export function ProductImages({
+  images,
+  productName,
+  productId,
+  productSlug,
+  productPrice,
+  bgColor,
+  discountPercent,
+}: ProductImagesProps) {
+  const safeImages = images && images.length > 0 ? images : [PLACEHOLDER];
+
+  const sortedImages = [...safeImages].sort(
+    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+  );
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [mobileIndex, setMobileIndex] = useState(0);
+
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx,  setLightboxIdx]  = useState(0);
+
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIdx(idx);
+    setLightboxOpen(true);
+  }, []);
+
+  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== mobileIndex) setMobileIndex(idx);
+  }, [mobileIndex]);
+
+  const scrollToSlide = useCallback((idx: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  }, []);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const isInWishlist   = useWishlistStore((s) => s.isInWishlist(productId));
+  const showToast      = useToastStore((s) => s.addToast);
+
+  const primaryImage = sortedImages[0];
+
+  const handleWishlist = () => {
+    toggleWishlist({
+      id:        productId,
+      productId: productId,
+      name:      productName,
+      image:     primaryImage.url,
+      price:     productPrice,
+      slug:      productSlug,
+      bgColor:   bgColor,
+    });
+    showToast({
+      type: "success",
+      message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",
+    });
+  };
+
+  const hasDiscount = !!discountPercent && discountPercent > 0;
+  const isPlaceholder = (url: string) => url === PLACEHOLDER.url;
+
+  return (
+    <>
+      {/* DESKTOP — 2x2 grid with zoom-on-hover */}
+      <div className="hidden sm:grid grid-cols-2 gap-2 lg:gap-3">
+        {sortedImages.map((img, i) => (
+          <div key={img.id + i} className="relative group">
+            <button
+              type="button"
+              onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+              disabled={isPlaceholder(img.url)}
+              className={cn(
+                "block w-full relative cursor-zoom-in disabled:cursor-default rounded-xl lg:rounded-2xl overflow-hidden",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3b5f8f] focus-visible:ring-offset-2"
+              )}
+              aria-label={`View image ${i + 1} in full screen`}
+            >
+              <ProductBgWrapper
+                bgColor={bgColor}
+                className={cn(
+                  "aspect-[4/5] overflow-hidden",
+                  !bgColor && "bg-[#f4f2ee]"
+                )}
+              >
+                {isPlaceholder(img.url) ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
+                    <Package size={48} strokeWidth={1.5} />
+                    <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                      Image coming soon
+                    </p>
+                  </div>
+                ) : (
+                  <Image
+                    src={img.url}
+                    alt={img.alt || productName}
+                    fill
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    sizes="(max-width: 1024px) 50vw, 45vw"
+                    priority={i === 0}
+                    loading={i === 0 ? "eager" : "lazy"}
+                    unoptimized={img.url.endsWith(".svg")}
+                  />
+                )}
+              </ProductBgWrapper>
+            </button>
+
+            {/* Discount ribbon — only on primary image */}
+            {i === 0 && hasDiscount && (
+              <DiscountBadge percent={discountPercent!} />
+            )}
+
+            {i === 0 && (
+              <button
+                onClick={handleWishlist}
+                aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                className={cn(
+                  "absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300",
+                  "opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0",
+                  mounted && isInWishlist && "opacity-100 translate-x-0"
+                )}
+              >
+                <Heart
+                  size={16}
+                  className={cn(
+                    "transition-colors",
+                    mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
+                  )}
+                />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* MOBILE — swipeable carousel */}
+      <div className="sm:hidden">
+        <div className="relative">
+          <button
+            onClick={handleWishlist}
+            aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm"
+          >
+            <Heart
+              size={16}
+              className={cn(
+                "transition-colors",
+                mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
+              )}
+            />
+          </button>
+
+          {hasDiscount && (
+            <DiscountBadge percent={discountPercent!} />
+          )}
+
+          <div
+            ref={scrollerRef}
+            onScroll={handleScroll}
+            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x"
+            style={{ scrollBehavior: "auto" }}
+          >
+            {sortedImages.map((img, i) => (
+              <button
+                key={img.id + i}
+                type="button"
+                onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
+                disabled={isPlaceholder(img.url)}
+                className="flex-shrink-0 w-full snap-start cursor-zoom-in disabled:cursor-default"
+                aria-label={`View image ${i + 1} in full screen`}
+              >
+                <ProductBgWrapper
+                  bgColor={bgColor}
+                  className={cn(
+                    "aspect-[4/5] rounded-xl overflow-hidden",
+                    !bgColor && "bg-[#f4f2ee]"
+                  )}
+                >
+                  {isPlaceholder(img.url) ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
+                      <Package size={48} strokeWidth={1.5} />
+                      <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
+                        Image coming soon
+                      </p>
+                    </div>
+                  ) : (
+                    <Image
+                      src={img.url}
+                      alt={img.alt || productName}
+                      fill
+                      className="object-cover pointer-events-none"
+                      sizes="100vw"
+                      priority={i === 0}
+                      draggable={false}
+                    />
+                  )}
+                </ProductBgWrapper>
+              </button>
+            ))}
+          </div>
+
+          {sortedImages.length > 1 && (
+            <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold tracking-wide px-2 py-1 rounded-full">
+              {mobileIndex + 1} / {sortedImages.length}
+            </div>
+          )}
+        </div>
+
+        {sortedImages.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
+            {sortedImages.map((_, i) => {
+              const isActive = i === mobileIndex;
+              return (
+                <button
+                  key={i}
+                  onClick={() => scrollToSlide(i)}
+                  aria-label={`Go to image ${i + 1}`}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    isActive
+                      ? "w-6 bg-[#1a1a1a]"
+                      : "w-1.5 bg-[#d1d5db] hover:bg-[#9ca3af]"
+                  )}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <ImageLightbox
+        images={sortedImages.filter((img) => !isPlaceholder(img.url))}
+        initialIdx={lightboxIdx}
+        productName={productName}
+        isOpen={lightboxOpen}
+        onClose={closeLightbox}
+      />
+
+      <style jsx global>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </>
+  );
+}

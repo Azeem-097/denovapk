@@ -5,7 +5,7 @@ import { useDevicePerformance } from "@/components/animations/useDevicePerforman
 import { cn } from "@/lib/utils";
 
 // ═══════════════════════════════════════════════════════════
-//  Types (unchanged)
+//  Types
 // ═══════════════════════════════════════════════════════════
 export type ElementKey    = "brand" | "tagline" | "productDesc" | "originalPrice" | "currentPrice" | "countdown";
 export type EntranceAnim  = "fade-in" | "slide-up" | "slide-down" | "slide-left" | "slide-right"
@@ -268,53 +268,44 @@ function animationCSS(anim: AnimationConfig | undefined, shouldAnim: boolean): {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  MAIN
-//
-//  HYDRATION-SAFE `isMobile`:
-//    Both server and initial client render use `false` (desktop).
-//    After mount, we detect actual viewport and update state.
-//    This causes one extra render on mobile but eliminates
-//    hydration mismatch entirely.
+//  MAIN — REBUILT AUTO-ROTATION LOGIC (bulletproof)
 // ═══════════════════════════════════════════════════════════
 export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: HeroSectionProps) {
-  const hasServerBanners = !!(initialBanners && initialBanners.length > 0);
-
   const [slides, setSlides] = useState<HeroBanner[]>(
-    hasServerBanners ? initialBanners! : FALLBACK
+    initialBanners && initialBanners.length > 0 ? initialBanners : FALLBACK
   );
   const [rotation, setRotation] = useState(rotationSeconds);
   const [current, setCurrent]   = useState(0);
   const [progress, setProgress] = useState(0);
-
-  // Hydration-safe mobile detection: start false (matches SSR), update after mount.
-  // Overlay config uses this — desktop overlay renders first for everyone,
-  // mobile overlay swaps in after mount if on mobile viewport.
   const [isMobile, setIsMobile] = useState(false);
   const { shouldAnimate } = useDevicePerformance();
 
+  // ─── Timer state (all refs — no re-render trigger) ────
   const rafRef            = useRef<number | null>(null);
-  const cycleStartRef     = useRef<number>(0);
-  const accumulatedRef    = useRef<number>(0);
+  const cycleStartRef     = useRef<number>(0);       // when THIS cycle began
+  const accumulatedRef    = useRef<number>(0);       // ms elapsed in current cycle before pause
   const isPausedRef       = useRef<boolean>(false);
   const rotationRef       = useRef<number>(rotationSeconds);
   const slidesLengthRef   = useRef<number>(slides.length);
   const shouldAnimateRef  = useRef<boolean>(true);
 
+  // Keep refs in sync with state (no effect re-runs)
   useEffect(() => { rotationRef.current      = rotation;                }, [rotation]);
   useEffect(() => { slidesLengthRef.current  = slides.length;           }, [slides.length]);
   useEffect(() => { shouldAnimateRef.current = shouldAnimate;           }, [shouldAnimate]);
 
+  // ─── Mobile detection ─────────────────────────────────
   useEffect(() => {
+    const check = () => setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    check();
     const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const listener = () => check();
+    mq.addEventListener("change", listener);
+    return () => mq.removeEventListener("change", listener);
   }, []);
 
+  // ─── Fetch banners + rotation from API (always overrides) ──
   useEffect(() => {
-    if (hasServerBanners) return;
-
     fetch("/api/hero-banners", { cache: "no-store" })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -324,12 +315,14 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
         }
       })
       .catch(() => {});
-  }, [hasServerBanners]);
+  }, []);
 
+  // Reset current index if slides array shrinks
   useEffect(() => {
     if (current >= slides.length) setCurrent(0);
   }, [slides.length, current]);
 
+  // Preload next image
   useEffect(() => {
     if (slides.length <= 1) return;
     const next = slides[(current + 1) % slides.length];
@@ -337,7 +330,15 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
     if (next?.imageMobile) { const img = new window.Image(); img.src = next.imageMobile; }
   }, [current, slides]);
 
+  // ═══════════════════════════════════════════════════════
+  //  BULLETPROOF ROTATION TIMER
+  //
+  //  Runs ONCE on mount. Never restarts when `current` changes.
+  //  Uses refs for all mutable state so the RAF loop is stable.
+  //  Pause accumulates elapsed time; resume continues from there.
+  // ═══════════════════════════════════════════════════════
   useEffect(() => {
+    // Init cycle start on first mount
     cycleStartRef.current  = performance.now();
     accumulatedRef.current = 0;
 
@@ -348,6 +349,7 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
       }
 
       if (isPausedRef.current) {
+        // Timer is paused — do nothing, just keep the RAF alive
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
@@ -372,20 +374,24 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, []); // ← EMPTY DEPS. Runs ONCE for the entire component lifetime.
 
+  // ─── Pause / Resume handlers (accumulate elapsed, don't reset) ──
   const handlePause = useCallback(() => {
     if (isPausedRef.current) return;
+    // Save elapsed time before pausing
     accumulatedRef.current += performance.now() - cycleStartRef.current;
     isPausedRef.current = true;
   }, []);
 
   const handleResume = useCallback(() => {
     if (!isPausedRef.current) return;
+    // Restart the reference point; elapsed time is already saved
     cycleStartRef.current = performance.now();
     isPausedRef.current = false;
   }, []);
 
+  // Auto-pause when tab is hidden
   useEffect(() => {
     const onVis = () => {
       if (document.hidden) handlePause();
@@ -416,7 +422,6 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
           key={slide.id}
           slide={slide}
           isActive={i === current}
-          isFirst={i === 0}
           index={i}
           shouldAnimate={shouldAnimate}
           isMobile={isMobile}
@@ -446,28 +451,34 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   );
 }
 
+// ═══════════════════════════════════════════════════════════
+//  BannerSlide (unchanged)
+// ═══════════════════════════════════════════════════════════
 interface BannerSlideProps {
-  slide: HeroBanner; isActive: boolean; isFirst: boolean; index: number;
+  slide: HeroBanner; isActive: boolean; index: number;
   shouldAnimate: boolean; isMobile: boolean;
 }
 
-function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile }: BannerSlideProps) {
+function BannerSlide({ slide, isActive, index, shouldAnimate, isMobile }: BannerSlideProps) {
   const hasLink   = !!slide.buttonHref;
   const mobileSrc = slide.imageMobile || slide.image;
 
   const rawOverlay: OverlayV2 = slide.overlayV2 ?? legacyToOverlayV2(slide);
   const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
 
-  const [hasMounted, setHasMounted] = useState(isFirst);
+  // Track first mount to skip entrance/ken-burns animations on initial load
+  const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
-    if (isFirst) return;
-    setHasMounted(true);
-  }, [isFirst]);
+    // Mark as mounted after first paint. Any subsequent isActive toggle
+    // (i.e. a real slide change) will trigger cinematic transition.
+    const t = setTimeout(() => setHasMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   const [kenBurnsKey, setKenBurnsKey] = useState(0);
   useEffect(() => {
-    if (isActive && hasMounted && !isFirst) setKenBurnsKey((k) => k + 1);
-  }, [isActive, hasMounted, isFirst]);
+    if (isActive && hasMounted) setKenBurnsKey((k) => k + 1);
+  }, [isActive, hasMounted]);
 
   const imgElement = (
     <div className="overflow-hidden w-full">
@@ -497,14 +508,8 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
   const containerClass = cn(
     "top-0 left-0 w-full",
     isActive
-      ? cn(
-          "relative z-10",
-          shouldAnimate && !isFirst && "hero-cinematic-enter"
-        )
-      : cn(
-          "absolute z-0 pointer-events-none opacity-0",
-          shouldAnimate && "hero-cinematic-exit"
-        )
+      ? cn("relative z-10", shouldAnimate && hasMounted && "hero-cinematic-enter")
+      : cn("absolute z-0 pointer-events-none opacity-0", shouldAnimate && hasMounted && "hero-cinematic-exit")
   );
 
   const inner = (
@@ -516,7 +521,7 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
           style={{ backgroundColor: `rgba(0,0,0,${slide.overlayDarkness / 100})` }} />
       )}
 
-      <BannerOverlayV2 config={config} slide={slide} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} isFirst={isFirst} />
+      <BannerOverlayV2 config={config} slide={slide} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} />
 
       {(slide.stickers ?? []).filter((s) => s.enabled).map((s, i) => (
         <StickerLayer key={`${s.kind}-${i}`} sticker={normalizeSticker(s)} isActive={isActive} shouldAnimate={shouldAnimate} isMobile={isMobile} />
@@ -537,10 +542,10 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
 
 const ELEMENT_ORDER: ElementKey[] = ["brand", "tagline", "productDesc", "originalPrice", "currentPrice", "countdown"];
 
-function BannerOverlayV2({ config, slide, isActive, shouldAnimate, isMobile, isFirst }: {
-  config: OverlayConfig; slide: HeroBanner; isActive: boolean; shouldAnimate: boolean; isMobile: boolean; isFirst: boolean;
+function BannerOverlayV2({ config, slide, isActive, shouldAnimate, isMobile }: {
+  config: OverlayConfig; slide: HeroBanner; isActive: boolean; shouldAnimate: boolean; isMobile: boolean;
 }) {
-  const shouldAnim = shouldAnimate && isActive && !isFirst;
+  const shouldAnim = shouldAnimate && isActive;
   return (
     <div className="absolute inset-0 pointer-events-none">
       {ELEMENT_ORDER.map((key) => {

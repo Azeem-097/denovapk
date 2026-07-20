@@ -3,44 +3,31 @@ import { useEffect, useRef, useState } from "react";
 import { useDevicePerformance } from "./useDevicePerformance";
 import { cn } from "@/lib/utils";
 
-interface ScaleInProps {
+interface SlideInProps {
   children:   React.ReactNode;
   className?: string;
-  from?:      number;
+  from?:      "left" | "right" | "top" | "bottom";
+  distance?:  number;    // px
   delay?:     number;
   duration?:  number;
   threshold?: number;
 }
 
-export function ScaleIn({
+export function SlideIn({
   children,
   className,
-  from      = 0.85,
+  from      = "left",
+  distance  = 40,
   delay     = 0,
-  duration  = 600,
-  threshold = 0.2,
-}: ScaleInProps) {
+  duration  = 700,
+  threshold = 0.15,
+}: SlideInProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const { shouldAnimate } = useDevicePerformance();
 
   useEffect(() => {
     if (!shouldAnimate) { setIsVisible(true); return; }
-
-    const el = ref.current;
-    if (!el) return;
-
-    const rect = el.getBoundingClientRect();
-    const inViewport =
-      rect.top < window.innerHeight &&
-      rect.bottom > 0 &&
-      rect.left < window.innerWidth &&
-      rect.right > 0;
-
-    if (inViewport) {
-      setIsVisible(true);
-      return;
-    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -52,15 +39,19 @@ export function ScaleIn({
       { threshold }
     );
 
-    observer.observe(el);
-
-    const failsafe = setTimeout(() => setIsVisible(true), 1500);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(failsafe);
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [shouldAnimate, threshold]);
+
+  const getTransform = () => {
+    if (isVisible) return "translate(0, 0)";
+    switch (from) {
+      case "left":   return `translate(-${distance}px, 0)`;
+      case "right":  return `translate(${distance}px, 0)`;
+      case "top":    return `translate(0, -${distance}px)`;
+      case "bottom": return `translate(0, ${distance}px)`;
+    }
+  };
 
   return (
     <div
@@ -68,9 +59,9 @@ export function ScaleIn({
       className={cn(className)}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "scale(1)" : `scale(${from})`,
+        transform: getTransform(),
         transition: shouldAnimate
-          ? `opacity ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1), transform ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+          ? `opacity ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
           : "none",
         transitionDelay: `${delay}ms`,
       }}

@@ -10,6 +10,18 @@ interface TextRevealProps {
   as?: "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
 }
 
+/**
+ * TextReveal — fades + slides text upward on scroll into view.
+ *
+ * NOTE on descenders:
+ *   We use `overflow-hidden` so the initial 24px offset doesn't
+ *   flash before animation. But `overflow-hidden` will clip
+ *   letter descenders (p, y, g, j, q).
+ *
+ *   Fix: add pb-[0.15em] so the container has room for descenders
+ *   without visibly increasing spacing (0.15em ≈ typical descender).
+ *   Also use leading-[1.15] to give a tiny bit of breathing room.
+ */
 export function TextReveal({
   children,
   className,
@@ -26,22 +38,6 @@ export function TextReveal({
       return;
     }
 
-    const el = ref.current;
-    if (!el) return;
-
-    // Immediate reveal if already in viewport
-    const rect = el.getBoundingClientRect();
-    const inViewport =
-      rect.top < window.innerHeight &&
-      rect.bottom > 0 &&
-      rect.left < window.innerWidth &&
-      rect.right > 0;
-
-    if (inViewport) {
-      setIsVisible(true);
-      return;
-    }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -52,15 +48,8 @@ export function TextReveal({
       { threshold: 0.1 }
     );
 
-    observer.observe(el);
-
-    // Failsafe: max 1.5s hidden
-    const failsafe = setTimeout(() => setIsVisible(true), 1500);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(failsafe);
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [shouldAnimate]);
 
   return (

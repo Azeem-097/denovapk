@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useRef, useState } from "react";
 import { useDevicePerformance } from "./useDevicePerformance";
 import { cn } from "@/lib/utils";
@@ -30,24 +30,6 @@ export function FadeIn({
       return;
     }
 
-    const el = ref.current;
-    if (!el) return;
-
-    // ─── Immediate reveal if already in viewport on mount ───
-    // Fixes the "content hidden until scroll" bug where elements
-    // above the fold never triggered the observer.
-    const rect = el.getBoundingClientRect();
-    const inViewport =
-      rect.top < window.innerHeight &&
-      rect.bottom > 0 &&
-      rect.left < window.innerWidth &&
-      rect.right > 0;
-
-    if (inViewport) {
-      setIsVisible(true);
-      if (once) return;
-    }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -60,15 +42,8 @@ export function FadeIn({
       { threshold }
     );
 
-    observer.observe(el);
-
-    // ─── Failsafe: never leave content hidden longer than 1.5s ───
-    const failsafe = setTimeout(() => setIsVisible(true), 1500);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(failsafe);
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [shouldAnimate, threshold, once]);
 
   return (

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface ScaleInProps {
   children:   React.ReactNode;
   className?: string;
-  from?:      number;
+  from?:      number;    // start scale (0-1)
   delay?:     number;
   duration?:  number;
   threshold?: number;
@@ -27,21 +27,6 @@ export function ScaleIn({
   useEffect(() => {
     if (!shouldAnimate) { setIsVisible(true); return; }
 
-    const el = ref.current;
-    if (!el) return;
-
-    const rect = el.getBoundingClientRect();
-    const inViewport =
-      rect.top < window.innerHeight &&
-      rect.bottom > 0 &&
-      rect.left < window.innerWidth &&
-      rect.right > 0;
-
-    if (inViewport) {
-      setIsVisible(true);
-      return;
-    }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -52,14 +37,8 @@ export function ScaleIn({
       { threshold }
     );
 
-    observer.observe(el);
-
-    const failsafe = setTimeout(() => setIsVisible(true), 1500);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(failsafe);
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [shouldAnimate, threshold]);
 
   return (

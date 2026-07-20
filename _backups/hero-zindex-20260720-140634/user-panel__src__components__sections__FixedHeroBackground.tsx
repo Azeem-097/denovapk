@@ -1,25 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-/**
- * FixedHeroBackground
- * ─────────────────────────────────────────────────────────────
- * Pins the hero as position:fixed BEHIND the main content shell.
- * The content shell slides up over the hero as the page scrolls.
- *
- * STACKING ORDER:
- *   AnnouncementBar (z-50)
- *   Navbar          (z-40)
- *   Content shell   (z-10)
- *   Hero (this)     (z-1)   ← visible in the viewport gap
- *   body (default)
- *
- * TOP OFFSET:
- *   Uses CSS variable --header-offset with a realistic fallback
- *   so the hero starts BELOW the header on first paint, without
- *   waiting for JS measurement. JS updates the exact value after
- *   mount.
- */
 export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
   const heroRef    = useRef<HTMLDivElement>(null);
   const spacerRef  = useRef<HTMLDivElement>(null);
@@ -83,13 +64,14 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
     <>
       <div
         ref={heroRef}
-        className="fixed left-0 w-full overflow-hidden hero-fixed-bg"
+        className="fixed left-0 w-full overflow-hidden"
         style={{
+          top:        "0px",
           opacity:    1,
           visibility: "visible",
+          zIndex:     -10, /* STACK BEHIND EVERYTHING */
           transform:  "translateZ(0)",
           willChange: "transform",
-          zIndex:     1,
         }}
       >
         {children}

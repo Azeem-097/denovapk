@@ -154,7 +154,7 @@ export function AnnouncementBar() {
   const isLong  = message.text.length > 70;
 
   const messageInner = (
-    <div className="flex items-center gap-1.5 sm:gap-2.5 leading-none">
+    <div className="relative z-50" className="flex items-center gap-1.5 sm:gap-2.5 leading-none">
       <Icon
         size={13}
         strokeWidth={2}
@@ -174,7 +174,7 @@ export function AnnouncementBar() {
   );
 
   return (
-    <div
+    <div className="relative z-50"
       className="relative w-full overflow-hidden select-none announcement-bar-shell"
       style={{
         background: `linear-gradient(90deg, ${bg} 0%, ${bg} 40%, ${shade(bg, 12)} 50%, ${bg} 60%, ${bg} 100%)`,
@@ -187,13 +187,13 @@ export function AnnouncementBar() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div
+      <div className="relative z-50"
         className="absolute top-0 left-0 right-0 h-px opacity-60"
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
       />
 
-      <div className="site-container h-10 sm:h-11 relative">
-        <div className="h-full flex items-center justify-center relative">
+      <div className="relative z-50" className="site-container h-10 sm:h-11 relative">
+        <div className="relative z-50" className="h-full flex items-center justify-center relative">
 
           {/* Left arrow (desktop only, when multiple messages) */}
           {hasMany && (
@@ -208,28 +208,28 @@ export function AnnouncementBar() {
           )}
 
           {/* Decorative dots */}
-          <div className="hidden sm:flex absolute left-10 items-center gap-2 opacity-70">
+          <div className="relative z-50" className="hidden sm:flex absolute left-10 items-center gap-2 opacity-70">
             <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent }} />
             <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} />
           </div>
 
-          <div className="hidden sm:flex absolute right-14 items-center gap-2 opacity-70">
+          <div className="relative z-50" className="hidden sm:flex absolute right-14 items-center gap-2 opacity-70">
             <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent})` }} />
             <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent, animationDelay: "0.9s" }} />
           </div>
 
           {/* Message area */}
-          <div className="flex-1 flex items-center justify-center overflow-hidden px-8 sm:px-20 min-w-0">
+          <div className="relative z-50" className="flex-1 flex items-center justify-center overflow-hidden px-8 sm:px-20 min-w-0">
             {isLong ? (
-              <div className="w-full overflow-hidden">
-                <div className="flex whitespace-nowrap announcement-marquee">
-                  <div className="flex items-center gap-16 pr-16">
+              <div className="relative z-50" className="w-full overflow-hidden">
+                <div className="relative z-50" className="flex whitespace-nowrap announcement-marquee">
+                  <div className="relative z-50" className="flex items-center gap-16 pr-16">
                     {messageInner}{messageInner}{messageInner}{messageInner}
                   </div>
                 </div>
               </div>
             ) : (
-              <div
+              <div className="relative z-50"
                 key={message.id + current}
                 className={cn(
                   "transition-all duration-350 ease-out",
@@ -277,7 +277,7 @@ export function AnnouncementBar() {
 
       {/* Progress bar */}
       {hasMany && (
-        <div
+        <div className="relative z-50"
           className="absolute bottom-0 left-0 h-px transition-all duration-100 ease-linear"
           style={{
             width: `${progress}%`,
@@ -289,7 +289,7 @@ export function AnnouncementBar() {
 
       {/* Dot indicators (centered, only when multiple) */}
       {hasMany && (
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 pb-[2px]">
+        <div className="relative z-50" className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 pb-[2px]">
           {config.messages.map((_, i) => (
             <button
               key={i}

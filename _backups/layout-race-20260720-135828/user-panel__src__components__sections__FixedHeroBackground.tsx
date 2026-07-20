@@ -1,54 +1,47 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-/**
- * FixedHeroBackground
- * ─────────────────────────────────────────────────────────────
- * Pins the hero as position:fixed BEHIND the main content shell.
- * The content shell slides up over the hero as the page scrolls.
- *
- * STACKING ORDER:
- *   AnnouncementBar (z-50)
- *   Navbar          (z-40)
- *   Content shell   (z-10)
- *   Hero (this)     (z-1)   ← visible in the viewport gap
- *   body (default)
- *
- * TOP OFFSET:
- *   Uses CSS variable --header-offset with a realistic fallback
- *   so the hero starts BELOW the header on first paint, without
- *   waiting for JS measurement. JS updates the exact value after
- *   mount.
- */
 export function FixedHeroBackground({ children }: { children: React.ReactNode }) {
   const heroRef    = useRef<HTMLDivElement>(null);
   const spacerRef  = useRef<HTMLDivElement>(null);
+
   const [heroHeight, setHeroHeight] = useState<number>(0);
 
   const heroHeightRef  = useRef<number>(0);
   const lastBottomRef  = useRef<number>(-1);
   const lastVisibleRef = useRef<boolean>(true);
 
-  useEffect(() => { heroHeightRef.current = heroHeight; }, [heroHeight]);
+  useEffect(() => {
+    heroHeightRef.current = heroHeight;
+  }, [heroHeight]);
 
+  // Measure hero height for spacer
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
+
     const measure = () => {
       const h = el.offsetHeight;
-      if (h > 0) setHeroHeight(h);
+      if (h > 0) {
+        setHeroHeight((prev) => (prev !== h ? h : prev));
+      }
     };
+
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
+  // High-performance scroll tracking
   useEffect(() => {
     let rafId = 0;
+
     const update = () => {
       const hero = heroRef.current;
       if (!hero) { rafId = 0; return; }
+
+      // Sync top with header
       const header = document.querySelector("header");
       if (header) {
         const bottom = Math.max(0, header.getBoundingClientRect().bottom);
@@ -57,6 +50,8 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
           hero.style.top = `${bottom}px`;
         }
       }
+
+      // Hide when scrolled past hero (prevents bleeding into footer)
       const h = heroHeightRef.current;
       if (h > 0) {
         const shouldShow = window.scrollY < h * 1.5;
@@ -66,12 +61,19 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
           hero.style.opacity    = shouldShow ? "1" : "0";
         }
       }
+
       rafId = 0;
     };
-    const onScroll = () => { if (!rafId) rafId = requestAnimationFrame(update); };
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(update);
+    };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
+
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
@@ -83,13 +85,13 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
     <>
       <div
         ref={heroRef}
-        className="fixed left-0 w-full overflow-hidden hero-fixed-bg"
+        className="fixed left-0 w-full z-0 overflow-hidden"
         style={{
+          top:        "0px",
           opacity:    1,
           visibility: "visible",
           transform:  "translateZ(0)",
           willChange: "transform",
-          zIndex:     1,
         }}
       >
         {children}
@@ -98,8 +100,8 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
       <div
         ref={spacerRef}
         aria-hidden="true"
-        className="w-full pointer-events-none hero-spacer"
-        style={heroHeight > 0 ? { height: `${heroHeight}px` } : undefined}
+        className="w-full pointer-events-none"
+        style={{ height: heroHeight > 0 ? `${heroHeight}px` : "100vh" }}
       />
     </>
   );

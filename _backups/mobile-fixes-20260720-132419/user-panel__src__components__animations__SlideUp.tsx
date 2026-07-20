@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useRef, useState } from "react";
 import { useDevicePerformance } from "./useDevicePerformance";
 import { cn } from "@/lib/utils";
@@ -7,7 +7,7 @@ interface SlideUpProps {
   children: React.ReactNode;
   className?: string;
   delay?: number;
-  stagger?: number;
+  stagger?: number; // extra delay per index
   index?: number;
 }
 
@@ -30,21 +30,6 @@ export function SlideUp({
       return;
     }
 
-    const el = ref.current;
-    if (!el) return;
-
-    const rect = el.getBoundingClientRect();
-    const inViewport =
-      rect.top < window.innerHeight &&
-      rect.bottom > 0 &&
-      rect.left < window.innerWidth &&
-      rect.right > 0;
-
-    if (inViewport) {
-      setIsVisible(true);
-      return;
-    }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -55,14 +40,8 @@ export function SlideUp({
       { threshold: 0.1 }
     );
 
-    observer.observe(el);
-
-    const failsafe = setTimeout(() => setIsVisible(true), 1500);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(failsafe);
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [shouldAnimate]);
 
   return (
