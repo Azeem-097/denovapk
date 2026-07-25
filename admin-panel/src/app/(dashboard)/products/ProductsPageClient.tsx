@@ -215,7 +215,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         </select>
       </div>
 
-      {view === "table" && filtered.length > 1 && (
+      {filtered.length > 1 && (
         <p className="text-xs text-[#6b7280]">
           Drag products up or down to control the storefront order. Top rows show first.
           {savingOrder && <span className="ml-2 text-[#3b5f8f] font-medium">Saving order...</span>}
@@ -265,7 +265,19 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
+          {filtered.map((p) => (
+            <ProductCard
+              key={p.id}
+              product={p}
+              isDragging={draggingId === p.id}
+              onDragStart={() => setDraggingId(p.id)}
+              onDragEnd={() => setDraggingId(null)}
+              onDropOn={() => {
+                if (draggingId) moveProduct(draggingId, p.id);
+                setDraggingId(null);
+              }}
+            />
+          ))}
         </div>
       )}
 
@@ -386,10 +398,48 @@ function ProductRow({
   );
 }
 
-function ProductCard({ product }: { product: AdminProduct }) {
+function ProductCard({
+  product,
+  isDragging,
+  onDragStart,
+  onDragEnd,
+  onDropOn,
+}: {
+  product: AdminProduct;
+  isDragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDropOn: () => void;
+}) {
   return (
-    <Link href={`/products/${product.id}`} className="group bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden">
+    <Link
+      href={`/products/${product.id}`}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDragEnd={onDragEnd}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDropOn();
+      }}
+      onClick={(e) => {
+        if (isDragging) e.preventDefault();
+      }}
+      className={cn(
+        "group bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50"
+      )}
+    >
       <div className="relative aspect-[3/4] bg-[#fafaf9]">
+        <div className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center bg-white/90 border border-[#e5e7eb] text-[#6b7280] shadow-sm">
+          <GripVertical size={15} />
+        </div>
         {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="250px" />}
         <div className="absolute top-2 right-2">
           <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide capitalize", PRODUCT_STATUS_COLORS[product.status])}>
