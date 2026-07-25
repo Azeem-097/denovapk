@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { HeroSection }           from "@/components/sections/HeroSection";
 import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
 import { SaleCountdown }         from "@/components/sections/SaleCountdown";
@@ -19,6 +20,10 @@ type HeroBanner = {
 };
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  alternates: { canonical: "https://denovapk.com" },
+};
 
 export default async function HomePage() {
   const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
