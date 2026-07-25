@@ -11,13 +11,15 @@ import { Button } from "@/components/ui/Button";
 import { formatPrice, formatDateTime, cn } from "@/lib/utils";
 import { ORDER_STATUS_COLORS, PAYMENT_STATUS_COLORS } from "@/lib/constants";
 import { openWhatsApp, buildOrderConfirmationMessage } from "@/lib/whatsapp";
-import type { AdminOrder, OrderStatus } from "@/types";
+import type { AdminOrder, OrderStatus, PaymentStatus } from "@/types";
 
 const STATUS_OPTIONS: OrderStatus[] = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+const PAYMENT_STATUS_OPTIONS: PaymentStatus[] = ["pending", "paid", "failed", "refunded"];
 
 export function OrderDetailClient({ order }: { order: AdminOrder }) {
   const router = useRouter();
   const [status,   setStatus]   = useState<OrderStatus>(order.status);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(order.paymentStatus);
   const [tracking, setTracking] = useState(order.trackingNum || "");
   const [note,     setNote]     = useState("");
   const [saving,   setSaving]   = useState(false);
@@ -35,6 +37,26 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
         router.refresh();
       } else {
         alert("Failed to update");
+      }
+    } catch {
+      alert("Network error");
+    }
+    setSaving(false);
+  };
+
+  const handlePaymentUpdate = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ paymentStatus: paymentStatus.toUpperCase() }),
+      });
+      if (res.ok) {
+        alert("Payment status updated!");
+        router.refresh();
+      } else {
+        alert("Failed to update payment status");
       }
     } catch {
       alert("Network error");
@@ -175,7 +197,7 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
           </Section>
 
           <Section title="Payment" icon={CreditCard}>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-[#6b7280]">Method</span>
                 <span className="text-[#1a1a1a] font-medium">{order.paymentMethod}</span>
@@ -189,6 +211,28 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
               <div className="flex items-center justify-between">
                 <span className="text-[#6b7280]">Amount</span>
                 <span className="text-[#1a1a1a] font-bold">{formatPrice(order.total)}</span>
+              </div>
+              <div className="border-t border-[#e5e7eb] pt-3">
+                <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">Update Payment Status</label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={paymentStatus}
+                    onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
+                    className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none bg-white capitalize font-medium"
+                  >
+                    {PAYMENT_STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s} className="capitalize">{s}</option>
+                    ))}
+                  </select>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handlePaymentUpdate}
+                    disabled={saving || paymentStatus === order.paymentStatus}
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
             </div>
           </Section>

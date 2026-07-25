@@ -242,6 +242,11 @@ img, video { max-width: 100%; height: auto; display: block; }
   to   { transform: translateX(-50%); }
 }
 
+@keyframes announcement-marquee-long {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 .announcement-bar-shell {
   animation: announcement-gradient-drift 12s ease-in-out infinite;
 }
@@ -262,7 +267,15 @@ img, video { max-width: 100%; height: auto; display: block; }
   animation: announcement-marquee 22s linear infinite;
   will-change: transform;
 }
+
+.announcement-marquee-long {
+  animation: announcement-marquee-long 34s linear infinite;
+  will-change: transform;
+}
 .announcement-bar-shell:hover .announcement-marquee {
+  animation-play-state: paused;
+}
+.announcement-bar-shell:hover .announcement-marquee-long {
   animation-play-state: paused;
 }
 

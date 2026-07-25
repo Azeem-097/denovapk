@@ -38,6 +38,7 @@ export const metadata: Metadata = {
   },
   icons: { icon: [{ url: "/favicon.ico" }], apple: "/apple-touch-icon.png", shortcut: "/favicon.ico" },
   robots: { index: true, follow: true },
+  verification: { google: "FExc48j0u82XLNaAQlV6SIFalNE4_t_EGC8mKBAMK_0" },
   formatDetection: { telephone: false, email: false, address: false },
 };
 
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="twitter:creator"        content="@denovapk" />
         <meta name="twitter:image"          content="https://denovapk.com/og-image.jpg" />
         <meta name="thumbnail"              content="https://denovapk.com/og-image.jpg" />
+        <meta name="google-site-verification" content="FExc48j0u82XLNaAQlV6SIFalNE4_t_EGC8mKBAMK_0" />
       </head>
       <body className="antialiased bg-white text-[#111111]">
         {/* Top progress bar — must be wrapped in Suspense (uses useSearchParams) */}

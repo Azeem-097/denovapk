@@ -1,8 +1,7 @@
 "use client";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { X, ChevronLeft, ChevronRight, Truck, Flame, Gift, Sparkles, Gem, Zap, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, Truck, Flame, Gift, Sparkles, Gem, Zap, Star } from "lucide-react";
 
 interface AnnouncementMessage {
   id:        string;
@@ -47,16 +46,8 @@ function pickIcon(text: string) {
 
 export function AnnouncementBar() {
   const [config,    setConfig]    = useState<AnnouncementConfig | null>(null);
-  const [current,   setCurrent]   = useState(0);
   const [dismissed, setDismissed] = useState(false);
-  const [animating, setAnimating] = useState(false);
-  const [animDir,   setAnimDir]   = useState<"up" | "down">("up");
   const [paused,    setPaused]    = useState(false);
-  const [progress,  setProgress]  = useState(0);
-
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-  const swiping     = useRef(false);
 
   useEffect(() => {
     fetch("/api/announcement-bar")
@@ -68,102 +59,59 @@ export function AnnouncementBar() {
       .catch(() => setConfig(FALLBACK_CONFIG));
   }, []);
 
-  const rotateMs = useMemo(() => {
-    if (!config) return 5000;
-    return Math.max(2000, config.autoRotateSeconds * 1000);
-  }, [config]);
-
-  const hasMany = config ? config.messages.length > 1 : false;
-
-  const goNext = useCallback(() => {
-    if (!config || !hasMany || animating) return;
-    setAnimDir("up");
-    setAnimating(true);
-    setTimeout(() => {
-      setCurrent((c) => (c + 1) % config.messages.length);
-      setAnimating(false);
-    }, 350);
-  }, [config, hasMany, animating]);
-
-  const goPrev = useCallback(() => {
-    if (!config || !hasMany || animating) return;
-    setAnimDir("down");
-    setAnimating(true);
-    setTimeout(() => {
-      setCurrent((c) => (c - 1 + config.messages.length) % config.messages.length);
-      setAnimating(false);
-    }, 350);
-  }, [config, hasMany, animating]);
-
-  useEffect(() => {
-    if (!config || !hasMany || paused) return;
-    setProgress(0);
-    const startedAt = Date.now();
-    const id = setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const pct = Math.min(100, (elapsed / rotateMs) * 100);
-      setProgress(pct);
-    }, 33);
-    return () => clearInterval(id);
-  }, [current, rotateMs, config, paused, hasMany]);
-
-  useEffect(() => {
-    if (!config || !hasMany || paused) return;
-    const t = setTimeout(() => goNext(), rotateMs);
-    return () => clearTimeout(t);
-  }, [config, current, rotateMs, paused, hasMany, goNext]);
-
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!hasMany) return;
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    swiping.current = false;
-  }, [hasMany]);
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!hasMany) return;
-    const dx = e.touches[0].clientX - touchStartX.current;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 20) {
-      swiping.current = true;
-    }
-  }, [hasMany]);
-
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!hasMany || !swiping.current) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (dx < -40) goNext();
-    else if (dx > 40) goPrev();
-    swiping.current = false;
-  }, [hasMany, goNext, goPrev]);
-
   if (!config || !config.enabled || dismissed || config.messages.length === 0) return null;
 
-  const message = config.messages[current];
-  const Icon    = pickIcon(message.text);
   const bg      = config.bgColor      || "#0d0d0d";
   const fg      = config.textColor    || "#ffffff";
   const accent  = config.accentColor  || "#3b5f8f";
+  const activeMessages = config.messages
+    .filter((message) => message.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const isLong  = message.text.length > 70;
+  if (activeMessages.length === 0) return null;
 
-  const messageInner = (
-    <div className="flex items-center gap-1.5 sm:gap-2.5 leading-none">
-      <Icon
-        size={13}
-        strokeWidth={2}
-        className="flex-shrink-0 announcement-icon-glow"
-        style={{ color: accent }}
-      />
-      <p className="font-semibold tracking-[0.18em] uppercase text-[10px] sm:text-[12px] whitespace-nowrap">
-        {message.text}
-      </p>
-      <Icon
-        size={13}
-        strokeWidth={2}
-        className="flex-shrink-0 announcement-icon-glow hidden sm:inline-block"
-        style={{ color: accent }}
-      />
+  const renderMessage = (message: AnnouncementMessage, key: string) => {
+    const Icon = pickIcon(message.text);
+    const item = (
+      <div className="flex items-center gap-2 sm:gap-3 leading-none">
+        <Icon
+          size={13}
+          strokeWidth={2}
+          className="flex-shrink-0 announcement-icon-glow"
+          style={{ color: accent }}
+        />
+        <p className="font-semibold tracking-[0.2em] uppercase text-[10px] sm:text-[12px] whitespace-nowrap">
+          {message.text}
+        </p>
+      </div>
+    );
+
+    return message.link ? (
+      <Link key={key} href={message.link} className="transition-all hover:opacity-90" style={{ color: fg }}>
+        {item}
+      </Link>
+    ) : (
+      <div key={key}>
+        {item}
+      </div>
+    );
+  };
+
+  const separator = (key: string) => (
+    <span
+      key={key}
+      className="mx-4 sm:mx-8 h-1 w-1 flex-shrink-0 rounded-full announcement-dot-pulse"
+      style={{ backgroundColor: accent }}
+      aria-hidden="true"
+    />
+  );
+
+  const tickerSet = (setKey: string) => (
+    <div key={setKey} className="flex items-center pr-8 sm:pr-12">
+      {activeMessages.flatMap((message, index) => [
+        renderMessage(message, `${setKey}-${message.id}`),
+        separator(`${setKey}-separator-${message.id}-${index}`),
+      ])}
     </div>
   );
 
@@ -177,79 +125,27 @@ export function AnnouncementBar() {
       }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       <div
         className="absolute top-0 left-0 right-0 h-px opacity-60"
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
       />
 
-      <div className="site-container h-10 sm:h-11 relative">
+      <div className="h-10 sm:h-11 relative">
         <div className="h-full flex items-center justify-center relative">
-
-          {hasMany && (
-            <button
-              onClick={goPrev}
-              className="hidden sm:flex absolute left-1 z-10 w-7 h-7 items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
-              style={{ color: fg }}
-              aria-label="Previous announcement"
-            >
-              <ChevronLeft size={14} />
-            </button>
-          )}
-
-          <div className="hidden sm:flex absolute left-10 items-center gap-2 opacity-70">
-            <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent }} />
-            <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} />
-          </div>
-
-          <div className="hidden sm:flex absolute right-14 items-center gap-2 opacity-70">
-            <span className="w-4 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent})` }} />
-            <span className="w-1 h-1 rounded-full announcement-dot-pulse" style={{ backgroundColor: accent, animationDelay: "0.9s" }} />
-          </div>
-
-          <div className="flex-1 flex items-center justify-center overflow-hidden px-8 sm:px-20 min-w-0">
-            {isLong ? (
-              <div className="w-full overflow-hidden">
-                <div className="flex whitespace-nowrap announcement-marquee">
-                  <div className="flex items-center gap-16 pr-16">
-                    {messageInner}{messageInner}{messageInner}{messageInner}
-                  </div>
-                </div>
-              </div>
-            ) : (
+          <div className="flex-1 flex items-center justify-center overflow-hidden min-w-0">
+            <div className="w-full overflow-hidden">
               <div
-                key={message.id + current}
-                className={cn(
-                  "transition-all duration-350 ease-out",
-                  animating
-                    ? animDir === "up"
-                      ? "opacity-0 -translate-y-3 blur-[2px]"
-                      : "opacity-0 translate-y-3 blur-[2px]"
-                    : "opacity-100 translate-y-0 blur-0 announcement-glow-in"
-                )}
+                className="flex w-max whitespace-nowrap announcement-marquee-long"
+                style={{ animationPlayState: paused ? "paused" : "running" }}
               >
-                {message.link ? (
-                  <Link href={message.link} className="transition-all hover:opacity-90" style={{ color: fg }}>
-                    {messageInner}
-                  </Link>
-                ) : messageInner}
+                {tickerSet("set-a")}
+                {tickerSet("set-b")}
+                {tickerSet("set-c")}
+                {tickerSet("set-d")}
               </div>
-            )}
+            </div>
           </div>
-
-          {hasMany && (
-            <button
-              onClick={goNext}
-              className="hidden sm:flex absolute right-8 z-10 w-7 h-7 items-center justify-center opacity-40 hover:opacity-100 transition-opacity"
-              style={{ color: fg }}
-              aria-label="Next announcement"
-            >
-              <ChevronRight size={14} />
-            </button>
-          )}
 
           {config.dismissible && (
             <button
@@ -264,40 +160,6 @@ export function AnnouncementBar() {
         </div>
       </div>
 
-      {hasMany && (
-        <div
-          className="absolute bottom-0 left-0 h-px transition-all duration-100 ease-linear"
-          style={{
-            width: `${progress}%`,
-            background: `linear-gradient(90deg, ${accent}, ${lighten(accent, 30)})`,
-            boxShadow: `0 0 8px ${accent}, 0 0 4px ${accent}`,
-          }}
-        />
-      )}
-
-      {hasMany && (
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-1 pb-[2px]">
-          {config.messages.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                if (animating || i === current) return;
-                setAnimDir(i > current ? "up" : "down");
-                setAnimating(true);
-                setTimeout(() => { setCurrent(i); setAnimating(false); }, 350);
-              }}
-              className={cn(
-                "transition-all duration-300",
-                i === current
-                  ? "w-4 h-[3px] rounded-full"
-                  : "w-[5px] h-[3px] rounded-full opacity-40 hover:opacity-70"
-              )}
-              style={{ backgroundColor: i === current ? accent : fg }}
-              aria-label={`Go to announcement ${i + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -318,4 +180,3 @@ function shade(hex: string, amt: number): string {
     return rgbToHex(r + amt, g + amt, b + amt);
   } catch { return hex; }
 }
-function lighten(hex: string, amt: number): string { return shade(hex, amt); }

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -26,6 +26,19 @@ function getDropPosition(e: React.DragEvent<HTMLElement>, axis: "x" | "y" = "y")
   return e.clientY < rect.top + rect.height / 2 ? "before" : "after";
 }
 
+function getDragScrollSpeed(clientY: number): number {
+  const edgeSize = 120;
+  const maxSpeed = 26;
+
+  if (clientY < edgeSize) {
+    return -Math.ceil(((edgeSize - clientY) / edgeSize) * maxSpeed);
+  }
+  if (window.innerHeight - clientY < edgeSize) {
+    return Math.ceil(((edgeSize - (window.innerHeight - clientY)) / edgeSize) * maxSpeed);
+  }
+  return 0;
+}
+
 export function ProductsPageClient({ initialProducts }: { initialProducts: AdminProduct[] }) {
   const [products, setProducts] = useState(initialProducts);
   const [savedProducts, setSavedProducts] = useState(initialProducts);
@@ -38,6 +51,8 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ id: string; position: DropPosition } | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const dragScrollFrame = useRef<number | null>(null);
+  const dragScrollSpeed = useRef(0);
   const toast = useToastStore();
 
   const hasOrderChanges = useMemo(
@@ -167,8 +182,43 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
     setDraggingId(null);
   };
 
+  const stopDragScroll = () => {
+    dragScrollSpeed.current = 0;
+    if (dragScrollFrame.current !== null) {
+      window.cancelAnimationFrame(dragScrollFrame.current);
+      dragScrollFrame.current = null;
+    }
+  };
+
+  const updateDragScroll = (clientY: number) => {
+    dragScrollSpeed.current = getDragScrollSpeed(clientY);
+
+    if (dragScrollSpeed.current === 0) {
+      stopDragScroll();
+      return;
+    }
+
+    if (dragScrollFrame.current !== null) return;
+
+    const tick = () => {
+      if (dragScrollSpeed.current === 0) {
+        dragScrollFrame.current = null;
+        return;
+      }
+      window.scrollBy({ top: dragScrollSpeed.current, behavior: "auto" });
+      dragScrollFrame.current = window.requestAnimationFrame(tick);
+    };
+
+    dragScrollFrame.current = window.requestAnimationFrame(tick);
+  };
+
   return (
-    <div className="space-y-5">
+    <div
+      className="space-y-5"
+      onDragOver={(e) => {
+        if (draggingId) updateDragScroll(e.clientY);
+      }}
+    >
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a]">Products</h1>
@@ -292,14 +342,17 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
                       onDragEnd={() => {
                         setDraggingId(null);
                         setDropTarget(null);
+                        stopDragScroll();
                       }}
                       onDragPosition={(position) => {
                         setDropTarget(draggingId && draggingId !== p.id ? { id: p.id, position } : null);
                       }}
+                      onDragScroll={updateDragScroll}
                       onDropOn={(position) => {
                         if (draggingId) moveProduct(draggingId, p.id, position);
                         setDropTarget(null);
                         setDraggingId(null);
+                        stopDragScroll();
                       }}
                     />
                   ))}
@@ -320,14 +373,17 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
               onDragEnd={() => {
                 setDraggingId(null);
                 setDropTarget(null);
+                stopDragScroll();
               }}
               onDragPosition={(position) => {
                 setDropTarget(draggingId && draggingId !== p.id ? { id: p.id, position } : null);
               }}
+              onDragScroll={updateDragScroll}
               onDropOn={(position) => {
                 if (draggingId) moveProduct(draggingId, p.id, position);
                 setDropTarget(null);
                 setDraggingId(null);
+                stopDragScroll();
               }}
             />
           ))}
@@ -348,6 +404,7 @@ function ProductRow({
   onDragStart,
   onDragEnd,
   onDragPosition,
+  onDragScroll,
   onDropOn,
 }: {
   product: AdminProduct;
@@ -358,6 +415,7 @@ function ProductRow({
   onDragStart: () => void;
   onDragEnd: () => void;
   onDragPosition: (position: DropPosition) => void;
+  onDragScroll: (clientY: number) => void;
   onDropOn: (position: DropPosition) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -384,6 +442,7 @@ function ProductRow({
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+        onDragScroll(e.clientY);
         onDragPosition(getDropPosition(e, "y"));
       }}
       onDragEnd={onDragEnd}
@@ -465,6 +524,7 @@ function ProductCard({
   onDragStart,
   onDragEnd,
   onDragPosition,
+  onDragScroll,
   onDropOn,
 }: {
   product: AdminProduct;
@@ -473,6 +533,7 @@ function ProductCard({
   onDragStart: () => void;
   onDragEnd: () => void;
   onDragPosition: (position: DropPosition) => void;
+  onDragScroll: (clientY: number) => void;
   onDropOn: (position: DropPosition) => void;
 }) {
   return (
@@ -486,6 +547,7 @@ function ProductCard({
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+        onDragScroll(e.clientY);
         onDragPosition(getDropPosition(e, "x"));
       }}
       onDragEnd={onDragEnd}
