@@ -20,6 +20,8 @@ function formatPKR(amount: number): string {
   return `PKR ${Math.round(amount).toLocaleString("en-PK")}`;
 }
 
+type AccordionId = "details" | "description" | "shipping";
+
 interface Props {
   product:         Product;
   relatedProducts: Product[];
@@ -210,8 +212,9 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const [quantity, setQuantity]           = useState(1);
   const [addedToCart, setAddedToCart]     = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string | null>("description");
-  const [sizeChartOpen, setSizeChartOpen] = useState(false);
+  const [openAccordions, setOpenAccordions] = useState<Set<AccordionId>>(
+    () => new Set(["details", "description", "shipping"])
+  );
 
   const addToCart = useCartStore((s) => s.addItem);
   const showToast = useToastStore((s) => s.addToast);
@@ -278,8 +281,16 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     router.push("/checkout");
   };
 
-  const toggleAccordion = (key: string) => {
-    setOpenAccordion((prev) => (prev === key ? null : key));
+  const toggleAccordion = (key: AccordionId) => {
+    setOpenAccordions((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   };
 
   return (
@@ -473,27 +484,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   <LiveViewCounter productId={product.id} />
                 </div>
 
-
-
-
-
                 {/* 15. ACCORDIONS */}
                 <div className="border-t border-[#e5e7eb]">
                   <AccordionItem
-                    id="description"
-                    title="Description"
-                    isOpen={openAccordion === "description"}
-                    onToggle={() => toggleAccordion("description")}
-                  >
-                    <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
-                      {product.description}
-                    </p>
-                  </AccordionItem>
-
-                  <AccordionItem
                     id="details"
                     title="Size Chart"
-                    isOpen={openAccordion === "details"}
+                    isOpen={openAccordions.has("details")}
                     onToggle={() => toggleAccordion("details")}
                   >
                     <div className="space-y-4">
@@ -538,19 +534,26 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </AccordionItem>
 
                   <AccordionItem
+                    id="description"
+                    title="Description"
+                    isOpen={openAccordions.has("description")}
+                    onToggle={() => toggleAccordion("description")}
+                  >
+                    <p className="text-sm text-[#6b7280] leading-relaxed whitespace-pre-line">
+                      {product.description}
+                    </p>
+                  </AccordionItem>
+
+                  <AccordionItem
                     id="shipping"
                     title="Delivery Details"
-                    isOpen={openAccordion === "shipping"}
+                    isOpen={openAccordions.has("shipping")}
                     onToggle={() => toggleAccordion("shipping")}
                   >
                     <div className="space-y-3 text-sm text-[#6b7280] leading-relaxed">
                       <div>
                         <span className="text-[#1a1a1a] font-semibold">Free Shipping</span>
                         <span> across Pakistan. Standard delivery within 3-5 business days.</span>
-                      </div>
-                      <div>
-                        <span className="text-[#1a1a1a] font-semibold">Easy Returns</span>
-                        <span> within 7 days of delivery. Items must be unworn with original tags.</span>
                       </div>
                       <div>
                         <span className="text-[#1a1a1a] font-semibold">Authentic Quality</span>

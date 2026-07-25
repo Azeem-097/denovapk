@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS products (
   measurementsJson  TEXT,
   bgColor           TEXT,
   brand             TEXT,
+  sortOrder         INTEGER NOT NULL DEFAULT 0,
   createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
   updatedAt         INTEGER NOT NULL DEFAULT (unixepoch())
 );

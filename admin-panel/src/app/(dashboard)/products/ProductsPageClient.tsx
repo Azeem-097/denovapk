@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Plus, Search, Download, Trash, Edit,
-  MoreVertical, Package, Grid3x3, List,
+  MoreVertical, Package, Grid3x3, List, GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -18,16 +18,19 @@ import type { AdminProduct, ProductStatus } from "@/types";
 const STATUS_FILTERS: (ProductStatus | "all")[] = ["all", "published", "draft", "archived"];
 
 export function ProductsPageClient({ initialProducts }: { initialProducts: AdminProduct[] }) {
+  const [products, setProducts] = useState(initialProducts);
   const [search,   setSearch]   = useState("");
   const [status,   setStatus]   = useState<ProductStatus | "all">("all");
   const [view,     setView]     = useState<"table" | "grid">("table");
   const [collectionFilter, setCollectionFilter] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const toast = useToastStore();
 
   const filtered = useMemo(() => {
-    return initialProducts.filter((p) => {
+    return products.filter((p) => {
       const matchStatus = status === "all" || p.status === status;
       const matchSearch = search.trim() === "" ||
         p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -35,14 +38,14 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
       const matchCollection = collectionFilter === "all" || p.collection === collectionFilter;
       return matchStatus && matchSearch && matchCollection;
     });
-  }, [search, status, initialProducts, collectionFilter]);
+  }, [search, status, products, collectionFilter]);
 
   const statusCounts = useMemo(() => ({
-    all:       initialProducts.length,
-    published: initialProducts.filter((p) => p.status === "published").length,
-    draft:     initialProducts.filter((p) => p.status === "draft").length,
-    archived:  initialProducts.filter((p) => p.status === "archived").length,
-  }), [initialProducts]);
+    all:       products.length,
+    published: products.filter((p) => p.status === "published").length,
+    draft:     products.filter((p) => p.status === "draft").length,
+    archived:  products.filter((p) => p.status === "archived").length,
+  }), [products]);
 
   const toggleAll = () => setSelected(selected.length === filtered.length ? [] : filtered.map((p) => p.id));
   const toggleOne = (id: string) => setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
@@ -63,7 +66,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
     const failures: Array<{ id: string; name: string; error: string }> = [];
 
     for (const id of selected) {
-      const product = initialProducts.find((p) => p.id === id);
+      const product = products.find((p) => p.id === id);
       const name    = product?.name ?? id;
       try {
         const res  = await fetch(`/api/products/${id}`, { method: "DELETE" });
@@ -97,6 +100,47 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
     }
 
     setTimeout(() => window.location.reload(), 1000);
+  };
+
+  const saveProductOrder = async (nextProducts: AdminProduct[], previousProducts: AdminProduct[]) => {
+    setSavingOrder(true);
+    try {
+      const res = await fetch("/api/products/reorder", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ productIds: nextProducts.map((p) => p.id) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to save product order");
+      toast.success("Product order saved.", "Saved");
+    } catch (err) {
+      setProducts(previousProducts);
+      toast.error((err as Error).message, "Order Not Saved");
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const moveProduct = (fromId: string, toId: string) => {
+    if (fromId === toId || savingOrder) return;
+
+    const visibleIds = filtered.map((p) => p.id);
+    const fromVisibleIndex = visibleIds.indexOf(fromId);
+    const toVisibleIndex = visibleIds.indexOf(toId);
+    if (fromVisibleIndex === -1 || toVisibleIndex === -1) return;
+
+    const previousProducts = products;
+    const nextProducts = [...products];
+    const fromIndex = nextProducts.findIndex((p) => p.id === fromId);
+    const toIndex = nextProducts.findIndex((p) => p.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const [moved] = nextProducts.splice(fromIndex, 1);
+    nextProducts.splice(toIndex, 0, moved);
+    const ordered = nextProducts.map((p, index) => ({ ...p, sortOrder: index }));
+
+    setProducts(ordered);
+    void saveProductOrder(ordered, previousProducts);
   };
 
   return (
@@ -171,6 +215,13 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         </select>
       </div>
 
+      {view === "table" && filtered.length > 1 && (
+        <p className="text-xs text-[#6b7280]">
+          Drag products up or down to control the storefront order. Top rows show first.
+          {savingOrder && <span className="ml-2 text-[#3b5f8f] font-medium">Saving order...</span>}
+        </p>
+      )}
+
       {view === "table" ? (
         <div className="bg-white border border-[#e5e7eb] overflow-hidden">
           {filtered.length === 0 ? (
@@ -183,6 +234,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
+                    <th className="w-10 px-4 py-3" />
                     <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#3b5f8f]" /></th>
                     {["Product","SKU","Collection","Price","Stock","Sold","Status","Updated"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
@@ -192,7 +244,19 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
                 </thead>
                 <tbody className="divide-y divide-[#e5e7eb]">
                   {filtered.map((p) => (
-                    <ProductRow key={p.id} product={p} isSelected={selected.includes(p.id)} onToggle={() => toggleOne(p.id)} />
+                    <ProductRow
+                      key={p.id}
+                      product={p}
+                      isSelected={selected.includes(p.id)}
+                      isDragging={draggingId === p.id}
+                      onToggle={() => toggleOne(p.id)}
+                      onDragStart={() => setDraggingId(p.id)}
+                      onDragEnd={() => setDraggingId(null)}
+                      onDropOn={() => {
+                        if (draggingId) moveProduct(draggingId, p.id);
+                        setDraggingId(null);
+                      }}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -205,12 +269,28 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         </div>
       )}
 
-      <p className="text-xs text-[#6b7280] text-center">Showing {filtered.length} of {initialProducts.length} products</p>
+      <p className="text-xs text-[#6b7280] text-center">Showing {filtered.length} of {products.length} products</p>
     </div>
   );
 }
 
-function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; isSelected: boolean; onToggle: () => void }) {
+function ProductRow({
+  product,
+  isSelected,
+  isDragging,
+  onToggle,
+  onDragStart,
+  onDragEnd,
+  onDropOn,
+}: {
+  product: AdminProduct;
+  isSelected: boolean;
+  isDragging: boolean;
+  onToggle: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDropOn: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openUp, setOpenUp]     = useState(false);
   const btnRef = React.useRef<HTMLButtonElement>(null);
@@ -226,7 +306,30 @@ function ProductRow({ product, isSelected, onToggle }: { product: AdminProduct; 
   };
 
   return (
-    <tr className={cn("hover:bg-[#fafaf9] transition-colors", isSelected && "bg-[#f5f0e8]/30")}>
+    <tr
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDragEnd={onDragEnd}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDropOn();
+      }}
+      className={cn(
+        "hover:bg-[#fafaf9] transition-colors",
+        isSelected && "bg-[#f5f0e8]/30",
+        isDragging && "opacity-50"
+      )}
+    >
+      <td className="px-4 py-3">
+        <GripVertical size={16} className="text-[#9ca3af] cursor-grab active:cursor-grabbing" />
+      </td>
       <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#3b5f8f]" /></td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">

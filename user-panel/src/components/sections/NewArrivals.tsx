@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
 interface Props {
+  /** Storefront-ordered full product list. */
+  products?: Product[];
   /** Premium collection products (kept for backwards-compat with page.tsx) */
   newArrivals: Product[];
   /** Super Premium collection products (kept for backwards-compat with page.tsx) */
@@ -25,21 +27,21 @@ interface Props {
  * The props (newArrivals + bestSellers) are kept so page.tsx does not
  * need to change; they are simply merged into one list.
  */
-export function NewArrivals({ newArrivals, bestSellers }: Props) {
+export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
   const [selectedWaists, setSelectedWaists] = useState<number[]>([]);
 
   // Merge both lists, deduping by product id
   const allProducts = useMemo(() => {
     const seen = new Set<string>();
     const merged: Product[] = [];
-    for (const p of [...newArrivals, ...bestSellers]) {
+    for (const p of products ?? [...newArrivals, ...bestSellers]) {
       if (!seen.has(p.id)) {
         seen.add(p.id);
         merged.push(p);
       }
     }
     return merged;
-  }, [newArrivals, bestSellers]);
+  }, [products, newArrivals, bestSellers]);
 
   const availableWaists = useMemo(() => {
     const set = new Set<number>();

@@ -35,7 +35,7 @@ export function ShopPageClient({ products }: Props) {
 
   const DEFAULT_FILTERS: FilterState = useMemo(() => ({
     collections: [], brands: [], sizes: [], colors: [],
-    priceMin: catalogMin, priceMax: catalogMax, sortBy: "newest",
+    priceMin: catalogMin, priceMax: catalogMax, sortBy: "manual",
   }), [catalogMin, catalogMax]);
 
   const [filters,       setFilters]       = useState<FilterState>(DEFAULT_FILTERS);
@@ -149,9 +149,10 @@ export function ShopPageClient({ products }: Props) {
       case "price-desc":  result.sort((a, b) => b.price - a.price); break;
       case "bestselling": result.sort((a, b) => b.reviewCount - a.reviewCount); break;
       case "rating":      result.sort((a, b) => b.rating - a.rating); break;
-      default:            result.sort((a, b) =>
+      case "newest":      result.sort((a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      ); break;
+      default:            break;
     }
     return result;
   }, [filters, filterParam, products]);

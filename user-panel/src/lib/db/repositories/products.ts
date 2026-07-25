@@ -12,6 +12,7 @@ export interface ProductWithRelations extends DbProduct {
 
 type ProductColumnInfo = {
   hasMeasurementsJson: boolean;
+  hasSortOrder: boolean;
 };
 
 let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
@@ -21,13 +22,29 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
     productColumnInfoPromise = (async () => {
       const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
       const hasMeasurementsJson = result.rows.some((row) => (row.name as string) === "measurementsJson");
+      const hasSortOrder = result.rows.some((row) => (row.name as string) === "sortOrder");
 
-      if (hasMeasurementsJson) {
-        return { hasMeasurementsJson: true };
+      if (!hasMeasurementsJson) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN measurementsJson TEXT;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: measurementsJson")) {
+            throw error;
+          }
+        }
       }
 
-      await db.execute({ sql: "ALTER TABLE products ADD COLUMN measurementsJson TEXT;", args: [] });
-      return { hasMeasurementsJson: true };
+      if (!hasSortOrder) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: sortOrder")) {
+            throw error;
+          }
+        }
+      }
+
+      return { hasMeasurementsJson: true, hasSortOrder: true };
     })().catch((error) => {
       productColumnInfoPromise = null;
       throw error;
@@ -38,14 +55,14 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
 }
 
 async function getProductCols(): Promise<string> {
-  const { hasMeasurementsJson } = await getProductColumnInfo();
+  const { hasMeasurementsJson, hasSortOrder } = await getProductColumnInfo();
   return `
   p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
   p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
   p.waist, p."length" as lengthInches, p.bottom${hasMeasurementsJson ? ", p.measurementsJson" : ""}, p.bgColor, p.brand,
-  p.createdAt, p.updatedAt
+  ${hasSortOrder ? "p.sortOrder" : "0 as sortOrder"}, p.createdAt, p.updatedAt
 `;
 }
 
@@ -85,12 +102,13 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   }
 
   const where   = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  let   orderBy = "p.createdAt DESC";
+  let   orderBy = "p.sortOrder ASC, p.createdAt DESC";
   switch (opts.sortBy) {
-    case "price-asc":   orderBy = "p.price ASC";      break;
-    case "price-desc":  orderBy = "p.price DESC";     break;
-    case "bestselling": orderBy = "p.soldCount DESC"; break;
-    case "rating":      orderBy = "p.rating DESC";    break;
+    case "newest":      orderBy = "p.sortOrder ASC, p.createdAt DESC"; break;
+    case "price-asc":   orderBy = "p.price ASC";                        break;
+    case "price-desc":  orderBy = "p.price DESC";                       break;
+    case "bestselling": orderBy = "p.soldCount DESC";                   break;
+    case "rating":      orderBy = "p.rating DESC";                      break;
   }
 
   const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";

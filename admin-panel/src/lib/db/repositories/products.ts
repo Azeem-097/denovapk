@@ -12,6 +12,7 @@ export interface ProductWithRelations extends DbProduct {
 
 type ProductColumnInfo = {
   hasMeasurementsJson: boolean;
+  hasSortOrder: boolean;
 };
 
 let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
@@ -21,13 +22,29 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
     productColumnInfoPromise = (async () => {
       const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
       const hasMeasurementsJson = result.rows.some((row) => (row.name as string) === "measurementsJson");
+      const hasSortOrder = result.rows.some((row) => (row.name as string) === "sortOrder");
 
-      if (hasMeasurementsJson) {
-        return { hasMeasurementsJson: true };
+      if (!hasMeasurementsJson) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN measurementsJson TEXT;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: measurementsJson")) {
+            throw error;
+          }
+        }
       }
 
-      await db.execute({ sql: "ALTER TABLE products ADD COLUMN measurementsJson TEXT;", args: [] });
-      return { hasMeasurementsJson: true };
+      if (!hasSortOrder) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: sortOrder")) {
+            throw error;
+          }
+        }
+      }
+
+      return { hasMeasurementsJson: true, hasSortOrder: true };
     })().catch((error) => {
       productColumnInfoPromise = null;
       throw error;
@@ -38,20 +55,26 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
 }
 
 async function getProductCols(): Promise<string> {
-  const { hasMeasurementsJson } = await getProductColumnInfo();
+  const { hasMeasurementsJson, hasSortOrder } = await getProductColumnInfo();
   return `
   p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
   p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
   p.waist, p."length" as lengthInches, p.bottom${hasMeasurementsJson ? ", p.measurementsJson" : ""}, p.bgColor, p.brand,
-  p.createdAt, p.updatedAt
+  ${hasSortOrder ? "p.sortOrder" : "0 as sortOrder"}, p.createdAt, p.updatedAt
 `;
 }
 
 function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
   const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
   return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
+}
+
+async function getNextProductSortOrder(): Promise<number> {
+  await getProductColumnInfo();
+  const result = await db.execute({ sql: "SELECT COALESCE(MAX(sortOrder), -1) + 1 as nextSortOrder FROM products", args: [] });
+  return Number(result.rows[0]?.nextSortOrder ?? 0);
 }
 
 export interface GetProductsOptions {
@@ -89,12 +112,13 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   }
 
   const where   = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  let   orderBy = "p.createdAt DESC";
+  let   orderBy = "p.sortOrder ASC, p.createdAt DESC";
   switch (opts.sortBy) {
-    case "price-asc":   orderBy = "p.price ASC";      break;
-    case "price-desc":  orderBy = "p.price DESC";     break;
-    case "bestselling": orderBy = "p.soldCount DESC"; break;
-    case "rating":      orderBy = "p.rating DESC";    break;
+    case "newest":      orderBy = "p.sortOrder ASC, p.createdAt DESC"; break;
+    case "price-asc":   orderBy = "p.price ASC";                        break;
+    case "price-desc":  orderBy = "p.price DESC";                       break;
+    case "bestselling": orderBy = "p.soldCount DESC";                   break;
+    case "rating":      orderBy = "p.rating DESC";                      break;
   }
 
   const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
@@ -243,16 +267,17 @@ export interface CreateProductInput {
   isFeatured?:      boolean;
   isBestSeller?:    boolean;
   tags?:            string[];
-  metaTitle?:       string;
-  metaDescription?: string;
-  imageUrl?:        string;
-  imageUrls?:       string[];
+    metaTitle?:       string;
+    metaDescription?: string;
+    imageUrl?:        string;
+    imageUrls?:       string[];
   waist?:           number | null;
   length?:          number | null;
   bottom?:          number | null;
   measurementsJson?: string | null;
   bgColor?:         string | null;
   brand?:           string | null;   // new — free-text brand name
+  sortOrder?:       number;
   variants?: Array<{
     size:     string;
     color:    string;
@@ -267,13 +292,14 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
   const id = generateId();
   const t  = nowTs();
   const { hasMeasurementsJson } = await getProductColumnInfo();
+  const sortOrder = input.sortOrder ?? await getNextProductSortOrder();
 
   const productColumns = [
     "id", "name", "slug", "sku", "description", "price", "comparePrice", "costPerItem",
     "collectionId", "status", "isNew", "isFeatured", "isBestSeller", "tags",
     "metaTitle", "metaDescription", "waist", '"length"', "bottom",
     ...(hasMeasurementsJson ? ["measurementsJson"] : []),
-    "bgColor", "brand", "createdAt", "updatedAt",
+    "bgColor", "brand", "sortOrder", "createdAt", "updatedAt",
   ];
 
   const productValues = [
@@ -285,7 +311,7 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
     input.metaTitle ?? null, input.metaDescription ?? null,
     input.waist ?? null, input.length ?? null, input.bottom ?? null,
     ...(hasMeasurementsJson ? [input.measurementsJson ?? null] : []),
-    input.bgColor ?? null, input.brand ?? null,
+    input.bgColor ?? null, input.brand ?? null, sortOrder,
     t, t,
   ];
 
@@ -349,6 +375,7 @@ export async function updateProduct(
     ...(hasMeasurementsJson ? { measurementsJson: updates.measurementsJson } : {}),
     bgColor:         updates.bgColor,
     brand:           updates.brand,
+    sortOrder:       updates.sortOrder,
   };
 
   Object.entries(map).forEach(([k, v]) => {
@@ -471,6 +498,18 @@ export async function syncProductVariants(
   }
 }
 
+export async function updateProductSortOrder(productIds: string[]): Promise<void> {
+  await getProductColumnInfo();
+  const t = nowTs();
+
+  for (let i = 0; i < productIds.length; i++) {
+    await db.execute({
+      sql:  "UPDATE products SET sortOrder = ?, updatedAt = ? WHERE id = ?",
+      args: [i, t, productIds[i]],
+    });
+  }
+}
+
 export async function duplicateProduct(sourceId: string): Promise<string> {
   const source = await getProductById(sourceId);
   if (!source) throw new Error("Product not found");
@@ -488,7 +527,7 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
     "collectionId", "status", "isNew", "isFeatured", "isBestSeller", "tags",
     "metaTitle", "metaDescription", "waist", '"length"', "bottom",
     ...(hasMeasurementsJson ? ["measurementsJson"] : []),
-    "bgColor", "brand", "createdAt", "updatedAt",
+    "bgColor", "brand", "sortOrder", "createdAt", "updatedAt",
   ];
 
   const productValues = [
@@ -500,7 +539,7 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
     source.metaTitle, source.metaDescription,
     source.waist, source.length, source.bottom,
     ...(hasMeasurementsJson ? [source.measurementsJson] : []),
-    source.bgColor, source.brand,
+    source.bgColor, source.brand, source.sortOrder,
     t, t,
   ];
 

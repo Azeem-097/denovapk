@@ -31,6 +31,7 @@ interface ProductFiltersProps {
 }
 
 const SORT_OPTIONS = [
+  { value: "manual",      label: "Featured Order" },
   { value: "newest",      label: "Newest First" },
   { value: "price-asc",   label: "Price: Low to High" },
   { value: "price-desc",  label: "Price: High to Low" },
@@ -91,7 +92,7 @@ export function ProductFilters({
   const clearAll = () => {
     onChange({
       collections: [], brands: [], sizes: [], colors: [],
-      priceMin: catalogMin, priceMax: catalogMax, sortBy: "newest",
+      priceMin: catalogMin, priceMax: catalogMax, sortBy: "manual",
     });
   };
 

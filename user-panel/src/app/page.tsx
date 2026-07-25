@@ -73,6 +73,7 @@ export default async function HomePage() {
         <SaleCountdown />
         <BrandTicker />
         <NewArrivals
+          products={allProducts}
           newArrivals={premiumProducts}
           bestSellers={superPremiumProducts}
         />
