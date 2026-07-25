@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,19 +68,6 @@ export function ProductFilters({
   catalogMin, catalogMax,
   isMobile = false, onClose,
 }: ProductFiltersProps) {
-  const [collections, setCollections] = useState<string[]>([]);
-
-  useEffect(() => {
-    fetch("/api/shop/collections")
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data && Array.isArray(data.collections)) {
-          setCollections(data.collections.map((c: { name: string }) => c.name));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   const toggle = <K extends "collections" | "brands" | "sizes" | "colors">(key: K, value: string) => {
     const arr = filters[key] as string[];
     onChange({
@@ -184,40 +171,6 @@ export function ProductFilters({
                 </span>
               </label>
             ))}
-          </div>
-        </Accordion>
-
-        <Accordion title="Collections">
-          <div className="flex flex-col gap-2">
-            {collections.length === 0 ? (
-              <p className="text-xs text-[#6b7280] italic">Loading...</p>
-            ) : (
-              collections.map((col) => (
-                <label key={col} className="flex items-center gap-2.5 cursor-pointer group">
-                  <div
-                    className={cn(
-                      "w-4 h-4 border-2 transition-all duration-150 flex-shrink-0 flex items-center justify-center",
-                      filters.collections.includes(col)
-                        ? "border-[#3b5f8f] bg-[#3b5f8f]"
-                        : "border-[#e5e7eb] group-hover:border-[#3b5f8f]"
-                    )}
-                    onClick={() => toggle("collections", col)}
-                  >
-                    {filters.collections.includes(col) && (
-                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </div>
-                  <span
-                    className="text-sm text-[#6b7280] group-hover:text-[#1a1a1a] transition-colors cursor-pointer"
-                    onClick={() => toggle("collections", col)}
-                  >
-                    {col}
-                  </span>
-                </label>
-              ))
-            )}
           </div>
         </Accordion>
 

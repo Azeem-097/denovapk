@@ -58,11 +58,6 @@ const FALLBACK: FooterData = {
       { label: "Sale",         href: "/shop?filter=sale" },
       { label: "All Products", href: "/shop" },
     ]},
-    { title: "Collections", links: [
-      { label: "Premium",       href: "/collections/premium" },
-      { label: "Super Premium", href: "/collections/super-premium" },
-      { label: "All Collections", href: "/collections" },
-    ]},
     { title: "Help", links: [
       { label: "Track My Order",    href: "/track-order" },
       { label: "Returns & Refunds", href: "/returns" },
@@ -86,8 +81,10 @@ const FALLBACK: FooterData = {
 };
 
 function mergeWithFallback(api: FooterData): FooterData {
-  const mergedColumns: FooterColumn[] = FALLBACK.columns.map((fbCol, i) => {
-    const apiCol = api.columns[i];
+  const sourceColumns = api.columns.filter((col) => col.title.toLowerCase() !== "collections");
+  const fallbackColumns = FALLBACK.columns.filter((col) => col.title.toLowerCase() !== "collections");
+  const mergedColumns: FooterColumn[] = fallbackColumns.map((fbCol, i) => {
+    const apiCol = sourceColumns[i];
     if (apiCol && apiCol.links && apiCol.links.length > 0) {
       return { title: apiCol.title || fbCol.title, links: apiCol.links };
     }

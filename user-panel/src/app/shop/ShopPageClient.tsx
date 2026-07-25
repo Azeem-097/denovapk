@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { SlidersHorizontal, Grid2x2, Grid3x3, X } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductFilters, type FilterState, type ColorOption } from "@/components/product/ProductFilters";
@@ -14,7 +14,24 @@ interface Props {
   products: Product[];
 }
 
+function getProductWaists(product: Product): string[] {
+  const values = new Set<string>();
+
+  for (const row of product.measurements ?? []) {
+    if (row.waist !== null && row.waist !== undefined && !Number.isNaN(row.waist)) {
+      values.add(String(row.waist));
+    }
+  }
+
+  if (product.waist !== null && product.waist !== undefined && !Number.isNaN(product.waist)) {
+    values.add(String(product.waist));
+  }
+
+  return Array.from(values);
+}
+
 export function ShopPageClient({ products }: Props) {
+  const productResultsRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const filterParam  = searchParams.get("filter");
   const waistParam   = searchParams.get("waist");
@@ -77,7 +94,7 @@ export function ShopPageClient({ products }: Props) {
   const availableSizes = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => {
-      if (p.waist !== null && p.waist !== undefined) set.add(String(p.waist));
+      getProductWaists(p).forEach((waist) => set.add(waist));
     });
     return Array.from(set).sort((a, b) => Number(a) - Number(b));
   }, [products]);
@@ -107,6 +124,12 @@ export function ShopPageClient({ products }: Props) {
     setIsLoading(true);
     setFilters(newFilters);
     setTimeout(() => setIsLoading(false), 300);
+    window.requestAnimationFrame(() => {
+      productResultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const filteredProducts = useMemo(() => {
@@ -125,8 +148,7 @@ export function ShopPageClient({ products }: Props) {
 
     if (filters.sizes.length > 0) {
       result = result.filter((p) =>
-        p.waist !== null && p.waist !== undefined &&
-        filters.sizes.includes(String(p.waist))
+        getProductWaists(p).some((waist) => filters.sizes.includes(waist))
       );
     }
 
@@ -206,7 +228,7 @@ export function ShopPageClient({ products }: Props) {
             </div>
           </aside>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" ref={productResultsRef}>
             <div className="md:hidden flex items-center justify-between gap-3 mb-6 pb-4 border-b border-[#e5e7eb]">
               <button
                 onClick={() => setMobileFilters(true)}

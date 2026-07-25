@@ -45,7 +45,6 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
   const [search,   setSearch]   = useState("");
   const [status,   setStatus]   = useState<ProductStatus | "all">("all");
   const [view,     setView]     = useState<"table" | "grid">("table");
-  const [collectionFilter, setCollectionFilter] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -66,10 +65,9 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
       const matchSearch = search.trim() === "" ||
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.sku.toLowerCase().includes(search.toLowerCase());
-      const matchCollection = collectionFilter === "all" || p.collection === collectionFilter;
-      return matchStatus && matchSearch && matchCollection;
+      return matchStatus && matchSearch;
     });
-  }, [search, status, products, collectionFilter]);
+  }, [search, status, products]);
 
   const statusCounts = useMemo(() => ({
     all:       products.length,
@@ -227,9 +225,9 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => {
               const csv = initialProducts.map((p) =>
-                [p.name, p.sku, p.collection, p.price, p.stock, p.sold, p.status].map((v) => `"${v}"`).join(",")
-              );
-              csv.unshift('"Name","SKU","Collection","Price","Stock","Sold","Status"');
+              [p.name, p.sku, p.price, p.stock, p.sold, p.status].map((v) => `"${v}"`).join(",")
+            );
+              csv.unshift('"Name","SKU","Price","Stock","Sold","Status"');
               const blob = new Blob([csv.join("\n")], { type: "text/csv" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
@@ -263,7 +261,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
       <div className="bg-white border border-[#e5e7eb] p-3 flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[240px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, SKU, collection..."
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU..."
             className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
         </div>
 
@@ -281,12 +279,6 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
           <button onClick={() => setView("table")} className={cn("p-1.5", view === "table" ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><List size={14} /></button>
           <button onClick={() => setView("grid")}  className={cn("p-1.5", view === "grid"  ? "bg-[#1a1a1a] text-white" : "text-[#6b7280]")}><Grid3x3 size={14} /></button>
         </div>
-        <select value={collectionFilter} onChange={(e) => setCollectionFilter(e.target.value)}
-          className="text-xs border border-[#e5e7eb] px-3 py-2 focus:border-[#3b5f8f] focus:outline-none bg-white">
-          <option value="all">All Collections</option>
-          <option value="Premium">Premium</option>
-          <option value="Super Premium">Super Premium</option>
-        </select>
       </div>
 
       {filtered.length > 1 && (
@@ -323,7 +315,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
                   <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
                     <th className="w-10 px-4 py-3" />
                     <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#3b5f8f]" /></th>
-                    {["Product","SKU","Collection","Price","Stock","Sold","Status","Updated"].map((h) => (
+                    {["Product","SKU","Price","Stock","Sold","Status","Updated"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
                     ))}
                     <th className="w-16 px-4 py-3" />
@@ -477,7 +469,6 @@ function ProductRow({
         </div>
       </td>
       <td className="px-4 py-3 text-xs font-mono text-[#6b7280]">{product.sku}</td>
-      <td className="px-4 py-3 text-xs text-[#1a1a1a]">{product.collection}</td>
       <td className="px-4 py-3">
         <p className="text-xs font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
         {product.comparePrice && <p className="text-[10px] text-[#6b7280] line-through">{formatPrice(product.comparePrice)}</p>}
@@ -586,7 +577,6 @@ function ProductCard({
         </div>
       </div>
       <div className="p-3">
-        <p className="text-[10px] text-[#3b5f8f] uppercase tracking-wider mb-1">{product.collection}</p>
         <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#3b5f8f]">{product.name}</p>
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>

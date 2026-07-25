@@ -5,11 +5,6 @@ import { X, ShoppingBag, Heart, User, ChevronRight, Phone, Mail } from "lucide-r
 import { cn } from "@/lib/utils";
 import { navLinks } from "@/lib/data";
 
-const collectionsDropdown = [
-  { label: "Premium",       href: "/collections/premium" },
-  { label: "Super Premium", href: "/collections/super-premium" },
-];
-
 const LOGO_MOBILE = "https://res.cloudinary.com/djy5qqco7/image/upload/e_trim:10/f_auto,q_auto,c_limit,h_120/v1784388373/denovapk/general/logo-without-bg_1784388368531";
 
 interface NavbarMobileProps {
@@ -105,18 +100,6 @@ export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) 
               </Link>
             </div>
           ))}
-
-          <div className="mt-1">
-            <p className="px-5 py-2 text-[10px] font-semibold tracking-[0.15em] text-[#6b7280] uppercase">
-              Collections
-            </p>
-            {collectionsDropdown.map((item) => (
-              <Link key={item.href} href={item.href} onClick={onClose} className="flex items-center px-5 py-3 text-sm text-[#6b7280] hover:text-[#3b5f8f] hover:bg-[#fafaf9] transition-colors">
-                <span className="w-2 h-px bg-[#3b5f8f] mr-3 flex-shrink-0" />
-                {item.label}
-              </Link>
-            ))}
-          </div>
         </nav>
 
         <div className="border-t border-[#e5e7eb] px-5 py-4 bg-[#fafaf9]">

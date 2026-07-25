@@ -7,6 +7,7 @@ import { PaymentMethodsTab } from "./PaymentMethodsTab";
 import {
   Store, Phone, ShoppingBag, Cake, Award,
   DollarSign, Globe, Save, CheckCircle, MessageCircle, Truck, CreditCard,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,7 @@ interface Props {
 type TabId =
   | "restaurant" | "contact" | "abandoned_cart" | "birthday"
   | "loyalty" | "pricing" | "shipping" | "payments" | "social"
-  | "first_order" | "footer" | "whatsapp";
+  | "first_order" | "footer" | "whatsapp" | "tracking";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
   { id: "restaurant",     label: "Brand Information",   icon: Store       },
@@ -26,6 +27,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
   { id: "whatsapp",       label: "WhatsApp Widget",     icon: MessageCircle },
   { id: "shipping",       label: "Shipping & Delivery", icon: Truck       },
   { id: "payments",       label: "Payment Methods",     icon: CreditCard  },
+  { id: "tracking",       label: "Tracking Pixels",     icon: BarChart3   },
   { id: "abandoned_cart", label: "Abandoned Cart",      icon: ShoppingBag },
   { id: "birthday",       label: "Birthday Rewards",    icon: Cake        },
   { id: "first_order",    label: "First Order Discount", icon: Award      },
@@ -146,6 +148,7 @@ export function SettingsClient({ initialSettings }: Props) {
             {activeTab === "whatsapp"       && <WhatsAppTab       settings={whatsappSettings              } onChange={(k, v) => updateSetting("whatsapp", k, v)} />}
             {activeTab === "shipping"       && <ShippingTab       settings={settings.shipping       ?? {}} onChange={(k, v) => updateSetting("shipping", k, v)} />}
             {activeTab === "payments"       && <PaymentMethodsTab settings={settings.payments      ?? {}} onChange={(k, v) => updateSetting("payments", k, v)} />}
+            {activeTab === "tracking"       && <TrackingTab       settings={settings.tracking      ?? {}} onChange={(k, v) => updateSetting("tracking", k, v)} />}
             {activeTab === "abandoned_cart" && <AbandonedCartTab  settings={settings.abandoned_cart ?? {}} onChange={(k, v) => updateSetting("abandoned_cart", k, v)} />}
             {activeTab === "birthday"       && <BirthdayTab       settings={settings.birthday       ?? {}} onChange={(k, v) => updateSetting("birthday", k, v)} />}
             {activeTab === "first_order"    && <FirstOrderTab     settings={settings.first_order    ?? {}} onChange={(k, v) => updateSetting("first_order", k, v)} />}
@@ -172,11 +175,11 @@ interface TabProps {
 }
 
 function Field({
-  label, id, value, onChange, type = "text", hint, rows,
+  label, id, value, onChange, type = "text", hint, rows, inputMode,
 }: {
   label: string; id: string; value: string;
   onChange: (v: string) => void;
-  type?: string; hint?: string; rows?: number;
+  type?: string; hint?: string; rows?: number; inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }) {
   return (
     <div>
@@ -187,7 +190,7 @@ function Field({
         <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
           className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y" />
       ) : (
-        <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)}
+        <input id={id} type={type} value={value} inputMode={inputMode} onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
       )}
       {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
@@ -429,6 +432,54 @@ function SocialTab({ settings, onChange }: TabProps) {
         <Field label="Facebook URL" id="social_facebook" value={settings.social_facebook ?? ""} onChange={(v) => onChange("social_facebook", v)} type="url" />
         <Field label="Instagram URL" id="social_instagram" value={settings.social_instagram ?? ""} onChange={(v) => onChange("social_instagram", v)} type="url" />
         <Field label="TikTok URL" id="social_tiktok" value={settings.social_tiktok ?? ""} onChange={(v) => onChange("social_tiktok", v)} type="url" />
+      </div>
+    </div>
+  );
+}
+
+function TrackingTab({ settings, onChange }: TabProps) {
+  const enabled = settings.meta_pixel_enabled === "true";
+
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <BarChart3 size={16} className="text-[#3b5f8f]" />
+        Tracking Pixels
+      </h2>
+      <p className="text-xs text-[#6b7280] mb-4">
+        Add your Meta Pixel ID to connect Facebook/Instagram ads tracking. Paste only the numeric Pixel ID, not the full script.
+      </p>
+      <div className="space-y-4">
+        <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onChange("meta_pixel_enabled", e.target.checked ? "true" : "false")}
+            className="w-4 h-4 accent-[#3b5f8f]"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[#1a1a1a]">Enable Meta Pixel on website</p>
+            <p className="text-xs text-[#6b7280] mt-0.5">Fires the standard PageView event on every storefront page.</p>
+          </div>
+        </label>
+
+        <Field
+          label="Meta Pixel ID"
+          id="meta_pixel_id"
+          value={settings.meta_pixel_id ?? ""}
+          onChange={(v) => onChange("meta_pixel_id", v.replace(/[^0-9]/g, ""))}
+          inputMode="numeric"
+          hint="Example Pixel ID: 123456789012345"
+        />
+
+        <Field
+          label="Sample Meta Pixel Link"
+          id="meta_pixel_sample_link"
+          value={settings.meta_pixel_sample_link ?? "https://business.facebook.com/events_manager2/list/pixel/123456789012345/overview"}
+          onChange={(v) => onChange("meta_pixel_sample_link", v)}
+          type="url"
+          hint="Dummy sample only, so you can recognize how a Meta Events Manager pixel link looks."
+        />
       </div>
     </div>
   );

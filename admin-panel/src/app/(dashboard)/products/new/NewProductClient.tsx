@@ -369,12 +369,6 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
           </Section>
 
           <Section title="Organization">
-            <FormField label="Collection">
-              <select value={form.collectionId} onChange={(e) => updateField("collectionId", e.target.value)} className="input">
-                <option value="">No collection</option>
-                {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </FormField>
             <FormField label="Tags" hint="Comma separated">
               <input type="text" value={form.tags} onChange={(e) => updateField("tags", e.target.value)}
                 placeholder="denim, slim, casual" className="input" />

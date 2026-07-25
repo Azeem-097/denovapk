@@ -1,18 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Search, Heart, ShoppingBag, User, Menu, ChevronDown } from "lucide-react";
+import { Search, Heart, ShoppingBag, User, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavbarMobile } from "./NavbarMobile";
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuthStore } from "@/store/authStore";
 import { useSearchStore } from "@/store/searchStore";
-
-const collectionsDropdown = [
-  { label: "Premium",       href: "/collections/premium" },
-  { label: "Super Premium", href: "/collections/super-premium" },
-];
 
 // ═══════════════════════════════════════════════════════════
 //  Cloudinary logo (transparent, 612 x 408 source)
@@ -24,9 +19,7 @@ const LOGO_MOBILE  = `${LOGO_BASE}/e_trim:10/f_auto,q_auto,c_limit,h_120/${LOGO_
 
 export function Navbar() {
   const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mounted,      setMounted]      = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const headerRef   = useRef<HTMLElement>(null);
   const dividerRef  = useRef<HTMLDivElement>(null);
   const scrolledRef = useRef<boolean>(false);
@@ -74,16 +67,6 @@ export function Navbar() {
       window.removeEventListener("scroll", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   useEffect(() => {
@@ -154,34 +137,6 @@ export function Navbar() {
                 Shop
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-[#3b5f8f] transition-all duration-300 group-hover:w-full" />
               </Link>
-
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-1 text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 whitespace-nowrap"
-                >
-                  Collections
-                  <ChevronDown size={14} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
-                </button>
-
-                <div className={cn(
-                  "absolute top-full left-0 mt-3 w-56 bg-white border border-[#e5e7eb] shadow-lg transition-all duration-200 origin-top z-50",
-                  dropdownOpen ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-95 pointer-events-none"
-                )}>
-                  <div className="py-2">
-                    {collectionsDropdown.map((item) => (
-                      <Link key={item.href} href={item.href} onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm text-[#1a1a1a] hover:bg-[#f5f0e8] hover:text-[#3b5f8f] transition-colors">
-                        {item.label}
-                      </Link>
-                    ))}
-                    <div className="border-t border-[#e5e7eb] mt-1 pt-1">
-                      <Link href="/collections" onClick={() => setDropdownOpen(false)} className="block px-4 py-2.5 text-sm font-medium text-[#3b5f8f] hover:bg-[#f5f0e8] transition-colors">
-                        View All Collections →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               <Link href="/shop?filter=new" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors py-1 relative group whitespace-nowrap">
                 New Arrivals

@@ -78,9 +78,9 @@ export function FeaturedCollections({ collections }: Props) {
 
 function CollectionCard({ collection }: { collection: Collection }) {
   return (
-    <Link
-      href={`/collections/${collection.slug}`}
+    <div
       className="group relative block aspect-square overflow-hidden bg-[#111]"
+      aria-label={collection.name}
     >
       {collection.image && (
         <Image
@@ -119,6 +119,6 @@ function CollectionCard({ collection }: { collection: Collection }) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

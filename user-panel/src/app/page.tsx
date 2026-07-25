@@ -82,8 +82,8 @@ export default async function HomePage() {
           newArrivals={premiumProducts}
           bestSellers={superPremiumProducts}
         />
-        <FeaturedCollections collections={collections} />
         <BrandStory />
+        <FeaturedCollections collections={collections} />
         <Testimonials testimonials={testimonials} />
         <GallerySection />
 

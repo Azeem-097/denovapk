@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Package, FolderOpen, BarChart3,
+  LayoutDashboard, Package, BarChart3,
   ShoppingCart, Users, Tag, Settings, LogOut, ChevronRight,
   Layers, Star, ShoppingBag, Cake, Award, LayoutTemplate, Megaphone,
   LayoutGrid, MessageSquare, Ruler,
@@ -18,7 +18,6 @@ const NAV_SECTIONS = [
   ]},
   { label: "Catalogue", items: [
     { href: "/products",    label: "Products",    icon: Package },
-    { href: "/collections", label: "Collections", icon: FolderOpen },
     { href: "/inventory",   label: "Inventory",   icon: Layers },
   ]},
   { label: "Sales", items: [

@@ -18,6 +18,22 @@ interface Props {
   bestSellers: Product[];
 }
 
+function getProductWaists(product: Product): number[] {
+  const values = new Set<number>();
+
+  for (const row of product.measurements ?? []) {
+    if (row.waist !== null && row.waist !== undefined && !Number.isNaN(row.waist)) {
+      values.add(row.waist);
+    }
+  }
+
+  if (product.waist !== null && product.waist !== undefined && !Number.isNaN(product.waist)) {
+    values.add(product.waist);
+  }
+
+  return Array.from(values);
+}
+
 /**
  * "Shop by Waist" section — displays a unified list of products from BOTH
  * Premium and Super Premium collections, filtered by waist size.
@@ -46,7 +62,7 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
   const availableWaists = useMemo(() => {
     const set = new Set<number>();
     for (const p of allProducts) {
-      if (p.waist !== null && p.waist !== undefined) set.add(p.waist);
+      getProductWaists(p).forEach((waist) => set.add(waist));
     }
     return Array.from(set).sort((a, b) => a - b);
   }, [allProducts]);
@@ -68,7 +84,7 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
     const list = selectedWaists.length === 0
       ? allProducts
       : allProducts.filter(
-          (p) => p.waist !== null && p.waist !== undefined && selectedWaists.includes(p.waist)
+          (p) => getProductWaists(p).some((waist) => selectedWaists.includes(waist))
         );
     return list;
   }, [allProducts, selectedWaists]);

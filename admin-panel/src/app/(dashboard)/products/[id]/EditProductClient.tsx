@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, ExternalLink, Trash, Copy, Save, Plus, X,
-  Package, Layers, Percent, Tag, ChevronRight, Check,
+  Package, Percent, Tag, ChevronRight, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { slugify, cn } from "@/lib/utils";
@@ -597,7 +597,6 @@ export function EditProductClient({ product, collections }: Props) {
             <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a] mb-3">Quick Actions</h3>
             <div className="space-y-1">
               <QuickAction icon={Package}  label="Update Stock"      onClick={() => setModal("stock")}      />
-              <QuickAction icon={Layers}   label="Change Collection" onClick={() => setModal("collection")} />
               <QuickAction icon={Percent}  label="Set Discount"      onClick={() => setModal("discount")}   />
               <QuickAction icon={Tag}      label="Change Status"     onClick={() => setModal("status")}     />
             </div>
@@ -623,12 +622,6 @@ export function EditProductClient({ product, collections }: Props) {
           </Section>
 
           <Section title="Organization">
-            <FormField label="Collection">
-              <select value={form.collectionId} onChange={(e) => updateField("collectionId", e.target.value)} className="input">
-                <option value="">No collection</option>
-                {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </FormField>
             <FormField label="Tags" hint="Comma separated">
               <input type="text" value={form.tags} onChange={(e) => updateField("tags", e.target.value)}
                 placeholder="denim, slim, casual" className="input" />
