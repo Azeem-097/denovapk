@@ -16,9 +16,19 @@ import { useToastStore } from "@/store/toastStore";
 import type { AdminProduct, ProductStatus } from "@/types";
 
 const STATUS_FILTERS: (ProductStatus | "all")[] = ["all", "published", "draft", "archived"];
+type DropPosition = "before" | "after";
+
+function getDropPosition(e: React.DragEvent<HTMLElement>, axis: "x" | "y" = "y"): DropPosition {
+  const rect = e.currentTarget.getBoundingClientRect();
+  if (axis === "x") {
+    return e.clientX < rect.left + rect.width / 2 ? "before" : "after";
+  }
+  return e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+}
 
 export function ProductsPageClient({ initialProducts }: { initialProducts: AdminProduct[] }) {
   const [products, setProducts] = useState(initialProducts);
+  const [savedProducts, setSavedProducts] = useState(initialProducts);
   const [search,   setSearch]   = useState("");
   const [status,   setStatus]   = useState<ProductStatus | "all">("all");
   const [view,     setView]     = useState<"table" | "grid">("table");
@@ -26,8 +36,14 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
   const [selected, setSelected] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; position: DropPosition } | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const toast = useToastStore();
+
+  const hasOrderChanges = useMemo(
+    () => products.map((p) => p.id).join("|") !== savedProducts.map((p) => p.id).join("|"),
+    [products, savedProducts]
+  );
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -102,7 +118,8 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
     setTimeout(() => window.location.reload(), 1000);
   };
 
-  const saveProductOrder = async (nextProducts: AdminProduct[], previousProducts: AdminProduct[]) => {
+  const saveProductOrder = async () => {
+    const nextProducts = products;
     setSavingOrder(true);
     try {
       const res = await fetch("/api/products/reorder", {
@@ -112,16 +129,16 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to save product order");
+      setSavedProducts(nextProducts);
       toast.success("Product order saved.", "Saved");
     } catch (err) {
-      setProducts(previousProducts);
       toast.error((err as Error).message, "Order Not Saved");
     } finally {
       setSavingOrder(false);
     }
   };
 
-  const moveProduct = (fromId: string, toId: string) => {
+  const moveProduct = (fromId: string, toId: string, position: DropPosition = "before") => {
     if (fromId === toId || savingOrder) return;
 
     const visibleIds = filtered.map((p) => p.id);
@@ -129,18 +146,25 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
     const toVisibleIndex = visibleIds.indexOf(toId);
     if (fromVisibleIndex === -1 || toVisibleIndex === -1) return;
 
-    const previousProducts = products;
     const nextProducts = [...products];
     const fromIndex = nextProducts.findIndex((p) => p.id === fromId);
-    const toIndex = nextProducts.findIndex((p) => p.id === toId);
+    const originalToIndex = nextProducts.findIndex((p) => p.id === toId);
+    let toIndex = originalToIndex;
     if (fromIndex === -1 || toIndex === -1) return;
 
     const [moved] = nextProducts.splice(fromIndex, 1);
+    if (fromIndex < originalToIndex) toIndex--;
+    if (position === "after") toIndex++;
     nextProducts.splice(toIndex, 0, moved);
     const ordered = nextProducts.map((p, index) => ({ ...p, sortOrder: index }));
 
     setProducts(ordered);
-    void saveProductOrder(ordered, previousProducts);
+  };
+
+  const resetProductOrder = () => {
+    setProducts(savedProducts);
+    setDropTarget(null);
+    setDraggingId(null);
   };
 
   return (
@@ -216,10 +240,23 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
       </div>
 
       {filtered.length > 1 && (
-        <p className="text-xs text-[#6b7280]">
-          Drag products up or down to control the storefront order. Top rows show first.
-          {savingOrder && <span className="ml-2 text-[#3b5f8f] font-medium">Saving order...</span>}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-[#6b7280]">
+            Drag products into sequence, then save once. Top positions show first on the storefront.
+            {hasOrderChanges && !savingOrder && <span className="ml-2 text-orange-600 font-medium">Unsaved order changes</span>}
+            {savingOrder && <span className="ml-2 text-[#3b5f8f] font-medium">Saving order...</span>}
+          </p>
+          {hasOrderChanges && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={resetProductOrder} disabled={savingOrder}>
+                Reset Order
+              </Button>
+              <Button variant="primary" size="sm" onClick={saveProductOrder} disabled={savingOrder}>
+                {savingOrder ? "Saving..." : "Save Order"}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
 
       {view === "table" ? (
@@ -249,11 +286,19 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
                       product={p}
                       isSelected={selected.includes(p.id)}
                       isDragging={draggingId === p.id}
+                      dropPosition={dropTarget?.id === p.id ? dropTarget.position : null}
                       onToggle={() => toggleOne(p.id)}
                       onDragStart={() => setDraggingId(p.id)}
-                      onDragEnd={() => setDraggingId(null)}
-                      onDropOn={() => {
-                        if (draggingId) moveProduct(draggingId, p.id);
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDropTarget(null);
+                      }}
+                      onDragPosition={(position) => {
+                        setDropTarget(draggingId && draggingId !== p.id ? { id: p.id, position } : null);
+                      }}
+                      onDropOn={(position) => {
+                        if (draggingId) moveProduct(draggingId, p.id, position);
+                        setDropTarget(null);
                         setDraggingId(null);
                       }}
                     />
@@ -270,10 +315,18 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
               key={p.id}
               product={p}
               isDragging={draggingId === p.id}
+              dropPosition={dropTarget?.id === p.id ? dropTarget.position : null}
               onDragStart={() => setDraggingId(p.id)}
-              onDragEnd={() => setDraggingId(null)}
-              onDropOn={() => {
-                if (draggingId) moveProduct(draggingId, p.id);
+              onDragEnd={() => {
+                setDraggingId(null);
+                setDropTarget(null);
+              }}
+              onDragPosition={(position) => {
+                setDropTarget(draggingId && draggingId !== p.id ? { id: p.id, position } : null);
+              }}
+              onDropOn={(position) => {
+                if (draggingId) moveProduct(draggingId, p.id, position);
+                setDropTarget(null);
                 setDraggingId(null);
               }}
             />
@@ -290,18 +343,22 @@ function ProductRow({
   product,
   isSelected,
   isDragging,
+  dropPosition,
   onToggle,
   onDragStart,
   onDragEnd,
+  onDragPosition,
   onDropOn,
 }: {
   product: AdminProduct;
   isSelected: boolean;
   isDragging: boolean;
+  dropPosition: DropPosition | null;
   onToggle: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
-  onDropOn: () => void;
+  onDragPosition: (position: DropPosition) => void;
+  onDropOn: (position: DropPosition) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openUp, setOpenUp]     = useState(false);
@@ -327,15 +384,18 @@ function ProductRow({
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+        onDragPosition(getDropPosition(e, "y"));
       }}
       onDragEnd={onDragEnd}
       onDrop={(e) => {
         e.preventDefault();
-        onDropOn();
+        onDropOn(getDropPosition(e, "y"));
       }}
       className={cn(
-        "hover:bg-[#fafaf9] transition-colors",
+        "relative hover:bg-[#fafaf9] transition-colors",
         isSelected && "bg-[#f5f0e8]/30",
+        dropPosition === "before" && "shadow-[inset_0_3px_0_#3b5f8f]",
+        dropPosition === "after" && "shadow-[inset_0_-3px_0_#3b5f8f]",
         isDragging && "opacity-50"
       )}
     >
@@ -401,15 +461,19 @@ function ProductRow({
 function ProductCard({
   product,
   isDragging,
+  dropPosition,
   onDragStart,
   onDragEnd,
+  onDragPosition,
   onDropOn,
 }: {
   product: AdminProduct;
   isDragging: boolean;
+  dropPosition: DropPosition | null;
   onDragStart: () => void;
   onDragEnd: () => void;
-  onDropOn: () => void;
+  onDragPosition: (position: DropPosition) => void;
+  onDropOn: (position: DropPosition) => void;
 }) {
   return (
     <Link
@@ -422,20 +486,32 @@ function ProductCard({
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+        onDragPosition(getDropPosition(e, "x"));
       }}
       onDragEnd={onDragEnd}
       onDrop={(e) => {
         e.preventDefault();
-        onDropOn();
+        onDropOn(getDropPosition(e, "x"));
       }}
       onClick={(e) => {
         if (isDragging) e.preventDefault();
       }}
       className={cn(
-        "group bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden cursor-grab active:cursor-grabbing",
+        "group relative bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden cursor-grab active:cursor-grabbing",
+        dropPosition === "before" && "shadow-[-5px_0_0_#3b5f8f]",
+        dropPosition === "after" && "shadow-[5px_0_0_#3b5f8f]",
         isDragging && "opacity-50"
       )}
     >
+      {dropPosition && (
+        <span
+          className={cn(
+            "pointer-events-none absolute top-0 z-20 h-full w-1 bg-[#3b5f8f]",
+            dropPosition === "before" ? "left-0" : "right-0"
+          )}
+          aria-hidden
+        />
+      )}
       <div className="relative aspect-[3/4] bg-[#fafaf9]">
         <div className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center bg-white/90 border border-[#e5e7eb] text-[#6b7280] shadow-sm">
           <GripVertical size={15} />
