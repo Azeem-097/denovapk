@@ -10,7 +10,8 @@
     "db:init": "tsx src/lib/db/migrate.ts",
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:reset": "tsx src/lib/db/reset.ts",
-    "db:migrate-images": "tsx src/lib/db/migrate-images-to-cloudinary.ts"
+    "db:migrate-images": "tsx src/lib/db/migrate-images-to-cloudinary.ts",
+    "db:add-measurements": "tsx src/lib/db/add-measurements-json-column.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

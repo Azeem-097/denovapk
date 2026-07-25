@@ -10,16 +10,44 @@ export interface ProductWithRelations extends DbProduct {
   collection?: { id: string; name: string; slug: string } | null;
 }
 
-// Turso/SQLite strips result columns named "length" (reserved word).
-// Workaround: alias to a different name in SQL, then remap in code.
-const PRODUCT_COLS = `
+type ProductColumnInfo = {
+  hasMeasurementsJson: boolean;
+};
+
+let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
+
+async function getProductColumnInfo(): Promise<ProductColumnInfo> {
+  if (!productColumnInfoPromise) {
+    productColumnInfoPromise = (async () => {
+      const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
+      const hasMeasurementsJson = result.rows.some((row) => (row.name as string) === "measurementsJson");
+
+      if (hasMeasurementsJson) {
+        return { hasMeasurementsJson: true };
+      }
+
+      await db.execute({ sql: "ALTER TABLE products ADD COLUMN measurementsJson TEXT;", args: [] });
+      return { hasMeasurementsJson: true };
+    })().catch((error) => {
+      productColumnInfoPromise = null;
+      throw error;
+    });
+  }
+
+  return productColumnInfoPromise;
+}
+
+async function getProductCols(): Promise<string> {
+  const { hasMeasurementsJson } = await getProductColumnInfo();
+  return `
   p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
   p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
-  p.waist, p."length" as lengthInches, p.bottom, p.bgColor, p.brand,
+  p.waist, p."length" as lengthInches, p.bottom${hasMeasurementsJson ? ", p.measurementsJson" : ""}, p.bgColor, p.brand,
   p.createdAt, p.updatedAt
 `;
+}
 
 function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
   const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
@@ -72,8 +100,9 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
   const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
 
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+    sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p
           LEFT JOIN collections c ON c.id = p.collectionId
           ${where} ORDER BY ${orderBy} ${limit} ${offset}`,
@@ -106,8 +135,9 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+    sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p LEFT JOIN collections c ON c.id = p.collectionId
           WHERE p.slug = ? LIMIT 1`,
     args: [slug],
@@ -131,8 +161,9 @@ export async function getProductBySlug(slug: string): Promise<ProductWithRelatio
 }
 
 export async function getProductById(id: string): Promise<ProductWithRelations | null> {
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+    sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p LEFT JOIN collections c ON c.id = p.collectionId
           WHERE p.id = ? LIMIT 1`,
     args: [id],
@@ -174,8 +205,9 @@ export async function getProductCount(opts: GetProductsOptions = {}): Promise<nu
 export async function getRelatedProducts(
   productId: string, collectionId: string, limit = 4
 ): Promise<ProductWithRelations[]> {
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql:  `SELECT ${PRODUCT_COLS} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
+    sql:  `SELECT ${productCols} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
     args: [collectionId, productId, limit],
   });
   const products = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as DbProduct[];
@@ -218,6 +250,7 @@ export interface CreateProductInput {
   waist?:           number | null;
   length?:          number | null;
   bottom?:          number | null;
+  measurementsJson?: string | null;
   bgColor?:         string | null;
   brand?:           string | null;   // new — free-text brand name
   variants?: Array<{
@@ -233,27 +266,34 @@ export interface CreateProductInput {
 export async function createProduct(input: CreateProductInput): Promise<string> {
   const id = generateId();
   const t  = nowTs();
+  const { hasMeasurementsJson } = await getProductColumnInfo();
+
+  const productColumns = [
+    "id", "name", "slug", "sku", "description", "price", "comparePrice", "costPerItem",
+    "collectionId", "status", "isNew", "isFeatured", "isBestSeller", "tags",
+    "metaTitle", "metaDescription", "waist", '"length"', "bottom",
+    ...(hasMeasurementsJson ? ["measurementsJson"] : []),
+    "bgColor", "brand", "createdAt", "updatedAt",
+  ];
+
+  const productValues = [
+    id, input.name, input.slug, input.sku, input.description,
+    input.price, input.comparePrice ?? null, input.costPerItem ?? null,
+    input.collectionId ?? null, input.status ?? "DRAFT",
+    input.isNew ? 1 : 0, input.isFeatured ? 1 : 0, input.isBestSeller ? 1 : 0,
+    (input.tags ?? []).join(","),
+    input.metaTitle ?? null, input.metaDescription ?? null,
+    input.waist ?? null, input.length ?? null, input.bottom ?? null,
+    ...(hasMeasurementsJson ? [input.measurementsJson ?? null] : []),
+    input.bgColor ?? null, input.brand ?? null,
+    t, t,
+  ];
 
   await db.execute({
     sql: `INSERT INTO products (
-      id, name, slug, sku, description, price, comparePrice, costPerItem,
-      collectionId, status, isNew, isFeatured, isBestSeller, tags,
-      metaTitle, metaDescription, waist, "length", bottom, bgColor, brand, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [
-      id, input.name, input.slug, input.sku, input.description,
-      input.price, input.comparePrice ?? null, input.costPerItem ?? null,
-      input.collectionId ?? null, input.status ?? "DRAFT",
-      input.isNew ? 1 : 0, input.isFeatured ? 1 : 0, input.isBestSeller ? 1 : 0,
-      (input.tags ?? []).join(","),
-      input.metaTitle ?? null, input.metaDescription ?? null,
-      input.waist  ?? null,
-      input.length ?? null,
-      input.bottom ?? null,
-      input.bgColor ?? null,
-      input.brand ?? null,
-      t, t,
-    ],
+      ${productColumns.join(", ")}
+    ) VALUES (${productColumns.map(() => "?").join(", ")})`,
+    args: productValues,
   });
 
   const allImages = input.imageUrls && input.imageUrls.length > 0
@@ -284,6 +324,7 @@ export async function updateProduct(
   id: string,
   updates: Partial<Omit<CreateProductInput, "variants" | "imageUrl" | "imageUrls">>
 ): Promise<void> {
+  const { hasMeasurementsJson } = await getProductColumnInfo();
   const sets: string[] = [];
   const args: (string | number | null)[] = [];
 
@@ -305,6 +346,7 @@ export async function updateProduct(
     metaDescription: updates.metaDescription,
     waist:           updates.waist,
     bottom:          updates.bottom,
+    ...(hasMeasurementsJson ? { measurementsJson: updates.measurementsJson } : {}),
     bgColor:         updates.bgColor,
     brand:           updates.brand,
   };
@@ -435,27 +477,38 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
 
   const newId = generateId();
   const t     = nowTs();
+  const { hasMeasurementsJson } = await getProductColumnInfo();
 
   const newName = `${source.name} (Copy)`;
   const newSlug = `${source.slug}-copy-${newId.slice(1, 7)}`;
   const newSku  = `${source.sku}-COPY-${newId.slice(1, 5).toUpperCase()}`;
 
+  const productColumns = [
+    "id", "name", "slug", "sku", "description", "price", "comparePrice", "costPerItem",
+    "collectionId", "status", "isNew", "isFeatured", "isBestSeller", "tags",
+    "metaTitle", "metaDescription", "waist", '"length"', "bottom",
+    ...(hasMeasurementsJson ? ["measurementsJson"] : []),
+    "bgColor", "brand", "createdAt", "updatedAt",
+  ];
+
+  const productValues = [
+    newId, newName, newSlug, newSku, source.description,
+    source.price, source.comparePrice, source.costPerItem,
+    source.collectionId, "DRAFT",
+    source.isNew, source.isFeatured, source.isBestSeller,
+    source.tags,
+    source.metaTitle, source.metaDescription,
+    source.waist, source.length, source.bottom,
+    ...(hasMeasurementsJson ? [source.measurementsJson] : []),
+    source.bgColor, source.brand,
+    t, t,
+  ];
+
   await db.execute({
     sql: `INSERT INTO products (
-      id, name, slug, sku, description, price, comparePrice, costPerItem,
-      collectionId, status, isNew, isFeatured, isBestSeller, tags,
-      metaTitle, metaDescription, waist, "length", bottom, bgColor, brand, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [
-      newId, newName, newSlug, newSku, source.description,
-      source.price, source.comparePrice, source.costPerItem,
-      source.collectionId, "DRAFT",
-      source.isNew, source.isFeatured, source.isBestSeller,
-      source.tags,
-      source.metaTitle, source.metaDescription,
-      source.waist, source.length, source.bottom, source.bgColor, source.brand,
-      t, t,
-    ],
+      ${productColumns.join(", ")}
+    ) VALUES (${productColumns.map(() => "?").join(", ")})`,
+    args: productValues,
   });
 
   for (const img of source.images) {

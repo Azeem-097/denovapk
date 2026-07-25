@@ -13,6 +13,12 @@ interface Variant {
   color: string; colorHex: string; sku: string; stock: number; price: number;
 }
 
+interface MeasurementForm {
+  waist: string;
+  length: string;
+  bottom: string;
+}
+
 export function NewProductClient({ collections }: { collections: Array<{ id: string; name: string }> }) {
   const router = useRouter();
   const toast  = useToastStore();
@@ -33,11 +39,11 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
     tags:         "",
     imageUrl:     "",
     images:       [] as string[],
-    waist:        "",
-    length:       "",
-    bottom:       "",
     bgColor:      null as string | null,
   });
+  const [measurements, setMeasurements] = useState<MeasurementForm[]>([
+    { waist: "32", length: "32", bottom: "14" },
+  ]);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [saving,   setSaving]   = useState(false);
 
@@ -63,13 +69,33 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
 
   const removeVariant = (i: number) => setVariants((vs) => vs.filter((_, idx) => idx !== i));
 
+  const addMeasurement = () => {
+    setMeasurements((rows) => [...rows, { waist: "", length: "", bottom: "" }]);
+  };
+
+  const updateMeasurement = (index: number, field: keyof MeasurementForm, value: string) => {
+    setMeasurements((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row)));
+  };
+
+  const removeMeasurement = (index: number) => {
+    setMeasurements((rows) => (rows.length > 1 ? rows.filter((_, rowIndex) => rowIndex !== index) : rows));
+  };
+
   const handleSave = async () => {
     if (!form.name || !form.description || !form.sku || !form.price) {
       toast.error("Please fill all required fields", "Missing Information");
       return;
     }
-    if (!form.waist) {
-      toast.error("Waist measurement is required for denim products", "Missing Waist");
+    const normalizedMeasurements = measurements
+      .map((row) => ({
+        waist: row.waist.trim(),
+        length: row.length.trim(),
+        bottom: row.bottom.trim(),
+      }))
+      .filter((row) => row.waist.length > 0);
+
+    if (normalizedMeasurements.length === 0) {
+      toast.error("Add at least one waist size for denim products", "Missing Waist");
       return;
     }
     if (variants.length === 0) {
@@ -85,9 +111,10 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
           ...form,
           price:        Number(form.price),
           comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
-          waist:        Number(form.waist),
-          length:       form.length !== "" ? Number(form.length) : null,
-          bottom:       form.bottom !== "" ? Number(form.bottom) : null,
+          waist:        Number(normalizedMeasurements[0].waist),
+          length:       normalizedMeasurements[0].length !== "" ? Number(normalizedMeasurements[0].length) : null,
+          bottom:       normalizedMeasurements[0].bottom !== "" ? Number(normalizedMeasurements[0].bottom) : null,
+          measurements: normalizedMeasurements,
           bgColor:      form.bgColor,
           brand:        form.brand.trim() || null,
           tags:         form.tags.split(",").map((t) => t.trim()).filter(Boolean),
@@ -197,21 +224,67 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
 
           <Section title="Measurements (inches)">
             <p className="text-xs text-[#6b7280] -mt-2">
-              Each product is one specific waist x length combo. Customers select only color.
+              Add every waist size you want to sell. Waist is selectable on the product page; length and bottom are extra details.
             </p>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField label="Waist" required hint="e.g. 32">
-                <input type="number" step="0.5" min="0" value={form.waist}
-                  onChange={(e) => updateField("waist", e.target.value)} placeholder="32" className="input" />
-              </FormField>
-              <FormField label="Length" hint="e.g. 32">
-                <input type="number" step="0.5" min="0" value={form.length}
-                  onChange={(e) => updateField("length", e.target.value)} placeholder="32" className="input" />
-              </FormField>
-              <FormField label="Bottom" hint="Leg opening, e.g. 14">
-                <input type="number" step="0.5" min="0" value={form.bottom}
-                  onChange={(e) => updateField("bottom", e.target.value)} placeholder="14" className="input" />
-              </FormField>
+            <div className="space-y-3">
+              {measurements.map((row, index) => (
+                <div key={index} className="rounded-xl border border-[#e5e7eb] bg-[#fafaf9] p-3">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <span className="text-xs font-semibold tracking-wide uppercase text-[#1a1a1a]">Size {index + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeMeasurement(index)}
+                      disabled={measurements.length === 1}
+                      className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <FormField label="Waist" required hint="e.g. 32">
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={row.waist}
+                        onChange={(e) => updateMeasurement(index, "waist", e.target.value)}
+                        placeholder="32"
+                        className="input"
+                      />
+                    </FormField>
+                    <FormField label="Length" hint="e.g. 32">
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={row.length}
+                        onChange={(e) => updateMeasurement(index, "length", e.target.value)}
+                        placeholder="32"
+                        className="input"
+                      />
+                    </FormField>
+                    <FormField label="Bottom" hint="Leg opening, e.g. 14">
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={row.bottom}
+                        onChange={(e) => updateMeasurement(index, "bottom", e.target.value)}
+                        placeholder="14"
+                        className="input"
+                      />
+                    </FormField>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addMeasurement}
+                className="w-full border border-dashed border-[#cbd5e1] bg-white text-[#3b5f8f] font-medium py-3 flex items-center justify-center gap-2 hover:bg-[#fafaf9] transition-colors"
+              >
+                <Plus size={14} />
+                Add Size
+              </button>
             </div>
           </Section>
 

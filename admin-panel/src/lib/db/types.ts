@@ -95,6 +95,7 @@ export interface DbProduct {
   waist:            number | null;   // inches
   length:           number | null;   // inches
   bottom:           number | null;   // inches
+  measurementsJson: string | null;
   bgColor:          string | null;   // hex e.g. "#f5f0e8" — replaces white product image background via CSS blend
   brand:            string | null;   // e.g. "Denova", "Levi's" — free text
   createdAt:        number;

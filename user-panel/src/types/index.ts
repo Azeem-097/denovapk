@@ -17,6 +17,12 @@ export interface ProductVariant {
   sku: string;
 }
 
+export interface ProductMeasurement {
+  waist: number;
+  length: number | null;
+  bottom: number | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -37,6 +43,7 @@ export interface Product {
   waist:  number | null;
   length: number | null;
   bottom: number | null;
+  measurements?: ProductMeasurement[];
   bgColor: string | null;   // hex e.g. "#f5f0e8" or null (keep original white background)
   brand?: string | null;   // brand name (e.g. "Denova"), or null to fall back to collection
   sku?: string;   // top-level product SKU (from DB)

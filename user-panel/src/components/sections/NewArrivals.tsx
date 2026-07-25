@@ -16,8 +16,6 @@ interface Props {
   bestSellers: Product[];
 }
 
-const MAX_PRODUCTS = 16;
-
 /**
  * "Shop by Waist" section — displays a unified list of products from BOTH
  * Premium and Super Premium collections, filtered by waist size.
@@ -70,7 +68,7 @@ export function NewArrivals({ newArrivals, bestSellers }: Props) {
       : allProducts.filter(
           (p) => p.waist !== null && p.waist !== undefined && selectedWaists.includes(p.waist)
         );
-    return list.slice(0, MAX_PRODUCTS);
+    return list;
   }, [allProducts, selectedWaists]);
 
   const viewAllHref = useMemo(() => {

@@ -10,6 +10,34 @@ import type { ProductWithRelations } from "@/lib/db/repositories/products";
 import type { Product, ProductImage, ProductVariant, Collection, Testimonial } from "@/types";
 import { tagsToArray } from "@/lib/db/helpers";
 
+function parseMeasurementsJson(
+  measurementsJson: string | null,
+  fallback: { waist: number | null; length: number | null; bottom: number | null }
+): Product["measurements"] {
+  if (measurementsJson) {
+    try {
+      const parsed = JSON.parse(measurementsJson) as Array<{ waist?: unknown; length?: unknown; bottom?: unknown }>;
+      const rows = parsed
+        .map((row) => {
+          const waist = Number(row.waist);
+          return {
+            waist,
+            length: row.length === undefined || row.length === null || row.length === "" ? null : Number(row.length),
+            bottom: row.bottom === undefined || row.bottom === null || row.bottom === "" ? null : Number(row.bottom),
+          };
+        })
+        .filter((row) => !Number.isNaN(row.waist));
+
+      if (rows.length > 0) return rows;
+    } catch {
+      // Fall back to the legacy numeric columns below.
+    }
+  }
+
+  if (fallback.waist == null || Number.isNaN(fallback.waist)) return [];
+  return [{ waist: fallback.waist, length: fallback.length, bottom: fallback.bottom }];
+}
+
 // ─── Product ─────────────────────────────────────────────
 export function adaptProduct(p: ProductWithRelations): Product {
   return {
@@ -32,6 +60,11 @@ export function adaptProduct(p: ProductWithRelations): Product {
     waist:          p.waist  ?? null,
     length:         p.length ?? null,
     bottom:         p.bottom ?? null,
+    measurements:   parseMeasurementsJson(p.measurementsJson ?? null, {
+      waist:  p.waist ?? null,
+      length: p.length ?? null,
+      bottom: p.bottom ?? null,
+    }),
     bgColor:        p.bgColor ?? null,
     brand:          p.brand ?? null,
     sku:            p.sku,

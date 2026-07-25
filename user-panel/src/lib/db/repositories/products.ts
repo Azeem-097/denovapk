@@ -10,16 +10,46 @@ export interface ProductWithRelations extends DbProduct {
   collection?: { id: string; name: string; slug: string } | null;
 }
 
-// Turso strips result columns aliased "length". Alias to lengthInches and remap.
-const PRODUCT_COLS = `
+type ProductColumnInfo = {
+  hasMeasurementsJson: boolean;
+};
+
+let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
+
+async function getProductColumnInfo(): Promise<ProductColumnInfo> {
+  if (!productColumnInfoPromise) {
+    productColumnInfoPromise = (async () => {
+      const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
+      const hasMeasurementsJson = result.rows.some((row) => (row.name as string) === "measurementsJson");
+
+      if (hasMeasurementsJson) {
+        return { hasMeasurementsJson: true };
+      }
+
+      await db.execute({ sql: "ALTER TABLE products ADD COLUMN measurementsJson TEXT;", args: [] });
+      return { hasMeasurementsJson: true };
+    })().catch((error) => {
+      productColumnInfoPromise = null;
+      throw error;
+    });
+  }
+
+  return productColumnInfoPromise;
+}
+
+async function getProductCols(): Promise<string> {
+  const { hasMeasurementsJson } = await getProductColumnInfo();
+  return `
   p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
   p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
-  p.waist, p."length" as lengthInches, p.bottom, p.bgColor, p.brand,
+  p.waist, p."length" as lengthInches, p.bottom${hasMeasurementsJson ? ", p.measurementsJson" : ""}, p.bgColor, p.brand,
   p.createdAt, p.updatedAt
 `;
+}
 
+// Turso strips result columns aliased "length". Alias to lengthInches and remap.
 function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
   const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
   return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
@@ -66,8 +96,9 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
   const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
 
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+    sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p LEFT JOIN collections c ON c.id = p.collectionId
           ${where} ORDER BY ${orderBy} ${limit} ${offset}`,
     args,
@@ -99,8 +130,9 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql: `SELECT ${PRODUCT_COLS}, c.id as col_id, c.name as col_name, c.slug as col_slug
+    sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p LEFT JOIN collections c ON c.id = p.collectionId
           WHERE p.slug = ? LIMIT 1`,
     args: [slug],
@@ -124,8 +156,9 @@ export async function getProductBySlug(slug: string): Promise<ProductWithRelatio
 }
 
 export async function getProductById(id: string): Promise<ProductWithRelations | null> {
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql: `SELECT ${PRODUCT_COLS} FROM products p WHERE p.id = ? LIMIT 1`,
+    sql: `SELECT ${productCols} FROM products p WHERE p.id = ? LIMIT 1`,
     args: [id],
   });
   if (result.rows.length === 0) return null;
@@ -166,8 +199,9 @@ export async function getProductCount(opts: GetProductsOptions = {}): Promise<nu
 export async function getRelatedProducts(
   productId: string, collectionId: string, limit = 4
 ): Promise<ProductWithRelations[]> {
+  const productCols = await getProductCols();
   const result = await db.execute({
-    sql:  `SELECT ${PRODUCT_COLS} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
+    sql:  `SELECT ${productCols} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
     args: [collectionId, productId, limit],
   });
   const products = (result.rows as unknown[]).map((r) => remapLength(r as { lengthInches?: number | null } & Record<string, unknown>)) as unknown as DbProduct[];

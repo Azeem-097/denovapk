@@ -7,6 +7,29 @@ import {
 } from "@/lib/db/repositories/products";
 import { rupeesToPaisa } from "@/lib/priceUtils";
 
+function normalizeMeasurements(input: unknown, fallback?: { waist?: unknown; length?: unknown; bottom?: unknown }) {
+  const rows = Array.isArray(input)
+    ? input
+        .map((row) => ({
+          waist: String((row as { waist?: unknown }).waist ?? "").trim(),
+          length: String((row as { length?: unknown }).length ?? "").trim(),
+          bottom: String((row as { bottom?: unknown }).bottom ?? "").trim(),
+        }))
+        .filter((row) => row.waist.length > 0)
+    : [];
+
+  if (rows.length > 0) return rows;
+
+  const waist = fallback?.waist != null && String(fallback.waist).trim().length > 0 ? String(fallback.waist).trim() : "";
+  if (!waist) return [];
+
+  return [{
+    waist,
+    length: fallback?.length != null ? String(fallback.length).trim() : "",
+    bottom: fallback?.bottom != null ? String(fallback.bottom).trim() : "",
+  }];
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdmin();
   if (authError) return authError;
@@ -28,9 +51,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.isFeatured   !== undefined) updates.isFeatured   = body.isFeatured;
     if (body.isBestSeller !== undefined) updates.isBestSeller = body.isBestSeller;
     if (body.tags         !== undefined) updates.tags         = Array.isArray(body.tags) ? body.tags : body.tags.split(",");
-    if (body.waist        !== undefined) updates.waist        = body.waist  !== "" && body.waist  !== null ? Number(body.waist)  : null;
-    if (body.length       !== undefined) updates.length       = body.length !== "" && body.length !== null ? Number(body.length) : null;
-    if (body.bottom       !== undefined) updates.bottom       = body.bottom !== "" && body.bottom !== null ? Number(body.bottom) : null;
+    const normalizedMeasurements = normalizeMeasurements(body.measurements, { waist: body.waist, length: body.length, bottom: body.bottom });
+    const firstMeasurement = normalizedMeasurements[0] ?? null;
+    if (body.measurements !== undefined || body.waist !== undefined || body.length !== undefined || body.bottom !== undefined) {
+      updates.measurementsJson = JSON.stringify(normalizedMeasurements);
+      updates.waist = firstMeasurement ? Number(firstMeasurement.waist) : null;
+      updates.length = firstMeasurement && firstMeasurement.length !== "" ? Number(firstMeasurement.length) : null;
+      updates.bottom = firstMeasurement && firstMeasurement.bottom !== "" ? Number(firstMeasurement.bottom) : null;
+    }
 
     if (body.brand !== undefined) {
       updates.brand = typeof body.brand === "string" && body.brand.trim().length > 0 ? body.brand.trim() : null;
@@ -55,9 +83,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     if (Array.isArray(body.variants)) {
-      const waistNumber = body.waist !== undefined && body.waist !== "" && body.waist !== null
-        ? Number(body.waist)
-        : null;
+      const waistNumber = firstMeasurement ? Number(firstMeasurement.waist) : (body.waist !== undefined && body.waist !== "" && body.waist !== null ? Number(body.waist) : null);
       const sizeLabel = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
 
       const variantsForSync = body.variants.map((v: {

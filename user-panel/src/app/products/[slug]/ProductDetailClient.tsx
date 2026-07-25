@@ -154,6 +154,29 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     [product.variants]
   );
 
+  const measurementRows = useMemo(() => {
+    if (product.measurements && product.measurements.length > 0) return product.measurements;
+
+    const fallbackRows = [] as NonNullable<typeof product.measurements>;
+    if (product.waist != null) {
+      fallbackRows.push({ waist: product.waist, length: product.length ?? null, bottom: product.bottom ?? null });
+    }
+    return fallbackRows;
+  }, [product.measurements, product.waist, product.length, product.bottom]);
+
+  const waistSizes = useMemo(() => {
+    const seen = new Set<string>();
+    const sizes: string[] = [];
+    measurementRows.forEach((row) => {
+      const value = String(row.waist);
+      if (!seen.has(value)) {
+        seen.add(value);
+        sizes.push(value);
+      }
+    });
+    return sizes;
+  }, [measurementRows]);
+
   const firstInStockColor = useMemo(() => {
     const inStock = product.variants.find((v) => v.stock > 0);
     return inStock?.color ?? uniqueColors[0]?.name ?? "";
@@ -161,28 +184,28 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const [selectedColor, setSelectedColor] = useState(firstInStockColor);
 
+  const selectedVariant = useMemo(
+    () => product.variants.find((v) => v.color === selectedColor) ?? product.variants[0],
+    [product.variants, selectedColor]
+  );
+
   const sizesForColor = useMemo(() => {
-    const variants = product.variants.filter((v) => v.color === selectedColor);
-    return Array.from(new Set(variants.map((v) => v.size)));
-  }, [product.variants, selectedColor]);
+    return waistSizes;
+  }, [waistSizes]);
 
   const outOfStockSizes = useMemo(() => {
-    return product.variants
-      .filter((v) => v.color === selectedColor && v.stock === 0)
-      .map((v) => v.size);
-  }, [product.variants, selectedColor]);
+    return selectedVariant && selectedVariant.stock === 0 ? sizesForColor : [];
+  }, [selectedVariant, sizesForColor]);
 
   const firstInStockSize = useMemo(() => {
-    const v = product.variants.find((x) => x.color === selectedColor && x.stock > 0);
-    return v?.size ?? sizesForColor[0] ?? "";
-  }, [product.variants, selectedColor, sizesForColor]);
+    return sizesForColor[0] ?? "";
+  }, [sizesForColor]);
 
   const [selectedSize, setSelectedSize] = useState(firstInStockSize);
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    const firstAvail = product.variants.find((v) => v.color === color && v.stock > 0);
-    setSelectedSize(firstAvail?.size ?? "");
+    setSelectedSize(waistSizes[0] ?? "");
   };
 
   const [quantity, setQuantity]           = useState(1);
@@ -192,11 +215,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const addToCart = useCartStore((s) => s.addItem);
   const showToast = useToastStore((s) => s.addToast);
-
-  const selectedVariant = useMemo(() =>
-    product.variants.find((v) => v.color === selectedColor && v.size === selectedSize),
-    [product.variants, selectedColor, selectedSize]
-  );
 
   const isOutOfStock    = !selectedVariant || selectedVariant.stock === 0;
   const maxQty          = selectedVariant?.stock ?? 1;
@@ -215,10 +233,16 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const displaySku = product.sku || selectedVariant?.sku || "";
 
   const measurements = [
-    { label: "Waist",  value: product.waist,  unit: '"' },
-    { label: "Length", value: product.length, unit: '"' },
-    { label: "Bottom", value: product.bottom, unit: '"' },
-  ].filter((m) => m.value != null);
+    { label: "Waist", values: waistSizes },
+    {
+      label: "Length",
+      values: Array.from(new Set(measurementRows.map((row) => row.length).filter((value): value is number => value != null))).map(String),
+    },
+    {
+      label: "Bottom",
+      values: Array.from(new Set(measurementRows.map((row) => row.bottom).filter((value): value is number => value != null))).map(String),
+    },
+  ].filter((m) => m.values.length > 0);
 
   const doAddToCart = async () => {
     if (!selectedVariant) {
@@ -230,7 +254,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       variantId: selectedVariant.id,
       name:      product.name,
       image:     primaryImage.url,
-      size:      selectedVariant.size,
+      size:      selectedSize || selectedVariant.size,
       color:     selectedColor,
       colorHex:  selectedVariant.colorHex,
       price:     product.price,
@@ -468,7 +492,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
                   <AccordionItem
                     id="details"
-                    title="Product Details"
+                    title="Size Chart"
                     isOpen={openAccordion === "details"}
                     onToggle={() => toggleAccordion("details")}
                   >
@@ -480,12 +504,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                           </p>
                           <div className="divide-y divide-[#e5e7eb] border border-[#e5e7eb]">
                             {measurements.map((m) => (
-                              <div key={m.label} className="flex items-center justify-between px-4 py-2.5">
+                              <div key={m.label} className="flex items-center justify-between gap-4 px-4 py-2.5">
                                 <span className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">
-                                  {m.label}
+                                  {m.label.toLowerCase()}
                                 </span>
-                                <span className="text-sm font-semibold text-[#1a1a1a]">
-                                  {m.value}{m.unit}
+                                <span className="text-sm font-semibold text-[#1a1a1a] text-right">
+                                  {m.values.join(",")}
                                 </span>
                               </div>
                             ))}

@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS products (
   waist             REAL,
   length            REAL,
   bottom            REAL,
+  measurementsJson  TEXT,
   bgColor           TEXT,
   brand             TEXT,
   createdAt         INTEGER NOT NULL DEFAULT (unixepoch()),
