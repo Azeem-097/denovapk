@@ -79,7 +79,7 @@ export function SizeChartClient({ initialConfig }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <Ruler size={22} className="text-[#3b5f8f]" />
+            <Ruler size={22} className="text-[#E10600]" />
             Size Chart
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -104,7 +104,7 @@ export function SizeChartClient({ initialConfig }: Props) {
             value={config.intro}
             onChange={(e) => updateField("intro", e.target.value)}
             rows={2}
-            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
+            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y"
             placeholder="e.g. All measurements are in inches..."
           />
           <p className="mt-1 text-[10px] text-[#6b7280]">Shown at the top of the size chart modal.</p>
@@ -118,7 +118,7 @@ export function SizeChartClient({ initialConfig }: Props) {
             value={config.footerNote}
             onChange={(e) => updateField("footerNote", e.target.value)}
             rows={3}
-            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
+            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y"
             placeholder="e.g. How to measure: Use a soft measuring tape..."
           />
           <p className="mt-1 text-[10px] text-[#6b7280]">Shown at the bottom in a gold accent box.</p>
@@ -131,7 +131,7 @@ export function SizeChartClient({ initialConfig }: Props) {
           <h2 className="text-sm font-bold text-[#1a1a1a]">Size Rows ({config.rows.length})</h2>
           <button
             onClick={addRow}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72]"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E10600] hover:text-[#B80000]"
           >
             <Plus size={14} />Add Row
           </button>
@@ -165,7 +165,7 @@ export function SizeChartClient({ initialConfig }: Props) {
                         type="text"
                         value={row[f]}
                         onChange={(e) => updateRow(i, f, e.target.value)}
-                        className="w-full px-2 py-1.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                        className="w-full px-2 py-1.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
                       />
                     </td>
                   ))}

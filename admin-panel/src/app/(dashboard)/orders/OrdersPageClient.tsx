@@ -50,7 +50,7 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <QuickStat label="Total Orders"  value={stats.count.toString()}   />
-        <QuickStat label="Total Revenue" value={formatPrice(stats.total)} color="text-[#3b5f8f]" />
+        <QuickStat label="Total Revenue" value={formatPrice(stats.total)} color="text-[#E10600]" />
         <QuickStat label="Pending"       value={stats.pending.toString()} color="text-yellow-600" />
         <QuickStat label="Shipped"       value={stats.shipped.toString()} color="text-indigo-600" />
       </div>
@@ -59,10 +59,10 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
         {STATUS_TABS.map((s) => (
           <button key={s} onClick={() => setStatus(s)}
             className={cn("px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px whitespace-nowrap",
-              status === s ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
+              status === s ? "border-[#E10600] text-[#E10600]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
             {s}
             <span className={cn("ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
-              status === s ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]")}>
+              status === s ? "bg-[#E10600]/20 text-[#E10600]" : "bg-[#e5e7eb] text-[#6b7280]")}>
               {statusCounts[s] || 0}
             </span>
           </button>
@@ -73,14 +73,14 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search order #, customer name, email..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60" />
         </div>
       </div>
 
       <div className="bg-white border border-[#e5e7eb] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <ShoppingCart size={40} className="text-[#3b5f8f] mx-auto mb-3" />
+            <ShoppingCart size={40} className="text-[#E10600] mx-auto mb-3" />
             <p className="text-sm font-medium text-[#1a1a1a]">No orders found</p>
           </div>
         ) : (
@@ -97,7 +97,7 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
                 {filtered.map((order) => (
                   <tr key={order.id} className="hover:bg-[#fafaf9] transition-colors">
                     <td className="px-4 py-3">
-                      <Link href={`/orders/${order.id}`} className="text-[#3b5f8f] font-semibold hover:underline text-sm">#{order.orderNumber}</Link>
+                      <Link href={`/orders/${order.id}`} className="text-[#E10600] font-semibold hover:underline text-sm">#{order.orderNumber}</Link>
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium text-[#1a1a1a]">{order.customer}</p>
@@ -141,7 +141,7 @@ export function OrdersPageClient({ initialOrders }: { initialOrders: AdminOrder[
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <Link href={`/orders/${order.id}`} className="text-[#6b7280] hover:text-[#3b5f8f]"><ChevronRight size={16} /></Link>
+                      <Link href={`/orders/${order.id}`} className="text-[#6b7280] hover:text-[#E10600]"><ChevronRight size={16} /></Link>
                     </td>
                   </tr>
                 ))}

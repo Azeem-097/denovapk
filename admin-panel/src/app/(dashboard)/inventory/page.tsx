@@ -82,8 +82,8 @@ export default async function InventoryPage() {
             <p className="text-xs text-red-600">Restock needed</p>
           </div>
         </div>
-        <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4 flex items-center gap-3">
-          <Package size={20} className="text-[#3b5f8f]" />
+        <div className="bg-[#f5f0e8] border border-[#E10600]/30 p-4 flex items-center gap-3">
+          <Package size={20} className="text-[#E10600]" />
           <div>
             <p className="text-sm font-bold text-[#1a1a1a]">{totalUnits.toLocaleString()} total units</p>
             <p className="text-xs text-[#6b7280]">Across all variants</p>

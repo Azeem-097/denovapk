@@ -108,7 +108,7 @@ export function SettingsClient({ initialSettings }: Props) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <Store size={22} className="text-[#3b5f8f]" />
+            <Store size={22} className="text-[#E10600]" />
             Settings
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">Configure your store and features</p>
@@ -129,7 +129,7 @@ export function SettingsClient({ initialSettings }: Props) {
                   className={cn(
                     "w-full flex items-center gap-2.5 px-3 py-2.5 text-sm rounded transition-colors text-left",
                     active
-                      ? "bg-[#3b5f8f] text-white font-semibold"
+                      ? "bg-[#E10600] text-white font-semibold"
                       : "text-[#6b7280] hover:bg-[#fafaf9] hover:text-[#1a1a1a]"
                   )}
                 >
@@ -188,10 +188,10 @@ function Field({
       </label>
       {rows ? (
         <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y" />
       ) : (
         <input id={id} type={type} value={value} inputMode={inputMode} onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
       )}
       {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
     </div>
@@ -202,7 +202,7 @@ function RestaurantTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Store size={16} className="text-[#3b5f8f]" />
+        <Store size={16} className="text-[#E10600]" />
         Brand Information
       </h2>
       <div className="space-y-4">
@@ -215,7 +215,7 @@ function RestaurantTab({ settings, onChange }: TabProps) {
         <Field label="Established Year" id="brand_year" value={settings.brand_year ?? ""} onChange={(v) => onChange("brand_year", v)} />
 
         <div className="pt-4 border-t border-[#e5e7eb]">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">Legal Pages</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#E10600] mb-3">Legal Pages</h3>
           <Field
             label="Last Updated Date"
             id="legal_last_updated"
@@ -233,7 +233,7 @@ function ContactTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Phone size={16} className="text-[#3b5f8f]" />
+        <Phone size={16} className="text-[#E10600]" />
         Contact Information
       </h2>
       <p className="text-xs text-[#6b7280] mb-4">
@@ -254,14 +254,14 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <MessageCircle size={16} className="text-[#3b5f8f]" />
+        <MessageCircle size={16} className="text-[#E10600]" />
         WhatsApp Floating Widget
       </h2>
       <div className="space-y-4">
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("enabled", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#3b5f8f]" />
+            className="w-4 h-4 accent-[#E10600]" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Show floating WhatsApp button on website</p>
             <p className="text-xs text-[#6b7280] mt-0.5">Appears in bottom-right corner of every page</p>
@@ -269,7 +269,7 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
         </label>
 
         <div className="pt-2">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">Direct Message Option</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#E10600] mb-3">Direct Message Option</h3>
           <div className="space-y-4">
             <Field label="WhatsApp Phone Number" id="phone"
               value={settings.phone ?? ""} onChange={(v) => onChange("phone", v)} type="tel" />
@@ -288,7 +288,7 @@ function WhatsAppTab({ settings, onChange }: TabProps) {
         </div>
 
         <div className="pt-4 border-t border-[#e5e7eb]">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-[#3b5f8f] mb-3">Community Option</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#E10600] mb-3">Community Option</h3>
           <div className="space-y-4">
             <Field label="Community / Group Invite Link" id="communityLink"
               value={settings.communityLink ?? ""}
@@ -313,14 +313,14 @@ function AbandonedCartTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <ShoppingBag size={16} className="text-[#3b5f8f]" />
+        <ShoppingBag size={16} className="text-[#E10600]" />
         Abandoned Cart Settings
       </h2>
       <div className="space-y-4">
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("abandoned_cart_enabled", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#3b5f8f]" />
+            className="w-4 h-4 accent-[#E10600]" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Enable Abandoned Cart Tracking</p>
             <p className="text-xs text-[#6b7280] mt-0.5">Track customers who leave without completing checkout</p>
@@ -342,14 +342,14 @@ function BirthdayTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Cake size={16} className="text-[#3b5f8f]" />
+        <Cake size={16} className="text-[#E10600]" />
         Birthday Rewards
       </h2>
       <div className="space-y-4">
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("birthday_enabled", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#3b5f8f]" />
+            className="w-4 h-4 accent-[#E10600]" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Enable Birthday Rewards</p>
             <p className="text-xs text-[#6b7280] mt-0.5">Automatic birthday discount for customers</p>
@@ -376,14 +376,14 @@ function LoyaltyTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Award size={16} className="text-[#3b5f8f]" />
+        <Award size={16} className="text-[#E10600]" />
         Loyalty Program
       </h2>
       <div className="space-y-4">
         <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer">
           <input type="checkbox" checked={enabled}
             onChange={(e) => onChange("loyalty_enabled", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#3b5f8f]" />
+            className="w-4 h-4 accent-[#E10600]" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Enable Loyalty Program</p>
             <p className="text-xs text-[#6b7280] mt-0.5">Customers earn points on every order</p>
@@ -407,7 +407,7 @@ function PricingTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <DollarSign size={16} className="text-[#3b5f8f]" />
+        <DollarSign size={16} className="text-[#E10600]" />
         Pricing &amp; Tax
       </h2>
       <p className="text-xs text-[#6b7280] mb-4">
@@ -425,7 +425,7 @@ function SocialTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <Globe size={16} className="text-[#3b5f8f]" />
+        <Globe size={16} className="text-[#E10600]" />
         Social Media Links
       </h2>
       <div className="space-y-4">
@@ -443,7 +443,7 @@ function TrackingTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <BarChart3 size={16} className="text-[#3b5f8f]" />
+        <BarChart3 size={16} className="text-[#E10600]" />
         Tracking Pixels
       </h2>
       <p className="text-xs text-[#6b7280] mb-4">
@@ -455,7 +455,7 @@ function TrackingTab({ settings, onChange }: TabProps) {
             type="checkbox"
             checked={enabled}
             onChange={(e) => onChange("meta_pixel_enabled", e.target.checked ? "true" : "false")}
-            className="w-4 h-4 accent-[#3b5f8f]"
+            className="w-4 h-4 accent-[#E10600]"
           />
           <div className="flex-1">
             <p className="text-sm font-semibold text-[#1a1a1a]">Enable Meta Pixel on website</p>

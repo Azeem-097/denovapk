@@ -60,7 +60,7 @@ export function CollectionBarChart({ data }: Props) {
             return [`${formatPaisa(num * 100)} (${units} units)`, "Revenue"];
           }}
         />
-        <Bar dataKey="revenueRupees" fill="#3b5f8f" radius={[0, 3, 3, 0]} />
+        <Bar dataKey="revenueRupees" fill="#E10600" radius={[0, 3, 3, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

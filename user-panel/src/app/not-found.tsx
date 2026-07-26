@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen pt-24 flex items-center justify-center bg-[#fafaf9]">
       <div className="text-center px-4">
-        <p className="font-[family-name:var(--font-cormorant)] text-8xl sm:text-9xl font-light text-[#3b5f8f] leading-none mb-4">
+        <p className="font-[family-name:var(--font-cormorant)] text-8xl sm:text-9xl font-light text-[#E10600] leading-none mb-4">
           404
         </p>
         <h1 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] mb-3">
@@ -16,7 +16,7 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/"
-            className="inline-flex items-center justify-center bg-[#1a1a1a] text-white px-7 py-3 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors duration-300"
+            className="inline-flex items-center justify-center bg-[#1a1a1a] text-white px-7 py-3 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
           >
             Back to Home
           </Link>

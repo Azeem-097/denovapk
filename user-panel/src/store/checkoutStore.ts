@@ -28,12 +28,17 @@ interface CheckoutState {
   birthdayDiscount:   number;
   isBirthdayEligible: boolean;
 
+  discountCode:       string;
+  discountAmount:     number;
+
   setShippingData:       (data: ShippingFormData) => void;
   setShippingMethod:     (method: ShippingMethod) => void;
   setPaymentMethod:      (method: PaymentMethod) => void;
   setOrderNumber:        (num: string) => void;
   setLoyaltyRedemption:  (points: number, discount: number) => void;
   setBirthdayDiscount:   (discount: number, eligible: boolean) => void;
+  setDiscountCode:       (code: string, amount: number) => void;
+  clearDiscountCode:     () => void;
   reset:                 () => void;
 }
 
@@ -46,6 +51,8 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   loyaltyDiscount:    0,
   birthdayDiscount:   0,
   isBirthdayEligible: false,
+  discountCode:       "",
+  discountAmount:     0,
 
   setShippingData:      (shippingData)   => set({ shippingData }),
   setShippingMethod:    (shippingMethod) => set({ shippingMethod }),
@@ -57,6 +64,12 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   setBirthdayDiscount:  (discount, eligible) => set({
     birthdayDiscount: discount, isBirthdayEligible: eligible,
   }),
+  setDiscountCode:      (discountCode, discountAmount) => set({
+    discountCode, discountAmount,
+  }),
+  clearDiscountCode:    () => set({
+    discountCode: "", discountAmount: 0,
+  }),
 
   reset: () => set({
     shippingData: null,
@@ -64,6 +77,7 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
     orderNumber: null,
     loyaltyPointsUsed: 0, loyaltyDiscount: 0,
     birthdayDiscount: 0, isBirthdayEligible: false,
+    discountCode: "", discountAmount: 0,
   }),
 }));
 

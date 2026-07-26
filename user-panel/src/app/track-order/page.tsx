@@ -110,7 +110,7 @@ export default function TrackOrderPage() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
               Order Status
             </span>
           </FadeIn>
@@ -134,7 +134,7 @@ export default function TrackOrderPage() {
           <form onSubmit={handleTrack} className="bg-white border border-[#e5e7eb] p-6 sm:p-8 space-y-4">
             <div>
               <label className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5">
-                Order Number <span className="text-[#3b5f8f]">*</span>
+                Order Number <span className="text-[#E10600]">*</span>
               </label>
               <input
                 type="text"
@@ -142,7 +142,7 @@ export default function TrackOrderPage() {
                 onChange={(e) => setOrderNum(e.target.value)}
                 placeholder="e.g. DNV12345678"
                 required
-                className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60 font-mono"
+                className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60 font-mono"
               />
               <p className="text-[11px] text-[#6b7280] mt-1.5">
                 You can include or omit the # symbol.
@@ -157,7 +157,7 @@ export default function TrackOrderPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60"
+                className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60"
               />
               <p className="text-[11px] text-[#6b7280] mt-1.5">
                 Provide your email to see full order details including items.
@@ -166,7 +166,7 @@ export default function TrackOrderPage() {
             <button
               type="submit"
               disabled={loading || !orderNum.trim()}
-              className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors disabled:opacity-60"
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -239,7 +239,7 @@ export default function TrackOrderPage() {
                   <div className="relative">
                     <div className="absolute top-4 left-0 right-0 h-0.5 bg-[#e5e7eb] mx-4">
                       <div
-                        className="h-full bg-[#3b5f8f] transition-all duration-700"
+                        className="h-full bg-[#E10600] transition-all duration-700"
                         style={{
                           width: `${(statusIdx / (STATUS_STEPS.length - 1)) * 100}%`,
                         }}
@@ -253,7 +253,7 @@ export default function TrackOrderPage() {
                           <div key={step.key} className="flex flex-col items-center">
                             <div className={cn(
                               "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                              isDone   ? "bg-[#3b5f8f] text-white" :
+                              isDone   ? "bg-[#E10600] text-white" :
                               isActive ? "bg-[#1a1a1a] text-white ring-4 ring-[#1a1a1a]/10" :
                               "bg-white border-2 border-[#e5e7eb] text-[#6b7280]"
                             )}>
@@ -307,8 +307,8 @@ export default function TrackOrderPage() {
 
               {/* Tracking number */}
               {result.trackingNumber && (
-                <div className="bg-[#f5f0e8]/40 border border-[#3b5f8f]/30 p-5">
-                  <p className="text-xs font-semibold tracking-wider uppercase text-[#3b5f8f] mb-2">
+                <div className="bg-[#f5f0e8]/40 border border-[#E10600]/30 p-5">
+                  <p className="text-xs font-semibold tracking-wider uppercase text-[#E10600] mb-2">
                     Courier Tracking
                   </p>
                   <p className="text-sm text-[#6b7280]">
@@ -323,7 +323,7 @@ export default function TrackOrderPage() {
               {/* Shipping info */}
               <div className="bg-white border border-[#e5e7eb] p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <MapPin size={14} className="text-[#3b5f8f]" />
+                  <MapPin size={14} className="text-[#E10600]" />
                   <p className="text-xs font-semibold tracking-wider uppercase text-[#1a1a1a]">
                     Shipping To
                   </p>
@@ -388,7 +388,7 @@ export default function TrackOrderPage() {
               {result.verified && (
                 <Link
                   href={`/account/orders/${result.id}`}
-                  className="group inline-flex items-center gap-2 text-sm font-semibold text-[#3b5f8f] hover:text-[#2d4a72] transition-colors"
+                  className="group inline-flex items-center gap-2 text-sm font-semibold text-[#E10600] hover:text-[#B80000] transition-colors"
                 >
                   View Full Order Details
                   <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
@@ -407,7 +407,7 @@ export default function TrackOrderPage() {
             </p>
             <Link
               href="/contact"
-              className="text-sm font-semibold text-[#3b5f8f] hover:underline"
+              className="text-sm font-semibold text-[#E10600] hover:underline"
             >
               Contact our support team
             </Link>

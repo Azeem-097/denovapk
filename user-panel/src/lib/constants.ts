@@ -8,7 +8,7 @@ export const SITE_URL = "https://denovapk.com";
 
 export const BRAND_COLORS = {
   primary:    "#1a1a1a",
-  secondary:  "#3b5f8f",
+  secondary:  "#E10600",
   accent:     "#f5f0e8",
   background: "#ffffff",
   surface:    "#fafaf9",

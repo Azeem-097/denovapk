@@ -83,7 +83,7 @@ export function SearchModal() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search for products, collections, or styles..."
-                className="w-full pl-12 pr-4 py-4 text-base text-[#1a1a1a] border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60"
+                className="w-full pl-12 pr-4 py-4 text-base text-[#1a1a1a] border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60"
               />
               {query && (
                 <button
@@ -116,7 +116,7 @@ export function SearchModal() {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Clock size={13} className="text-[#3b5f8f]" />
+                      <Clock size={13} className="text-[#E10600]" />
                       <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
                         Recent Searches
                       </span>
@@ -133,7 +133,7 @@ export function SearchModal() {
                       <button
                         key={s}
                         onClick={() => handleQuickSearch(s)}
-                        className="text-sm text-[#1a1a1a] bg-[#fafaf9] border border-[#e5e7eb] hover:border-[#3b5f8f] px-3 py-1.5 transition-colors"
+                        className="text-sm text-[#1a1a1a] bg-[#fafaf9] border border-[#e5e7eb] hover:border-[#E10600] px-3 py-1.5 transition-colors"
                       >
                         {s}
                       </button>
@@ -145,7 +145,7 @@ export function SearchModal() {
               {/* Trending */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp size={13} className="text-[#3b5f8f]" />
+                  <TrendingUp size={13} className="text-[#E10600]" />
                   <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
                     Trending Searches
                   </span>
@@ -155,7 +155,7 @@ export function SearchModal() {
                     <button
                       key={s}
                       onClick={() => handleQuickSearch(s)}
-                      className="text-sm text-white bg-[#1a1a1a] hover:bg-[#3b5f8f] px-3 py-1.5 transition-colors"
+                      className="text-sm text-white bg-[#1a1a1a] hover:bg-[#E10600] px-3 py-1.5 transition-colors"
                     >
                       {s}
                     </button>
@@ -185,7 +185,7 @@ export function SearchModal() {
                           sizes="200px"
                         />
                       </div>
-                      <p className="text-xs font-medium text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors line-clamp-1">
+                      <p className="text-xs font-medium text-[#1a1a1a] group-hover:text-[#E10600] transition-colors line-clamp-1">
                         {p.name}
                       </p>
                       <p className="text-xs font-bold text-[#1a1a1a] mt-0.5">{formatPrice(p.price)}</p>
@@ -244,13 +244,13 @@ function SearchResults({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-[#3b5f8f]">{p.collection}</p>
-              <p className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors line-clamp-1">
+              <p className="text-[10px] uppercase tracking-wider text-[#E10600]">{p.collection}</p>
+              <p className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#E10600] transition-colors line-clamp-1">
                 {p.name}
               </p>
               <p className="text-sm font-bold text-[#1a1a1a] mt-0.5">{formatPrice(p.price)}</p>
             </div>
-            <ArrowRight size={14} className="text-[#6b7280] group-hover:text-[#3b5f8f] flex-shrink-0" />
+            <ArrowRight size={14} className="text-[#6b7280] group-hover:text-[#E10600] flex-shrink-0" />
           </Link>
         ))}
       </div>
@@ -258,7 +258,7 @@ function SearchResults({
       <Link
         href={`/search?q=${encodeURIComponent(query)}`}
         onClick={onSelect}
-        className="mt-6 block text-center bg-[#1a1a1a] text-white py-3 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors"
+        className="mt-6 block text-center bg-[#1a1a1a] text-white py-3 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors"
       >
         View all results
       </Link>

@@ -110,7 +110,7 @@ export function NewsletterSection() {
         <div className="site-container flex justify-center pt-6 sm:pt-8">
           <Link
             href="/shop"
-            className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#3b5f8f] transition-all duration-300 shadow-md"
+            className="shimmer-btn hover-lift inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-10 py-4 text-xs font-semibold tracking-[0.2em] uppercase hover:bg-[#E10600] transition-all duration-300 shadow-md"
           >
             Shop Now
             <ArrowRight size={14} />
@@ -144,11 +144,11 @@ export function NewsletterSection() {
         />
 
         <div
-          className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#3b5f8f]/8 animate-float-soft pointer-events-none"
+          className="absolute top-[8%] left-[4%] w-40 h-40 rounded-full bg-[#E10600]/8 animate-float-soft pointer-events-none"
           style={{ animationDuration: "8s" }}
         />
         <div
-          className="absolute bottom-[10%] left-[8%] w-32 h-32 rounded-full bg-[#3b5f8f]/6 animate-float-soft pointer-events-none"
+          className="absolute bottom-[10%] left-[8%] w-32 h-32 rounded-full bg-[#E10600]/6 animate-float-soft pointer-events-none"
           style={{ animationDuration: "10s", animationDelay: "1s" }}
         />
 
@@ -185,7 +185,7 @@ function CommunityContent({ config, align }: CommunityContentProps) {
     <div className={`flex flex-col ${flexAlign} ${textAlign}`}>
 
       <FadeIn>
-        <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#3b5f8f]">
+        <span className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase text-[#E10600]">
           <Sparkles size={12} className="opacity-80" />
           Join the Community
         </span>
@@ -198,7 +198,7 @@ function CommunityContent({ config, align }: CommunityContentProps) {
         >
           Dress the Part.
           <br />
-          <span className="text-[#3b5f8f] italic font-normal">Live the Legacy.</span>
+          <span className="text-[#E10600] italic font-normal">Live the Legacy.</span>
         </span>
       </TextReveal>
 
@@ -219,7 +219,7 @@ function CommunityContent({ config, align }: CommunityContentProps) {
               "Insider styling tips & lookbooks",
             ].map((perk) => (
               <li key={perk} className="flex items-center gap-2.5 text-sm text-[#4a4a4a]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#3b5f8f] flex-shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E10600] flex-shrink-0" />
                 {perk}
               </li>
             ))}
@@ -243,7 +243,7 @@ function CommunityContent({ config, align }: CommunityContentProps) {
           ) : (
             <Link
               href="/shop"
-              className="shimmer-btn hover-lift group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-all duration-300 shadow-sm"
+              className="shimmer-btn hover-lift group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-7 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-all duration-300 shadow-sm"
             >
               <span>Explore Collection</span>
               <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
@@ -263,7 +263,7 @@ function CommunityContent({ config, align }: CommunityContentProps) {
       <FadeIn delay={480}>
         <p className={`mt-5 text-[11px] text-[#6b7280]/80 tracking-wide ${isLeft ? "" : "text-center"}`}>
           Free to join. Leave anytime. By joining you agree to our{" "}
-          <a href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#3b5f8f] transition-colors">
+          <a href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#E10600] transition-colors">
             privacy policy
           </a>.
         </p>

@@ -128,7 +128,7 @@ export function InventoryPageClient({ rows }: { rows: InventoryRow[] }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search product, SKU, color, or size..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60"
           />
         </div>
 
@@ -151,7 +151,7 @@ export function InventoryPageClient({ rows }: { rows: InventoryRow[] }) {
         </div>
 
         {editedCount > 0 && (
-          <span className="text-xs font-medium text-[#3b5f8f]">
+          <span className="text-xs font-medium text-[#E10600]">
             {editedCount} unsaved change{editedCount === 1 ? "" : "s"}
           </span>
         )}
@@ -211,7 +211,7 @@ export function InventoryPageClient({ rows }: { rows: InventoryRow[] }) {
                         <div className="min-w-0">
                           <Link
                             href={`/products/${row.productId}`}
-                            className="text-sm font-medium text-[#1a1a1a] hover:text-[#3b5f8f] line-clamp-1"
+                            className="text-sm font-medium text-[#1a1a1a] hover:text-[#E10600] line-clamp-1"
                           >
                             {row.productName}
                           </Link>
@@ -291,9 +291,9 @@ export function InventoryPageClient({ rows }: { rows: InventoryRow[] }) {
                         }}
                         className={cn(
                           "w-24 px-2 py-1.5 text-sm border focus:outline-none",
-                          "border-[#e5e7eb] focus:border-[#3b5f8f]",
+                          "border-[#e5e7eb] focus:border-[#E10600]",
                           "disabled:bg-[#fafaf9] disabled:text-[#9ca3af]",
-                          changed && "border-[#3b5f8f] bg-[#faf7f2]"
+                          changed && "border-[#E10600] bg-[#faf7f2]"
                         )}
                       />
                     </td>
@@ -312,7 +312,7 @@ export function InventoryPageClient({ rows }: { rows: InventoryRow[] }) {
                           className={cn(
                             "inline-flex items-center gap-1 text-xs font-semibold underline transition-colors",
                             changed && !saving[row.variantId]
-                              ? "text-[#3b5f8f] hover:text-[#2d4a72]"
+                              ? "text-[#E10600] hover:text-[#B80000]"
                               : "text-[#9ca3af] no-underline cursor-not-allowed"
                           )}
                         >

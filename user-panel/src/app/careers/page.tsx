@@ -78,11 +78,11 @@ export default function CareersPage() {
           <FadeIn>
             <Breadcrumb
               items={[{ label: "Home", href: "/" }, { label: "Careers" }]}
-              className="mb-6 [&_span]:text-white/60 [&_a]:text-white/60 [&_a:hover]:text-[#3b5f8f] [&_svg]:text-white/40"
+              className="mb-6 [&_span]:text-white/60 [&_a]:text-white/60 [&_a:hover]:text-[#E10600] [&_svg]:text-white/40"
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
               Join Our Team
             </span>
           </FadeIn>
@@ -90,7 +90,7 @@ export default function CareersPage() {
             <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-white mt-2 block leading-tight">
               Build the Future of
               <br />
-              <span className="text-[#3b5f8f]">Pakistani Fashion</span>
+              <span className="text-[#E10600]">Pakistani Fashion</span>
             </span>
           </TextReveal>
           <FadeIn delay={200}>
@@ -113,9 +113,9 @@ export default function CareersPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
             {PERKS.map((perk, i) => (
               <SlideUp key={perk.title} stagger={80} index={i}>
-                <div className="group border border-[#e5e7eb] bg-white p-6 hover:border-[#3b5f8f] transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center mb-4 group-hover:bg-[#3b5f8f] transition-colors">
-                    <perk.icon size={18} className="text-[#3b5f8f] group-hover:text-white transition-colors" />
+                <div className="group border border-[#e5e7eb] bg-white p-6 hover:border-[#E10600] transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center mb-4 group-hover:bg-[#E10600] transition-colors">
+                    <perk.icon size={18} className="text-[#E10600] group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="text-sm font-bold text-[#1a1a1a] mb-2">{perk.title}</h3>
                   <p className="text-sm text-[#6b7280] leading-relaxed">{perk.desc}</p>
@@ -129,7 +129,7 @@ export default function CareersPage() {
         <section>
           <FadeIn>
             <div className="text-center mb-8">
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
                 {OPENINGS.length} Open Positions
               </span>
               <h2 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] mt-2">
@@ -141,12 +141,12 @@ export default function CareersPage() {
           <div className="space-y-4">
             {OPENINGS.map((job, i) => (
               <FadeIn key={job.title} delay={i * 50}>
-                <div className="bg-white border border-[#e5e7eb] p-5 sm:p-6 hover:border-[#3b5f8f] transition-colors group">
+                <div className="bg-white border border-[#e5e7eb] p-5 sm:p-6 hover:border-[#E10600] transition-colors group">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-2">
                         <h3 className="text-base font-bold text-[#1a1a1a]">{job.title}</h3>
-                        <span className="text-[10px] px-2 py-0.5 bg-[#f5f0e8] text-[#3b5f8f] font-semibold uppercase tracking-wider">
+                        <span className="text-[10px] px-2 py-0.5 bg-[#f5f0e8] text-[#E10600] font-semibold uppercase tracking-wider">
                           {job.department}
                         </span>
                       </div>
@@ -166,7 +166,7 @@ export default function CareersPage() {
                       <ul className="space-y-1">
                         {job.requirements.map((req) => (
                           <li key={req} className="flex items-start gap-2 text-xs text-[#6b7280]">
-                            <span className="w-1 h-1 rounded-full bg-[#3b5f8f] mt-1.5 flex-shrink-0" />
+                            <span className="w-1 h-1 rounded-full bg-[#E10600] mt-1.5 flex-shrink-0" />
                             {req}
                           </li>
                         ))}
@@ -174,7 +174,7 @@ export default function CareersPage() {
                     </div>
                     <Link
                       href={`mailto:careers@denovapk.com?subject=Application: ${encodeURIComponent(job.title)}`}
-                      className="group/btn inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 text-xs font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors flex-shrink-0 mt-1"
+                      className="group/btn inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 text-xs font-semibold tracking-wide hover:bg-[#E10600] transition-colors flex-shrink-0 mt-1"
                     >
                       Apply Now
                       <ArrowRight size={13} className="transition-transform group-hover/btn:translate-x-1" />
@@ -197,7 +197,7 @@ export default function CareersPage() {
             </p>
             <a
               href="mailto:careers@denovapk.com"
-              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-7 py-3 text-sm font-semibold hover:bg-[#3b5f8f] transition-colors"
+              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-7 py-3 text-sm font-semibold hover:bg-[#E10600] transition-colors"
             >
               Send Open Application
               <ArrowRight size={14} />

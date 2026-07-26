@@ -103,7 +103,7 @@ export function LoyaltyRedemption({ subtotal, onRedeem, currentPoints }: Props) 
   if (data.points === 0) {
     return (
       <div className="border border-[#e5e7eb] bg-[#fafaf9] p-4 flex items-start gap-3">
-        <Award size={18} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
+        <Award size={18} className="text-[#E10600] flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a]">You have 0 loyalty points</p>
           <p className="text-xs text-[#6b7280] mt-1">Complete this order to start earning {data.settings.programName} points!</p>
@@ -115,7 +115,7 @@ export function LoyaltyRedemption({ subtotal, onRedeem, currentPoints }: Props) 
   if (data.points < data.settings.minRedemption) {
     return (
       <div className="border border-[#e5e7eb] bg-[#fafaf9] p-4 flex items-start gap-3">
-        <Award size={18} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
+        <Award size={18} className="text-[#E10600] flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-[#1a1a1a]">You have {data.points} points</p>
           <p className="text-xs text-[#6b7280] mt-1">
@@ -128,16 +128,16 @@ export function LoyaltyRedemption({ subtotal, onRedeem, currentPoints }: Props) 
   }
 
   return (
-    <div className="border border-[#3b5f8f]/30 bg-[#f5f0e8]/50 p-5">
+    <div className="border border-[#E10600]/30 bg-[#f5f0e8]/50 p-5">
       <div className="flex items-center gap-2 mb-3">
-        <Award size={18} className="text-[#3b5f8f]" />
+        <Award size={18} className="text-[#E10600]" />
         <h3 className="text-sm font-bold text-[#1a1a1a]">Use Loyalty Points</h3>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
           <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">Your Balance</p>
-          <p className="text-lg font-bold text-[#3b5f8f]">{data.points} pts</p>
+          <p className="text-lg font-bold text-[#E10600]">{data.points} pts</p>
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">Max This Order</p>
@@ -170,7 +170,7 @@ export function LoyaltyRedemption({ subtotal, onRedeem, currentPoints }: Props) 
               value={pointsInput}
               onChange={(e) => { setPointsInput(Number(e.target.value)); setError(""); }}
               step={10}
-              className="w-full accent-[#3b5f8f]"
+              className="w-full accent-[#E10600]"
             />
             <div className="flex items-center gap-2">
               <input
@@ -179,10 +179,10 @@ export function LoyaltyRedemption({ subtotal, onRedeem, currentPoints }: Props) 
                 max={maxAllowed}
                 value={pointsInput}
                 onChange={(e) => { setPointsInput(Math.min(Number(e.target.value), maxAllowed)); setError(""); }}
-                className="w-24 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                className="w-24 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
               />
               <span className="text-sm text-[#6b7280]">points</span>
-              <span className="text-sm text-[#3b5f8f] font-semibold ml-auto">
+              <span className="text-sm text-[#E10600] font-semibold ml-auto">
                 = {formatPrice(pointsInput * data.settings.pointValue)}
               </span>
             </div>
@@ -190,7 +190,7 @@ export function LoyaltyRedemption({ subtotal, onRedeem, currentPoints }: Props) 
             <button
               onClick={handleApply}
               disabled={pointsInput < data.settings.minRedemption}
-              className="w-full mt-2 bg-[#1a1a1a] text-white py-2.5 text-sm font-semibold hover:bg-[#3b5f8f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 bg-[#1a1a1a] text-white py-2.5 text-sm font-semibold hover:bg-[#E10600] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Apply {pointsInput} Points
             </button>

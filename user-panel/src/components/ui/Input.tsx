@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5"
           >
             {label}
-            {required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
+            {required && <span className="text-[#E10600] ml-0.5">*</span>}
           </label>
         )}
         <input
@@ -30,7 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             "w-full px-3.5 py-3 text-sm text-[#1a1a1a] bg-white border transition-colors duration-150 placeholder:text-[#6b7280]/60 focus:outline-none",
             error
               ? "border-red-400 focus:border-red-500"
-              : "border-[#e5e7eb] focus:border-[#3b5f8f]",
+              : "border-[#e5e7eb] focus:border-[#E10600]",
             className
           )}
           {...props}
@@ -66,7 +66,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5"
           >
             {label}
-            {required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
+            {required && <span className="text-[#E10600] ml-0.5">*</span>}
           </label>
         )}
         <textarea
@@ -76,7 +76,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             "w-full px-3.5 py-3 text-sm text-[#1a1a1a] bg-white border transition-colors duration-150 placeholder:text-[#6b7280]/60 focus:outline-none resize-y min-h-[100px]",
             error
               ? "border-red-400 focus:border-red-500"
-              : "border-[#e5e7eb] focus:border-[#3b5f8f]",
+              : "border-[#e5e7eb] focus:border-[#E10600]",
             className
           )}
           {...props}
@@ -112,7 +112,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5"
           >
             {label}
-            {required && <span className="text-[#3b5f8f] ml-0.5">*</span>}
+            {required && <span className="text-[#E10600] ml-0.5">*</span>}
           </label>
         )}
         <select
@@ -122,7 +122,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             "w-full px-3.5 py-3 text-sm text-[#1a1a1a] bg-white border transition-colors duration-150 focus:outline-none appearance-none bg-no-repeat bg-right pr-10",
             error
               ? "border-red-400 focus:border-red-500"
-              : "border-[#e5e7eb] focus:border-[#3b5f8f]",
+              : "border-[#e5e7eb] focus:border-[#E10600]",
             className
           )}
           style={{

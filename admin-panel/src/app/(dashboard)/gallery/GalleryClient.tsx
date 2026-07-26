@@ -164,7 +164,7 @@ export function GalleryClient({ initialConfig }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <LayoutGrid size={22} className="text-[#3b5f8f]" />
+            <LayoutGrid size={22} className="text-[#E10600]" />
             Gallery Section
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -185,17 +185,17 @@ export function GalleryClient({ initialConfig }: Props) {
 
         <label className={cn(
           "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
-          config.enabled ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
+          config.enabled ? "bg-[#f5f0e8]/40 border-[#E10600]" : "bg-[#fafaf9] border-[#e5e7eb]"
         )}>
           <input
             type="checkbox"
             checked={config.enabled}
             onChange={(e) => updateConfig("enabled", e.target.checked)}
-            className="w-4 h-4 accent-[#3b5f8f]"
+            className="w-4 h-4 accent-[#E10600]"
           />
           <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
             {config.enabled
-              ? <><Eye size={13} className="text-[#3b5f8f]" />Section visible on homepage</>
+              ? <><Eye size={13} className="text-[#E10600]" />Section visible on homepage</>
               : <><EyeOff size={13} className="text-[#6b7280]" />Section hidden from homepage</>
             }
           </p>
@@ -211,7 +211,7 @@ export function GalleryClient({ initialConfig }: Props) {
               value={config.sectionLabel}
               onChange={(e) => updateConfig("sectionLabel", e.target.value)}
               placeholder="e.g. @denovapk"
-              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
             />
           </div>
           <div>
@@ -223,7 +223,7 @@ export function GalleryClient({ initialConfig }: Props) {
               value={config.sectionTitle}
               onChange={(e) => updateConfig("sectionTitle", e.target.value)}
               placeholder="e.g. Style in Action"
-              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+              className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
             />
           </div>
         </div>
@@ -237,7 +237,7 @@ export function GalleryClient({ initialConfig }: Props) {
             onChange={(e) => updateConfig("sectionDescription", e.target.value)}
             placeholder="e.g. Follow us for daily style inspiration..."
             rows={2}
-            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
+            className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y"
           />
         </div>
       </div>
@@ -263,7 +263,7 @@ export function GalleryClient({ initialConfig }: Props) {
           </h2>
           <button
             onClick={addItem}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72]"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E10600] hover:text-[#B80000]"
           >
             <Plus size={14} />Add Image
           </button>
@@ -300,7 +300,7 @@ export function GalleryClient({ initialConfig }: Props) {
         {config.items.length > 0 && (
           <button
             onClick={addItem}
-            className="w-full py-3 border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] text-sm font-medium text-[#6b7280] hover:text-[#3b5f8f] transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 border-2 border-dashed border-[#e5e7eb] hover:border-[#E10600] text-sm font-medium text-[#6b7280] hover:text-[#E10600] transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={16} />Add Another Image
           </button>
@@ -399,7 +399,7 @@ function ItemCard({
         </div>
 
         {/* Layout badge */}
-        <div className="absolute top-2 right-2 bg-[#3b5f8f] text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider flex items-center gap-1">
+        <div className="absolute top-2 right-2 bg-[#E10600] text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider flex items-center gap-1">
           <LayoutIcon size={11} />
           {safeLayout}
         </div>
@@ -443,8 +443,8 @@ function ItemCard({
                   className={cn(
                     "flex items-center justify-center p-2 border transition-colors",
                     isActive
-                      ? "border-[#3b5f8f] bg-[#3b5f8f] text-white"
-                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#3b5f8f]"
+                      ? "border-[#E10600] bg-[#E10600] text-white"
+                      : "border-[#e5e7eb] text-[#6b7280] hover:border-[#E10600]"
                   )}
                 >
                   <Icon size={14} />
@@ -466,7 +466,7 @@ function ItemCard({
             onClick={onToggleActive}
             className={cn(
               "p-2 transition-colors",
-              item.isActive ? "text-[#3b5f8f] hover:text-[#2d4a72]" : "text-[#6b7280] hover:text-[#1a1a1a]"
+              item.isActive ? "text-[#E10600] hover:text-[#B80000]" : "text-[#6b7280] hover:text-[#1a1a1a]"
             )}
             title={item.isActive ? "Hide from site" : "Show on site"}
           >
@@ -636,8 +636,8 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
                   className={cn(
                     "border-2 border-dashed aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors",
                     dragOver
-                      ? "border-[#3b5f8f] bg-[#f5f0e8]/50"
-                      : "border-[#e5e7eb] hover:border-[#3b5f8f] bg-[#fafaf9]"
+                      ? "border-[#E10600] bg-[#f5f0e8]/50"
+                      : "border-[#e5e7eb] hover:border-[#E10600] bg-[#fafaf9]"
                   )}
                   onClick={() => fileRef.current?.click()}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -646,13 +646,13 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
                 >
                   {uploading ? (
                     <div className="flex flex-col items-center gap-2">
-                      <Loader size={24} className="text-[#3b5f8f] animate-spin" />
+                      <Loader size={24} className="text-[#E10600] animate-spin" />
                       <span className="text-xs text-[#6b7280]">Uploading &amp; optimizing...</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 p-4 text-center">
                       <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                        <ImageIcon size={18} className="text-[#3b5f8f]" />
+                        <ImageIcon size={18} className="text-[#E10600]" />
                       </div>
                       <span className="text-sm font-semibold text-[#1a1a1a]">
                         Click or drag image here
@@ -672,12 +672,12 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
                     placeholder="https://images.unsplash.com/..."
-                    className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                    className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
                   />
                   <button
                     onClick={handleUrlAdd}
                     disabled={!urlInput.trim() || uploading}
-                    className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
+                    className="px-4 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#E10600] transition-colors disabled:opacity-40"
                   >
                     {uploading ? <Loader size={12} className="animate-spin" /> : "Load"}
                   </button>
@@ -707,7 +707,7 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Summer vibes at DHA"
-                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
               />
               <p className="mt-1 text-[10px] text-[#6b7280]">
                 Internal label to help you identify this image. Not shown to visitors.
@@ -730,8 +730,8 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
                       className={cn(
                         "flex items-center gap-2 p-3 border transition-colors text-left",
                         isActive
-                          ? "border-[#3b5f8f] bg-[#3b5f8f] text-white"
-                          : "border-[#e5e7eb] hover:border-[#3b5f8f]"
+                          ? "border-[#E10600] bg-[#E10600] text-white"
+                          : "border-[#e5e7eb] hover:border-[#E10600]"
                       )}
                     >
                       <Icon size={18} className="flex-shrink-0" />
@@ -757,7 +757,7 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="/collections/premium  or  https://example.com"
-                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
               />
               <p className="mt-1 text-[10px] text-[#6b7280]">
                 Where to send visitors when they click this image.
@@ -768,18 +768,18 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
             <label className={cn(
               "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
               isActive
-                ? "bg-[#f5f0e8]/40 border-[#3b5f8f]"
+                ? "bg-[#f5f0e8]/40 border-[#E10600]"
                 : "bg-[#fafaf9] border-[#e5e7eb]"
             )}>
               <input
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 accent-[#3b5f8f]"
+                className="w-4 h-4 accent-[#E10600]"
               />
               <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
                 {isActive
-                  ? <><Eye size={13} className="text-[#3b5f8f]" />Visible on website</>
+                  ? <><Eye size={13} className="text-[#E10600]" />Visible on website</>
                   : <><EyeOff size={13} className="text-[#6b7280]" />Hidden from website</>
                 }
               </p>
@@ -795,7 +795,7 @@ function ItemEditModal({ item, onClose, onSave }: ModalProps) {
             </button>
             <button
               onClick={handleSubmit}
-              className="inline-flex items-center gap-2 bg-[#3b5f8f] hover:bg-[#2d4a72] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
+              className="inline-flex items-center gap-2 bg-[#E10600] hover:bg-[#B80000] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
               <Save size={12} />Apply Changes
             </button>

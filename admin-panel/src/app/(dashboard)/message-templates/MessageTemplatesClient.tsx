@@ -92,7 +92,7 @@ export function MessageTemplatesClient({ initialTemplates }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <MessageCircle size={22} className="text-[#3b5f8f]" />
+            <MessageCircle size={22} className="text-[#E10600]" />
             WhatsApp Templates
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -111,7 +111,7 @@ export function MessageTemplatesClient({ initialTemplates }: Props) {
             onClick={() => setActiveTab(t.id)}
             className={cn(
               "px-4 py-2.5 text-sm font-semibold tracking-wide transition-colors border-b-2 -mb-px",
-              activeTab === t.id ? "border-[#3b5f8f] text-[#1a1a1a]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
+              activeTab === t.id ? "border-[#E10600] text-[#1a1a1a]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
             )}
           >
             {t.label}
@@ -144,7 +144,7 @@ export function MessageTemplatesClient({ initialTemplates }: Props) {
         {/* RIGHT: PREVIEW */}
         <div className="bg-white border border-[#e5e7eb] p-5 rounded-md shadow-sm lg:sticky lg:top-24">
           <div className="flex items-center gap-2 mb-4">
-            <Smartphone size={16} className="text-[#3b5f8f]" />
+            <Smartphone size={16} className="text-[#E10600]" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#1a1a1a]">
               Live Preview
             </h3>

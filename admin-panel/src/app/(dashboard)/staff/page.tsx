@@ -12,7 +12,7 @@ const STAFF = [
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  super_admin: "bg-[#3b5f8f] text-white",
+  super_admin: "bg-[#E10600] text-white",
   admin:       "bg-blue-100 text-blue-700",
   manager:     "bg-green-100 text-green-700",
   staff:       "bg-gray-100 text-gray-700",
@@ -50,7 +50,7 @@ export default function StaffPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#f5f0e8] flex items-center justify-center">
-                        <span className="text-xs font-bold text-[#3b5f8f]">{getInitials(s.name)}</span>
+                        <span className="text-xs font-bold text-[#E10600]">{getInitials(s.name)}</span>
                       </div>
                       <span className="text-sm font-semibold text-[#1a1a1a]">{s.name}</span>
                     </div>

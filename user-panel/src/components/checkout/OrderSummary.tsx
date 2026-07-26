@@ -15,19 +15,22 @@ export function OrderSummary() {
   const loyaltyDiscount      = useCheckoutStore((s) => s.loyaltyDiscount);
   const loyaltyPointsUsed    = useCheckoutStore((s) => s.loyaltyPointsUsed);
   const birthdayDiscount     = useCheckoutStore((s) => s.birthdayDiscount);
+  const discountCode         = useCheckoutStore((s) => s.discountCode);
+  const discountAmount       = useCheckoutStore((s) => s.discountAmount);
   const setLoyaltyRedemption = useCheckoutStore((s) => s.setLoyaltyRedemption);
   const setBirthdayDiscount  = useCheckoutStore((s) => s.setBirthdayDiscount);
+  const setDiscountCode      = useCheckoutStore((s) => s.setDiscountCode);
+  const clearDiscountCode    = useCheckoutStore((s) => s.clearDiscountCode);
 
   const shipping = shippingMethod.price;
   const tax      = 0;
 
   const [promoCode, setPromoCode]         = useState("");
-  const [promoApplied, setPromoApplied]   = useState(false);
   const [promoLoading, setPromoLoading]   = useState(false);
   const [promoError, setPromoError]       = useState("");
-  const [promoDiscount, setPromoDiscount] = useState(0);
 
-  const total = subtotal + shipping + tax - loyaltyDiscount - birthdayDiscount - promoDiscount;
+  const promoApplied = !!discountCode && discountAmount > 0;
+  const total = subtotal + shipping + tax - loyaltyDiscount - birthdayDiscount - discountAmount;
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
@@ -43,25 +46,23 @@ export function OrderSummary() {
       const data = await res.json();
 
       if (data.valid) {
-        setPromoDiscount(data.amount);
-        setPromoApplied(true);
+        setDiscountCode(data.code || promoCode.trim().toUpperCase(), data.amount);
+        setPromoCode(data.code || promoCode.trim().toUpperCase());
         setPromoError("");
       } else {
         setPromoError(data.error || "Invalid discount code");
-        setPromoDiscount(0);
-        setPromoApplied(false);
+        clearDiscountCode();
       }
     } catch {
       setPromoError("Network error. Please try again.");
-      setPromoDiscount(0);
+      clearDiscountCode();
     }
     setPromoLoading(false);
   };
 
   const handleRemovePromo = () => {
     setPromoCode("");
-    setPromoApplied(false);
-    setPromoDiscount(0);
+    clearDiscountCode();
     setPromoError("");
   };
 
@@ -141,7 +142,7 @@ export function OrderSummary() {
         {promoApplied ? (
           <div className="flex items-center justify-between rounded-md bg-[#f0fdf4] border border-green-200 px-3 py-2.5">
             <span className="text-xs font-medium text-green-800">
-              {promoCode} applied — {formatPrice(promoDiscount)} off
+              {discountCode} applied — {formatPrice(discountAmount)} off
             </span>
             <button onClick={handleRemovePromo} className="text-[10px] text-red-500 hover:text-red-700 underline">
               Remove
@@ -153,14 +154,19 @@ export function OrderSummary() {
               <input
                 type="text"
                 value={promoCode}
-                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); }}
+                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); clearDiscountCode(); }}
                 placeholder="Discount code or gift card"
                 className="flex-1 rounded-md px-3.5 py-2.5 text-sm border border-[#d1d5db] focus:border-[#1a1a1a] focus:outline-none placeholder:text-[#9ca3af]"
               />
               <button
                 onClick={handleApplyPromo}
                 disabled={!promoCode.trim() || promoLoading}
-                className="rounded-md bg-[#f4f2ee] px-5 text-sm font-medium text-[#6b7280] hover:bg-[#e5e7eb] hover:text-[#1a1a1a] transition-colors disabled:opacity-40"
+                className={cn(
+                  "rounded-md px-5 text-sm font-medium transition-colors disabled:opacity-40",
+                  promoCode.trim()
+                    ? "bg-[#1a1a1a] text-white hover:bg-[#E10600]"
+                    : "bg-[#f4f2ee] text-[#6b7280]"
+                )}
               >
                 {promoLoading ? "..." : "Apply"}
               </button>
@@ -176,8 +182,8 @@ export function OrderSummary() {
       <div className="space-y-2 text-sm">
         <Row label="Subtotal" value={formatPrice(subtotal)} />
 
-        {promoDiscount > 0 && (
-          <Row label={promoCode} value={`− ${formatPrice(promoDiscount)}`} accent="green" />
+        {discountAmount > 0 && (
+          <Row label={discountCode} value={`− ${formatPrice(discountAmount)}`} accent="green" />
         )}
 
         {birthdayDiscount > 0 && (
@@ -227,7 +233,7 @@ function Row({
       <span className="text-[#6b7280]">{label}</span>
       <span className={cn(
         "font-medium",
-        accent === "brand" ? "text-[#3b5f8f]" :
+        accent === "brand" ? "text-[#E10600]" :
         accent === "green" ? "text-green-600" :
         "text-[#1a1a1a]"
       )}>

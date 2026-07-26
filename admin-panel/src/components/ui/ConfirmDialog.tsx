@@ -14,13 +14,13 @@ const VARIANT_CONFIG = {
     icon: AlertTriangle,
     iconBg: "bg-orange-50",
     iconColor: "text-orange-500",
-    button: "bg-[#1a1a1a] hover:bg-[#3b5f8f] text-white",
+    button: "bg-[#1a1a1a] hover:bg-[#E10600] text-white",
   },
   info: {
     icon: HelpCircle,
     iconBg: "bg-[#f5f0e8]",
-    iconColor: "text-[#3b5f8f]",
-    button: "bg-[#1a1a1a] hover:bg-[#3b5f8f] text-white",
+    iconColor: "text-[#E10600]",
+    button: "bg-[#1a1a1a] hover:bg-[#E10600] text-white",
   },
 } as const;
 

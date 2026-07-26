@@ -130,7 +130,7 @@ export function AnalyticsClient({
                       </span>
                     </div>
                     <div className="h-2 bg-[#f5f0e8] overflow-hidden">
-                      <div className="h-full bg-[#3b5f8f]" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-[#E10600]" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -188,14 +188,14 @@ export function AnalyticsClient({
 
           {topProducts.length === 0 ? (
             <div className="py-10 text-center text-sm text-[#6b7280]">
-              <PackageOpen size={28} className="text-[#3b5f8f] mx-auto mb-2" />
+              <PackageOpen size={28} className="text-[#E10600] mx-auto mb-2" />
               No product sales in this period.
             </div>
           ) : (
             <div className="space-y-3">
               {topProducts.map((p, i) => (
                 <div key={p.productId} className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-[#3b5f8f] w-6 flex-shrink-0">{i + 1}</span>
+                  <span className="text-sm font-bold text-[#E10600] w-6 flex-shrink-0">{i + 1}</span>
                   {p.image ? (
                     <div className="relative w-10 h-10 bg-[#fafaf9] flex-shrink-0 overflow-hidden">
                       <Image src={p.image} alt={p.name} fill className="object-cover" sizes="40px" />
@@ -205,7 +205,7 @@ export function AnalyticsClient({
                   )}
                   <div className="flex-1 min-w-0">
                     <Link href={`/products/${p.productId}`}
-                      className="text-xs font-semibold text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors truncate block">
+                      className="text-xs font-semibold text-[#1a1a1a] hover:text-[#E10600] transition-colors truncate block">
                       {p.name}
                     </Link>
                     <p className="text-[10px] text-[#6b7280]">{p.units} units sold</p>
@@ -224,20 +224,20 @@ export function AnalyticsClient({
 
           {topCustomers.length === 0 ? (
             <div className="py-10 text-center text-sm text-[#6b7280]">
-              <UsersIcon size={28} className="text-[#3b5f8f] mx-auto mb-2" />
+              <UsersIcon size={28} className="text-[#E10600] mx-auto mb-2" />
               No registered customer orders in this period.
             </div>
           ) : (
             <div className="space-y-3">
               {topCustomers.map((c, i) => (
                 <div key={c.userId} className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-[#3b5f8f] w-6 flex-shrink-0">{i + 1}</span>
+                  <span className="text-sm font-bold text-[#E10600] w-6 flex-shrink-0">{i + 1}</span>
                   <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
-                    <span className="text-[11px] font-bold text-[#3b5f8f]">{initials(c.name)}</span>
+                    <span className="text-[11px] font-bold text-[#E10600]">{initials(c.name)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link href={`/customers/${c.userId}`}
-                      className="text-xs font-semibold text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors truncate block">
+                      className="text-xs font-semibold text-[#1a1a1a] hover:text-[#E10600] transition-colors truncate block">
                       {c.name}
                     </Link>
                     <p className="text-[10px] text-[#6b7280]">{c.orderCount} orders</p>
@@ -251,7 +251,7 @@ export function AnalyticsClient({
       </div>
 
       <div className={cn(
-        "bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4 text-center text-xs text-[#6b7280]",
+        "bg-[#f5f0e8] border border-[#E10600]/30 p-4 text-center text-xs text-[#6b7280]",
       )}>
         All figures reflect PAID orders only. Range: <span className="font-semibold text-[#1a1a1a]">{rangeLabel(rangeValue)}</span>
       </div>

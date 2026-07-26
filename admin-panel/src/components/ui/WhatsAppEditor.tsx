@@ -77,7 +77,7 @@ export function WhatsAppEditor({ value, onChange, variables }: WhatsAppEditorPro
   };
 
   return (
-    <div className="border border-[#e5e7eb] rounded-md bg-white overflow-hidden focus-within:border-[#3b5f8f] focus-within:ring-1 focus-within:ring-[#3b5f8f]/20 transition-all">
+    <div className="border border-[#e5e7eb] rounded-md bg-white overflow-hidden focus-within:border-[#E10600] focus-within:ring-1 focus-within:ring-[#E10600]/20 transition-all">
       {/* Toolbar */}
       <div className="flex items-center gap-1 border-b border-[#e5e7eb] bg-[#fafaf9] px-2 py-1.5">
         <button type="button" onClick={() => insertSyntax("*")} className="p-1.5 text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#e5e7eb] rounded transition-colors" title="Bold (*text*)">

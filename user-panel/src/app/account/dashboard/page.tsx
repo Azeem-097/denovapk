@@ -89,7 +89,7 @@ export default function DashboardPage() {
             <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Account" }]} className="mb-4" />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
               My Account
             </span>
           </FadeIn>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
                   <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">Recent Orders</h2>
                   {orders.length > 0 && (
-                    <Link href="/account/orders" className="text-xs text-[#3b5f8f] hover:underline inline-flex items-center gap-1">
+                    <Link href="/account/orders" className="text-xs text-[#E10600] hover:underline inline-flex items-center gap-1">
                       View all <ArrowRight size={12} />
                     </Link>
                   )}
@@ -141,16 +141,16 @@ export default function DashboardPage() {
 
                 {ordersLoading ? (
                   <div className="p-8 text-center">
-                    <div className="w-6 h-6 border-2 border-[#3b5f8f] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <div className="w-6 h-6 border-2 border-[#E10600] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                     <p className="text-sm text-[#6b7280]">Loading orders...</p>
                   </div>
                 ) : recentOrders.length === 0 ? (
                   <div className="p-8 text-center">
-                    <Package size={32} className="text-[#3b5f8f] mx-auto mb-3" />
+                    <Package size={32} className="text-[#E10600] mx-auto mb-3" />
                     <p className="text-sm text-[#6b7280] mb-2">You haven&apos;t placed any orders yet</p>
                     <Link
                       href="/shop"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E10600] hover:text-[#B80000] underline"
                     >
                       Start Shopping <ArrowRight size={11} />
                     </Link>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
             {stats.totalSpent > 0 && (
               <FadeIn delay={400}>
                 <div className="text-center text-xs text-[#6b7280]">
-                  Total spent with us: <span className="text-[#3b5f8f] font-bold">{formatPrice(stats.totalSpent)}</span>
+                  Total spent with us: <span className="text-[#E10600] font-bold">{formatPrice(stats.totalSpent)}</span>
                 </div>
               </FadeIn>
             )}
@@ -225,16 +225,16 @@ function StatCard({ icon: Icon, label, value, highlight }: {
   return (
     <div className={cn(
       "bg-white border p-4 lg:p-5",
-      highlight ? "border-[#3b5f8f] bg-[#f5f0e8]/30" : "border-[#e5e7eb]"
+      highlight ? "border-[#E10600] bg-[#f5f0e8]/30" : "border-[#e5e7eb]"
     )}>
       <div className={cn(
         "w-9 h-9 rounded-full flex items-center justify-center mb-3",
-        highlight ? "bg-[#3b5f8f]" : "bg-[#f5f0e8]"
+        highlight ? "bg-[#E10600]" : "bg-[#f5f0e8]"
       )}>
-        <Icon size={16} className={highlight ? "text-white" : "text-[#3b5f8f]"} />
+        <Icon size={16} className={highlight ? "text-white" : "text-[#E10600]"} />
       </div>
       <p className="text-xs text-[#6b7280] mb-1">{label}</p>
-      <p className={cn("text-lg lg:text-xl font-bold", highlight ? "text-[#3b5f8f]" : "text-[#1a1a1a]")}>{value}</p>
+      <p className={cn("text-lg lg:text-xl font-bold", highlight ? "text-[#E10600]" : "text-[#1a1a1a]")}>{value}</p>
     </div>
   );
 }
@@ -245,15 +245,15 @@ function QuickAction({ href, icon: Icon, title, desc }: {
   title: string; desc: string;
 }) {
   return (
-    <Link href={href} className="group flex items-center gap-3 bg-white border border-[#e5e7eb] p-4 hover:border-[#3b5f8f] transition-colors">
-      <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0 group-hover:bg-[#3b5f8f] transition-colors">
-        <Icon size={16} className="text-[#3b5f8f] group-hover:text-white transition-colors" />
+    <Link href={href} className="group flex items-center gap-3 bg-white border border-[#e5e7eb] p-4 hover:border-[#E10600] transition-colors">
+      <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0 group-hover:bg-[#E10600] transition-colors">
+        <Icon size={16} className="text-[#E10600] group-hover:text-white transition-colors" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[#1a1a1a]">{title}</p>
         <p className="text-xs text-[#6b7280] mt-0.5">{desc}</p>
       </div>
-      <ArrowRight size={14} className="text-[#6b7280] group-hover:text-[#3b5f8f] group-hover:translate-x-1 transition-all" />
+      <ArrowRight size={14} className="text-[#6b7280] group-hover:text-[#E10600] group-hover:translate-x-1 transition-all" />
     </Link>
   );
 }

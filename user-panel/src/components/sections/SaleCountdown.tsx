@@ -65,7 +65,7 @@ export function SaleCountdown() {
     <section className="relative w-full bg-white py-10 sm:py-12 lg:py-14 overflow-hidden">
 
       {/* Subtle top border accent */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-[#E10600]/40 to-transparent" />
 
       <div className="site-container">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] items-center gap-8 lg:gap-16">
@@ -73,7 +73,7 @@ export function SaleCountdown() {
           {/* ── LEFT: Label + Heading + CTA ─────────────── */}
           <div className="text-center lg:text-left">
             <FadeIn>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
                 Shop Before It Ends
               </span>
             </FadeIn>
@@ -96,7 +96,7 @@ export function SaleCountdown() {
                       rx="46"
                       ry="24"
                       fill="none"
-                      stroke="#3b5f8f"
+                      stroke="#E10600"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeDasharray="220"
@@ -115,7 +115,7 @@ export function SaleCountdown() {
             <FadeIn delay={200}>
               <Link
                 href="/shop?filter=sale"
-                className="group inline-flex items-center gap-2 mt-4 sm:mt-5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] border-b border-[#1a1a1a] pb-0.5 hover:text-[#3b5f8f] hover:border-[#3b5f8f] transition-all duration-300"
+                className="group inline-flex items-center gap-2 mt-4 sm:mt-5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] border-b border-[#1a1a1a] pb-0.5 hover:text-[#E10600] hover:border-[#E10600] transition-all duration-300"
               >
                 Shop The Sale
                 <svg
@@ -150,7 +150,7 @@ export function SaleCountdown() {
       </div>
 
       {/* Bottom border accent */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-[#3b5f8f]/40 to-transparent" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-[#E10600]/40 to-transparent" />
 
       {/* ─── Countdown animation keyframes (scoped inline) ─── */}
       <style jsx>{`
@@ -196,7 +196,7 @@ function CountdownUnit({ value, label, mounted, pulseOnTick }: CountdownUnitProp
           className={cn(
             "font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] tabular-nums leading-none block transition-all duration-300",
             isFlipping && "opacity-70 -translate-y-1",
-            pulseOnTick && mounted && "text-[#3b5f8f]"
+            pulseOnTick && mounted && "text-[#E10600]"
           )}
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
@@ -214,7 +214,7 @@ function CountdownUnit({ value, label, mounted, pulseOnTick }: CountdownUnitProp
 function CountdownSeparator() {
   return (
     <span
-      className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl lg:text-4xl font-light text-[#3b5f8f]/40 leading-none mt-1 sm:mt-1.5 lg:mt-2 hidden sm:block"
+      className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl lg:text-4xl font-light text-[#E10600]/40 leading-none mt-1 sm:mt-1.5 lg:mt-2 hidden sm:block"
       aria-hidden="true"
     >
       :

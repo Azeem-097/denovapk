@@ -11,8 +11,8 @@ const CONFIG: Record<ToastType, {
 }> = {
   success: {
     icon: CheckCircle,
-    accent: "border-l-[#3b5f8f]",
-    iconColor: "text-[#3b5f8f]",
+    accent: "border-l-[#E10600]",
+    iconColor: "text-[#E10600]",
     bgTint: "bg-[#f5f0e8]/30",
   },
   error: {

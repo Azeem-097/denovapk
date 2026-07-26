@@ -24,7 +24,7 @@ export function StatsCard({
     )}>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className={cn("w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0", iconBg)}>
-          <Icon size={20} className="text-[#3b5f8f]" />
+          <Icon size={20} className="text-[#E10600]" />
         </div>
         {change !== undefined && (
           <div className={cn(

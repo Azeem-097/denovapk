@@ -46,7 +46,7 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
           <Link
             href={`/products/${item.slug}`}
             onClick={onLinkClick}
-            className="text-sm font-medium text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors line-clamp-2 leading-snug"
+            className="text-sm font-medium text-[#1a1a1a] hover:text-[#E10600] transition-colors line-clamp-2 leading-snug"
           >
             {item.name}
           </Link>

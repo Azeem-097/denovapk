@@ -91,7 +91,7 @@ export default function OrderDetailPage({ params }: PageProps) {
     return (
       <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-[#3b5f8f] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-8 h-8 border-2 border-[#E10600] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-[#6b7280]">Loading order...</p>
         </div>
       </div>
@@ -102,14 +102,14 @@ export default function OrderDetailPage({ params }: PageProps) {
     return (
       <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
         <div className="max-w-md mx-auto px-4 text-center">
-          <Package size={48} className="text-[#3b5f8f] mx-auto mb-4" />
+          <Package size={48} className="text-[#E10600] mx-auto mb-4" />
           <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#1a1a1a] mb-2">
             Order not found
           </h1>
           <p className="text-sm text-[#6b7280] mb-6">{error || "This order could not be loaded."}</p>
           <Link
             href="/account/orders"
-            className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#3b5f8f] transition-colors"
+            className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#E10600] transition-colors"
           >
             <ArrowLeft size={14} />
             Back to Orders
@@ -135,7 +135,7 @@ export default function OrderDetailPage({ params }: PageProps) {
           </FadeIn>
 
           <FadeIn>
-            <Link href="/account/orders" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#3b5f8f] mb-2">
+            <Link href="/account/orders" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#E10600] mb-2">
               <ArrowLeft size={13} />
               Back to orders
             </Link>
@@ -177,7 +177,7 @@ export default function OrderDetailPage({ params }: PageProps) {
 
                   <div className="relative">
                     <div className="absolute top-4 left-0 right-0 h-0.5 bg-[#e5e7eb] mx-4">
-                      <div className="h-full bg-[#3b5f8f] transition-all duration-700"
+                      <div className="h-full bg-[#E10600] transition-all duration-700"
                         style={{ width: `${(Math.max(currentStepIndex, 0) / (STATUS_STEPS.length - 1)) * 100}%` }} />
                     </div>
 
@@ -188,7 +188,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                         return (
                           <div key={step.key} className="flex flex-col items-center flex-1">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                              isDone   ? "bg-[#3b5f8f] text-white" :
+                              isDone   ? "bg-[#E10600] text-white" :
                               isActive ? "bg-[#1a1a1a] text-white ring-4 ring-[#1a1a1a]/10" :
                               "bg-white border-2 border-[#e5e7eb] text-[#6b7280]"
                             }`}>
@@ -241,7 +241,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                 <FadeIn delay={200}>
                   <div className="bg-white border border-[#e5e7eb] p-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <MapPin size={14} className="text-[#3b5f8f]" />
+                      <MapPin size={14} className="text-[#E10600]" />
                       <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">Shipping Address</h3>
                     </div>
                     <p className="text-sm font-medium text-[#1a1a1a]">{order.address.fullName ?? "-"}</p>
@@ -257,7 +257,7 @@ export default function OrderDetailPage({ params }: PageProps) {
               <FadeIn delay={250}>
                 <div className="bg-white border border-[#e5e7eb] p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <CreditCard size={14} className="text-[#3b5f8f]" />
+                    <CreditCard size={14} className="text-[#E10600]" />
                     <h3 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">Payment Method</h3>
                   </div>
                   <p className="text-sm font-medium text-[#1a1a1a]">{order.paymentMethod}</p>
@@ -293,13 +293,13 @@ export default function OrderDetailPage({ params }: PageProps) {
             </FadeIn>
 
             <FadeIn delay={400}>
-              <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-5 lg:p-6 flex items-start gap-4">
-                <MessageCircle size={20} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
+              <div className="bg-[#f5f0e8] border border-[#E10600]/30 p-5 lg:p-6 flex items-start gap-4">
+                <MessageCircle size={20} className="text-[#E10600] flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-[#1a1a1a]">Need help with this order?</p>
                   <p className="text-xs text-[#6b7280] mt-1">Our support team is here to assist you 24/7.</p>
                 </div>
-                <Link href="/contact" className="text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline whitespace-nowrap">
+                <Link href="/contact" className="text-xs font-semibold text-[#E10600] hover:text-[#B80000] underline whitespace-nowrap">
                   Contact Us
                 </Link>
               </div>
@@ -315,7 +315,7 @@ function SumRow({ label, value, highlight }: { label: string; value: string; hig
   return (
     <div className="flex items-center justify-between">
       <span className="text-[#6b7280]">{label}</span>
-      <span className={`font-medium ${highlight ? "text-[#3b5f8f]" : "text-[#1a1a1a]"}`}>{value}</span>
+      <span className={`font-medium ${highlight ? "text-[#E10600]" : "text-[#1a1a1a]"}`}>{value}</span>
     </div>
   );
 }

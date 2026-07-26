@@ -43,10 +43,10 @@ return (
         <div className="text-center mb-10">
           <div className="inline-flex flex-col items-center leading-none mb-3">
             <span className="text-3xl font-bold tracking-[0.08em] text-white">DENOVA</span>
-            <span className="text-[9px] font-medium tracking-[0.35em] text-[#3b5f8f] uppercase mt-0.5">Admin Panel</span>
+            <span className="text-[9px] font-medium tracking-[0.35em] text-[#E10600] uppercase mt-0.5">Admin Panel</span>
           </div>
           <div className="flex items-center justify-center gap-2 mt-4">
-            <Shield size={14} className="text-[#3b5f8f]" />
+            <Shield size={14} className="text-[#E10600]" />
             <p className="text-sm text-white/50">Secure Admin Access</p>
           </div>
         </div>
@@ -56,13 +56,13 @@ return (
             <div>
               <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">Email Address</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="admin@denovapk.com"
-                className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
+                className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60" />
             </div>
             <div>
               <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">Password</label>
               <div className="relative">
                 <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter your password"
-                  className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60 pr-10" />
+                  className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60 pr-10" />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -72,7 +72,7 @@ return (
             {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
 
             <button type="submit" disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors disabled:opacity-60 mt-2">
+              className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors disabled:opacity-60 mt-2">
               {loading ? (
                 <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in...</>
               ) : (

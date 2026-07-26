@@ -56,7 +56,7 @@ export default function SizeGuidePage() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
               Find Your Fit
             </span>
           </FadeIn>
@@ -77,14 +77,14 @@ export default function SizeGuidePage() {
 
         {/* How to Measure Tips */}
         <FadeIn>
-          <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-6 lg:p-8">
+          <div className="bg-[#f5f0e8] border border-[#E10600]/30 p-6 lg:p-8">
             <h2 className="font-[family-name:var(--font-playfair)] text-xl font-bold text-[#1a1a1a] mb-5">
               How to Measure
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {TIPS.map((tip) => (
                 <div key={tip.title} className="bg-white p-4 border border-[#e5e7eb]">
-                  <p className="text-xs font-bold text-[#3b5f8f] uppercase tracking-wider mb-1">{tip.title}</p>
+                  <p className="text-xs font-bold text-[#E10600] uppercase tracking-wider mb-1">{tip.title}</p>
                   <p className="text-xs text-[#6b7280] leading-relaxed">{tip.desc}</p>
                 </div>
               ))}
@@ -124,7 +124,7 @@ export default function SizeGuidePage() {
           <div className="border border-[#e5e7eb] bg-white p-5 text-center">
             <p className="text-sm text-[#6b7280]">
               Still unsure about your size?{" "}
-              <a href="https://wa.me/923001234567" target="_blank" rel="noopener noreferrer" className="text-[#3b5f8f] font-semibold hover:underline">
+              <a href="https://wa.me/923001234567" target="_blank" rel="noopener noreferrer" className="text-[#E10600] font-semibold hover:underline">
                 WhatsApp us
               </a>{" "}
               and our style team will help you find the perfect fit.

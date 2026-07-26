@@ -40,7 +40,7 @@ export function CheckoutForm() {
   const {
     setShippingData, shippingData,
     paymentMethod, setPaymentMethod, setShippingMethod,
-    loyaltyPointsUsed, setOrderNumber,
+    loyaltyPointsUsed, setOrderNumber, discountCode,
   } = useCheckoutStore();
 
   const items      = useCartStore((s) => s.items);
@@ -229,6 +229,7 @@ export function CheckoutForm() {
             price: i.price, quantity: i.quantity,
           })),
           saveAddress: saveInfo,
+          discountCode: discountCode || undefined,
           loyaltyPointsToUse: loyaltyPointsUsed,
         }),
       });
@@ -266,15 +267,15 @@ export function CheckoutForm() {
           Encourages non-logged-in visitors to create an account
           to join loyalty program and get discounts. */}
       {mounted && !isLoggedIn && (
-        <div className="relative overflow-hidden rounded-md border border-[#3b5f8f]/30 bg-gradient-to-br from-[#f5f0e8] via-white to-[#faf7f2] p-4 sm:p-5">
+        <div className="relative overflow-hidden rounded-md border border-[#E10600]/30 bg-gradient-to-br from-[#f5f0e8] via-white to-[#faf7f2] p-4 sm:p-5">
           <div className="flex items-start gap-3 sm:gap-4">
-            <div className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#3b5f8f]/15 border border-[#3b5f8f]/30 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b5f8f" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#E10600]/15 border border-[#E10600]/30 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E10600" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 15l-2 5l9-9l-9-9l2 5l-7 4z" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#3b5f8f] mb-1">
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#E10600] mb-1">
                 Members-Only Rewards
               </p>
               <p className="text-sm text-[#1a1a1a] leading-snug">
@@ -283,7 +284,7 @@ export function CheckoutForm() {
               <div className="mt-3 flex items-center gap-3 flex-wrap">
                 <Link
                   href={`/account/register?redirect=${encodeURIComponent("/checkout")}`}
-                  className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white text-xs font-semibold tracking-wide uppercase px-4 py-2 rounded hover:bg-[#3b5f8f] transition-colors duration-200"
+                  className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white text-xs font-semibold tracking-wide uppercase px-4 py-2 rounded hover:bg-[#E10600] transition-colors duration-200"
                 >
                   Create Account
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -292,7 +293,7 @@ export function CheckoutForm() {
                 </Link>
                 <Link
                   href={`/account/login?redirect=${encodeURIComponent("/checkout")}`}
-                  className="text-xs text-[#6b7280] hover:text-[#1a1a1a] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#3b5f8f] transition-colors"
+                  className="text-xs text-[#6b7280] hover:text-[#1a1a1a] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#E10600] transition-colors"
                 >
                   Already a member? Sign in
                 </Link>
@@ -310,7 +311,7 @@ export function CheckoutForm() {
           {mounted && !isLoggedIn && (
             <Link
               href={`/account/login?redirect=${encodeURIComponent("/checkout")}`}
-              className="text-xs text-[#6b7280] hover:text-[#3b5f8f] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#3b5f8f] transition-colors"
+              className="text-xs text-[#6b7280] hover:text-[#E10600] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#E10600] transition-colors"
             >
               Sign in
             </Link>

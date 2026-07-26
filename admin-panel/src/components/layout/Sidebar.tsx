@@ -77,7 +77,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="px-5 py-5 border-b border-white/10 flex-shrink-0">
           <Link href="/" className="flex flex-col leading-none">
             <span className="text-lg font-bold tracking-[0.08em] text-white">DENOVA</span>
-            <span className="text-[9px] font-medium tracking-[0.35em] text-[#3b5f8f] uppercase">Admin Panel</span>
+            <span className="text-[9px] font-medium tracking-[0.35em] text-[#E10600] uppercase">Admin Panel</span>
           </Link>
         </div>
 
@@ -97,7 +97,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 transition-all duration-150",
                       active
-                        ? "bg-[#3b5f8f] text-white"
+                        ? "bg-[#E10600] text-white"
                         : "text-white/60 hover:bg-white/10 hover:text-white"
                     )}
                   >
@@ -113,7 +113,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <div className="flex-shrink-0 border-t border-white/10 p-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-[#3b5f8f] flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-[#E10600] flex items-center justify-center flex-shrink-0">
               <span className="text-white text-sm font-bold">{getInitials(admin?.name || "A")}</span>
             </div>
             <div className="flex-1 min-w-0">

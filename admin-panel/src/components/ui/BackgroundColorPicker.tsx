@@ -72,7 +72,7 @@ export function BackgroundColorPicker({ value, onChange, previewImage }: Props) 
                 className={cn(
                   "relative flex flex-col items-center justify-center gap-1.5 p-2 border transition-all",
                   isSelected
-                    ? "border-[#3b5f8f] ring-1 ring-[#3b5f8f]"
+                    ? "border-[#E10600] ring-1 ring-[#E10600]"
                     : "border-[#e5e7eb] hover:border-[#9ca3af]"
                 )}
               >
@@ -87,7 +87,7 @@ export function BackgroundColorPicker({ value, onChange, previewImage }: Props) 
                   {preset.label}
                 </span>
                 {isSelected && (
-                  <Check size={12} className="absolute top-1 right-1 text-[#3b5f8f]" />
+                  <Check size={12} className="absolute top-1 right-1 text-[#E10600]" />
                 )}
               </button>
             );
@@ -100,7 +100,7 @@ export function BackgroundColorPicker({ value, onChange, previewImage }: Props) 
             className={cn(
               "relative flex flex-col items-center justify-center gap-1.5 p-2 border transition-all",
               mode === "custom"
-                ? "border-[#3b5f8f] ring-1 ring-[#3b5f8f]"
+                ? "border-[#E10600] ring-1 ring-[#E10600]"
                 : "border-[#e5e7eb] hover:border-[#9ca3af]"
             )}
           >
@@ -114,7 +114,7 @@ export function BackgroundColorPicker({ value, onChange, previewImage }: Props) 
             />
             <span className="text-[10px] font-medium text-[#1a1a1a]">Custom</span>
             {mode === "custom" && (
-              <Check size={12} className="absolute top-1 right-1 text-[#3b5f8f]" />
+              <Check size={12} className="absolute top-1 right-1 text-[#E10600]" />
             )}
           </button>
         </div>
@@ -138,7 +138,7 @@ export function BackgroundColorPicker({ value, onChange, previewImage }: Props) 
               value={customHex}
               onChange={(e) => handleCustomChange(e.target.value)}
               placeholder="#f5f0e8"
-              className="flex-1 px-3 py-2 text-xs font-mono border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+              className="flex-1 px-3 py-2 text-xs font-mono border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
             />
           </div>
         </div>

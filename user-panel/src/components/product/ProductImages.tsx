@@ -414,7 +414,7 @@ export function ProductImages({
                 className={cn(
                   "block w-full relative disabled:cursor-default rounded-xl lg:rounded-2xl overflow-hidden",
                   zoomable ? "cursor-crosshair" : "cursor-zoom-in",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3b5f8f] focus-visible:ring-offset-2",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E10600] focus-visible:ring-offset-2",
                   isActive && "ring-2 ring-[#1a1a1a] ring-offset-2"
                 )}
                 aria-label={`View image ${i + 1} in full screen`}
@@ -427,7 +427,7 @@ export function ProductImages({
                   )}
                 >
                   {isPlaceholder(img.url) ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#E10600] gap-2">
                       <Package size={48} strokeWidth={1.5} />
                       <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
                         Image coming soon
@@ -480,7 +480,7 @@ export function ProductImages({
                     size={16}
                     className={cn(
                       "transition-colors",
-                      mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
+                      mounted && isInWishlist ? "text-[#E10600] fill-[#E10600]" : "text-[#1a1a1a]"
                     )}
                   />
                 </button>
@@ -502,7 +502,7 @@ export function ProductImages({
               size={16}
               className={cn(
                 "transition-colors",
-                mounted && isInWishlist ? "text-[#3b5f8f] fill-[#3b5f8f]" : "text-[#1a1a1a]"
+                mounted && isInWishlist ? "text-[#E10600] fill-[#E10600]" : "text-[#1a1a1a]"
               )}
             />
           </button>
@@ -534,7 +534,7 @@ export function ProductImages({
                   )}
                 >
                   {isPlaceholder(img.url) ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[#3b5f8f] gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#E10600] gap-2">
                       <Package size={48} strokeWidth={1.5} />
                       <p className="text-xs font-medium tracking-widest uppercase text-[#6b7280]">
                         Image coming soon

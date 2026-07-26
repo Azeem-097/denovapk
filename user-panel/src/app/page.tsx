@@ -2,17 +2,15 @@ import type { Metadata } from "next";
 import { HeroSection }           from "@/components/sections/HeroSection";
 import { FixedHeroBackground }   from "@/components/sections/FixedHeroBackground";
 import { SaleCountdown }         from "@/components/sections/SaleCountdown";
-import { FeaturedCollections }   from "@/components/sections/FeaturedCollections";
 import { BrandTicker }           from "@/components/sections/BrandTicker";
 import { NewArrivals }           from "@/components/sections/NewArrivals";
 import { BrandStory }            from "@/components/sections/BrandStory";
 import { Testimonials }          from "@/components/sections/Testimonials";
 import { GallerySection }        from "@/components/sections/GallerySection";
 import { NewsletterSection }     from "@/components/sections/NewsletterSection";
-import { getCollectionsWithCounts } from "@/lib/db/repositories/collections";
 import { getProducts }              from "@/lib/db/repositories/products";
 import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
-import { adaptCollection, adaptProduct, getMockTestimonials } from "@/lib/adapters";
+import { adaptProduct, getMockTestimonials } from "@/lib/adapters";
 
 type HeroBanner = {
   isActive: true;
@@ -26,14 +24,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [dbCollections, dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
-    getCollectionsWithCounts(),
+  const [dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
     getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
     getSetting("hero_banners"),
     getNumberSetting("hero_rotation_seconds", 8),
   ]);
 
-  const collections  = dbCollections.map(adaptCollection);
   const allProducts  = dbAllProducts.map(adaptProduct);
 
   const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
@@ -83,7 +79,6 @@ export default async function HomePage() {
           bestSellers={superPremiumProducts}
         />
         <BrandStory />
-        <FeaturedCollections collections={collections} />
         <Testimonials testimonials={testimonials} />
         <GallerySection />
 

@@ -131,8 +131,8 @@ export function TopProgressBar() {
           height:     "100%",
           opacity,
           transition,
-          background: "linear-gradient(90deg, #3b5f8f 0%, #5580b8 100%)",
-          boxShadow:  "0 0 8px rgba(59, 95, 143, 0.6), 0 0 4px rgba(59, 95, 143, 0.4)",
+          background: "linear-gradient(90deg, #E10600 0%, #FF2A1F 100%)",
+          boxShadow:  "0 0 8px rgba(225, 6, 0, 0.6), 0 0 4px rgba(225, 6, 0, 0.4)",
           transformOrigin: "left center",
           willChange: "width, opacity",
         }}

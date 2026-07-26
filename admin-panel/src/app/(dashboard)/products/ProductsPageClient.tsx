@@ -248,10 +248,10 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         {STATUS_FILTERS.map((s) => (
           <button key={s} onClick={() => setStatus(s)}
             className={cn("px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px",
-              status === s ? "border-[#3b5f8f] text-[#3b5f8f]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
+              status === s ? "border-[#E10600] text-[#E10600]" : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]")}>
             {s}
             <span className={cn("ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
-              status === s ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]")}>
+              status === s ? "bg-[#E10600]/20 text-[#E10600]" : "bg-[#e5e7eb] text-[#6b7280]")}>
               {statusCounts[s]}
             </span>
           </button>
@@ -262,7 +262,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         <div className="relative flex-1 min-w-[240px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products or SKU..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60" />
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60" />
         </div>
 
         {selected.length > 0 && (
@@ -286,7 +286,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
           <p className="text-xs text-[#6b7280]">
             Drag products into sequence, then save once. Top positions show first on the storefront.
             {hasOrderChanges && !savingOrder && <span className="ml-2 text-orange-600 font-medium">Unsaved order changes</span>}
-            {savingOrder && <span className="ml-2 text-[#3b5f8f] font-medium">Saving order...</span>}
+            {savingOrder && <span className="ml-2 text-[#E10600] font-medium">Saving order...</span>}
           </p>
           {hasOrderChanges && (
             <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
         <div className="bg-white border border-[#e5e7eb] overflow-hidden">
           {filtered.length === 0 ? (
             <div className="p-12 text-center">
-              <Package size={40} className="text-[#3b5f8f] mx-auto mb-3" />
+              <Package size={40} className="text-[#E10600] mx-auto mb-3" />
               <p className="text-sm font-medium text-[#1a1a1a]">No products found</p>
             </div>
           ) : (
@@ -314,7 +314,7 @@ export function ProductsPageClient({ initialProducts }: { initialProducts: Admin
                 <thead>
                   <tr className="border-b border-[#e5e7eb] bg-[#fafaf9]">
                     <th className="w-10 px-4 py-3" />
-                    <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#3b5f8f]" /></th>
+                    <th className="w-10 px-4 py-3"><input type="checkbox" checked={selected.length === filtered.length} onChange={toggleAll} className="accent-[#E10600]" /></th>
                     {["Product","SKU","Price","Stock","Sold","Status","Updated"].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">{h}</th>
                     ))}
@@ -445,22 +445,22 @@ function ProductRow({
       className={cn(
         "relative hover:bg-[#fafaf9] transition-colors",
         isSelected && "bg-[#f5f0e8]/30",
-        dropPosition === "before" && "shadow-[inset_0_3px_0_#3b5f8f]",
-        dropPosition === "after" && "shadow-[inset_0_-3px_0_#3b5f8f]",
+        dropPosition === "before" && "shadow-[inset_0_3px_0_#E10600]",
+        dropPosition === "after" && "shadow-[inset_0_-3px_0_#E10600]",
         isDragging && "opacity-50"
       )}
     >
       <td className="px-4 py-3">
         <GripVertical size={16} className="text-[#9ca3af] cursor-grab active:cursor-grabbing" />
       </td>
-      <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#3b5f8f]" /></td>
+      <td className="px-4 py-3"><input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-[#E10600]" /></td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="relative w-11 h-14 flex-shrink-0 bg-[#fafaf9]">
             {product.image && <Image src={product.image} alt={product.name} fill className="object-cover" sizes="45px" />}
           </div>
           <div className="min-w-0">
-            <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors line-clamp-1">
+            <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#E10600] transition-colors line-clamp-1">
               {product.name}
             </Link>
             {product.isNew      && <Badge variant="gold" className="mr-1 mt-1">New</Badge>}
@@ -550,16 +550,16 @@ function ProductCard({
         if (isDragging) e.preventDefault();
       }}
       className={cn(
-        "group relative bg-white border border-[#e5e7eb] hover:border-[#3b5f8f] transition-colors overflow-hidden cursor-grab active:cursor-grabbing",
-        dropPosition === "before" && "shadow-[-5px_0_0_#3b5f8f]",
-        dropPosition === "after" && "shadow-[5px_0_0_#3b5f8f]",
+        "group relative bg-white border border-[#e5e7eb] hover:border-[#E10600] transition-colors overflow-hidden cursor-grab active:cursor-grabbing",
+        dropPosition === "before" && "shadow-[-5px_0_0_#E10600]",
+        dropPosition === "after" && "shadow-[5px_0_0_#E10600]",
         isDragging && "opacity-50"
       )}
     >
       {dropPosition && (
         <span
           className={cn(
-            "pointer-events-none absolute top-0 z-20 h-full w-1 bg-[#3b5f8f]",
+            "pointer-events-none absolute top-0 z-20 h-full w-1 bg-[#E10600]",
             dropPosition === "before" ? "left-0" : "right-0"
           )}
           aria-hidden
@@ -577,7 +577,7 @@ function ProductCard({
         </div>
       </div>
       <div className="p-3">
-        <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#3b5f8f]">{product.name}</p>
+        <p className="text-sm font-semibold text-[#1a1a1a] line-clamp-1 mb-2 group-hover:text-[#E10600]">{product.name}</p>
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-[#1a1a1a]">{formatPrice(product.price)}</p>
           <span className={cn("text-xs font-bold", product.stock === 0 ? "text-red-500" : product.stock < 10 ? "text-orange-500" : "text-green-600")}>

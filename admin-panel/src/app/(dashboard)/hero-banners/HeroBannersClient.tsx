@@ -493,7 +493,7 @@ export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <ImageIcon size={22} className="text-[#3b5f8f]" />
+            <ImageIcon size={22} className="text-[#E10600]" />
             Hero Banners
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -501,7 +501,7 @@ export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
           </p>
         </div>
         <button onClick={handleAdd}
-          className="inline-flex items-center gap-2 bg-[#3b5f8f] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#2d4a72] transition-colors">
+          className="inline-flex items-center gap-2 bg-[#E10600] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#B80000] transition-colors">
           <Plus size={16} />Add Banner
         </button>
       </div>
@@ -509,7 +509,7 @@ export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
       <div className="bg-white border border-[#e5e7eb] p-5">
         <div className="flex items-start gap-4 flex-wrap">
           <div className="w-10 h-10 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
-            <Clock size={18} className="text-[#3b5f8f]" />
+            <Clock size={18} className="text-[#E10600]" />
           </div>
           <div className="flex-1 min-w-[220px]">
             <p className="text-sm font-bold text-[#1a1a1a]">Auto-Rotate Duration</p>
@@ -517,7 +517,7 @@ export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <select value={rotation} onChange={(e) => setRotation(Number(e.target.value))}
-              className="px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none bg-white">
+              className="px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none bg-white">
               <option value={3}>3 seconds</option>
               <option value={5}>5 seconds</option>
               <option value={8}>8 seconds (recommended)</option>
@@ -526,7 +526,7 @@ export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
               <option value={20}>20 seconds</option>
             </select>
             <button onClick={handleSaveRotation} disabled={savingRot}
-              className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-[#3b5f8f] transition-colors disabled:opacity-40">
+              className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white px-4 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-[#E10600] transition-colors disabled:opacity-40">
               {savingRot ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
               Save
             </button>
@@ -551,7 +551,7 @@ export function HeroBannersClient({ initialBanners, initialRotation }: Props) {
           <p className="text-sm font-semibold text-[#1a1a1a] mb-1">No banners yet</p>
           <p className="text-xs text-[#6b7280] mb-5">Add your first hero banner.</p>
           <button onClick={handleAdd}
-            className="inline-flex items-center gap-2 bg-[#3b5f8f] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#2d4a72] transition-colors">
+            className="inline-flex items-center gap-2 bg-[#E10600] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#B80000] transition-colors">
             <Plus size={16} />Add First Banner
           </button>
         </div>
@@ -642,7 +642,7 @@ function BannerCard({
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           {overlayHint > 0 && (
-            <span className="text-[10px] text-[#3b5f8f] font-semibold tracking-wide">
+            <span className="text-[10px] text-[#E10600] font-semibold tracking-wide">
               {overlayHint} text element{overlayHint === 1 ? "" : "s"}
             </span>
           )}
@@ -666,7 +666,7 @@ function BannerCard({
 
       <div className="grid grid-cols-3 border-t border-[#e5e7eb]">
         <button onClick={onView} disabled={!banner.image}
-          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[#3b5f8f] hover:bg-[#f5f0e8] transition-colors disabled:opacity-40">
+          className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-[#E10600] hover:bg-[#f5f0e8] transition-colors disabled:opacity-40">
           <Eye size={13} />View
         </button>
         <button onClick={onEdit}
@@ -682,7 +682,7 @@ function BannerCard({
       <button onClick={onToggleActive}
         className={cn(
           "w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold border-t border-[#e5e7eb] transition-colors",
-          banner.isActive ? "text-[#3b5f8f] bg-[#f5f0e8]/40 hover:bg-[#f5f0e8]" : "text-[#6b7280] bg-[#fafaf9] hover:bg-[#f0f0f0]"
+          banner.isActive ? "text-[#E10600] bg-[#f5f0e8]/40 hover:bg-[#f5f0e8]" : "text-[#6b7280] bg-[#fafaf9] hover:bg-[#f0f0f0]"
         )}>
         {banner.isActive ? <><EyeOff size={13} />Hide from Website</> : <><Eye size={13} />Show on Website</>}
       </button>
@@ -794,7 +794,7 @@ function BannerModal({ banner, onSave, onClose }: {
             <div className="flex items-center gap-4">
               <h3 className="text-base font-bold">{isEditing ? "Edit Banner" : "Add New Banner"}</h3>
               <button type="button" onClick={handleLoadReference}
-                className="inline-flex items-center gap-1.5 bg-[#3b5f8f] text-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider hover:bg-[#2d4a72] transition-colors">
+                className="inline-flex items-center gap-1.5 bg-[#E10600] text-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider hover:bg-[#B80000] transition-colors">
                 <Sparkles size={12} />Load Reference Design
               </button>
             </div>
@@ -878,7 +878,7 @@ function BannerModal({ banner, onSave, onClose }: {
                   <input type="range" min={0} max={80} step={5}
                     value={form.overlayDarkness ?? 0}
                     onChange={(e) => update("overlayDarkness", Number(e.target.value))}
-                    className="w-full accent-[#3b5f8f]" />
+                    className="w-full accent-[#E10600]" />
                 </div>
                 <Field label="Alt Text (SEO)" placeholder="e.g. Summer Collection"
                   value={form.title} onChange={(v) => update("title", v)} />
@@ -886,11 +886,11 @@ function BannerModal({ banner, onSave, onClose }: {
                   value={form.buttonHref} onChange={(v) => update("buttonHref", v)} />
                 <label className={cn(
                   "flex items-center gap-2 p-2 border cursor-pointer transition-colors",
-                  form.isActive ? "bg-[#f5f0e8]/40 border-[#3b5f8f]" : "bg-[#fafaf9] border-[#e5e7eb]"
+                  form.isActive ? "bg-[#f5f0e8]/40 border-[#E10600]" : "bg-[#fafaf9] border-[#e5e7eb]"
                 )}>
                   <input type="checkbox" checked={form.isActive}
                     onChange={(e) => update("isActive", e.target.checked)}
-                    className="w-4 h-4 accent-[#3b5f8f]" />
+                    className="w-4 h-4 accent-[#E10600]" />
                   <span className="text-xs font-semibold text-[#1a1a1a]">
                     {form.isActive ? "Active on website" : "Hidden (draft)"}
                   </span>
@@ -901,13 +901,13 @@ function BannerModal({ banner, onSave, onClose }: {
             <div className="p-5 bg-[#fafaf9] sticky top-0 self-start">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#1a1a1a] flex items-center gap-1.5">
-                  <Eye size={13} className="text-[#3b5f8f]" />Live Preview
+                  <Eye size={13} className="text-[#E10600]" />Live Preview
                   <span className="text-[10px] font-normal text-[#6b7280] normal-case">
                     ({device === "desktop" ? "Desktop" : "Mobile"})
                   </span>
                 </p>
                 <button type="button" onClick={handleReplay}
-                  className="inline-flex items-center gap-1 bg-[#1a1a1a] text-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider hover:bg-[#3b5f8f] transition-colors">
+                  className="inline-flex items-center gap-1 bg-[#1a1a1a] text-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider hover:bg-[#E10600] transition-colors">
                   <Play size={10} />Replay
                 </button>
               </div>
@@ -936,7 +936,7 @@ function BannerModal({ banner, onSave, onClose }: {
               Cancel
             </button>
             <button onClick={handleSubmit} disabled={saving || !form.image}
-              className="inline-flex items-center gap-2 bg-[#3b5f8f] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:bg-[#2d4a72] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              className="inline-flex items-center gap-2 bg-[#E10600] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:bg-[#B80000] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               {saving ? <><Loader size={12} className="animate-spin" />Saving...</> :
                 isEditing ? <><Edit size={12} />Update Banner</> : <><Plus size={12} />Add Banner</>}
             </button>
@@ -966,13 +966,13 @@ function StickerCard({ sticker, index, device, isSelected, onToggleSelect, onUpd
   return (
     <div id={cardId} className={cn(
       "border transition-colors scroll-mt-4",
-      isSelected ? "border-[#3b5f8f] bg-[#f5f0e8]/30" : "border-[#e5e7eb] bg-white"
+      isSelected ? "border-[#E10600] bg-[#f5f0e8]/30" : "border-[#e5e7eb] bg-white"
     )}>
       <div className="flex items-center gap-3 p-3">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={sticker.enabled}
             onChange={(e) => onUpdate({ enabled: e.target.checked })}
-            className="w-4 h-4 accent-[#3b5f8f]" />
+            className="w-4 h-4 accent-[#E10600]" />
         </label>
 
         <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white border border-[#e5e7eb]">
@@ -1019,13 +1019,13 @@ function StickerCard({ sticker, index, device, isSelected, onToggleSelect, onUpd
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">X: {pos.x}%</label>
               <input type="range" min={0} max={100} step={1} value={pos.x}
                 onChange={(e) => onUpdatePosition({ x: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Y: {pos.y}%</label>
               <input type="range" min={0} max={100} step={1} value={pos.y}
                 onChange={(e) => onUpdatePosition({ y: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
           </div>
 
@@ -1052,7 +1052,7 @@ function StickerCard({ sticker, index, device, isSelected, onToggleSelect, onUpd
 // ═══════════════════════════════════════════════════════════
 //  ElementCard
 // ═══════════════════════════════════════════════════════════
-const COLOR_PRESETS = ["#1a2b5c", "#1a1a1a", "#ffffff", "#3b5f8f", "#dc2626", "#059669", "#f59e0b"];
+const COLOR_PRESETS = ["#1a2b5c", "#1a1a1a", "#ffffff", "#E10600", "#dc2626", "#059669", "#f59e0b"];
 
 const ANIMATION_FIELDS = new Set(["animation"]);
 
@@ -1075,17 +1075,17 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
   return (
     <div id={cardId} className={cn(
       "border transition-colors scroll-mt-4",
-      isSelected ? "border-[#3b5f8f] bg-[#f5f0e8]/30 shadow-sm" : "border-[#e5e7eb] bg-white"
+      isSelected ? "border-[#E10600] bg-[#f5f0e8]/30 shadow-sm" : "border-[#e5e7eb] bg-white"
     )}>
       <button type="button" onClick={onToggleSelect}
         className="w-full flex items-center gap-2 p-3 hover:bg-[#fafaf9] transition-colors">
         <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" checked={style.enabled}
             onChange={(e) => patch({ enabled: e.target.checked })}
-            className="w-4 h-4 accent-[#3b5f8f]" />
+            className="w-4 h-4 accent-[#E10600]" />
         </label>
-        {isCountdown ? <Clock size={13} className={style.enabled ? "text-[#3b5f8f]" : "text-[#6b7280]"} /> :
-                       <Type size={13} className={style.enabled ? "text-[#3b5f8f]" : "text-[#6b7280]"} />}
+        {isCountdown ? <Clock size={13} className={style.enabled ? "text-[#E10600]" : "text-[#6b7280]"} /> :
+                       <Type size={13} className={style.enabled ? "text-[#E10600]" : "text-[#6b7280]"} />}
         <span className={cn(
           "text-xs font-bold uppercase tracking-wide flex-1 text-left",
           style.enabled ? "text-[#1a1a1a]" : "text-[#6b7280]"
@@ -1112,7 +1112,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Ends At</label>
               <input type="datetime-local" value={cd.endsAt ?? ""}
                 onChange={(e) => patch({ endsAt: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+                className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
             </div>
           ) : isTagline ? (
             <div>
@@ -1121,14 +1121,14 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               </label>
               <textarea rows={3} value={style.text} onChange={(e) => patch({ text: e.target.value })}
                 placeholder="Timeless Comfort.&#10;Effortless Style."
-                className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-none" />
+                className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-none" />
             </div>
           ) : (
             <div>
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Content</label>
               <input type="text" value={style.text} onChange={(e) => patch({ text: e.target.value })}
                 placeholder="Enter text..."
-                className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+                className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
             </div>
           )}
 
@@ -1138,13 +1138,13 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">X: {style.x}%</label>
               <input type="range" min={0} max={100} step={1} value={style.x}
                 onChange={(e) => patch({ x: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Y: {style.y}%</label>
               <input type="range" min={0} max={100} step={1} value={style.y}
                 onChange={(e) => patch({ y: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
           </div>
 
@@ -1168,12 +1168,12 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Font Size: {style.fontSize}px</label>
               <input type="range" min={12} max={120} step={2} value={style.fontSize}
                 onChange={(e) => patch({ fontSize: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Weight</label>
               <select value={style.fontWeight} onChange={(e) => patch({ fontWeight: Number(e.target.value) })}
-                className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                 <option value={300}>Light (300)</option>
                 <option value={400}>Regular (400)</option>
                 <option value={500}>Medium (500)</option>
@@ -1208,7 +1208,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   className="h-8 w-8 cursor-pointer border border-[#e5e7eb]" />
                 <input type="text" value={style.color}
                   onChange={(e) => patch({ color: e.target.value })}
-                  className="flex-1 min-w-0 px-2 py-1.5 text-[10px] font-mono border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+                  className="flex-1 min-w-0 px-2 py-1.5 text-[10px] font-mono border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
               </div>
               <div className="flex gap-1 mt-1">
                 {COLOR_PRESETS.map((c) => (
@@ -1228,13 +1228,13 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Line Height: {style.lineHeight}</label>
               <input type="range" min={0.8} max={2} step={0.05} value={style.lineHeight}
                 onChange={(e) => patch({ lineHeight: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Letter Space: {style.letterSpacing.toFixed(2)}em</label>
               <input type="range" min={-0.05} max={0.2} step={0.01} value={style.letterSpacing}
                 onChange={(e) => patch({ letterSpacing: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
           </div>
 
@@ -1243,7 +1243,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Max Width: {style.maxWidth}%</label>
               <input type="range" min={10} max={100} step={5} value={style.maxWidth}
                 onChange={(e) => patch({ maxWidth: Number(e.target.value) })}
-                className="w-full accent-[#3b5f8f]" />
+                className="w-full accent-[#E10600]" />
             </div>
             <div>
               <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Text Align</label>
@@ -1261,14 +1261,14 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
 
           {isCountdown && (
             <div className="border-t border-[#e5e7eb] pt-3 space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3b5f8f]">Countdown Style</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#E10600]">Countdown Style</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Digit Style</label>
                   <select value={cd.digitStyle ?? "minimal"}
                     onChange={(e) => patch({ digitStyle: e.target.value as "minimal" | "boxed" | "pill" })}
-                    className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                    className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                     <option value="minimal">Minimal</option>
                     <option value="boxed">Boxed</option>
                     <option value="pill">Pill</option>
@@ -1278,7 +1278,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Label Style</label>
                   <select value={cd.labelStyle ?? "below"}
                     onChange={(e) => patch({ labelStyle: e.target.value as "below" | "beside" | "none" })}
-                    className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                    className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                     <option value="below">Below</option>
                     <option value="beside">Beside</option>
                     <option value="none">None</option>
@@ -1291,7 +1291,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Separator</label>
                   <select value={cd.separator ?? "none"}
                     onChange={(e) => patch({ separator: e.target.value as "colon" | "space" | "none" })}
-                    className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                    className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                     <option value="none">Spacing</option>
                     <option value="colon">Colon</option>
                     <option value="space">Wide space</option>
@@ -1301,7 +1301,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Border Radius: {cd.borderRadius ?? 0}px</label>
                   <input type="range" min={0} max={30} step={1} value={cd.borderRadius ?? 0}
                     onChange={(e) => patch({ borderRadius: Number(e.target.value) })}
-                    className="w-full accent-[#3b5f8f]" />
+                    className="w-full accent-[#E10600]" />
                 </div>
               </div>
 
@@ -1316,7 +1316,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">BG Opacity: {cd.bgOpacity ?? 60}%</label>
                   <input type="range" min={0} max={100} step={5} value={cd.bgOpacity ?? 60}
                     onChange={(e) => patch({ bgOpacity: Number(e.target.value) })}
-                    className="w-full accent-[#3b5f8f]" />
+                    className="w-full accent-[#E10600]" />
                 </div>
               </div>
 
@@ -1325,13 +1325,13 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Padding X: {cd.paddingX ?? 12}px</label>
                   <input type="range" min={0} max={40} step={1} value={cd.paddingX ?? 12}
                     onChange={(e) => patch({ paddingX: Number(e.target.value) })}
-                    className="w-full accent-[#3b5f8f]" />
+                    className="w-full accent-[#E10600]" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Padding Y: {cd.paddingY ?? 8}px</label>
                   <input type="range" min={0} max={40} step={1} value={cd.paddingY ?? 8}
                     onChange={(e) => patch({ paddingY: Number(e.target.value) })}
-                    className="w-full accent-[#3b5f8f]" />
+                    className="w-full accent-[#E10600]" />
                 </div>
               </div>
 
@@ -1340,7 +1340,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                   <label key={k} className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
                     <input type="checkbox" checked={cd[k] ?? true}
                       onChange={(e) => patch({ [k]: e.target.checked })}
-                      className="w-3.5 h-3.5 accent-[#3b5f8f]" />
+                      className="w-3.5 h-3.5 accent-[#E10600]" />
                     {k.replace("show", "")}
                   </label>
                 ))}
@@ -1353,25 +1353,25 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
               <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
                 <input type="checkbox" checked={style.textShadow}
                   onChange={(e) => patch({ textShadow: e.target.checked })}
-                  className="w-3.5 h-3.5 accent-[#3b5f8f]" />Shadow
+                  className="w-3.5 h-3.5 accent-[#E10600]" />Shadow
               </label>
               <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
                 <input type="checkbox" checked={style.uppercase}
                   onChange={(e) => patch({ uppercase: e.target.checked })}
-                  className="w-3.5 h-3.5 accent-[#3b5f8f]" />UPPERCASE
+                  className="w-3.5 h-3.5 accent-[#E10600]" />UPPERCASE
               </label>
               {isOriginal && (
                 <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
                   <input type="checkbox" checked={style.strikethrough}
                     onChange={(e) => patch({ strikethrough: e.target.checked })}
-                    className="w-3.5 h-3.5 accent-[#3b5f8f]" />Strikethrough
+                    className="w-3.5 h-3.5 accent-[#E10600]" />Strikethrough
                 </label>
               )}
               {isPrice && (
                 <label className="flex items-center gap-1.5 text-[10px] font-semibold text-[#1a1a1a] cursor-pointer">
                   <input type="checkbox" checked={style.nowPrefix}
                     onChange={(e) => patch({ nowPrefix: e.target.checked })}
-                    className="w-3.5 h-3.5 accent-[#3b5f8f]" />&ldquo;NOW&rdquo; Prefix
+                    className="w-3.5 h-3.5 accent-[#E10600]" />&ldquo;NOW&rdquo; Prefix
                 </label>
               )}
             </div>
@@ -1379,7 +1379,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
 
           {/* Animations */}
           <div className="border-t border-[#e5e7eb] pt-3 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#3b5f8f] flex items-center gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#E10600] flex items-center gap-1">
               <Zap size={11} />Animations (live in preview)
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -1387,7 +1387,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                 <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Entrance</label>
                 <select value={style.animation?.entrance ?? "slide-up"}
                   onChange={(e) => patch({ animation: { ...style.animation!, entrance: e.target.value as EntranceAnim } }, true)}
-                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                   <option value="none">None</option>
                   <option value="fade-in">Fade In</option>
                   <option value="slide-up">Slide Up</option>
@@ -1404,7 +1404,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                 <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Decorative Accent</label>
                 <select value={style.animation?.decorative ?? "none"}
                   onChange={(e) => patch({ animation: { ...style.animation!, decorative: e.target.value as DecorativeAcc } }, true)}
-                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                   <option value="none">None</option>
                   <option value="underline-draw">Underline Draw</option>
                   <option value="accent-bar-left">Left Accent Bar</option>
@@ -1418,7 +1418,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                 <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Speed</label>
                 <select value={style.animation?.speed ?? "normal"}
                   onChange={(e) => patch({ animation: { ...style.animation!, speed: e.target.value as Speed } }, true)}
-                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                   <option value="fast">Fast</option>
                   <option value="normal">Normal</option>
                   <option value="slow">Slow</option>
@@ -1428,7 +1428,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                 <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Delay</label>
                 <select value={style.animation?.delay ?? "short"}
                   onChange={(e) => patch({ animation: { ...style.animation!, delay: e.target.value as DelayLevel } }, true)}
-                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                   <option value="immediate">Immediate</option>
                   <option value="short">Short</option>
                   <option value="medium">Medium</option>
@@ -1439,7 +1439,7 @@ function ElementCard({ elementKey, style, isSelected, onToggleSelect, onUpdate }
                 <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">Loop</label>
                 <select value={style.animation?.loop ?? "none"}
                   onChange={(e) => patch({ animation: { ...style.animation!, loop: e.target.value as LoopAnim } }, true)}
-                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none">
+                  className="w-full px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none">
                   <option value="none">None</option>
                   <option value="float-soft">Float</option>
                   <option value="pulse-glow">Pulse Glow</option>
@@ -1771,7 +1771,7 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
       onMouseDown={onMouseDown}
       className={cn(
         "absolute whitespace-pre-line cursor-move",
-        isSelected && "outline outline-2 outline-[#3b5f8f] outline-offset-2",
+        isSelected && "outline outline-2 outline-[#E10600] outline-offset-2",
         isDragging && "opacity-80"
       )}
       style={{
@@ -1809,7 +1809,7 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
             aria-hidden="true"
             style={{
               position: "absolute", left: "-0.5em", top: 0, bottom: 0,
-              width: "3px", background: "#3b5f8f", borderRadius: "2px",
+              width: "3px", background: "#E10600", borderRadius: "2px",
               transformOrigin: "top center",
               animation: `hero-accent-bar-draw 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both`,
             }}
@@ -1838,7 +1838,7 @@ function PreviewElement({ elementKey, style, scale, isSelected, isDragging, onMo
                 ref={(el) => { decoRefs.current[3 + i] = el; }}
                 style={{
                   display: "inline-block", width: "0.35em", height: "0.35em",
-                  borderRadius: "9999px", background: "#3b5f8f",
+                  borderRadius: "9999px", background: "#E10600",
                   animation: `hero-dot-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${decoDelay + i * 150}ms both`,
                 }}
               />
@@ -1892,7 +1892,7 @@ function PreviewCountdown({ style, scale, isSelected, isDragging, onMouseDown, a
     <div ref={cdRef} onMouseDown={onMouseDown}
       className={cn(
         "absolute cursor-move",
-        isSelected && "outline outline-2 outline-[#3b5f8f] outline-offset-2",
+        isSelected && "outline outline-2 outline-[#E10600] outline-offset-2",
         isDragging && "opacity-80"
       )}
       style={{
@@ -1943,7 +1943,7 @@ function PreviewSticker({ sticker, device, scale, isSelected, isDragging, onMous
       onMouseDown={onMouseDown}
       className={cn(
         "absolute cursor-move",
-        isSelected && "outline outline-2 outline-[#3b5f8f] outline-offset-2",
+        isSelected && "outline outline-2 outline-[#E10600] outline-offset-2",
         isDragging && "opacity-80"
       )}
       style={{
@@ -2022,7 +2022,7 @@ function Field({ label, value, onChange, placeholder }: {
     <div>
       <label className="block text-[10px] font-semibold text-[#6b7280] mb-1">{label}</label>
       <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+        className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
     </div>
   );
 }
@@ -2064,7 +2064,7 @@ function ImageSlot({ label, icon: Icon, helpText, aspectClass, value, required, 
   return (
     <div>
       <label className="text-[10px] font-bold uppercase tracking-wide text-[#1a1a1a] mb-1.5 flex items-center gap-1">
-        <Icon size={11} className={required ? "text-[#3b5f8f]" : "text-[#6b7280]"} />{label}
+        <Icon size={11} className={required ? "text-[#E10600]" : "text-[#6b7280]"} />{label}
       </label>
 
       {value ? (
@@ -2086,15 +2086,15 @@ function ImageSlot({ label, icon: Icon, helpText, aspectClass, value, required, 
         <div className={cn(
           "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
           aspectClass,
-          dragOver ? "border-[#3b5f8f] bg-[#f5f0e8]/50" : "border-[#e5e7eb] hover:border-[#3b5f8f] bg-[#fafaf9]"
+          dragOver ? "border-[#E10600] bg-[#f5f0e8]/50" : "border-[#e5e7eb] hover:border-[#E10600] bg-[#fafaf9]"
         )}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}>
-          {uploading ? <Loader size={16} className="text-[#3b5f8f] animate-spin" /> : (
+          {uploading ? <Loader size={16} className="text-[#E10600] animate-spin" /> : (
             <div className="flex flex-col items-center gap-1 p-2 text-center">
-              <ImageIcon size={16} className="text-[#3b5f8f]" />
+              <ImageIcon size={16} className="text-[#E10600]" />
               <span className="text-[10px] font-semibold text-[#1a1a1a]">Click / drop</span>
             </div>
           )}
@@ -2104,13 +2104,13 @@ function ImageSlot({ label, icon: Icon, helpText, aspectClass, value, required, 
       <div className="mt-1">
         {!showUrl ? (
           <button type="button" onClick={() => setShowUrl(true)}
-            className="text-[9px] text-[#6b7280] hover:text-[#3b5f8f] underline">Or paste URL</button>
+            className="text-[9px] text-[#6b7280] hover:text-[#E10600] underline">Or paste URL</button>
         ) : (
           <div className="flex gap-1">
             <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://..."
-              className="flex-1 min-w-0 px-1.5 py-1 text-[10px] border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+              className="flex-1 min-w-0 px-1.5 py-1 text-[10px] border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
             <button type="button" onClick={handleUrlAdd} disabled={!urlInput.trim() || uploading}
-              className="px-1.5 py-1 text-[9px] font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40">
+              className="px-1.5 py-1 text-[9px] font-semibold bg-[#1a1a1a] text-white hover:bg-[#E10600] transition-colors disabled:opacity-40">
               Load
             </button>
             <button type="button" onClick={() => { setShowUrl(false); setUrlInput(""); }}

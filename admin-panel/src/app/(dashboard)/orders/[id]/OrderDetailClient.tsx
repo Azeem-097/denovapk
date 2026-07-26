@@ -115,7 +115,7 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
           <Section title="Fulfillment Status" icon={Package}>
             <div className="flex items-center gap-3 flex-wrap mb-3">
               <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)}
-                className="px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none bg-white capitalize font-medium">
+                className="px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none bg-white capitalize font-medium">
                 {STATUS_OPTIONS.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
               </select>
               <Button variant="primary" size="sm" onClick={handleUpdate} disabled={saving}>
@@ -127,7 +127,7 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
               <div className="border-t border-[#e5e7eb] pt-3 mt-3">
                 <label className="block text-xs font-medium text-[#1a1a1a] mb-1.5">Tracking Number</label>
                 <input type="text" value={tracking} onChange={(e) => setTracking(e.target.value)} placeholder="e.g. TCS12345678"
-                  className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none font-mono" />
+                  className="w-full px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none font-mono" />
               </div>
             )}
           </Section>
@@ -175,12 +175,12 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
             <p className="text-sm font-semibold text-[#1a1a1a]">{order.customer}</p>
             <div className="space-y-2 mt-3 text-sm">
               {order.customerEmail && (
-                <a href={`mailto:${order.customerEmail}`} className="flex items-center gap-2 text-[#6b7280] hover:text-[#3b5f8f]">
+                <a href={`mailto:${order.customerEmail}`} className="flex items-center gap-2 text-[#6b7280] hover:text-[#E10600]">
                   <Mail size={12} />{order.customerEmail}
                 </a>
               )}
               {order.customerPhone && (
-                <a href={`tel:${order.customerPhone}`} className="flex items-center gap-2 text-[#6b7280] hover:text-[#3b5f8f]">
+                <a href={`tel:${order.customerPhone}`} className="flex items-center gap-2 text-[#6b7280] hover:text-[#E10600]">
                   <Phone size={12} />{order.customerPhone}
                 </a>
               )}
@@ -218,7 +218,7 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
                   <select
                     value={paymentStatus}
                     onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
-                    className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none bg-white capitalize font-medium"
+                    className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none bg-white capitalize font-medium"
                   >
                     {PAYMENT_STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s} className="capitalize">{s}</option>
@@ -250,7 +250,7 @@ function Section({ title, icon: Icon, children }: {
   return (
     <div className="bg-white border border-[#e5e7eb]">
       <div className="flex items-center gap-2 px-5 py-3 border-b border-[#e5e7eb]">
-        <Icon size={14} className="text-[#3b5f8f]" />
+        <Icon size={14} className="text-[#E10600]" />
         <h2 className="text-xs font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">{title}</h2>
       </div>
       <div className="p-5">{children}</div>

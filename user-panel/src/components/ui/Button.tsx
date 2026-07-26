@@ -27,13 +27,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         "bg-[#1a1a1a] text-white hover:bg-[#333333] focus:ring-[#1a1a1a] active:scale-[0.98]",
       secondary:
-        "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df] focus:ring-[#3b5f8f] active:scale-[0.98]",
+        "bg-[#f5f0e8] text-[#1a1a1a] hover:bg-[#ede8df] focus:ring-[#E10600] active:scale-[0.98]",
       outline:
         "border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white focus:ring-[#1a1a1a] active:scale-[0.98]",
       ghost:
-        "text-[#1a1a1a] hover:bg-[#f5f0e8] focus:ring-[#3b5f8f] active:scale-[0.98]",
+        "text-[#1a1a1a] hover:bg-[#f5f0e8] focus:ring-[#E10600] active:scale-[0.98]",
       gold:
-        "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] focus:ring-[#3b5f8f] active:scale-[0.98]",
+        "bg-[#E10600] text-white hover:bg-[#B80000] focus:ring-[#E10600] active:scale-[0.98]",
     };
 
     const sizes = {

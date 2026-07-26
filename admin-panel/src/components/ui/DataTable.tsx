@@ -76,8 +76,8 @@ export function DataTable<T>({
                     {col.label}
                     {col.sortable && (
                       <div className="flex flex-col opacity-40">
-                        <ChevronUp size={10} className={sort?.key === col.key && sort.direction === "asc" ? "opacity-100 text-[#3b5f8f]" : ""} />
-                        <ChevronDown size={10} className={cn("-mt-1", sort?.key === col.key && sort.direction === "desc" ? "opacity-100 text-[#3b5f8f]" : "")} />
+                        <ChevronUp size={10} className={sort?.key === col.key && sort.direction === "asc" ? "opacity-100 text-[#E10600]" : ""} />
+                        <ChevronDown size={10} className={cn("-mt-1", sort?.key === col.key && sort.direction === "desc" ? "opacity-100 text-[#E10600]" : "")} />
                       </div>
                     )}
                   </div>

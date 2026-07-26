@@ -9,8 +9,7 @@ interface MarqueeProps {
   pauseOnHover?: boolean;
 }
 
-// Light denim blue — visible on dark backgrounds
-const ACCENT = "#7ea4d6";
+const ACCENT = "#E10600";
 
 export function Marquee({
   items,
@@ -39,7 +38,7 @@ export function Marquee({
           >
             <span
               className="w-1 h-1 rounded-full flex-shrink-0"
-              style={{ backgroundColor: ACCENT, boxShadow: `0 0 4px ${ACCENT}80` }}
+              style={{ backgroundColor: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }}
             />
             {item}
           </div>

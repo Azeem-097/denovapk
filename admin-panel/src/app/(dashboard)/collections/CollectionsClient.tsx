@@ -182,7 +182,7 @@ export function CollectionsClient({ initialCollections }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] flex items-center gap-2">
-            <FolderOpen size={22} className="text-[#3b5f8f]" />
+            <FolderOpen size={22} className="text-[#E10600]" />
             Collections
           </h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
@@ -203,14 +203,14 @@ export function CollectionsClient({ initialCollections }: Props) {
             className={cn(
               "px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px",
               filter === f
-                ? "border-[#3b5f8f] text-[#3b5f8f]"
+                ? "border-[#E10600] text-[#E10600]"
                 : "border-transparent text-[#6b7280] hover:text-[#1a1a1a]"
             )}
           >
             {f}
             <span className={cn(
               "ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
-              filter === f ? "bg-[#3b5f8f]/20 text-[#3b5f8f]" : "bg-[#e5e7eb] text-[#6b7280]"
+              filter === f ? "bg-[#E10600]/20 text-[#E10600]" : "bg-[#e5e7eb] text-[#6b7280]"
             )}>
               {counts[f]}
             </span>
@@ -227,7 +227,7 @@ export function CollectionsClient({ initialCollections }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search collections by name or slug..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none placeholder:text-[#6b7280]/60"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60"
           />
         </div>
       </div>
@@ -304,7 +304,7 @@ function CollectionCard({
   return (
     <div className={cn(
       "bg-white border overflow-hidden group transition-colors",
-      c.isActive ? "border-[#e5e7eb] hover:border-[#3b5f8f]" : "border-[#e5e7eb] opacity-70"
+      c.isActive ? "border-[#e5e7eb] hover:border-[#E10600]" : "border-[#e5e7eb] opacity-70"
     )}>
       {/* Image */}
       <div className="relative aspect-[16/10] bg-[#fafaf9]">
@@ -378,7 +378,7 @@ function CollectionCard({
           {c.description || <span className="italic">No description</span>}
         </p>
         <div className="flex items-center justify-between text-xs mb-3">
-          <span className="text-[#3b5f8f] font-semibold">
+          <span className="text-[#E10600] font-semibold">
             {c.productCount} product{c.productCount === 1 ? "" : "s"}
           </span>
           <span className="text-[#6b7280]">Created {formatDate(c.createdAt)}</span>
@@ -394,7 +394,7 @@ function CollectionCard({
           </button>
           <Link
             href={`/products?collection=${encodeURIComponent(c.name)}`}
-            className="py-2 text-xs font-semibold border border-[#3b5f8f] text-[#3b5f8f] hover:bg-[#3b5f8f] hover:text-white transition-colors flex items-center justify-center gap-1.5"
+            className="py-2 text-xs font-semibold border border-[#E10600] text-[#E10600] hover:bg-[#E10600] hover:text-white transition-colors flex items-center justify-center gap-1.5"
           >
             <ExternalLink size={11} />Manage
           </Link>
@@ -474,7 +474,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb] flex-shrink-0">
             <h2 className="text-lg font-bold text-[#1a1a1a] flex items-center gap-2">
-              <FolderOpen size={18} className="text-[#3b5f8f]" />
+              <FolderOpen size={18} className="text-[#E10600]" />
               {isEditing ? "Edit Collection" : "Create Collection"}
             </h2>
             <button onClick={onClose} className="p-1 text-[#6b7280] hover:text-[#1a1a1a]">
@@ -497,7 +497,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="e.g. Summer Essentials"
                   required
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
                 />
               </div>
 
@@ -506,7 +506,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
                 <label className="block text-xs font-bold uppercase tracking-wide text-[#1a1a1a] mb-2">
                   URL Slug *
                 </label>
-                <div className="flex items-center border border-[#e5e7eb] focus-within:border-[#3b5f8f]">
+                <div className="flex items-center border border-[#e5e7eb] focus-within:border-[#E10600]">
                   <span className="pl-3 pr-1 text-xs text-[#6b7280] font-mono select-none">
                     /collections/
                   </span>
@@ -534,7 +534,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Short description shown on the collection page..."
                   rows={3}
-                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
+                  className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y"
                 />
               </div>
 
@@ -566,7 +566,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
                       value={form.metaTitle}
                       onChange={(e) => setForm({ ...form, metaTitle: e.target.value })}
                       placeholder="Shown in browser tab / search results"
-                      className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+                      className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -578,7 +578,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
                       onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
                       placeholder="Description for search engines"
                       rows={2}
-                      className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y"
+                      className="w-full px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y"
                     />
                   </div>
                 </div>
@@ -588,19 +588,19 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
               <label className={cn(
                 "flex items-center gap-3 p-3 border cursor-pointer transition-colors",
                 form.isActive
-                  ? "bg-[#f5f0e8]/40 border-[#3b5f8f]"
+                  ? "bg-[#f5f0e8]/40 border-[#E10600]"
                   : "bg-[#fafaf9] border-[#e5e7eb]"
               )}>
                 <input
                   type="checkbox"
                   checked={form.isActive}
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                  className="w-4 h-4 accent-[#3b5f8f]"
+                  className="w-4 h-4 accent-[#E10600]"
                 />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-1.5">
                     {form.isActive
-                      ? <><Eye size={13} className="text-[#3b5f8f]" />Active (visible on website)</>
+                      ? <><Eye size={13} className="text-[#E10600]" />Active (visible on website)</>
                       : <><EyeOff size={13} className="text-[#6b7280]" />Inactive (hidden from customers)</>
                     }
                   </p>
@@ -621,7 +621,7 @@ function CollectionModal({ collection, onClose, onSave }: ModalProps) {
               <button
                 type="submit"
                 disabled={saving || !form.name.trim()}
-                className="inline-flex items-center gap-2 bg-[#1a1a1a] hover:bg-[#3b5f8f] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 bg-[#1a1a1a] hover:bg-[#E10600] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving
                   ? <><Loader size={12} className="animate-spin" />Saving...</>

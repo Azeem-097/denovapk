@@ -85,11 +85,11 @@ export default function AboutPage() {
             <FadeIn>
               <Breadcrumb
                 items={[{ label: "Home", href: "/" }, { label: "About" }]}
-                className="mb-4 [&_span]:text-white/70 [&_a]:text-white/70 [&_a:hover]:text-[#3b5f8f] [&_svg]:text-white/50"
+                className="mb-4 [&_span]:text-white/70 [&_a]:text-white/70 [&_a:hover]:text-[#E10600] [&_svg]:text-white/50"
               />
             </FadeIn>
             <FadeIn delay={100}>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
                 Our Story
               </span>
             </FadeIn>
@@ -108,7 +108,7 @@ export default function AboutPage() {
       <section className="py-16 sm:py-20 lg:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
               Est. 2014
             </span>
           </FadeIn>
@@ -137,7 +137,7 @@ export default function AboutPage() {
             {STATS.map((stat, i) => (
               <SlideUp key={stat.label} stagger={100} index={i}>
                 <div className="text-center">
-                  <p className="font-[family-name:var(--font-playfair)] text-4xl sm:text-5xl lg:text-6xl font-bold text-[#3b5f8f] leading-none">
+                  <p className="font-[family-name:var(--font-playfair)] text-4xl sm:text-5xl lg:text-6xl font-bold text-[#E10600] leading-none">
                     {stat.number}
                   </p>
                   <p className="text-xs sm:text-sm tracking-wide text-white/60 mt-3 uppercase">
@@ -155,7 +155,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 lg:mb-16">
             <FadeIn>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
                 What Drives Us
               </span>
             </FadeIn>
@@ -169,9 +169,9 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
             {VALUES.map((val, i) => (
               <SlideUp key={val.title} stagger={100} index={i}>
-                <div className="group border border-[#e5e7eb] p-6 lg:p-8 hover:border-[#3b5f8f] transition-colors bg-white">
-                  <div className="w-11 h-11 rounded-full bg-[#f5f0e8] flex items-center justify-center mb-4 group-hover:bg-[#3b5f8f] transition-colors">
-                    <val.icon size={20} className="text-[#3b5f8f] group-hover:text-white transition-colors" />
+                <div className="group border border-[#e5e7eb] p-6 lg:p-8 hover:border-[#E10600] transition-colors bg-white">
+                  <div className="w-11 h-11 rounded-full bg-[#f5f0e8] flex items-center justify-center mb-4 group-hover:bg-[#E10600] transition-colors">
+                    <val.icon size={20} className="text-[#E10600] group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="font-[family-name:var(--font-playfair)] text-xl font-bold text-[#1a1a1a] mb-2">
                     {val.title}
@@ -191,7 +191,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 lg:mb-16">
             <FadeIn>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
                 The People
               </span>
             </FadeIn>
@@ -224,7 +224,7 @@ export default function AboutPage() {
                   <h4 className="text-sm sm:text-base font-semibold text-[#1a1a1a]">
                     {member.name}
                   </h4>
-                  <p className="text-xs text-[#3b5f8f] tracking-wide mt-0.5">
+                  <p className="text-xs text-[#E10600] tracking-wide mt-0.5">
                     {member.role}
                   </p>
                 </div>
@@ -241,7 +241,7 @@ export default function AboutPage() {
             <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] leading-tight">
               Ready to Discover
               <br />
-              <span className="text-[#3b5f8f]">Your Style?</span>
+              <span className="text-[#E10600]">Your Style?</span>
             </span>
           </TextReveal>
           <FadeIn delay={200}>
@@ -253,7 +253,7 @@ export default function AboutPage() {
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href="/shop"
-                className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors"
+                className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors"
               >
                 Shop Collections
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />

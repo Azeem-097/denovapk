@@ -53,8 +53,8 @@ export function DateRangeSelector({ current }: { current: string }) {
         );
       })}
       {pending && (
-        <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-[#3b5f8f]">
-          <span className="w-3 h-3 border-2 border-[#3b5f8f] border-t-transparent rounded-full animate-spin" />
+        <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-[#E10600]">
+          <span className="w-3 h-3 border-2 border-[#E10600] border-t-transparent rounded-full animate-spin" />
           Updating...
         </span>
       )}

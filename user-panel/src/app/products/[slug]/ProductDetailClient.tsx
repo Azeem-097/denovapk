@@ -344,7 +344,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
                 {/* 4. BRAND — subtle brand line under pills */}
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#3b5f8f]">
+                  <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#E10600]">
                     {brandLine}
                   </span>
                 </div>
@@ -447,7 +447,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                         ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
                         : addedToCart
                         ? "bg-[#1a1a1a] text-white"
-                        : "bg-[#3b5f8f] text-white hover:bg-[#2d4a72] active:scale-[0.99]"
+                        : "bg-[#E10600] text-white hover:bg-[#B80000] active:scale-[0.99]"
                     )}
                   >
                     {addedToCart ? (
@@ -592,7 +592,7 @@ function AccordionItem({
         aria-controls={`accordion-${id}`}
         className="w-full flex items-center justify-between py-4 text-left group"
       >
-        <span className="text-sm font-semibold text-[#1a1a1a] group-hover:text-[#3b5f8f] transition-colors">
+        <span className="text-sm font-semibold text-[#1a1a1a] group-hover:text-[#E10600] transition-colors">
           {title}
         </span>
         <ChevronDown

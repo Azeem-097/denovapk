@@ -35,7 +35,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-[#6b7280] bg-white border border-[#e5e7eb] px-3 py-2">
-          <Clock size={13} className="text-[#3b5f8f]" />
+          <Clock size={13} className="text-[#E10600]" />
           {new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </div>
       </div>
@@ -76,14 +76,14 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white border border-[#e5e7eb] p-5">
           <div className="flex items-center gap-2 mb-1">
-            <TrendingUp size={15} className="text-[#3b5f8f]" />
+            <TrendingUp size={15} className="text-[#E10600]" />
             <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Avg Order Value</p>
           </div>
           <p className="text-2xl font-bold text-[#1a1a1a]">{formatPaisa(stats.avgOrderValue)}</p>
         </div>
         <div className="bg-white border border-[#e5e7eb] p-5">
           <div className="flex items-center gap-2 mb-1">
-            <UserPlus size={15} className="text-[#3b5f8f]" />
+            <UserPlus size={15} className="text-[#E10600]" />
             <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">New Customers (30d)</p>
           </div>
           <p className="text-2xl font-bold text-[#1a1a1a]">{stats.newCustomers30d.toLocaleString()}</p>
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
             <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Revenue Overview</h2>
             <div className="flex items-center gap-3">
               <span className="text-xs text-[#6b7280]">Last 12 months</span>
-              <Link href="/analytics" className="text-xs text-[#3b5f8f] hover:underline">
+              <Link href="/analytics" className="text-xs text-[#E10600] hover:underline">
                 Full analytics &rarr;
               </Link>
             </div>
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
         <div className="bg-white border border-[#e5e7eb] p-5 lg:p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Top Products</h2>
-            <Link href="/products" className="text-xs text-[#3b5f8f] hover:underline">View all</Link>
+            <Link href="/products" className="text-xs text-[#E10600] hover:underline">View all</Link>
           </div>
           {topProducts.length === 0 ? (
             <p className="text-center text-sm text-[#6b7280] py-8">No sales yet</p>
@@ -147,14 +147,14 @@ export default async function DashboardPage() {
       <div className="bg-white border border-[#e5e7eb]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
           <h2 className="text-sm font-semibold tracking-[0.1em] uppercase text-[#1a1a1a]">Recent Orders</h2>
-          <Link href="/orders" className="text-xs text-[#3b5f8f] hover:underline inline-flex items-center gap-1">
+          <Link href="/orders" className="text-xs text-[#E10600] hover:underline inline-flex items-center gap-1">
             View all <ArrowRight size={11} />
           </Link>
         </div>
 
         {recentOrders.length === 0 ? (
           <div className="p-10 text-center">
-            <ShoppingCart size={32} className="text-[#3b5f8f] mx-auto mb-3" />
+            <ShoppingCart size={32} className="text-[#E10600] mx-auto mb-3" />
             <p className="text-sm text-[#6b7280]">No orders yet.</p>
           </div>
         ) : (
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
                 {recentOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-[#fafaf9] transition-colors">
                     <td className="px-4 py-3.5">
-                      <Link href={`/orders/${order.id}`} className="text-[#3b5f8f] font-semibold hover:underline text-xs">
+                      <Link href={`/orders/${order.id}`} className="text-[#E10600] font-semibold hover:underline text-xs">
                         #{order.orderNumber}
                       </Link>
                     </td>

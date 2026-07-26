@@ -23,7 +23,7 @@ export default function DashboardLayout({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#3b5f8f] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#E10600] border-t-transparent rounded-full animate-spin" />
           <p className="text-xs tracking-[0.2em] uppercase text-[#6b7280]">Loading Admin</p>
         </div>
       </div>

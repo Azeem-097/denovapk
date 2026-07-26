@@ -74,7 +74,7 @@ export default async function ShippingPage() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#3b5f8f]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
               Delivery Information
             </span>
           </FadeIn>
@@ -105,7 +105,7 @@ export default async function ShippingPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
 
                 <div className="w-14 h-14 rounded-full bg-[#f5f0e8] flex items-center justify-center flex-shrink-0">
-                  <Truck size={22} className="text-[#3b5f8f]" strokeWidth={1.75} />
+                  <Truck size={22} className="text-[#E10600]" strokeWidth={1.75} />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ export default async function ShippingPage() {
                     <h3 className="text-base font-bold text-[#1a1a1a]">
                       Standard Delivery
                     </h3>
-                    <span className="text-xs font-semibold text-[#3b5f8f] tracking-wide">
+                    <span className="text-xs font-semibold text-[#E10600] tracking-wide">
                       3-5 Business Days
                     </span>
                   </div>
@@ -140,7 +140,7 @@ export default async function ShippingPage() {
         {!freeDeliveryAll && threshold > 0 && (
           <FadeIn>
             <div className="bg-[#1a1a1a] text-white p-6 sm:p-8 flex items-center gap-4">
-              <Package size={32} className="text-[#3b5f8f] flex-shrink-0" />
+              <Package size={32} className="text-[#E10600] flex-shrink-0" />
               <div>
                 <p className="text-base font-bold mb-1">
                   Free Shipping on Orders Above {fmtRs(threshold)}
@@ -156,7 +156,7 @@ export default async function ShippingPage() {
         {freeDeliveryAll && (
           <FadeIn>
             <div className="bg-[#1a1a1a] text-white p-6 sm:p-8 flex items-center gap-4">
-              <Package size={32} className="text-[#3b5f8f] flex-shrink-0" />
+              <Package size={32} className="text-[#E10600] flex-shrink-0" />
               <div>
                 <p className="text-base font-bold mb-1">
                   Free Shipping on Every Order
@@ -172,7 +172,7 @@ export default async function ShippingPage() {
         <section className="space-y-6">
           {SECTIONS.map((section, i) => (
             <FadeIn key={section.title} delay={i * 60}>
-              <div className="border-l-2 border-[#3b5f8f] pl-5">
+              <div className="border-l-2 border-[#E10600] pl-5">
                 <h3 className="text-sm font-bold text-[#1a1a1a] mb-2">{section.title}</h3>
                 <p className="text-sm text-[#6b7280] leading-relaxed">{section.content}</p>
               </div>
@@ -183,17 +183,17 @@ export default async function ShippingPage() {
         <FadeIn>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="border border-[#e5e7eb] bg-white p-5 text-center">
-              <Package size={22} className="text-[#3b5f8f] mx-auto mb-2" strokeWidth={1.75} />
+              <Package size={22} className="text-[#E10600] mx-auto mb-2" strokeWidth={1.75} />
               <p className="text-sm font-semibold text-[#1a1a1a]">Nationwide Delivery</p>
               <p className="text-xs text-[#6b7280] mt-1">All major cities and towns</p>
             </div>
             <div className="border border-[#e5e7eb] bg-white p-5 text-center">
-              <RotateCcw size={22} className="text-[#3b5f8f] mx-auto mb-2" strokeWidth={1.75} />
+              <RotateCcw size={22} className="text-[#E10600] mx-auto mb-2" strokeWidth={1.75} />
               <p className="text-sm font-semibold text-[#1a1a1a]">7-Day Returns</p>
               <p className="text-xs text-[#6b7280] mt-1">Easy returns on eligible items</p>
             </div>
             <div className="border border-[#e5e7eb] bg-white p-5 text-center">
-              <Shield size={22} className="text-[#3b5f8f] mx-auto mb-2" strokeWidth={1.75} />
+              <Shield size={22} className="text-[#E10600] mx-auto mb-2" strokeWidth={1.75} />
               <p className="text-sm font-semibold text-[#1a1a1a]">Authentic Quality</p>
               <p className="text-xs text-[#6b7280] mt-1">100% guaranteed on every piece</p>
             </div>
@@ -201,8 +201,8 @@ export default async function ShippingPage() {
         </FadeIn>
 
         <FadeIn>
-          <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-6 flex items-start gap-4">
-            <Phone size={18} className="text-[#3b5f8f] flex-shrink-0 mt-0.5" />
+          <div className="bg-[#f5f0e8] border border-[#E10600]/30 p-6 flex items-start gap-4">
+            <Phone size={18} className="text-[#E10600] flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-[#1a1a1a] mb-1">
                 Questions about your shipment?
@@ -212,18 +212,18 @@ export default async function ShippingPage() {
               </p>
               <p className="text-xs text-[#6b7280] mb-3">
                 Reach us at{" "}
-                <a href={`mailto:${info.email}`} className="text-[#3b5f8f] hover:underline">
+                <a href={`mailto:${info.email}`} className="text-[#E10600] hover:underline">
                   {info.email}
                 </a>{" "}
                 or{" "}
-                <a href={`tel:${info.phone}`} className="text-[#3b5f8f] hover:underline">
+                <a href={`tel:${info.phone}`} className="text-[#E10600] hover:underline">
                   {info.phone}
                 </a>
                 .
               </p>
               <Link
                 href="/contact"
-                className="text-xs font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline"
+                className="text-xs font-semibold text-[#E10600] hover:text-[#B80000] underline"
               >
                 Contact Support
               </Link>

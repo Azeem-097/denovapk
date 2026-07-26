@@ -20,10 +20,10 @@ function Field({
       </label>
       {rows ? (
         <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none resize-y font-mono" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none resize-y font-mono" />
       ) : (
         <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+          className="w-full px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
       )}
       {hint && <p className="mt-1 text-[11px] text-[#6b7280]">{hint}</p>}
     </div>
@@ -60,9 +60,9 @@ export function FooterTab({ settings, onChange }: TabProps) {
     return (
       <div className="border border-[#e5e7eb] p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#3b5f8f]">{title}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#E10600]">{title}</p>
           <button type="button" onClick={() => addLink(settingKey)}
-            className="text-[10px] font-semibold text-[#3b5f8f] hover:text-[#2d4a72] underline">
+            className="text-[10px] font-semibold text-[#E10600] hover:text-[#B80000] underline">
             + Add Link
           </button>
         </div>
@@ -74,10 +74,10 @@ export function FooterTab({ settings, onChange }: TabProps) {
               <div key={i} className="flex items-center gap-2 bg-[#fafaf9] p-2 border border-[#e5e7eb]">
                 <input type="text" value={link.label} placeholder="Label"
                   onChange={(e) => updateLink(settingKey, i, "label", e.target.value)}
-                  className="flex-1 px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none" />
+                  className="flex-1 px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none" />
                 <input type="text" value={link.href} placeholder="/page-url"
                   onChange={(e) => updateLink(settingKey, i, "href", e.target.value)}
-                  className="flex-1 px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none font-mono" />
+                  className="flex-1 px-2 py-1.5 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none font-mono" />
                 <button type="button" onClick={() => removeLink(settingKey, i)}
                   className="text-red-500 hover:text-red-700 text-xs px-1" title="Remove">
                   ✕
@@ -93,7 +93,7 @@ export function FooterTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
-        <FileText size={16} className="text-[#3b5f8f]" />
+        <FileText size={16} className="text-[#E10600]" />
         Footer Content
       </h2>
       <p className="text-xs text-[#6b7280] mb-6">
@@ -103,7 +103,7 @@ export function FooterTab({ settings, onChange }: TabProps) {
       <div className="space-y-6">
         {/* Brand section */}
         <div className="border border-[#e5e7eb] p-4 space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#3b5f8f]">Brand Section</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#E10600]">Brand Section</p>
           <Field label="Brand Description" id="footer_brand_description"
             value={settings.footer_brand_description ?? ""}
             onChange={(v) => onChange("footer_brand_description", v)} rows={3}
@@ -138,7 +138,7 @@ export function FooterTab({ settings, onChange }: TabProps) {
         {/* Bottom bar links */}
         <LinkEditor settingKey="footer_bottom_links" title="Bottom Bar Links" />
 
-        <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4 text-xs text-[#1a1a1a]">
+        <div className="bg-[#f5f0e8] border border-[#E10600]/30 p-4 text-xs text-[#1a1a1a]">
           <p className="font-semibold mb-1">Note</p>
           <p className="text-[#6b7280]">
             Contact info and social media links are managed in their respective tabs. Footer changes take effect within 60 seconds.

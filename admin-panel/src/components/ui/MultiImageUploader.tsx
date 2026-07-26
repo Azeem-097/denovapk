@@ -165,7 +165,7 @@ export function MultiImageUploader({
               onDragEnd={handleDragEnd}
               className={cn(
                 "relative group border-2 aspect-square bg-[#fafaf9] overflow-hidden cursor-move",
-                i === 0 ? "border-[#3b5f8f]" : "border-[#e5e7eb]",
+                i === 0 ? "border-[#E10600]" : "border-[#e5e7eb]",
                 dragIndex === i && "opacity-50"
               )}
             >
@@ -174,7 +174,7 @@ export function MultiImageUploader({
 
               {/* Primary badge */}
               {i === 0 && (
-                <span className="absolute top-1.5 left-1.5 bg-[#3b5f8f] text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
+                <span className="absolute top-1.5 left-1.5 bg-[#E10600] text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
                   Primary
                 </span>
               )}
@@ -189,7 +189,7 @@ export function MultiImageUploader({
                 {i !== 0 && (
                   <button
                     onClick={() => setPrimary(i)}
-                    className="bg-white text-[#1a1a1a] p-1.5 hover:bg-[#3b5f8f] hover:text-white transition-colors"
+                    className="bg-white text-[#1a1a1a] p-1.5 hover:bg-[#E10600] hover:text-white transition-colors"
                     title="Set as primary"
                   >
                     <Star size={12} />
@@ -210,7 +210,7 @@ export function MultiImageUploader({
           {images.length < maxImages && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="aspect-square border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] flex flex-col items-center justify-center gap-1 transition-colors text-[#6b7280] hover:text-[#3b5f8f]"
+              className="aspect-square border-2 border-dashed border-[#e5e7eb] hover:border-[#E10600] flex flex-col items-center justify-center gap-1 transition-colors text-[#6b7280] hover:text-[#E10600]"
             >
               <Plus size={20} />
               <span className="text-[10px] font-medium">Add More</span>
@@ -222,14 +222,14 @@ export function MultiImageUploader({
       {/* Upload zone (shown when no images) */}
       {images.length === 0 && (
         <div
-          className="border-2 border-dashed border-[#e5e7eb] hover:border-[#3b5f8f] aspect-[3/2] flex flex-col items-center justify-center cursor-pointer transition-colors"
+          className="border-2 border-dashed border-[#e5e7eb] hover:border-[#E10600] aspect-[3/2] flex flex-col items-center justify-center cursor-pointer transition-colors"
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleZoneDrop}
         >
           {uploading ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader size={24} className="text-[#3b5f8f] animate-spin" />
+              <Loader size={24} className="text-[#E10600] animate-spin" />
               <span className="text-xs text-[#6b7280]">Uploading & optimizing...</span>
             </div>
           ) : (
@@ -248,7 +248,7 @@ export function MultiImageUploader({
 
       {/* Uploading indicator */}
       {uploading && images.length > 0 && (
-        <div className="flex items-center gap-2 text-xs text-[#3b5f8f]">
+        <div className="flex items-center gap-2 text-xs text-[#E10600]">
           <Loader size={12} className="animate-spin" />
           Uploading & optimizing...
         </div>
@@ -278,12 +278,12 @@ export function MultiImageUploader({
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://images.unsplash.com/..."
-            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
           />
           <button
             onClick={handleAddUrl}
             disabled={!urlInput.trim() || uploading}
-            className="px-3 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#3b5f8f] transition-colors disabled:opacity-40"
+            className="px-3 py-2 text-xs font-semibold bg-[#1a1a1a] text-white hover:bg-[#E10600] transition-colors disabled:opacity-40"
           >
             Add
           </button>

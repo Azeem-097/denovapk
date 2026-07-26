@@ -13,7 +13,7 @@ const VARIANTS = {
   warning: "bg-yellow-100 text-yellow-700",
   danger:  "bg-red-100 text-red-700",
   info:    "bg-blue-100 text-blue-700",
-  gold:    "bg-[#f5f0e8] text-[#3b5f8f]",
+  gold:    "bg-[#f5f0e8] text-[#E10600]",
 };
 
 export function Badge({

@@ -61,7 +61,7 @@ export default async function CustomerDetailPage({ params }: Props) {
         <div className="space-y-5">
           <div className="bg-white border border-[#e5e7eb] p-6 text-center">
             <div className="w-20 h-20 mx-auto rounded-full bg-[#f5f0e8] flex items-center justify-center mb-4">
-              <span className="text-2xl font-bold text-[#3b5f8f]">{getInitials(customer.name)}</span>
+              <span className="text-2xl font-bold text-[#E10600]">{getInitials(customer.name)}</span>
             </div>
             <h2 className="text-lg font-bold text-[#1a1a1a]">{customer.name}</h2>
 
@@ -73,10 +73,10 @@ export default async function CustomerDetailPage({ params }: Props) {
           </div>
 
           {isVIP && (
-            <div className="bg-[#f5f0e8] border border-[#3b5f8f]/30 p-4">
+            <div className="bg-[#f5f0e8] border border-[#E10600]/30 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Star size={14} className="text-[#3b5f8f]" fill="currentColor" />
-                <p className="text-xs font-bold text-[#3b5f8f] uppercase tracking-wider">VIP Status</p>
+                <Star size={14} className="text-[#E10600]" fill="currentColor" />
+                <p className="text-xs font-bold text-[#E10600] uppercase tracking-wider">VIP Status</p>
               </div>
               <p className="text-xs text-[#1a1a1a] leading-relaxed">
                 This customer has spent over PKR 100,000.
@@ -88,7 +88,7 @@ export default async function CustomerDetailPage({ params }: Props) {
         <div className="space-y-5">
           <div className="grid grid-cols-3 gap-3">
             <StatBox icon={ShoppingBag} label="Total Orders" value={customer.totalOrders.toString()} />
-            <StatBox icon={TrendingUp}  label="Total Spent"  value={formatPrice(customer.totalSpent)} color="text-[#3b5f8f]" />
+            <StatBox icon={TrendingUp}  label="Total Spent"  value={formatPrice(customer.totalSpent)} color="text-[#E10600]" />
             <StatBox icon={Calendar}    label="Avg Order"    value={formatPrice(avgOrder)} />
           </div>
 
@@ -107,7 +107,7 @@ export default async function CustomerDetailPage({ params }: Props) {
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-[#3b5f8f]">#{order.orderNumber}</span>
+                          <span className="text-sm font-bold text-[#E10600]">#{order.orderNumber}</span>
                           <span className={cn("text-[10px] px-2 py-0.5 font-semibold uppercase tracking-wide border capitalize", ORDER_STATUS_COLORS[order.status])}>
                             {order.status}
                           </span>
@@ -136,11 +136,11 @@ function ContactRow({ icon: Icon, label, href }: {
 }) {
   const content = (
     <div className="flex items-center gap-2 text-xs">
-      <Icon size={12} className="text-[#3b5f8f] flex-shrink-0" />
+      <Icon size={12} className="text-[#E10600] flex-shrink-0" />
       <span className="text-[#1a1a1a] truncate">{label}</span>
     </div>
   );
-  return href ? <a href={href} className="hover:text-[#3b5f8f]">{content}</a> : content;
+  return href ? <a href={href} className="hover:text-[#E10600]">{content}</a> : content;
 }
 
 function StatBox({ icon: Icon, label, value, color = "text-[#1a1a1a]" }: {
@@ -152,7 +152,7 @@ function StatBox({ icon: Icon, label, value, color = "text-[#1a1a1a]" }: {
   return (
     <div className="bg-white border border-[#e5e7eb] p-4">
       <div className="flex items-center gap-2 mb-1">
-        <Icon size={13} className="text-[#3b5f8f]" />
+        <Icon size={13} className="text-[#E10600]" />
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">{label}</p>
       </div>
       <p className={cn("text-lg font-bold", color)}>{value}</p>

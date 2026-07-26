@@ -3,9 +3,7 @@ import { useDevicePerformance } from "@/components/animations/useDevicePerforman
 
 /**
  * BrandTicker — international brand collaborations.
- * Accent colour = light denim blue (#7ea4d6) so it reads well
- * against the dark #1a1a1a background (the deep #3b5f8f gets
- * lost on black).
+ * Accent colour follows the Denova red brand accent.
  *
  * Sizing: intentionally compact (~30% smaller than original design)
  * for a refined, editorial marquee feel that does not dominate
@@ -26,8 +24,7 @@ const BRAND_COLLABORATIONS: BrandEntry[] = [
   { brand: "EXPORT ARTICLE", country: ""         },
 ];
 
-// Light denim blue — high contrast on black
-const ACCENT = "#7ea4d6";
+const ACCENT = "#FF1208";
 
 export function BrandTicker() {
   const { shouldAnimate } = useDevicePerformance();
@@ -41,7 +38,7 @@ export function BrandTicker() {
       {/* Top hairline accent — lighter, more visible */}
       <div
         className="h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}cc, transparent)` }}
+        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }}
       />
 
       <div className="py-4 sm:py-5 lg:py-6 overflow-hidden">
@@ -58,7 +55,7 @@ export function BrandTicker() {
       {/* Bottom hairline accent */}
       <div
         className="h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}cc, transparent)` }}
+        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }}
       />
 
       {/* Edge fade vignette */}
@@ -71,11 +68,11 @@ export function BrandTicker() {
 function BrandItem({ entry }: { entry: BrandEntry }) {
   return (
     <div className="flex items-center gap-4 sm:gap-6 lg:gap-7 px-4 sm:px-6 lg:px-7 whitespace-nowrap">
-      {/* Diamond separator — bright light blue */}
+      {/* Diamond separator */}
       <span
         aria-hidden="true"
         className="w-1 h-1 rotate-45 flex-shrink-0"
-        style={{ backgroundColor: ACCENT, boxShadow: `0 0 4px ${ACCENT}80` }}
+        style={{ backgroundColor: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }}
       />
 
       <div className="flex items-baseline gap-1.5 sm:gap-2">
@@ -86,7 +83,7 @@ function BrandItem({ entry }: { entry: BrandEntry }) {
           DENOVA
         </span>
 
-        <span className="text-[10px] sm:text-xs lg:text-sm font-light" style={{ color: `${ACCENT}99` }}>
+        <span className="text-[10px] sm:text-xs lg:text-sm font-light" style={{ color: ACCENT }}>
           &times;
         </span>
 
@@ -97,7 +94,7 @@ function BrandItem({ entry }: { entry: BrandEntry }) {
         {entry.country && (
           <span
             className="text-[8px] sm:text-[10px] lg:text-xs font-medium tracking-[0.2em] uppercase"
-            style={{ color: `${ACCENT}b3` }}
+            style={{ color: ACCENT }}
           >
             ({entry.country})
           </span>

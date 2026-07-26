@@ -132,7 +132,7 @@ export function ImageUploader({
               <button
                 type="button"
                 onClick={openFilePicker}
-                className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#3b5f8f] hover:text-white transition-colors"
+                className="bg-white text-[#1a1a1a] px-3 py-2 text-xs font-semibold hover:bg-[#E10600] hover:text-white transition-colors"
               >
                 Replace
               </button>
@@ -167,8 +167,8 @@ export function ImageUploader({
             "border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors",
             aspectRatio,
             dragOver
-              ? "border-[#3b5f8f] bg-[#f5f0e8]/50"
-              : "border-[#e5e7eb] bg-[#fafaf9] hover:border-[#3b5f8f]"
+              ? "border-[#E10600] bg-[#f5f0e8]/50"
+              : "border-[#e5e7eb] bg-[#fafaf9] hover:border-[#E10600]"
           )}
           onClick={openFilePicker}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -177,7 +177,7 @@ export function ImageUploader({
         >
           {uploading ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader size={24} className="text-[#3b5f8f] animate-spin" />
+              <Loader size={24} className="text-[#E10600] animate-spin" />
               <span className="text-xs text-[#6b7280]">Optimizing image...</span>
             </div>
           ) : (
@@ -224,7 +224,7 @@ export function ImageUploader({
               }
             }}
             placeholder="https://images.unsplash.com/..."
-            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#3b5f8f] focus:outline-none"
+            className="flex-1 px-3 py-2 text-xs border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none"
           />
         </div>
         <p className="mt-1 text-[9px] text-[#6b7280]">

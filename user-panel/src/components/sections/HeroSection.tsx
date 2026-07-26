@@ -425,7 +425,7 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
 
       {slides.length > 1 && (
         <div className="absolute bottom-0 left-0 right-0 z-30 h-[3px] bg-black/20">
-          <div className="h-full bg-[#3b5f8f] shadow-[0_0_8px_rgba(59,95,143,0.6)]"
+          <div className="h-full bg-[#E10600] shadow-[0_0_8px_rgba(225, 6, 0,0.6)]"
             style={{ width: `${progress}%`, transition: progress === 0 ? "none" : "width 100ms linear" }} />
         </div>
       )}
@@ -636,7 +636,7 @@ function OverlayElement({ elementKey, style, shouldAnim }: {
           <span aria-hidden="true"
             style={{
               position: "absolute", left: "-0.5em", top: 0, bottom: 0,
-              width: "3px", background: "#3b5f8f", borderRadius: "2px",
+              width: "3px", background: "#E10600", borderRadius: "2px",
               transformOrigin: "top center",
               animation: shouldAnim ? `hero-accent-bar-draw 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${decoDelay}ms both` : "none",
             }} />
@@ -666,7 +666,7 @@ function OverlayElement({ elementKey, style, shouldAnim }: {
               <span key={i}
                 style={{
                   display: "inline-block", width: "0.35em", height: "0.35em",
-                  borderRadius: "9999px", background: "#3b5f8f",
+                  borderRadius: "9999px", background: "#E10600",
                   animation: shouldAnim ? `hero-dot-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) ${decoDelay + i * 150}ms both` : "none",
                 }} />
             ))}

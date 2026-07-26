@@ -119,6 +119,10 @@ export async function POST(req: Request) {
       if (validation.valid) {
         discountAmount = validation.amount!;
         discountId     = validation.discount!.id;
+      } else {
+        return NextResponse.json({
+          error: validation.error || "Invalid discount code",
+        }, { status: 400 });
       }
     }
 

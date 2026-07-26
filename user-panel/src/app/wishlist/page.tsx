@@ -94,7 +94,7 @@ export default function WishlistPage() {
                         e.stopPropagation();
                         router.push(`/products/${item.slug}`);
                       }}
-                      className="w-full bg-[#1a1a1a] text-white text-xs font-semibold tracking-wider uppercase py-3 hover:bg-[#3b5f8f] transition-colors duration-200 inline-flex items-center justify-center gap-1.5"
+                      className="w-full bg-[#1a1a1a] text-white text-xs font-semibold tracking-wider uppercase py-3 hover:bg-[#E10600] transition-colors duration-200 inline-flex items-center justify-center gap-1.5"
                     >
                       <ShoppingBag size={13} />
                       View Product
@@ -105,7 +105,7 @@ export default function WishlistPage() {
                 {/* Info */}
                 <div className="px-0.5">
                   <Link href={`/products/${item.slug}`}>
-                    <h3 className="text-sm font-medium text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors leading-snug mb-1.5 line-clamp-1">
+                    <h3 className="text-sm font-medium text-[#1a1a1a] hover:text-[#E10600] transition-colors leading-snug mb-1.5 line-clamp-1">
                       {item.name}
                     </h3>
                   </Link>
@@ -123,7 +123,7 @@ export default function WishlistPage() {
           <div className="text-center mt-12">
             <Link
               href="/shop"
-              className="group inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-[#1a1a1a] hover:text-[#3b5f8f] transition-colors"
+              className="group inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors"
             >
               Continue Shopping
               <ArrowRight
@@ -143,7 +143,7 @@ function EmptyWishlist() {
     <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
       <div className="max-w-md mx-auto px-4 text-center">
         <div className="w-24 h-24 mx-auto bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-6">
-          <Heart size={36} className="text-[#3b5f8f]" />
+          <Heart size={36} className="text-[#E10600]" />
         </div>
         <h1 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] mb-3">
           Your wishlist is empty
@@ -153,7 +153,7 @@ function EmptyWishlist() {
         </p>
         <Link
           href="/shop"
-          className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#3b5f8f] transition-colors duration-300"
+          className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
         >
           Explore Collections
           <ArrowRight size={16} />
