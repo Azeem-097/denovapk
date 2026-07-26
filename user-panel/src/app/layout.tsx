@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { createHash } from "crypto";
 import Script from "next/script";
 import { Suspense } from "react";
 import { inter, playfair, cormorant } from "@/lib/fonts";
@@ -10,6 +11,7 @@ import { ShippingConfigLoader } from "@/components/providers/ShippingConfigLoade
 import { PaymentConfigLoader } from "@/components/providers/PaymentConfigLoader";
 import { LayoutShell } from "@/components/layout/LayoutShell";
 import { ScrollProgress } from "@/components/animations/ScrollProgress";
+import { getCurrentUser } from "@/lib/auth";
 import { getSetting } from "@/lib/db/repositories/settings";
 import "./globals.css";
 
@@ -50,13 +52,37 @@ function sanitizeMetaPixelId(value: string | null): string {
   return (value ?? "").replace(/[^0-9]/g, "");
 }
 
+function hashMetaValue(value: string | null | undefined): string | undefined {
+  const normalized = (value ?? "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  return createHash("sha256").update(normalized).digest("hex");
+}
+
+function hashMetaPhone(value: string | null | undefined): string | undefined {
+  const normalized = (value ?? "").replace(/\D/g, "");
+  if (!normalized) return undefined;
+  return createHash("sha256").update(normalized).digest("hex");
+}
+
+function compactMetaData(data: Record<string, string | undefined>) {
+  return Object.fromEntries(Object.entries(data).filter(([, value]) => !!value));
+}
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [metaPixelEnabled, metaPixelIdRaw] = await Promise.all([
+  const [metaPixelEnabled, metaPixelIdRaw, currentUser] = await Promise.all([
     getSetting("meta_pixel_enabled"),
     getSetting("meta_pixel_id"),
+    getCurrentUser(),
   ]);
   const metaPixelId = sanitizeMetaPixelId(metaPixelIdRaw);
   const shouldLoadMetaPixel = metaPixelEnabled === "true" && metaPixelId.length > 0;
+  const [firstName = "", ...lastNameParts] = (currentUser?.name ?? "").trim().split(/\s+/).filter(Boolean);
+  const advancedMatchingData = compactMetaData({
+    em: hashMetaValue(currentUser?.email),
+    ph: hashMetaPhone(currentUser?.phone),
+    fn: hashMetaValue(firstName),
+    ln: hashMetaValue(lastNameParts.join(" ")),
+  });
 
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${cormorant.variable}`}>
@@ -94,7 +120,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 t.src=v;s=b.getElementsByTagName(e)[0];
                 s.parentNode.insertBefore(t,s)}(window, document,'script',
                 'https://connect.facebook.net/en_US/fbevents.js');
-                fbq('init', '${metaPixelId}');
+                window.__DENOVA_META_PIXEL_ID = '${metaPixelId}';
+                fbq('init', '${metaPixelId}', ${JSON.stringify(advancedMatchingData)});
                 fbq('track', 'PageView');
               `}
             </Script>
