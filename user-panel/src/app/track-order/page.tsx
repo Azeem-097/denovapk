@@ -212,7 +212,7 @@ export default function TrackOrderPage() {
                     result.status === "processing" ? "bg-orange-100 text-orange-700" :
                     result.status === "cancelled"  ? "bg-red-100 text-red-700"       :
                     result.status === "refunded"   ? "bg-gray-100 text-gray-700"     :
-                    "bg-blue-100 text-blue-700"
+                    "bg-red-100 text-red-700"
                   )}>
                     {result.status}
                   </span>

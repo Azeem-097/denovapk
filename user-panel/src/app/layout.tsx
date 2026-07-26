@@ -79,6 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="twitter:image"          content="https://denovapk.com/og-image.jpg" />
         <meta name="thumbnail"              content="https://denovapk.com/og-image.jpg" />
         <meta name="google-site-verification" content="FExc48j0u82XLNaAQlV6SIFalNE4_t_EGC8mKBAMK_0" />
+        <meta name="facebook-domain-verification" content="evrz33e08q0iriluy7t5ha4obwocsb" />
       </head>
       <body className="antialiased bg-white text-[#111111]">
         {shouldLoadMetaPixel && (

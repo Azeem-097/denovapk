@@ -492,8 +492,8 @@ export function CheckoutForm() {
           </div>
           <span className="text-xs text-[#6b7280] leading-relaxed">
             I agree to the{" "}
-            <Link href="/terms" className="text-blue-600 underline underline-offset-2">Terms of Service</Link> and{" "}
-            <Link href="/privacy" className="text-blue-600 underline underline-offset-2">Privacy Policy</Link>.
+            <Link href="/terms" className="text-[#E10600] underline underline-offset-2">Terms of Service</Link> and{" "}
+            <Link href="/privacy" className="text-[#E10600] underline underline-offset-2">Privacy Policy</Link>.
           </span>
         </label>
 

@@ -12,7 +12,7 @@ import { formatPrice, formatDate, cn } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
   pending:    "bg-yellow-100 text-yellow-700",
-  confirmed:  "bg-blue-100 text-blue-700",
+  confirmed:  "bg-red-100 text-red-700",
   processing: "bg-orange-100 text-orange-700",
   shipped:    "bg-indigo-100 text-indigo-700",
   delivered:  "bg-green-100 text-green-700",

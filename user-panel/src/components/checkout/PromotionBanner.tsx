@@ -202,7 +202,7 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
                 value={loyaltyInput}
                 onChange={(e) => setLoyaltyInput(Number(e.target.value))}
                 step={10}
-                className="w-full accent-[#1a1a1a] h-1"
+                className="w-full accent-[#E10600] h-1"
               />
               <div className="flex items-center gap-2">
                 <input

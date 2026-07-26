@@ -40,6 +40,12 @@ body {
 ::selection { background-color: #E10600; color: #ffffff; }
 img, video { max-width: 100%; height: auto; display: block; }
 
+input[type="radio"],
+input[type="checkbox"],
+input[type="range"] {
+  accent-color: #E10600;
+}
+
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #fafaf9; }
 ::-webkit-scrollbar-thumb { background: #E10600; border-radius: 5px; }
