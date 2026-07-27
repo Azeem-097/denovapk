@@ -1,20 +1,23 @@
 "use client";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, X, Clock, TrendingUp, ArrowRight } from "lucide-react";
 import { useSearchStore } from "@/store/searchStore";
-import { products } from "@/lib/data";
 import { formatPrice } from "@/lib/utils";
+import type { SearchProduct } from "@/types/search";
 
-const TRENDING = ["Kurta", "Formal Shirt", "Lawn Suit", "Blazer", "Cashmere"];
+const TRENDING = ["Loose Fit", "Straight Fit", "Denim"];
 
 export function SearchModal() {
   const { isOpen, closeSearch, recentSearches, addRecent, clearRecent } = useSearchStore();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchProduct[]>([]);
+  const [popular, setPopular] = useState<SearchProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Lock scroll + focus input
   useEffect(() => {
@@ -23,7 +26,7 @@ export function SearchModal() {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       document.body.style.overflow = "";
-      setQuery("");
+      setTimeout(() => setQuery(""), 0);
     }
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
@@ -35,15 +38,54 @@ export function SearchModal() {
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen, closeSearch]);
 
-  const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return products.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.collection.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.toLowerCase().includes(q))
-    ).slice(0, 6);
-  }, [query]);
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    fetch("/api/search?limit=4", { signal: controller.signal, cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => setPopular(Array.isArray(data?.results) ? data.results : []))
+      .catch((error) => {
+        if (error?.name !== "AbortError") setPopular([]);
+      });
+
+    return () => controller.abort();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const q = query.trim();
+    if (!q) {
+      const timer = window.setTimeout(() => {
+        setResults([]);
+        setIsLoading(false);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setIsLoading(true);
+      fetch(`/api/search?q=${encodeURIComponent(q)}&limit=6`, {
+        signal: controller.signal,
+        cache: "no-store",
+      })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => setResults(Array.isArray(data?.results) ? data.results : []))
+        .catch((error) => {
+          if (error?.name !== "AbortError") setResults([]);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsLoading(false);
+        });
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [isOpen, query]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +149,7 @@ export function SearchModal() {
 
           {/* Content */}
           {query.trim() ? (
-            <SearchResults results={results} query={query} onSelect={closeSearch} />
+            <SearchResults results={results} query={query} isLoading={isLoading} onSelect={closeSearch} />
           ) : (
             <div className="space-y-6">
 
@@ -169,7 +211,7 @@ export function SearchModal() {
                   Popular Right Now
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {products.filter((p) => p.isBestSeller).slice(0, 4).map((p) => (
+                  {popular.map((p) => (
                     <Link
                       key={p.id}
                       href={`/products/${p.slug}`}
@@ -177,13 +219,15 @@ export function SearchModal() {
                       className="group"
                     >
                       <div className="relative aspect-[3/4] bg-[#fafaf9] mb-2 overflow-hidden">
-                        <Image
-                          src={p.images[0].url}
-                          alt={p.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          sizes="200px"
-                        />
+                        {p.image && (
+                          <Image
+                            src={p.image}
+                            alt={p.imageAlt}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="200px"
+                          />
+                        )}
                       </div>
                       <p className="text-xs font-medium text-[#1a1a1a] group-hover:text-[#E10600] transition-colors line-clamp-1">
                         {p.name}
@@ -202,12 +246,21 @@ export function SearchModal() {
 }
 
 function SearchResults({
-  results, query, onSelect,
+  results, query, isLoading, onSelect,
 }: {
-  results: typeof products;
+  results: SearchProduct[];
   query: string;
+  isLoading: boolean;
   onSelect: () => void;
 }) {
+  if (isLoading) {
+    return (
+      <div className="py-10 text-center">
+        <p className="text-sm text-[#6b7280]">Searching...</p>
+      </div>
+    );
+  }
+
   if (results.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -236,8 +289,8 @@ function SearchResults({
           >
             <div className="relative w-14 h-16 flex-shrink-0 bg-[#fafaf9]">
               <Image
-                src={p.images[0].url}
-                alt={p.name}
+                src={p.image}
+                alt={p.imageAlt}
                 fill
                 className="object-cover"
                 sizes="60px"

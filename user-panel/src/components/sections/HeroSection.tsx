@@ -140,6 +140,12 @@ const FALLBACK: HeroBanner[] = [
   },
 ];
 
+function normalizeRotationSeconds(value: unknown, fallback = 8): number {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return fallback;
+  return Math.max(1, seconds);
+}
+
 export function defaultAnimation(): AnimationConfig {
   return { entrance: "slide-up", decorative: "none", loop: "none", speed: "normal", delay: "short" };
 }
@@ -278,11 +284,12 @@ function animationCSS(anim: AnimationConfig | undefined, shouldAnim: boolean): {
 // ═══════════════════════════════════════════════════════════
 export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: HeroSectionProps) {
   const hasServerBanners = !!(initialBanners && initialBanners.length > 0);
+  const initialRotation = normalizeRotationSeconds(rotationSeconds);
 
   const [slides, setSlides] = useState<HeroBanner[]>(
     hasServerBanners ? initialBanners! : FALLBACK
   );
-  const [rotation, setRotation] = useState(rotationSeconds);
+  const [rotation, setRotation] = useState(initialRotation);
   const [current, setCurrent]   = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -296,13 +303,11 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   const cycleStartRef     = useRef<number>(0);
   const accumulatedRef    = useRef<number>(0);
   const isPausedRef       = useRef<boolean>(false);
-  const rotationRef       = useRef<number>(rotationSeconds);
+  const rotationRef       = useRef<number>(initialRotation);
   const slidesLengthRef   = useRef<number>(slides.length);
-  const shouldAnimateRef  = useRef<boolean>(true);
 
   useEffect(() => { rotationRef.current      = rotation;                }, [rotation]);
   useEffect(() => { slidesLengthRef.current  = slides.length;           }, [slides.length]);
-  useEffect(() => { shouldAnimateRef.current = shouldAnimate;           }, [shouldAnimate]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -318,21 +323,21 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
     fetch("/api/hero-banners", { cache: "no-store" })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data?.banners?.length > 0) setSlides(data.banners);
-        if (data?.rotationSeconds && Number(data.rotationSeconds) > 0) {
-          setRotation(Number(data.rotationSeconds));
+        if (data?.banners?.length > 0) {
+          setSlides(data.banners);
+          setCurrent(0);
+          accumulatedRef.current = 0;
+          setProgress(0);
         }
+        setRotation((currentRotation) => normalizeRotationSeconds(data?.rotationSeconds, currentRotation));
       })
       .catch(() => {});
   }, [hasServerBanners]);
 
   useEffect(() => {
-    if (current >= slides.length) setCurrent(0);
-  }, [slides.length, current]);
-
-  useEffect(() => {
     if (slides.length <= 1) return;
-    const next = slides[(current + 1) % slides.length];
+    const safeCurrent = Math.min(current, slides.length - 1);
+    const next = slides[(safeCurrent + 1) % slides.length];
     if (next?.image)       { const img = new window.Image(); img.src = next.image; }
     if (next?.imageMobile) { const img = new window.Image(); img.src = next.imageMobile; }
   }, [current, slides]);
@@ -342,7 +347,7 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
     accumulatedRef.current = 0;
 
     const tick = (now: number) => {
-      if (slidesLengthRef.current <= 1 || !shouldAnimateRef.current) {
+      if (slidesLengthRef.current <= 1) {
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
@@ -352,7 +357,7 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
         return;
       }
 
-      const durationMs = Math.max(2, rotationRef.current) * 1000;
+      const durationMs = normalizeRotationSeconds(rotationRef.current) * 1000;
       const elapsed    = accumulatedRef.current + (now - cycleStartRef.current);
       const pct        = Math.min(elapsed / durationMs, 1);
       setProgress(pct * 100);
@@ -396,26 +401,27 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   }, [handlePause, handleResume]);
 
   if (slides.length === 0) return null;
+  const currentSlide = Math.min(current, slides.length - 1);
 
   const goToSlide = (i: number) => {
-    if (i === current) return;
+    if (i === currentSlide) return;
     setCurrent(i);
-    cycleStartRef.current  = performance.now();
     accumulatedRef.current = 0;
     setProgress(0);
+    requestAnimationFrame((now) => {
+      cycleStartRef.current = now;
+    });
   };
 
   return (
     <section
       className="relative w-full bg-white overflow-hidden group/hero"
-      onMouseEnter={handlePause}
-      onMouseLeave={handleResume}
     >
       {slides.map((slide, i) => (
         <BannerSlide
           key={slide.id}
           slide={slide}
-          isActive={i === current}
+          isActive={i === currentSlide}
           isFirst={i === 0}
           index={i}
           shouldAnimate={shouldAnimate}
@@ -436,7 +442,7 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
             <button key={i} onClick={() => goToSlide(i)} className="group/dot py-2 px-0.5" aria-label={`Go to slide ${i + 1}`}>
               <div className={cn(
                 "h-1.5 rounded-full transition-all duration-500",
-                i === current ? "w-8 bg-white" : "w-1.5 bg-white/60 group-hover/dot:bg-white/90"
+                i === currentSlide ? "w-8 bg-white" : "w-1.5 bg-white/60 group-hover/dot:bg-white/90"
               )} style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
             </button>
           ))}
@@ -458,31 +464,18 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
   const rawOverlay: OverlayV2 = slide.overlayV2 ?? legacyToOverlayV2(slide);
   const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
 
-  const [hasMounted, setHasMounted] = useState(isFirst);
-  useEffect(() => {
-    if (isFirst) return;
-    setHasMounted(true);
-  }, [isFirst]);
-
-  const [kenBurnsKey, setKenBurnsKey] = useState(0);
-  useEffect(() => {
-    if (isActive && hasMounted && !isFirst) setKenBurnsKey((k) => k + 1);
-  }, [isActive, hasMounted, isFirst]);
-
   const imgElement = (
     <div className="overflow-hidden w-full">
       <picture>
         <source media="(max-width: 767px)" srcSet={mobileSrc} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          key={kenBurnsKey}
           src={slide.image}
           alt={slide.title || `Banner ${index + 1}`}
           className={cn(
             "block w-full h-auto origin-center",
-            shouldAnimate && isActive && hasMounted && "hero-image-ken-burns"
+            shouldAnimate && isActive && !isFirst && "hero-image-ken-burns"
           )}
-          style={shouldAnimate && isActive && hasMounted
+          style={shouldAnimate && isActive && !isFirst
             ? { "--hero-duration": "9s" } as React.CSSProperties
             : undefined
           }

@@ -3,9 +3,28 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { X, ShoppingBag, Heart, User, ChevronRight, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navLinks } from "@/lib/data";
 
 const LOGO_MOBILE = "https://res.cloudinary.com/djy5qqco7/image/upload/e_trim:10/f_auto,q_auto,c_limit,h_120/v1784388373/denovapk/general/logo-without-bg_1784388368531";
+const MOBILE_NAV_LINKS = [
+  { label: "Shop", href: "/shop" },
+  { label: "New Arrivals", href: "/shop?filter=new" },
+  { label: "Sale", href: "/shop?filter=sale" },
+  { label: "About", href: "/about" },
+];
+
+interface MobileSiteInfo {
+  email: string;
+  phone: string;
+}
+
+const DEFAULT_SITE_INFO: MobileSiteInfo = {
+  email: "hello@denovapk.com",
+  phone: "+92 300 123 4567",
+};
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9]/g, "");
+}
 
 interface NavbarMobileProps {
   isOpen: boolean;
@@ -17,7 +36,32 @@ export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) 
   const panelRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [siteInfo, setSiteInfo] = useState(DEFAULT_SITE_INFO);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    fetch("/api/site-info", { signal: controller.signal, cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        setSiteInfo({
+          email: typeof data.email === "string" && data.email.trim() ? data.email : DEFAULT_SITE_INFO.email,
+          phone: typeof data.phone === "string" && data.phone.trim() ? data.phone : DEFAULT_SITE_INFO.phone,
+        });
+      })
+      .catch((error) => {
+        if (error?.name !== "AbortError") setSiteInfo(DEFAULT_SITE_INFO);
+      });
+
+    return () => controller.abort();
+  }, [isOpen]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -92,7 +136,7 @@ export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) 
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2">
-          {navLinks.map((link) => (
+          {MOBILE_NAV_LINKS.map((link) => (
             <div key={link.label}>
               <Link href={link.href} onClick={onClose} className="flex items-center justify-between px-5 py-4 text-sm font-medium text-[#1a1a1a] hover:text-[#E10600] hover:bg-[#fafaf9] transition-colors border-b border-[#f5f5f4]">
                 <span className="tracking-wide">{link.label}</span>
@@ -107,13 +151,13 @@ export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) 
             Get in Touch
           </p>
           <div className="flex flex-col gap-2">
-            <a href="tel:+923001234567" className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#E10600] transition-colors">
+            <a href={`tel:${normalizePhone(siteInfo.phone)}`} className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#E10600] transition-colors">
               <Phone size={14} />
-              +92 300 123 4567
+              {siteInfo.phone}
             </a>
-            <a href="mailto:hello@denovapk.com" className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#E10600] transition-colors">
+            <a href={`mailto:${siteInfo.email}`} className="flex items-center gap-2 text-sm text-[#6b7280] hover:text-[#E10600] transition-colors">
               <Mail size={14} />
-              hello@denovapk.com
+              {siteInfo.email}
             </a>
           </div>
           <div className="flex items-center gap-3 mt-4">

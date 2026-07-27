@@ -1,33 +1,54 @@
 "use client";
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search as SearchIcon, ArrowRight } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
-import { ProductGrid } from "@/components/product/ProductGrid";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
 import { trackMetaEvent } from "@/lib/metaPixel";
-import { products } from "@/lib/data";
+import { formatPrice } from "@/lib/utils";
+import type { SearchProduct } from "@/types/search";
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
-
-  const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return products.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q) ||
-      p.collection.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.toLowerCase().includes(q))
-    );
-  }, [query]);
+  const [results, setResults] = useState<SearchProduct[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) return;
-    trackMetaEvent("Search", { search_string: query.trim() });
+    const q = query.trim();
+    if (!q) {
+      const timer = window.setTimeout(() => {
+        setResults([]);
+        setLoading(false);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    trackMetaEvent("Search", { search_string: q });
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      fetch(`/api/search?q=${encodeURIComponent(q)}&limit=24`, {
+        signal: controller.signal,
+        cache: "no-store",
+      })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => setResults(Array.isArray(data?.results) ? data.results : []))
+        .catch((error) => {
+          if (error?.name !== "AbortError") setResults([]);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   return (
@@ -66,6 +87,11 @@ function SearchContent() {
             <SearchIcon size={40} className="text-[#E10600] mx-auto mb-4" />
             <p className="text-sm text-[#6b7280]">Enter a search term to find products.</p>
           </div>
+        ) : loading ? (
+          <div className="text-center py-16">
+            <SearchIcon size={40} className="text-[#E10600] mx-auto mb-4" />
+            <p className="text-sm text-[#6b7280]">Searching products...</p>
+          </div>
         ) : results.length === 0 ? (
           <div className="text-center py-16 max-w-md mx-auto">
             <SearchIcon size={40} className="text-[#E10600] mx-auto mb-4" />
@@ -84,10 +110,36 @@ function SearchContent() {
             </Link>
           </div>
         ) : (
-          <ProductGrid products={results} columns={4} />
+          <SearchProductGrid products={results} />
         )}
       </div>
     </>
+  );
+}
+
+function SearchProductGrid({ products }: { products: SearchProduct[] }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-3 sm:gap-x-4 lg:gap-x-5 gap-y-8">
+      {products.map((p) => (
+        <Link key={p.id} href={`/products/${p.slug}`} className="group">
+          <div className="relative aspect-[3/4] bg-[#fafaf9] overflow-hidden mb-3">
+            {p.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={p.image}
+                alt={p.imageAlt}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            )}
+          </div>
+          <p className="text-xs uppercase tracking-wider text-[#E10600]">{p.collection}</p>
+          <h2 className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#E10600] transition-colors line-clamp-1">
+            {p.name}
+          </h2>
+          <p className="text-sm font-bold text-[#1a1a1a] mt-1">{formatPrice(p.price)}</p>
+        </Link>
+      ))}
+    </div>
   );
 }
 
