@@ -1,10 +1,11 @@
 "use client";
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { trackMetaCustomEvent } from "@/lib/metaPixel";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -30,6 +31,10 @@ const SORT_OPTIONS = [
 export function CollectionDetailClient({ collection, products }: Props) {
   const [sortBy,   setSortBy]   = useState("featured");
   const [sortOpen, setSortOpen] = useState(false);
+
+  useEffect(() => {
+    trackMetaCustomEvent("ViewCategory", { category: collection.name });
+  }, [collection.name]);
 
   const sorted = useMemo(() => {
     const list = [...products];

@@ -5,6 +5,7 @@ import { HelpCircle } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useCheckoutStore } from "@/store/checkoutStore";
 import { PromotionBanner } from "./PromotionBanner";
+import { trackMetaCustomEvent } from "@/lib/metaPixel";
 import { formatPrice, cn } from "@/lib/utils";
 
 export function OrderSummary() {
@@ -49,6 +50,9 @@ export function OrderSummary() {
         setDiscountCode(data.code || promoCode.trim().toUpperCase(), data.amount);
         setPromoCode(data.code || promoCode.trim().toUpperCase());
         setPromoError("");
+        trackMetaCustomEvent("CouponApplied", {
+          coupon: data.code || promoCode.trim().toUpperCase(),
+        });
       } else {
         setPromoError(data.error || "Invalid discount code");
         clearDiscountCode();

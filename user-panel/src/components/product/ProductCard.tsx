@@ -7,6 +7,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useToastStore } from "@/store/toastStore";
 import { ProductBgWrapper } from "./ProductBgWrapper";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { cn, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -61,6 +62,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
       quantity: 1, slug: product.slug,
       bgColor: product.bgColor,
     });
+
+    trackMetaEvent("AddToCart", {
+      content_ids: [defaultVariant.sku || product.sku || product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: "PKR",
+      num_items: 1,
+    });
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -72,6 +82,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
       price: product.price, slug: product.slug,
       bgColor: product.bgColor,
     });
+
+    trackMetaEvent("AddToWishlist", {
+      content_ids: [product.sku || product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: "PKR",
+    });
+
     showToast({
       type: "success",
       message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",

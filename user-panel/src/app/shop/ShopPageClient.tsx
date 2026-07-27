@@ -6,6 +6,7 @@ import { ProductFilters, type FilterState, type ColorOption } from "@/components
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { trackMetaCustomEvent } from "@/lib/metaPixel";
 import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import type { Product } from "@/types";
@@ -193,6 +194,10 @@ export function ShopPageClient({ products }: Props) {
                     filterParam === "bestsellers" ? "Best Sellers" :
                     filterParam === "sale"        ? "Sale" :
                     "International Branded Jeans";
+
+  useEffect(() => {
+    trackMetaCustomEvent("ViewCategory", { category: pageTitle });
+  }, [pageTitle]);
 
   return (
     <>

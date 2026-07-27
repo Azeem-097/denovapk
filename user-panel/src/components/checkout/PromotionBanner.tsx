@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Cake, Gift, Award, Lock } from "lucide-react";
+import { trackMetaCustomEvent } from "@/lib/metaPixel";
 import { formatPrice } from "@/lib/utils";
 
 interface PromoData {
@@ -101,6 +102,9 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
         if (actual < d.settings.minRedemption) return;
 
         setLoyaltyApplied(true);
+        trackMetaCustomEvent("LoyaltyRedeemed", {
+          points: actual,
+        });
         onPromoAppliedRef.current({
           type: "loyalty",
           discount: actual * pointValue,

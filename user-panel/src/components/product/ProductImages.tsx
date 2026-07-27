@@ -8,6 +8,7 @@ import { useToastStore } from "@/store/toastStore";
 import { ProductBgWrapper } from "./ProductBgWrapper";
 import { DiscountBadge } from "./DiscountBadge";
 import { ImageLightbox } from "./ImageLightbox";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { cn } from "@/lib/utils";
 import type { ProductImage as ProductImageType } from "@/types";
 
@@ -316,6 +317,15 @@ export function ProductImages({
       slug:      productSlug,
       bgColor:   bgColor,
     });
+
+    trackMetaEvent("AddToWishlist", {
+      content_ids: [productId],
+      content_name: productName,
+      content_type: "product",
+      value: productPrice,
+      currency: "PKR",
+    });
+
     showToast({
       type: "success",
       message: isInWishlist ? "Removed from wishlist" : "Added to wishlist",

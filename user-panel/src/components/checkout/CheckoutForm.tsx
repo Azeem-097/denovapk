@@ -17,6 +17,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useShippingConfigStore } from "@/store/shippingConfigStore";
 import { usePaymentConfigStore } from "@/store/paymentConfigStore";
 import { useToastStore } from "@/store/toastStore";
+import { trackMetaEvent, trackMetaCustomEvent } from "@/lib/metaPixel";
 import { formatPrice, cn } from "@/lib/utils";
 
 const EMPTY_DEFAULTS: ShippingFormData = {
@@ -40,7 +41,9 @@ export function CheckoutForm() {
   const {
     setShippingData, shippingData,
     paymentMethod, setPaymentMethod, setShippingMethod,
-    loyaltyPointsUsed, setOrderNumber, discountCode,
+    loyaltyPointsUsed, loyaltyDiscount,
+    birthdayDiscount, discountAmount,
+    setOrderNumber, discountCode,
   } = useCheckoutStore();
 
   const items      = useCartStore((s) => s.items);
@@ -239,6 +242,11 @@ export function CheckoutForm() {
     const payload = { ...data, saveInfo };
     setShippingData(payload);
 
+    trackMetaEvent("AddPaymentInfo", {
+      value: subtotal + shippingCost,
+      currency: "PKR",
+    });
+
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -275,6 +283,19 @@ export function CheckoutForm() {
       }
 
       setOrderNumber(result.orderNumber);
+
+      trackMetaEvent("Purchase", {
+        value: Math.max(0, subtotal + shippingCost - loyaltyDiscount - birthdayDiscount - discountAmount),
+        currency: "PKR",
+        content_ids: items.map((item) => item.variantId || item.productId),
+        content_type: "product",
+        num_items: items.reduce((sum, item) => sum + item.quantity, 0),
+      });
+
+      if (birthdayDiscount > 0) {
+        trackMetaCustomEvent("BirthdayDiscount", { value: birthdayDiscount });
+      }
+
       await clearCart();
 
       let successMsg = "Order placed successfully!";

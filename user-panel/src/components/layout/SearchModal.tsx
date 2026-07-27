@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search, X, Clock, TrendingUp, ArrowRight } from "lucide-react";
 import { useSearchStore } from "@/store/searchStore";
 import { products } from "@/lib/data";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 
 const TRENDING = ["Kurta", "Formal Shirt", "Lawn Suit", "Blazer", "Cashmere"];
 

@@ -11,6 +11,7 @@ import { FadeIn } from "@/components/animations/FadeIn";
 import { registerSchema, type RegisterFormData } from "@/lib/validations";
 import { useAuthStore } from "@/store/authStore";
 import { useToastStore } from "@/store/toastStore";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function RegisterPage() {
       birthday:  data.birthday || undefined,
     });
     if (result.success) {
+      trackMetaEvent("CompleteRegistration");
       showToast({ type: "success", message: "Account created!" });
       router.push("/account/dashboard");
     } else {

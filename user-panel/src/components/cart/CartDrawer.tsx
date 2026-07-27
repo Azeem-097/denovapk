@@ -5,6 +5,7 @@ import { X, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useShippingConfigStore } from "@/store/shippingConfigStore";
 import { CartItem } from "./CartItem";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { formatPrice, cn } from "@/lib/utils";
 
 export function CartDrawer() {
@@ -199,7 +200,14 @@ export function CartDrawer() {
             <div className="flex flex-col gap-2 pt-1">
               <Link
                 href="/checkout"
-                onClick={closeCart}
+                onClick={() => {
+                  trackMetaEvent("InitiateCheckout", {
+                    value: total,
+                    currency: "PKR",
+                    num_items: itemCount,
+                  });
+                  closeCart();
+                }}
                 className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
               >
                 Proceed to Checkout

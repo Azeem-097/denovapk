@@ -8,6 +8,7 @@ import { CartItem } from "@/components/cart/CartItem";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { formatPrice } from "@/lib/utils";
 
 export default function CartPage() {
@@ -160,7 +161,15 @@ export default function CartPage() {
                   <span className="text-2xl font-bold text-[#1a1a1a]">{formatPrice(total)}</span>
                 </div>
 
-                <Link href="/checkout" className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300">
+                <Link
+                  href="/checkout"
+                  onClick={() => trackMetaEvent("InitiateCheckout", {
+                    value: total,
+                    currency: "PKR",
+                    num_items: itemCount,
+                  })}
+                  className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
+                >
                   Proceed to Checkout
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </Link>

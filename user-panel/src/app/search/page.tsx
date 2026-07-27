@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search as SearchIcon, ArrowRight } from "lucide-react";
@@ -7,6 +7,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { products } from "@/lib/data";
 
 function SearchContent() {
@@ -22,6 +23,11 @@ function SearchContent() {
       p.collection.toLowerCase().includes(q) ||
       p.tags.some((t) => t.toLowerCase().includes(q))
     );
+  }, [query]);
+
+  useEffect(() => {
+    if (!query.trim()) return;
+    trackMetaEvent("Search", { search_string: query.trim() });
   }, [query]);
 
   return (

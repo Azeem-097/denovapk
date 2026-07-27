@@ -13,6 +13,7 @@ import { LiveViewCounter } from "@/components/product/LiveViewCounter";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { useCartStore } from "@/store/cartStore";
 import { useToastStore } from "@/store/toastStore";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { cn, getDiscountPercent } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -234,6 +235,17 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
   const displaySku = product.sku || selectedVariant?.sku || "";
+  const viewContentSku = product.sku || product.variants[0]?.sku || product.id;
+
+  useEffect(() => {
+    trackMetaEvent("ViewContent", {
+      content_ids: [viewContentSku],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: "PKR",
+    });
+  }, [product.id, product.name, product.price, viewContentSku]);
 
   const measurements = [
     { label: "Waist", values: waistSizes },
@@ -265,6 +277,16 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       slug:      product.slug,
       bgColor:   product.bgColor,
     });
+
+    trackMetaEvent("AddToCart", {
+      content_ids: [selectedVariant.sku || product.sku || product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price * quantity,
+      currency: "PKR",
+      num_items: quantity,
+    });
+
     return true;
   };
 
@@ -278,6 +300,11 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const handleBuyNow = async () => {
     const ok = await doAddToCart();
     if (!ok) return;
+    trackMetaEvent("InitiateCheckout", {
+      value: product.price * quantity,
+      currency: "PKR",
+      num_items: quantity,
+    });
     router.push("/checkout");
   };
 

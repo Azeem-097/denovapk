@@ -10,6 +10,7 @@ import { TextReveal } from "@/components/animations/TextReveal";
 import { SlideUp } from "@/components/animations/SlideUp";
 import { contactSchema, type ContactFormData } from "@/lib/validations";
 import { useToastStore } from "@/store/toastStore";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 const HOURS = [
   { day: "Monday – Friday", time: "10:00 AM — 8:00 PM" },
@@ -68,6 +69,7 @@ export default function ContactPage() {
 
   const onSubmit = async (data: ContactFormData) => {
     void data;
+    trackMetaEvent("Lead");
     await new Promise((r) => setTimeout(r, 1200));
     setSubmitted(true);
     reset();
@@ -184,6 +186,7 @@ export default function ContactPage() {
                             href={item.href}
                             target={item.href.startsWith("http") ? "_blank" : undefined}
                             rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                            onClick={() => trackMetaEvent("Contact")}
                             className="text-sm text-white hover:text-[#E10600] transition-colors break-words"
                           >
                             {item.value}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { MessageCircle, Users, X } from "lucide-react";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { cn } from "@/lib/utils";
 
 interface WhatsAppConfig {
@@ -154,7 +155,10 @@ export function WhatsAppWidget() {
                 href={directLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  trackMetaEvent("Contact");
+                  setOpen(false);
+                }}
                 className="flex items-center gap-3 px-3 py-3 bg-white hover:bg-[#f5f0e8] transition-colors group"
                 style={{ borderRadius: "10px" }}
               >
@@ -183,7 +187,10 @@ export function WhatsAppWidget() {
                 href={config.communityLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  trackMetaEvent("Contact");
+                  setOpen(false);
+                }}
                 className="flex items-center gap-3 px-3 py-3 bg-white hover:bg-[#f5f0e8] transition-colors group"
                 style={{ borderRadius: "10px" }}
               >
