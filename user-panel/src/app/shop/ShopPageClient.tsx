@@ -190,7 +190,7 @@ export function ShopPageClient({ products }: Props) {
     filters.colors.length +
     (priceFilterActive ? 1 : 0);
 
-  const pageTitle = filterParam === "new"         ? "New Arrivals" :
+  const pageTitle = filterParam === "new"         ? "Premium" :
                     filterParam === "bestsellers" ? "Best Sellers" :
                     filterParam === "sale"        ? "Sale" :
                     "International Branded Jeans";
@@ -220,7 +220,7 @@ export function ShopPageClient({ products }: Props) {
       <div className="site-container py-8 lg:py-10">
         <div className="flex gap-8 lg:gap-10">
           <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0">
-            <div className="sticky top-24">
+            <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-hidden">
               <ProductFilters
                 filters={filters}
                 onChange={handleFilterChange}

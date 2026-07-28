@@ -274,6 +274,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       colorHex:  selectedVariant.colorHex,
       price:     product.price,
       quantity,
+      stock:     selectedVariant.stock,
       slug:      product.slug,
       bgColor:   product.bgColor,
     });

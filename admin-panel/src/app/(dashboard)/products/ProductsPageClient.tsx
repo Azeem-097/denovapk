@@ -463,7 +463,7 @@ function ProductRow({
             <Link href={`/products/${product.id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#E10600] transition-colors line-clamp-1">
               {product.name}
             </Link>
-            {product.isNew      && <Badge variant="gold" className="mr-1 mt-1">New</Badge>}
+            {product.isNew      && <Badge variant="gold" className="mr-1 mt-1">Premium</Badge>}
             {product.isFeatured && <Badge variant="info" className="mt-1">Featured</Badge>}
           </div>
         </div>

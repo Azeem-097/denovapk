@@ -193,6 +193,11 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderWithIte
 export async function updateOrderStatus(
   id: string, status: OrderStatus, trackingNumber?: string
 ): Promise<void> {
+  if (status === "CANCELLED") {
+    await cancelOrder(id);
+    return;
+  }
+
   const t = now();
   const sets: string[] = ["status = ?", "updatedAt = ?"];
   const args: (string | number)[] = [status, t];
@@ -201,8 +206,6 @@ export async function updateOrderStatus(
   if (status === "CONFIRMED") { sets.push("confirmedAt = ?"); args.push(t); }
   if (status === "SHIPPED")   { sets.push("shippedAt = ?");   args.push(t); }
   if (status === "DELIVERED") { sets.push("deliveredAt = ?"); args.push(t); }
-  if (status === "CANCELLED") { sets.push("cancelledAt = ?"); args.push(t); }
-
   if (trackingNumber !== undefined) {
     sets.push("trackingNumber = ?");
     args.push(trackingNumber);
@@ -213,6 +216,31 @@ export async function updateOrderStatus(
   await db.execute({
     sql:  `UPDATE orders SET ${sets.join(", ")} WHERE id = ?`,
     args,
+  });
+}
+
+export async function cancelOrder(id: string): Promise<void> {
+  const order = await getOrderById(id);
+  if (!order) throw new Error("Order not found");
+  if (order.status === "CANCELLED") return;
+
+  const t = now();
+
+  for (const item of order.items) {
+    await db.execute({
+      sql:  "UPDATE product_variants SET stock = stock + ? WHERE id = ?",
+      args: [item.quantity, item.variantId],
+    });
+
+    await db.execute({
+      sql:  "UPDATE products SET soldCount = MAX(0, soldCount - ?) WHERE id = ?",
+      args: [item.quantity, item.productId],
+    });
+  }
+
+  await db.execute({
+    sql:  "UPDATE orders SET status = ?, cancelledAt = ?, updatedAt = ? WHERE id = ?",
+    args: ["CANCELLED", t, t, id],
   });
 }
 

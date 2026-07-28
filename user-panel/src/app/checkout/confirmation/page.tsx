@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Package, Truck, Mail, ArrowRight, ShoppingBag } from "lucide-react";
+import { CheckCircle, Package, Truck, MessageCircle, ArrowRight, ShoppingBag } from "lucide-react";
 import { useCheckoutStore } from "@/store/checkoutStore";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
@@ -46,13 +46,13 @@ export default function ConfirmationPage() {
 
             <TextReveal as="h1" delay={300}>
               <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2 block">
-                Thank You for Your Order!
+                Thank you for your order
               </span>
             </TextReveal>
 
             <FadeIn delay={400}>
               <p className="text-sm text-[#6b7280] mt-3 leading-relaxed max-w-md mx-auto">
-                Your order has been received and is being processed. A confirmation email has been sent to your inbox.
+                Your order has been received successfully. It will be delivered within 3 to 4 days, and our team will contact you shortly on WhatsApp to confirm the details.
               </p>
             </FadeIn>
 
@@ -60,7 +60,7 @@ export default function ConfirmationPage() {
             <FadeIn delay={500}>
               <div className="mt-6 pt-6 border-t border-[#e5e7eb]">
                 <p className="text-xs uppercase tracking-wide text-[#6b7280] mb-1">
-                  Order Number
+                  Order Tracking Number
                 </p>
                 <p className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#1a1a1a] tracking-wider">
                   #{orderNumber}
@@ -85,16 +85,15 @@ export default function ConfirmationPage() {
                   Shipping Address
                 </p>
                 <p className="text-sm text-[#1a1a1a] font-medium">
-                  {shippingData.firstName} {shippingData.lastName}
+                  {shippingData.fullName}
                 </p>
                 <p className="text-sm text-[#6b7280] mt-0.5 leading-relaxed">
                   {shippingData.address}
-                  {shippingData.apartment && `, ${shippingData.apartment}`}
-                  <br />
+                </p>
+                <p className="text-sm text-[#6b7280] mt-0.5 leading-relaxed">
                   {shippingData.city}, {shippingData.province.toUpperCase()} {shippingData.postalCode}
                 </p>
                 <p className="text-sm text-[#6b7280] mt-2">{shippingData.phone}</p>
-                <p className="text-sm text-[#6b7280]">{shippingData.email}</p>
               </div>
 
               {/* Delivery + Payment */}
@@ -128,9 +127,9 @@ export default function ConfirmationPage() {
 
             <div className="space-y-4">
               <NextStep
-                icon={Mail}
-                title="Order Confirmation"
-                desc="You will receive an email with your order details shortly."
+                icon={MessageCircle}
+                title="WhatsApp Confirmation"
+                desc="Our team will contact you shortly on WhatsApp to confirm your order."
               />
               <NextStep
                 icon={Package}
@@ -139,8 +138,8 @@ export default function ConfirmationPage() {
               />
               <NextStep
                 icon={Truck}
-                title="Shipping"
-                desc={`Your order will be dispatched via ${shippingMethod.name.toLowerCase()}.`}
+                title="Delivery"
+                desc="Your order is expected to arrive within 3 to 4 days."
               />
             </div>
           </div>

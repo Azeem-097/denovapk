@@ -9,7 +9,7 @@
 export const navLinks: NavLink[] = [
   { label: "Shop",         href: "/shop" },
   { label: "Collections",  href: "/collections" },
-  { label: "New Arrivals", href: "/shop?filter=new" },
+  { label: "Premium", href: "/shop?filter=new" },
   { label: "Sale",         href: "/shop?filter=sale" },
   { label: "About",        href: "/about" },
 ];
@@ -335,7 +335,7 @@ export const testimonials: Testimonial[] = [
 // ─── Featured Products (subset) ──────────────────────────────────
 export const featuredProducts = products.filter((p) => p.isFeatured);
 
-// ─── New Arrivals (subset) ───────────────────────────────────────
+// ─── Premium (subset) ────────────────────────────────────────────
 export const newArrivals = products.filter((p) => p.isNew);
 
 // ─── Best Sellers (subset) ───────────────────────────────────────

@@ -1,8 +1,9 @@
 "use client";
 import { useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, ShoppingBag, Trash, Package, RotateCcw, Shield } from "lucide-react";
+import { ArrowRight, ShoppingBag, Trash, Package, RotateCcw, Shield, CheckCircle, MessageCircle, Truck } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
+import { useCheckoutStore } from "@/store/checkoutStore";
 import { useShippingConfigStore } from "@/store/shippingConfigStore";
 import { CartItem } from "@/components/cart/CartItem";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -19,6 +20,8 @@ export default function CartPage() {
 
   const config     = useShippingConfigStore((s) => s.config);
   const loadConfig = useShippingConfigStore((s) => s.loadConfig);
+  const orderNumber = useCheckoutStore((s) => s.orderNumber);
+  const resetCheckout = useCheckoutStore((s) => s.reset);
 
   useEffect(() => { loadConfig(); }, [loadConfig]);
 
@@ -48,7 +51,11 @@ export default function CartPage() {
   ];
 
   if (items.length === 0) {
-    return <EmptyCartPage />;
+    return orderNumber ? (
+      <OrderPlacedPage orderNumber={orderNumber} onContinue={resetCheckout} />
+    ) : (
+      <EmptyCartPage />
+    );
   }
 
   return (
@@ -201,6 +208,78 @@ function SummaryRow({
       <span className={`font-medium ${muted ? "text-[#6b7280] text-xs" : highlight ? "text-[#E10600]" : "text-[#1a1a1a]"}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function OrderPlacedPage({
+  orderNumber,
+  onContinue,
+}: {
+  orderNumber: string;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
+      <div className="max-w-2xl mx-auto px-4 text-center">
+        <div className="w-24 h-24 mx-auto bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-6 relative">
+          <CheckCircle size={42} className="text-[#E10600]" strokeWidth={1.5} />
+          <div className="absolute inset-0 rounded-full border-4 border-[#E10600]/15 animate-ping" />
+        </div>
+
+        <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+          Order Confirmed
+        </span>
+        <h1 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2 mb-4">
+          Thank you for your order
+        </h1>
+        <p className="text-sm sm:text-base text-[#6b7280] leading-relaxed max-w-xl mx-auto">
+          Your order has been received successfully. It will be delivered within 3 to 4 days, and our team will contact you shortly on WhatsApp to confirm the details.
+        </p>
+
+        <div className="mt-8 bg-white border border-[#e5e7eb] px-6 py-5">
+          <p className="text-xs uppercase tracking-wide text-[#6b7280] mb-1">
+            Order Tracking Number
+          </p>
+          <p className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-wider">
+            #{orderNumber}
+          </p>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+          <div className="bg-white border border-[#e5e7eb] p-4 flex items-start gap-3">
+            <MessageCircle size={18} className="text-[#E10600] mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-[#1a1a1a]">WhatsApp confirmation</p>
+              <p className="text-xs text-[#6b7280] mt-1 leading-relaxed">Our team will contact you shortly.</p>
+            </div>
+          </div>
+          <div className="bg-white border border-[#e5e7eb] p-4 flex items-start gap-3">
+            <Truck size={18} className="text-[#E10600] mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-[#1a1a1a]">Delivery timeline</p>
+              <p className="text-xs text-[#6b7280] mt-1 leading-relaxed">Expected delivery is within 3 to 4 days.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/shop"
+            onClick={onContinue}
+            className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
+          >
+            Continue Shopping
+            <ArrowRight size={16} />
+          </Link>
+          <Link
+            href="/track-order"
+            className="inline-flex items-center justify-center border border-[#1a1a1a] text-[#1a1a1a] px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#1a1a1a] hover:text-white transition-colors duration-300"
+          >
+            Track Order
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const LOGO_MOBILE = "https://res.cloudinary.com/djy5qqco7/image/upload/e_trim:10/f_auto,q_auto,c_limit,h_120/v1784388373/denovapk/general/logo-without-bg_1784388368531";
 const MOBILE_NAV_LINKS = [
   { label: "Shop", href: "/shop" },
-  { label: "New Arrivals", href: "/shop?filter=new" },
+  { label: "Premium", href: "/shop?filter=new" },
   { label: "Sale", href: "/shop?filter=sale" },
   { label: "About", href: "/about" },
 ];
@@ -138,7 +138,7 @@ export function NavbarMobile({ isOpen, onClose, cartCount }: NavbarMobileProps) 
         <nav className="flex-1 overflow-y-auto py-2">
           {MOBILE_NAV_LINKS.map((link) => (
             <div key={link.label}>
-              <Link href={link.href} onClick={onClose} className="flex items-center justify-between px-5 py-4 text-sm font-medium text-[#1a1a1a] hover:text-[#E10600] hover:bg-[#fafaf9] transition-colors border-b border-[#f5f5f4]">
+              <Link href={link.href} onClick={onClose} className="flex items-center justify-between px-5 py-4 text-base font-medium text-[#1a1a1a] hover:text-[#E10600] hover:bg-[#fafaf9] transition-colors border-b border-[#f5f5f4]">
                 <span className="tracking-wide">{link.label}</span>
                 <ChevronRight size={16} className="text-[#6b7280]" />
               </Link>

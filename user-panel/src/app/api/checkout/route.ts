@@ -45,6 +45,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    const stockError = await validateCheckoutStock(items);
+    if (stockError) {
+      return NextResponse.json(stockError, { status: 400 });
+    }
+
     // ═══════════════════════════════════════════════════════
     //  VALIDATE PAYMENT METHOD (server-side, never trust client)
     // ═══════════════════════════════════════════════════════
@@ -73,6 +78,7 @@ export async function POST(req: Request) {
 
     const user = await getCurrentUser();
     const fullUser = user ? await getUserById(user.id) : null;
+    const shippingFullName = String(shipping.fullName || `${shipping.firstName ?? ""} ${shipping.lastName ?? ""}`).trim();
 
     const orderItems = items.map((item: {
       productId: string; variantId: string; name: string; image: string;
@@ -222,24 +228,24 @@ export async function POST(req: Request) {
     if (user && saveAddress) {
       const existingAddresses = await getUserAddresses(user.id);
       const matchingAddress = existingAddresses.find((a) =>
-        a.street.trim().toLowerCase() === shipping.address.trim().toLowerCase() &&
-        a.city.trim().toLowerCase()   === shipping.city.trim().toLowerCase() &&
-        a.postalCode.trim()           === shipping.postalCode.trim()
+        a.street.trim().toLowerCase() === String(shipping.address).trim().toLowerCase() &&
+        a.city.trim().toLowerCase()   === String(shipping.city).trim().toLowerCase() &&
+        a.postalCode.trim()           === String(shipping.postalCode).trim()
       );
 
       if (matchingAddress) {
         addressId = matchingAddress.id;
         await updateAddress(matchingAddress.id, {
-          fullName: `${shipping.firstName} ${shipping.lastName}`.trim(),
-          phone: shipping.phone, apartment: shipping.apartment, province: shipping.province,
+          fullName: shippingFullName,
+          phone: shipping.phone, province: shipping.province,
         });
       } else {
         const isFirst = existingAddresses.length === 0;
         const newAddr = await createAddress({
           userId: user.id,
           label: isFirst ? "Home" : "Address " + (existingAddresses.length + 1),
-          fullName: `${shipping.firstName} ${shipping.lastName}`.trim(),
-          phone: shipping.phone, street: shipping.address, apartment: shipping.apartment,
+          fullName: shippingFullName,
+          phone: shipping.phone, street: shipping.address, apartment: "",
           city: shipping.city, province: shipping.province, postalCode: shipping.postalCode,
           isDefault: isFirst,
         });
@@ -252,25 +258,24 @@ export async function POST(req: Request) {
       if (fullUser && shipping.phone && fullUser.phone !== shipping.phone) {
         await updateUser(user.id, { phone: shipping.phone });
       }
-      const newFullName = `${shipping.firstName} ${shipping.lastName}`.trim();
-      if (fullUser && newFullName && fullUser.name !== newFullName) {
-        await updateUser(user.id, { name: newFullName });
+      if (fullUser && shippingFullName && fullUser.name !== shippingFullName) {
+        await updateUser(user.id, { name: shippingFullName });
       }
     }
 
     const order = await createOrder({
       userId: user?.id ?? null,
-      guestEmail: user ? undefined : shipping.email,
-      guestName:  user ? undefined : `${shipping.firstName} ${shipping.lastName}`,
+      guestEmail: undefined,
+      guestName:  user ? undefined : shippingFullName,
       guestPhone: user ? undefined : shipping.phone,
       items: orderItems, subtotal, discount: discountAmount,
       shipping: shippingCost, total,
       paymentMethod: paymentMethod.toUpperCase() as PaymentMethod,
       addressId,
       shippingAddress: {
-        fullName: `${shipping.firstName} ${shipping.lastName}`,
-        phone: shipping.phone, email: shipping.email,
-        street: shipping.address, apartment: shipping.apartment,
+        fullName: shippingFullName,
+        phone: shipping.phone, email: "",
+        street: shipping.address, apartment: "",
         city: shipping.city, province: shipping.province, postalCode: shipping.postalCode,
       },
       shippingMethod: shippingMethod?.name ?? "Standard Delivery",
@@ -337,4 +342,44 @@ export async function POST(req: Request) {
     console.error("Checkout error:", err);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
   }
+}
+
+async function validateCheckoutStock(items: Array<{ variantId?: string; quantity?: number }>) {
+  const requestedByVariant = new Map<string, number>();
+
+  for (const item of items) {
+    if (!item.variantId) {
+      return { error: "Invalid cart item." };
+    }
+    const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1));
+    requestedByVariant.set(item.variantId, (requestedByVariant.get(item.variantId) ?? 0) + quantity);
+  }
+
+  const variantIds = [...requestedByVariant.keys()];
+  if (variantIds.length === 0) return { error: "Your cart is empty." };
+
+  const placeholders = variantIds.map(() => "?").join(",");
+  const result = await db.execute({
+    sql:  `SELECT id, stock FROM product_variants WHERE id IN (${placeholders})`,
+    args: variantIds,
+  });
+
+  const stockByVariant = new Map(
+    result.rows.map((row) => [String(row.id), Math.max(0, Math.floor(Number(row.stock) || 0))])
+  );
+
+  for (const [variantId, quantity] of requestedByVariant) {
+    const stock = stockByVariant.get(variantId) ?? 0;
+    if (quantity > stock) {
+      return {
+        error: stock > 0
+          ? `Only ${stock} items are available in stock.`
+          : "One or more items in your cart are out of stock.",
+        stock,
+        variantId,
+      };
+    }
+  }
+
+  return null;
 }

@@ -31,12 +31,8 @@ interface ProductFiltersProps {
 }
 
 const SORT_OPTIONS = [
-  { value: "manual",      label: "Featured Order" },
-  { value: "newest",      label: "Newest First" },
   { value: "price-asc",   label: "Price: Low to High" },
   { value: "price-desc",  label: "Price: High to Low" },
-  { value: "bestselling", label: "Best Selling" },
-  { value: "rating",      label: "Top Rated" },
 ];
 
 function Accordion({ title, children, defaultOpen = true }: {
@@ -107,7 +103,7 @@ export function ProductFilters({
   const step  = range < 5000 ? 100 : range < 20000 ? 250 : 500;
 
   return (
-    <div className={cn("bg-white", isMobile && "h-full flex flex-col")}>
+    <div className={cn("bg-white h-full flex flex-col", isMobile && "h-full")}>
 
       {isMobile && (
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">

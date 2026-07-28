@@ -66,7 +66,7 @@ export default async function HomePage() {
           - Because this wrapper is BELOW the header, overflow-hidden here 
             does NOT break the sticky header! */}
       <div
-        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden"
+        className="relative z-10 bg-white rounded-t-[40px] sm:rounded-t-[50px] lg:rounded-t-[60px] rounded-b-[40px] sm:rounded-b-[50px] lg:rounded-b-[60px] overflow-hidden hero-content-shell"
         style={{
           boxShadow: "0 -12px 40px -20px rgba(0, 0, 0, 0.15)",
         }}

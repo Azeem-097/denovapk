@@ -55,6 +55,7 @@ export function FixedHeroBackground({ children }: { children: React.ReactNode })
         if (bottom !== lastBottomRef.current) {
           lastBottomRef.current = bottom;
           hero.style.top = `${bottom}px`;
+          hero.style.setProperty("--hero-header-offset", `${bottom}px`);
         }
       }
       const h = heroHeightRef.current;

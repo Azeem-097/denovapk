@@ -2,12 +2,9 @@
 
 // ─── Contact & Shipping ────────────────────────────────────
 export const shippingSchema = z.object({
-  email:      z.string().min(1, "Email is required").email("Invalid email"),
   phone:      z.string().min(10, "Phone number must be at least 10 digits").regex(/^[0-9+\-\s]+$/, "Invalid phone number"),
-  firstName:  z.string().min(2, "First name is required"),
-  lastName:   z.string().min(2, "Last name is required"),
+  fullName:   z.string().min(2, "Full name is required"),
   address:    z.string().min(5, "Address is required"),
-  apartment:  z.string().optional(),
   city:       z.string().min(2, "City is required"),
   province:   z.string().min(1, "Please select a province"),
   postalCode: z.string().min(4, "Postal code is required"),

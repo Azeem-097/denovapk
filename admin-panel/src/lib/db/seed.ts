@@ -176,7 +176,7 @@ async function seed() {
 
   // Footer link columns (JSON arrays serialized as strings)
   const footerCol1Links = JSON.stringify([
-    { label: "New Arrivals", href: "/shop?filter=new" },
+    { label: "Premium", href: "/shop?filter=new" },
     { label: "Best Sellers", href: "/shop?filter=bestsellers" },
     { label: "Sale",         href: "/shop?filter=sale" },
     { label: "All Products", href: "/shop" },

@@ -97,7 +97,7 @@ const FAQ_CATEGORIES = [
     items: [
       {
         question: "Do I need an account to place an order?",
-        answer: "No, you can checkout as a guest. However, creating an account gives you access to order history, saved addresses, wishlist, and exclusive early access to new arrivals.",
+        answer: "No, you can checkout as a guest. However, creating an account gives you access to order history, saved addresses, wishlist, and exclusive early access to premium products.",
       },
       {
         question: "How do I reset my password?",

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { useCheckoutStore } from "@/store/checkoutStore";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -14,19 +15,20 @@ export default function CheckoutPage() {
   const items         = useCartStore((s) => s.items);
   const isLoggedIn    = useAuthStore((s) => s.isLoggedIn);
   const loadAddresses = useAuthStore((s) => s.loadAddresses);
+  const orderNumber   = useCheckoutStore((s) => s.orderNumber);
 
   useEffect(() => {
     if (isLoggedIn) loadAddresses();
   }, [isLoggedIn, loadAddresses]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && items.length === 0) {
+    if (typeof window !== "undefined" && items.length === 0 && !orderNumber) {
       const timer = setTimeout(() => router.push("/cart"), 100);
       return () => clearTimeout(timer);
     }
-  }, [items.length, router]);
+  }, [items.length, orderNumber, router]);
 
-  if (items.length === 0) {
+  if (items.length === 0 && !orderNumber) {
     return (
       <div className="pt-32 pb-20 min-h-screen bg-white flex items-center justify-center">
         <div className="text-center px-4">
@@ -69,7 +71,7 @@ export default function CheckoutPage() {
             <CheckoutForm />
           </div>
 
-          <div className="lg:sticky lg:top-8 lg:self-start">
+          <div className="lg:sticky lg:top-36 lg:self-start">
             <OrderSummary />
           </div>
         </div>

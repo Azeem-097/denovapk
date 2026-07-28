@@ -197,7 +197,7 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <FadeIn delay={300}>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-                <QuickAction href="/shop" icon={ShoppingBag} title="Continue Shopping" desc="Explore new arrivals" />
+                <QuickAction href="/shop" icon={ShoppingBag} title="Continue Shopping" desc="Explore premium products" />
                 <QuickAction href="/account/rewards" icon={Award} title="My Rewards" desc={`${loyaltyPoints} points`} />
                 <QuickAction href="/account/settings" icon={Package} title="Account Settings" desc="Manage your profile" />
               </div>

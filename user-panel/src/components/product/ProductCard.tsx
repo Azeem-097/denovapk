@@ -51,15 +51,19 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const defaultVariant = product.variants[0];
+    const defaultVariant = product.variants.find((variant) => variant.stock > 0) ?? product.variants[0];
     if (!defaultVariant) return;
+    if (defaultVariant.stock <= 0) {
+      showToast({ type: "error", message: "This item is out of stock." });
+      return;
+    }
 
     addToCart({
       productId: product.id, variantId: defaultVariant.id,
       name: product.name, image: primaryImage.url,
       size: defaultVariant.size, color: defaultVariant.color,
       colorHex: defaultVariant.colorHex, price: product.price,
-      quantity: 1, slug: product.slug,
+      quantity: 1, stock: defaultVariant.stock, slug: product.slug,
       bgColor: product.bgColor,
     });
 

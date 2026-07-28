@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { formatPrice, formatDateTime, cn } from "@/lib/utils";
 import { ORDER_STATUS_COLORS, PAYMENT_STATUS_COLORS } from "@/lib/constants";
 import { openWhatsApp, buildOrderConfirmationMessage } from "@/lib/whatsapp";
+import { confirmAction } from "@/store/confirmStore";
 import type { AdminOrder, OrderStatus, PaymentStatus } from "@/types";
 
 const STATUS_OPTIONS: OrderStatus[] = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
@@ -23,6 +24,7 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
   const [tracking, setTracking] = useState(order.trackingNum || "");
   const [note,     setNote]     = useState("");
   const [saving,   setSaving]   = useState(false);
+  const isCancelled = order.status === "cancelled";
 
   const handleUpdate = async () => {
     setSaving(true);
@@ -57,6 +59,37 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
         router.refresh();
       } else {
         alert("Failed to update payment status");
+      }
+    } catch {
+      alert("Network error");
+    }
+    setSaving(false);
+  };
+
+  const handleCancelOrder = async () => {
+    const ok = await confirmAction({
+      title:       "Cancel Order",
+      message:     "Cancel this order and restore all item stock back to inventory?",
+      confirmText: "Cancel Order",
+      cancelText:  "Keep Order",
+      variant:     "danger",
+    });
+    if (!ok) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "cancel" }),
+      });
+      if (res.ok) {
+        alert("Order cancelled and stock restored.");
+        setStatus("cancelled");
+        router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || "Failed to cancel order");
       }
     } catch {
       alert("Network error");
@@ -107,6 +140,14 @@ export function OrderDetailClient({ order }: { order: AdminOrder }) {
           </Button>
           <Button variant="outline" size="sm"><Printer size={13} />Print Invoice</Button>
           <Button variant="outline" size="sm"><Send size={13} />Email Customer</Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleCancelOrder}
+            disabled={saving || isCancelled}
+          >
+            Cancel Order
+          </Button>
         </div>
       </div>
 

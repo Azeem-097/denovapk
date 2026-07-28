@@ -126,8 +126,9 @@ interface FloatingSelectProps extends React.SelectHTMLAttributes<HTMLSelectEleme
 }
 
 export const FloatingSelect = forwardRef<HTMLSelectElement, FloatingSelectProps>(
-  ({ label, error, className, id, options, value, defaultValue, onFocus, onBlur, ...props }, ref) => {
+  ({ label, error, className, id, options, value, defaultValue, onFocus, onBlur, onChange, ...props }, ref) => {
     const [focused, setFocused] = useState(false);
+    const [internalValue, setInternalValue] = useState(() => String(value ?? defaultValue ?? ""));
     // For select, we watch attribute changes via the parent's value/defaultValue
     // AND we use a data attribute to flag if the visual value is present
     const inputId = id || props.name;
@@ -135,9 +136,7 @@ export const FloatingSelect = forwardRef<HTMLSelectElement, FloatingSelectProps>
     // Determine if select has a value (works for both controlled + uncontrolled)
     const hasValue = value !== undefined
       ? String(value).length > 0
-      : defaultValue !== undefined
-        ? String(defaultValue).length > 0
-        : false;
+      : internalValue.length > 0;
 
     const isFloating = focused || hasValue;
 
@@ -150,6 +149,7 @@ export const FloatingSelect = forwardRef<HTMLSelectElement, FloatingSelectProps>
           defaultValue={defaultValue}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
+          onChange={(e) => { setInternalValue(e.target.value); onChange?.(e); }}
           className={cn(
             "peer w-full rounded-md border bg-white px-3.5 pt-5 pb-2 text-sm text-[#1a1a1a] transition-colors duration-150 focus:outline-none appearance-none pr-10",
             !hasValue && !focused && "text-transparent",

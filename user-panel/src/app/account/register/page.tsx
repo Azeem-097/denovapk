@@ -85,7 +85,7 @@ export default function RegisterPage() {
               <h1 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2">
                 Create your account
               </h1>
-              <p className="text-sm text-[#6b7280] mt-2">Join us for exclusive access to new arrivals</p>
+              <p className="text-sm text-[#6b7280] mt-2">Join us for exclusive access to premium products</p>
             </div>
           </FadeIn>
 

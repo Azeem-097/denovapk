@@ -465,14 +465,14 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
   const config = ensureCountdownInConfig(isMobile ? rawOverlay.mobile : rawOverlay.desktop, slide);
 
   const imgElement = (
-    <div className="overflow-hidden w-full">
+    <div className="overflow-hidden w-full bg-white hero-banner-frame">
       <picture>
         <source media="(max-width: 767px)" srcSet={mobileSrc} />
         <img
           src={slide.image}
           alt={slide.title || `Banner ${index + 1}`}
           className={cn(
-            "block w-full h-auto origin-center",
+            "block w-full h-auto origin-center hero-banner-image",
             shouldAnimate && isActive && !isFirst && "hero-image-ken-burns"
           )}
           style={shouldAnimate && isActive && !isFirst

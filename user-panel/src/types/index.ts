@@ -74,6 +74,7 @@ export interface CartItem {
   colorHex: string;
   price: number;
   quantity: number;
+  stock?: number;
   slug: string;
   bgColor?: string | null;   // optional — captured at add-to-cart time
 }

@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { CartItem } from "@/types";
 import { useShippingConfigStore } from "./shippingConfigStore";
+import { useToastStore } from "./toastStore";
 
 interface CartState {
   items:      CartItem[];
@@ -41,16 +42,29 @@ export const useCartStore = create<CartState>()(
         const existing = items.find(
           (i) => i.productId === newItem.productId && i.variantId === newItem.variantId
         );
+        const availableStock = getAvailableStock(newItem.stock, existing?.stock);
+        const requestedQty = Math.max(1, Math.floor(Number(newItem.quantity) || 1));
+        const nextQty = existing ? existing.quantity + requestedQty : requestedQty;
+        const allowedQty = clampToStock(nextQty, availableStock);
+
+        if (allowedQty <= 0) {
+          showStockToast(0);
+          return;
+        }
+
+        if (availableStock !== undefined && nextQty > availableStock) {
+          showStockToast(availableStock);
+        }
 
         if (existing) {
           set({
             items: items.map((i) =>
-              i.id === existing.id ? { ...i, quantity: i.quantity + newItem.quantity } : i
+              i.id === existing.id ? { ...i, ...newItem, id: i.id, quantity: allowedQty } : i
             ),
           });
         } else {
           const id = `${newItem.productId}-${newItem.variantId}-${Date.now()}`;
-          set({ items: [...items, { ...newItem, id }] });
+          set({ items: [...items, { ...newItem, quantity: allowedQty, id }] });
         }
         set({ isOpen: true });
 
@@ -62,12 +76,16 @@ export const useCartStore = create<CartState>()(
               body:    JSON.stringify({
                 productId: newItem.productId,
                 variantId: newItem.variantId,
-                quantity:  newItem.quantity,
+                quantity:  requestedQty,
               }),
             });
             if (res.ok) {
               const { cart } = await res.json();
               set({ items: mapServerCart(cart) });
+            } else {
+              const data = await res.json().catch(() => null);
+              if (data?.error) showStockToast(data.stock);
+              await get().syncFromServer();
             }
           } catch {}
         }
@@ -88,18 +106,34 @@ export const useCartStore = create<CartState>()(
 
       updateQty: async (id, quantity) => {
         if (quantity <= 0) { await get().removeItem(id); return; }
-        set({ items: get().items.map((i) => i.id === id ? { ...i, quantity } : i) });
+        const item = get().items.find((i) => i.id === id);
+        const requestedQty = Math.max(1, Math.floor(Number(quantity) || 1));
+        const allowedQty = clampToStock(requestedQty, item?.stock);
+
+        if (allowedQty <= 0) {
+          showStockToast(0);
+          return;
+        }
+
+        if (item?.stock !== undefined && requestedQty > item.stock) {
+          showStockToast(item.stock);
+        }
+
+        set({ items: get().items.map((i) => i.id === id ? { ...i, quantity: allowedQty } : i) });
 
         if (get().serverSync) {
           try {
             const res = await fetch(`/api/cart/${id}`, {
               method:  "PATCH",
               headers: { "Content-Type": "application/json" },
-              body:    JSON.stringify({ quantity }),
+              body:    JSON.stringify({ quantity: allowedQty }),
             });
             if (res.ok) {
               const { cart } = await res.json();
               set({ items: mapServerCart(cart) });
+            } else {
+              const data = await res.json().catch(() => null);
+              if (data?.error) showStockToast(data.stock);
             }
           } catch {}
         }
@@ -172,7 +206,7 @@ export const useCartStore = create<CartState>()(
 function mapServerCart(cart: { items: Array<{
   id: string; productId: string; variantId: string; quantity: number;
   product: { name: string; slug: string; images: Array<{ url: string }> };
-  variant: { size: string; color: string; colorHex: string; price: number };
+  variant: { size: string; color: string; colorHex: string; price: number; stock?: number };
 }>}): CartItem[] {
   return cart.items.map((item) => ({
     id:        item.id,
@@ -185,6 +219,24 @@ function mapServerCart(cart: { items: Array<{
     colorHex:  item.variant.colorHex,
     price:     item.variant.price / 100,
     quantity:  item.quantity,
+    stock:     item.variant.stock,
     slug:      item.product.slug,
   }));
+}
+
+function getAvailableStock(...values: Array<number | undefined>): number | undefined {
+  const stock = values.find((value) => Number.isFinite(value));
+  return stock === undefined ? undefined : Math.max(0, Math.floor(Number(stock)));
+}
+
+function clampToStock(quantity: number, stock?: number): number {
+  if (stock === undefined) return quantity;
+  return Math.min(quantity, stock);
+}
+
+function showStockToast(stock?: number) {
+  const message = stock && stock > 0
+    ? `Only ${stock} items are available in stock.`
+    : "This item is out of stock.";
+  useToastStore.getState().addToast({ type: "error", message });
 }

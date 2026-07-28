@@ -631,7 +631,7 @@ export function EditProductClient({ product, collections }: Props) {
           <Section title="Product Flags">
             <div className="space-y-2">
               {[
-                { key: "isNew",        label: "Mark as New Arrival" },
+                { key: "isNew",        label: "Mark as Premium" },
                 { key: "isFeatured",   label: "Feature on Homepage" },
                 { key: "isBestSeller", label: "Best Seller" },
               ].map(({ key, label }) => (

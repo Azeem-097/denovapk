@@ -12,6 +12,16 @@ export interface UserCart {
   items: CartItemWithDetails[];
 }
 
+export class CartStockError extends Error {
+  stock: number;
+
+  constructor(stock: number) {
+    super(stock > 0 ? `Only ${stock} items are available in stock.` : "This item is out of stock.");
+    this.name = "CartStockError";
+    this.stock = stock;
+  }
+}
+
 // ─── Get or create cart for user ─────────────────────────
 export async function getOrCreateCart(userId: string): Promise<DbCart> {
   const existing = await db.execute({
@@ -86,6 +96,8 @@ export async function addToCart(
 ): Promise<void> {
   const cart = await getOrCreateCart(userId);
   const t = now();
+  const requestedQty = Math.max(1, Math.floor(Number(quantity) || 1));
+  const stock = await getVariantStock(variantId);
 
   const existing = await db.execute({
     sql:  "SELECT * FROM cart_items WHERE cartId = ? AND variantId = ? LIMIT 1",
@@ -94,14 +106,17 @@ export async function addToCart(
 
   if (existing.rows.length > 0) {
     const item = existing.rows[0] as unknown as DbCartItem;
+    const nextQty = item.quantity + requestedQty;
+    if (nextQty > stock) throw new CartStockError(stock);
     await db.execute({
       sql:  "UPDATE cart_items SET quantity = quantity + ?, updatedAt = ? WHERE id = ?",
-      args: [quantity, t, item.id],
+      args: [requestedQty, t, item.id],
     });
   } else {
+    if (requestedQty > stock) throw new CartStockError(stock);
     await db.execute({
       sql:  "INSERT INTO cart_items (id, cartId, productId, variantId, quantity, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      args: [generateId(), cart.id, productId, variantId, quantity, t, t],
+      args: [generateId(), cart.id, productId, variantId, requestedQty, t, t],
     });
   }
 }
@@ -117,9 +132,20 @@ export async function updateCartItemQty(userId: string, itemId: string, quantity
     return;
   }
 
+  const current = await db.execute({
+    sql:  "SELECT variantId FROM cart_items WHERE id = ? AND cartId = ? LIMIT 1",
+    args: [itemId, cart.id],
+  });
+  if (current.rows.length === 0) return;
+
+  const item = current.rows[0] as unknown as DbCartItem;
+  const stock = await getVariantStock(item.variantId);
+  const requestedQty = Math.max(1, Math.floor(Number(quantity) || 1));
+  if (requestedQty > stock) throw new CartStockError(stock);
+
   await db.execute({
     sql:  "UPDATE cart_items SET quantity = ?, updatedAt = ? WHERE id = ? AND cartId = ?",
-    args: [quantity, now(), itemId, cart.id],
+    args: [requestedQty, now(), itemId, cart.id],
   });
 }
 
@@ -152,4 +178,14 @@ export async function mergeGuestCart(
   for (const item of localItems) {
     await addToCart(userId, item.productId, item.variantId, item.quantity);
   }
+}
+
+async function getVariantStock(variantId: string): Promise<number> {
+  const result = await db.execute({
+    sql:  "SELECT stock FROM product_variants WHERE id = ? LIMIT 1",
+    args: [variantId],
+  });
+
+  if (result.rows.length === 0) throw new CartStockError(0);
+  return Math.max(0, Math.floor(Number(result.rows[0].stock) || 0));
 }

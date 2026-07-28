@@ -21,8 +21,8 @@ import { trackMetaEvent, trackMetaCustomEvent } from "@/lib/metaPixel";
 import { formatPrice, cn } from "@/lib/utils";
 
 const EMPTY_DEFAULTS: ShippingFormData = {
-  email: "", phone: "", firstName: "", lastName: "",
-  address: "", apartment: "", city: "", province: "", postalCode: "",
+  phone: "", fullName: "",
+  address: "", city: "", province: "", postalCode: "",
   notes: "", saveInfo: true,
 };
 
@@ -83,14 +83,10 @@ export function CheckoutForm() {
       const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
 
       if (defaultAddr) {
-        const nameParts = (defaultAddr.fullName || "").trim().split(/\s+/);
         return {
-          email:      user.email || "",
           phone:      defaultAddr.phone || user.phone || "",
-          firstName:  nameParts[0] || "",
-          lastName:   nameParts.slice(1).join(" ") || "",
+          fullName:   defaultAddr.fullName || user.name || "",
           address:    defaultAddr.street || "",
-          apartment:  defaultAddr.apartment || "",
           city:       defaultAddr.city || "",
           province:   defaultAddr.province?.toLowerCase() || "",
           postalCode: defaultAddr.postalCode || "",
@@ -99,11 +95,10 @@ export function CheckoutForm() {
         };
       }
 
-      const nameParts = (user.name || "").trim().split(/\s+/);
       return {
-        email: user.email || "", phone: user.phone || "",
-        firstName: nameParts[0] || "", lastName: nameParts.slice(1).join(" ") || "",
-        address: "", apartment: "", city: "", province: "",
+        phone: user.phone || "",
+        fullName: user.name || "",
+        address: "", city: "", province: "",
         postalCode: "", notes: "", saveInfo: true,
       };
     }
@@ -120,10 +115,8 @@ export function CheckoutForm() {
     mode: "onBlur",
   });
 
-  const watchedEmail     = watch("email");
   const watchedPhone     = watch("phone");
-  const watchedFirstName = watch("firstName");
-  const watchedLastName  = watch("lastName");
+  const watchedFullName  = watch("fullName");
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { loadShipConfig(); }, [loadShipConfig]);
@@ -134,10 +127,8 @@ export function CheckoutForm() {
 
     const updateMetaMatching = async () => {
       const data = await buildMetaAdvancedMatching({
-        email: watchedEmail,
         phone: watchedPhone,
-        firstName: watchedFirstName,
-        lastName: watchedLastName,
+        fullName: watchedFullName,
       });
 
       if (Object.keys(data).length === 0) return;
@@ -154,7 +145,7 @@ export function CheckoutForm() {
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [mounted, watchedEmail, watchedPhone, watchedFirstName, watchedLastName]);
+  }, [mounted, watchedPhone, watchedFullName]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -208,7 +199,7 @@ export function CheckoutForm() {
 
   const trackCheckoutAbandonment = () => {
     const data = getValues();
-    if (!data.phone && !data.email) return;
+    if (!data.phone) return;
     if (items.length === 0) return;
 
     fetch("/api/abandoned-cart", {
@@ -217,9 +208,8 @@ export function CheckoutForm() {
       body: JSON.stringify({
         items, subtotal,
         checkoutData: {
-          email:    data.email,
           phone:    data.phone,
-          fullName: `${data.firstName} ${data.lastName}`.trim(),
+          fullName: data.fullName,
           city:     data.city,
         },
       }),
@@ -370,7 +360,7 @@ export function CheckoutForm() {
             </Link>
           )}
 
-          {mounted && isLoggedIn && user && (
+          {mounted && isLoggedIn && user?.email && (
             <span className="text-xs text-[#6b7280]">
               Signed in as <span className="text-[#1a1a1a]">{user.email}</span>
             </span>
@@ -378,9 +368,6 @@ export function CheckoutForm() {
         </div>
 
         <div className="space-y-3">
-          <FloatingInput label="Email" type="email" required
-            {...register("email", { onBlur: trackCheckoutAbandonment })}
-            error={errors.email?.message} />
           <FloatingInput label="Phone" type="tel" required
             {...register("phone", { onBlur: trackCheckoutAbandonment })}
             error={errors.phone?.message} />
@@ -394,17 +381,11 @@ export function CheckoutForm() {
         <div className="space-y-3">
           <FloatingLockedField label="Country / Region" value="Pakistan" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FloatingInput label="First name" required
-              {...register("firstName", { onBlur: trackCheckoutAbandonment })}
-              error={errors.firstName?.message} />
-            <FloatingInput label="Last name" required
-              {...register("lastName", { onBlur: trackCheckoutAbandonment })}
-              error={errors.lastName?.message} />
-          </div>
+          <FloatingInput label="Full name" required
+            {...register("fullName", { onBlur: trackCheckoutAbandonment })}
+            error={errors.fullName?.message} />
 
           <FloatingInput label="Address" required {...register("address")} error={errors.address?.message} />
-          <FloatingInput label="Apartment, suite, etc. (optional)" {...register("apartment")} error={errors.apartment?.message} />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <FloatingInput label="City" required
@@ -604,16 +585,14 @@ async function hashMetaPhone(value: string | undefined): Promise<string | undefi
 }
 
 async function buildMetaAdvancedMatching(input: {
-  email?: string;
   phone?: string;
-  firstName?: string;
-  lastName?: string;
+  fullName?: string;
 }): Promise<Record<string, string>> {
+  const [firstName = "", ...lastNameParts] = (input.fullName ?? "").trim().split(/\s+/).filter(Boolean);
   const entries = await Promise.all([
-    ["em", await hashMetaText(input.email)] as const,
     ["ph", await hashMetaPhone(input.phone)] as const,
-    ["fn", await hashMetaText(input.firstName)] as const,
-    ["ln", await hashMetaText(input.lastName)] as const,
+    ["fn", await hashMetaText(firstName)] as const,
+    ["ln", await hashMetaText(lastNameParts.join(" "))] as const,
   ]);
 
   return Object.fromEntries(entries.filter(([, value]) => !!value)) as Record<string, string>;

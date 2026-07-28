@@ -133,13 +133,13 @@ export function Navbar() {
           <div className="hidden lg:grid grid-cols-[1fr_auto_1fr] items-center h-[88px] gap-8">
 
             <nav className="flex items-center justify-start gap-7">
-              <Link href="/shop" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/shop" className="text-base font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
                 Shop
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-[#E10600] transition-all duration-300 group-hover:w-full" />
               </Link>
 
-              <Link href="/shop?filter=new" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
-                New Arrivals
+              <Link href="/shop?filter=new" className="text-base font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
+                Premium
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-[#E10600] transition-all duration-300 group-hover:w-full" />
               </Link>
             </nav>
@@ -157,35 +157,35 @@ export function Navbar() {
             </Link>
 
             <div className="flex items-center justify-end gap-7">
-              <Link href="/shop?filter=sale" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/shop?filter=sale" className="text-base font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
                 Sale
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-[#E10600] transition-all duration-300 group-hover:w-full" />
               </Link>
-              <Link href="/about" className="text-sm font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
+              <Link href="/about" className="text-base font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
                 About
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-[#E10600] transition-all duration-300 group-hover:w-full" />
               </Link>
 
               <div className="flex items-center gap-1 ml-3 pl-3 border-l border-[#e5e7eb]">
-                <button onClick={openSearch} className="p-2 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Search">
-                  <Search size={19} />
+                <button onClick={openSearch} className="p-2.5 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Search">
+                  <Search size={21} />
                 </button>
-                <Link href="/wishlist" className="relative p-2 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Wishlist">
-                  <Heart size={19} />
+                <Link href="/wishlist" className="relative p-2.5 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Wishlist">
+                  <Heart size={21} />
                   {mounted && wishlistCount > 0 && (
                     <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#E10600] text-white text-[9px] font-bold rounded-full">
                       {wishlistCount > 9 ? "9+" : wishlistCount}
                     </span>
                   )}
                 </Link>
-                <Link href={accountHref} className="p-2 text-[#1a1a1a] hover:text-[#E10600] relative" aria-label="Account">
-                  <User size={19} />
+                <Link href={accountHref} className="p-2.5 text-[#1a1a1a] hover:text-[#E10600] relative" aria-label="Account">
+                  <User size={21} />
                   {mounted && isLoggedIn && (
                     <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E10600]" />
                   )}
                 </Link>
-                <button onClick={openCart} className="relative p-2 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Cart">
-                  <ShoppingBag size={19} />
+                <button onClick={openCart} className="relative p-2.5 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Cart">
+                  <ShoppingBag size={21} />
                   {mounted && cartCount > 0 && (
                     <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center bg-[#E10600] text-white text-[9px] font-bold rounded-full">
                       {cartCount > 9 ? "9+" : cartCount}

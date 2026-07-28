@@ -20,7 +20,7 @@ export const BRAND_COLORS = {
 export const NAV_LINKS = [
   { label: "Shop",         href: "/shop" },
   { label: "Collections",  href: "/collections" },
-  { label: "New Arrivals", href: "/shop?filter=new" },
+  { label: "Premium", href: "/shop?filter=new" },
   { label: "Sale",         href: "/shop?filter=sale" },
   { label: "About",        href: "/about" },
 ] as const;
