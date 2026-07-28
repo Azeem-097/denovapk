@@ -8,13 +8,13 @@ export const dynamic = "force-dynamic";
  * Public order tracking endpoint.
  * No authentication required, but:
  * - Only returns non-sensitive info by default
- * - If email is provided and matches, returns fuller details
+ * - If phone is provided and matches, returns fuller details
  * - Rate-limiting should be added in production (nginx / Cloudflare)
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const rawNumber = url.searchParams.get("number")?.trim() ?? "";
-  const emailInput = url.searchParams.get("email")?.trim().toLowerCase() ?? "";
+  const phoneInput = normalizePhone(url.searchParams.get("phone") ?? "");
 
   if (!rawNumber) {
     return NextResponse.json(
@@ -42,37 +42,37 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── Email verification (optional) ────────────────────
-  // If email was provided, it must match either:
-  //  - guest email on the order, OR
-  //  - the account owner's email
-  let emailMatches = false;
-  if (emailInput) {
-    const guestEmail = (order.guestEmail ?? "").toLowerCase();
-    if (guestEmail && guestEmail === emailInput) {
-      emailMatches = true;
+  // ── Phone verification (optional) ────────────────────
+  // If phone was provided, it must match the guest, shipping, or account phone.
+  let phoneMatches = false;
+  if (phoneInput) {
+    const guestPhone = normalizePhone(order.guestPhone);
+    const addressPhone = normalizePhone(order.address?.phone);
+
+    if (guestPhone === phoneInput || addressPhone === phoneInput) {
+      phoneMatches = true;
     } else if (order.userId) {
-      // Fetch the account owner's email
+      // Fetch the account owner's phone
       const userResult = await db.execute({
-        sql:  "SELECT email FROM users WHERE id = ? LIMIT 1",
+        sql:  "SELECT phone FROM users WHERE id = ? LIMIT 1",
         args: [order.userId],
       });
-      const ownerEmail = (userResult.rows[0]?.email as string ?? "").toLowerCase();
-      if (ownerEmail && ownerEmail === emailInput) {
-        emailMatches = true;
+      const ownerPhone = normalizePhone(userResult.rows[0]?.phone as string | null | undefined);
+      if (ownerPhone === phoneInput) {
+        phoneMatches = true;
       }
     }
 
-    if (!emailMatches) {
+    if (!phoneMatches) {
       return NextResponse.json(
-        { error: "Order number and email do not match. Please double-check both." },
+        { error: "Order number and phone number do not match. Please double-check both." },
         { status: 404 }
       );
     }
   }
 
   // ── Build safe response ──────────────────────────────
-  // If email verified, include full items list. Otherwise, just item count.
+  // If phone verified, include full items list. Otherwise, just item count.
   const safeResponse = {
     id:             order.id,
     orderNumber:    order.orderNumber,
@@ -92,12 +92,12 @@ export async function GET(req: Request) {
 
     // Shipping address - only city + first name if unverified
     shippingCity: order.address?.city ?? extractCity(order.shippingAddress),
-    shippingName: emailMatches
+    shippingName: phoneMatches
       ? (order.address?.fullName ?? order.guestName ?? "")
       : maskName(order.address?.fullName ?? order.guestName ?? ""),
 
     // Items - only if verified
-    items: emailMatches
+    items: phoneMatches
       ? order.items.map((item) => ({
           id:       item.id,
           name:     item.name,
@@ -110,13 +110,17 @@ export async function GET(req: Request) {
       : [],
 
     // Flag so UI knows how much to show
-    verified: emailMatches,
+    verified: phoneMatches,
   };
 
   return NextResponse.json({ order: safeResponse });
 }
 
 // ─── Helpers ─────────────────────────────────────────────
+function normalizePhone(phone: string | null | undefined): string {
+  return (phone ?? "").replace(/\D/g, "");
+}
+
 function extractCity(shippingAddressJson: string | null): string {
   if (!shippingAddressJson) return "";
   try {

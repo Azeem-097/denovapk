@@ -61,7 +61,7 @@ function getStatusIndex(status: string): number {
 
 export default function TrackOrderPage() {
   const [orderNum, setOrderNum] = useState("");
-  const [email,    setEmail]    = useState("");
+  const [phone,    setPhone]    = useState("");
   const [result,   setResult]   = useState<TrackedOrder | null>(null);
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
@@ -77,7 +77,7 @@ export default function TrackOrderPage() {
     try {
       const params = new URLSearchParams();
       params.set("number", orderNum.trim());
-      if (email.trim()) params.set("email", email.trim());
+      if (phone.trim()) params.set("phone", phone.trim());
 
       const res  = await fetch(`/api/track-order?${params.toString()}`);
       const data = await res.json();
@@ -150,17 +150,18 @@ export default function TrackOrderPage() {
             </div>
             <div>
               <label className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5">
-                Email Address (optional but recommended)
+                Phone Number (optional but recommended)
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="03XX XXXXXXX"
+                autoComplete="tel"
                 className="w-full px-4 py-3 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60"
               />
               <p className="text-[11px] text-[#6b7280] mt-1.5">
-                Provide your email to see full order details including items.
+                Provide your phone number to see full order details including items.
               </p>
             </div>
             <button
@@ -336,12 +337,12 @@ export default function TrackOrderPage() {
                 )}
                 {!result.verified && (
                   <p className="text-[11px] text-[#6b7280] mt-3 italic">
-                    Enter the email used at checkout to see full delivery details.
+                    Enter the phone number used at checkout to see full delivery details.
                   </p>
                 )}
               </div>
 
-              {/* Items (only if email verified) */}
+              {/* Items (only if phone verified) */}
               {result.verified && result.items.length > 0 && (
                 <div className="bg-white border border-[#e5e7eb]">
                   <div className="px-5 py-4 border-b border-[#e5e7eb]">
