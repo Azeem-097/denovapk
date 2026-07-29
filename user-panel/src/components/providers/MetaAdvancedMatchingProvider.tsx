@@ -1,16 +1,52 @@
 "use client";
 import { useEffect } from "react";
+import Script from "next/script";
 import { useAuthStore } from "@/store/authStore";
 
 declare global {
   interface Window {
-    fbq?: (...args: unknown[]) => void;
+    fbq?: ((...args: unknown[]) => void) & { queue?: unknown[][] };
     __DENOVA_META_PIXEL_ID?: string;
+    __DENOVA_META_PIXEL_BOOTSTRAP?: boolean;
   }
 }
 
 export function MetaAdvancedMatchingProvider() {
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/settings/meta_pixel_enabled")
+      .then((r) => r.ok ? r.json() : null)
+      .then((enabledData) => {
+        if (cancelled || enabledData?.value !== "true") return null;
+        return fetch("/api/settings/meta_pixel_id");
+      })
+      .then((r) => r && r.ok ? r.json() : null)
+      .then((idData) => {
+        if (cancelled) return;
+        const id = sanitizeMetaPixelId(idData?.value);
+        if (!id || window.fbq) return;
+
+        const fbq: NonNullable<Window["fbq"]> = (...args: unknown[]) => {
+          (fbq.queue = fbq.queue ?? []).push(args);
+        };
+        fbq.queue = [];
+        window.__DENOVA_META_PIXEL_ID = id;
+        window.fbq = fbq;
+        fbq("init", id);
+        fbq("track", "PageView");
+
+        const script = document.createElement("script");
+        script.async = true;
+        script.src = "https://connect.facebook.net/en_US/fbevents.js";
+        document.head.appendChild(script);
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!user || !window.fbq || !window.__DENOVA_META_PIXEL_ID) return;
@@ -31,7 +67,15 @@ export function MetaAdvancedMatchingProvider() {
       .catch(() => {});
   }, [user]);
 
-  return null;
+  return (
+    <Script id="meta-pixel-bootstrap" strategy="afterInteractive">
+      {`window.__DENOVA_META_PIXEL_BOOTSTRAP = true;`}
+    </Script>
+  );
+}
+
+function sanitizeMetaPixelId(value: unknown): string {
+  return (typeof value === "string" ? value : "").replace(/[^0-9]/g, "");
 }
 
 async function sha256(value: string): Promise<string> {

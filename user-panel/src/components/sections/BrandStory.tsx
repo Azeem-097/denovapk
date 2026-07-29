@@ -113,10 +113,10 @@ export function BrandStory() {
               <FadeIn delay={800}>
                 <div className="mt-8 sm:mt-10">
                   <Link
-                    href="/about"
+                    href="/shop"
                     className="group inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-[#1a1a1a] border-b border-[#1a1a1a] pb-0.5 hover:text-[#E10600] hover:border-[#E10600] transition-all duration-300"
                   >
-                    Read Our Full Story
+                    Explore the Collection
                     <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1.5" />
                   </Link>
                 </div>

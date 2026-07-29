@@ -22,7 +22,6 @@ export const NAV_LINKS = [
   { label: "Collections",  href: "/collections" },
   { label: "Premium", href: "/shop?filter=new" },
   { label: "Sale",         href: "/shop?filter=sale" },
-  { label: "About",        href: "/about" },
 ] as const;
 
 export const SIZES = ["28", "30", "32", "34", "36", "38", "40"] as const;

@@ -18,6 +18,8 @@ const PUBLIC_KEYS = [
   "tax_percentage",
   "brand_name",
   "hero_rotation_seconds",
+  "meta_pixel_enabled",
+  "meta_pixel_id",
 ];
 
 export async function GET(_: Request, { params }: { params: Promise<{ key: string }> }) {

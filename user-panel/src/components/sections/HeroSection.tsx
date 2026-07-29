@@ -146,6 +146,27 @@ function normalizeRotationSeconds(value: unknown, fallback = 8): number {
   return Math.max(1, seconds);
 }
 
+function cloudinaryImage(src: string, width: number): string {
+  if (!src.includes("res.cloudinary.com")) return src;
+
+  const uploadIdx = src.indexOf("/upload/");
+  if (uploadIdx === -1) return src;
+
+  const base = src.substring(0, uploadIdx + 8);
+  let rest = src.substring(uploadIdx + 8);
+  const versionMatch = rest.match(/^([^/]+)\/(v\d+\/.+)$/);
+  if (versionMatch && !versionMatch[1].startsWith("v")) {
+    rest = versionMatch[2];
+  }
+
+  return `${base}f_auto,q_auto:good,c_limit,w_${width},dpr_auto/${rest}`;
+}
+
+function cloudinarySrcSet(src: string, widths: number[]): string {
+  if (!src.includes("res.cloudinary.com")) return "";
+  return widths.map((width) => `${cloudinaryImage(src, width)} ${width}w`).join(", ");
+}
+
 export function defaultAnimation(): AnimationConfig {
   return { entrance: "slide-up", decorative: "none", loop: "none", speed: "normal", delay: "short" };
 }
@@ -318,28 +339,11 @@ export function HeroSection({ banners: initialBanners, rotationSeconds = 8 }: He
   }, []);
 
   useEffect(() => {
-    if (hasServerBanners) return;
-
-    fetch("/api/hero-banners", { cache: "no-store" })
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.banners?.length > 0) {
-          setSlides(data.banners);
-          setCurrent(0);
-          accumulatedRef.current = 0;
-          setProgress(0);
-        }
-        setRotation((currentRotation) => normalizeRotationSeconds(data?.rotationSeconds, currentRotation));
-      })
-      .catch(() => {});
-  }, [hasServerBanners]);
-
-  useEffect(() => {
     if (slides.length <= 1) return;
     const safeCurrent = Math.min(current, slides.length - 1);
     const next = slides[(safeCurrent + 1) % slides.length];
-    if (next?.image)       { const img = new window.Image(); img.src = next.image; }
-    if (next?.imageMobile) { const img = new window.Image(); img.src = next.imageMobile; }
+    if (next?.image)       { const img = new window.Image(); img.src = cloudinaryImage(next.image, 1600); }
+    if (next?.imageMobile) { const img = new window.Image(); img.src = cloudinaryImage(next.imageMobile, 900); }
   }, [current, slides]);
 
   useEffect(() => {
@@ -467,9 +471,15 @@ function BannerSlide({ slide, isActive, isFirst, index, shouldAnimate, isMobile 
   const imgElement = (
     <div className="overflow-hidden w-full bg-white hero-banner-frame">
       <picture>
-        <source media="(max-width: 767px)" srcSet={mobileSrc} />
+        <source
+          media="(max-width: 767px)"
+          srcSet={cloudinarySrcSet(mobileSrc, [480, 768, 960]) || mobileSrc}
+          sizes="100vw"
+        />
         <img
-          src={slide.image}
+          src={cloudinaryImage(slide.image, 1920)}
+          srcSet={cloudinarySrcSet(slide.image, [768, 1280, 1600, 1920, 2560]) || undefined}
+          sizes="100vw"
           alt={slide.title || `Banner ${index + 1}`}
           className={cn(
             "block w-full h-auto origin-center hero-banner-image",

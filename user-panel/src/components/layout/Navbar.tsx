@@ -161,10 +161,6 @@ export function Navbar() {
                 Sale
                 <span className="absolute bottom-0 left-0 w-0 h-px bg-[#E10600] transition-all duration-300 group-hover:w-full" />
               </Link>
-              <Link href="/about" className="text-base font-medium tracking-wide text-[#1a1a1a] hover:text-[#E10600] transition-colors py-1 relative group whitespace-nowrap">
-                About
-                <span className="absolute bottom-0 left-0 w-0 h-px bg-[#E10600] transition-all duration-300 group-hover:w-full" />
-              </Link>
 
               <div className="flex items-center gap-1 ml-3 pl-3 border-l border-[#e5e7eb]">
                 <button onClick={openSearch} className="p-2.5 text-[#1a1a1a] hover:text-[#E10600]" aria-label="Search">

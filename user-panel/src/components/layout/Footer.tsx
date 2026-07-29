@@ -67,7 +67,6 @@ const FALLBACK: FooterData = {
       { label: "Contact Us",        href: "/contact" },
     ]},
     { title: "Company", links: [
-      { label: "About Denova",     href: "/about" },
       { label: "Careers",          href: "/careers" },
       { label: "Privacy Policy",   href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
@@ -80,15 +79,19 @@ const FALLBACK: FooterData = {
   ],
 };
 
+function visibleLinks(links: FooterLink[]): FooterLink[] {
+  return links.filter((link) => link.href !== "/about");
+}
+
 function mergeWithFallback(api: FooterData): FooterData {
   const sourceColumns = api.columns.filter((col) => col.title.toLowerCase() !== "collections");
   const fallbackColumns = FALLBACK.columns.filter((col) => col.title.toLowerCase() !== "collections");
   const mergedColumns: FooterColumn[] = fallbackColumns.map((fbCol, i) => {
     const apiCol = sourceColumns[i];
     if (apiCol && apiCol.links && apiCol.links.length > 0) {
-      return { title: apiCol.title || fbCol.title, links: apiCol.links };
+      return { title: apiCol.title || fbCol.title, links: visibleLinks(apiCol.links) };
     }
-    return fbCol;
+    return { ...fbCol, links: visibleLinks(fbCol.links) };
   });
 
   return {

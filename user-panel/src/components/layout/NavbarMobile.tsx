@@ -9,7 +9,6 @@ const MOBILE_NAV_LINKS = [
   { label: "Shop", href: "/shop" },
   { label: "Premium", href: "/shop?filter=new" },
   { label: "Sale", href: "/shop?filter=sale" },
-  { label: "About", href: "/about" },
 ];
 
 interface MobileSiteInfo {

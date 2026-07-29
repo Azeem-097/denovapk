@@ -11,7 +11,6 @@ export const navLinks: NavLink[] = [
   { label: "Collections",  href: "/collections" },
   { label: "Premium", href: "/shop?filter=new" },
   { label: "Sale",         href: "/shop?filter=sale" },
-  { label: "About",        href: "/about" },
 ];
 
 // ─── Collections ─────────────────────────────────────────────────

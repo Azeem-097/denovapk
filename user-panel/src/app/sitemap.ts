@@ -6,7 +6,6 @@ const SITE_URL = "https://denovapk.com";
 const staticRoutes: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }> = [
   { path: "/",           priority: 1,    changeFrequency: "daily" },
   { path: "/shop",       priority: 0.95, changeFrequency: "daily" },
-  { path: "/about",      priority: 0.6,  changeFrequency: "monthly" },
   { path: "/contact",    priority: 0.6,  changeFrequency: "monthly" },
   { path: "/shipping",   priority: 0.5,  changeFrequency: "monthly" },
   { path: "/returns",    priority: 0.5,  changeFrequency: "monthly" },
