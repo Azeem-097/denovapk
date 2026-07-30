@@ -7,15 +7,17 @@ interface MarqueeProps {
   className?: string;
   duration?:  number;
   pauseOnHover?: boolean;
+  itemColor?: string;
 }
 
-const ACCENT = "#E10600";
+const ACCENT = "#F97316";
 
 export function Marquee({
   items,
   className,
   duration = 30,
   pauseOnHover = true,
+  itemColor = ACCENT,
 }: MarqueeProps) {
   const { shouldAnimate } = useDevicePerformance();
   const doubled = [...items, ...items];
@@ -34,7 +36,7 @@ export function Marquee({
           <div
             key={i}
             className="flex items-center gap-6 px-6 text-[11px] font-semibold tracking-[0.25em] uppercase whitespace-nowrap"
-            style={{ color: ACCENT }}
+            style={{ color: itemColor }}
           >
             <span
               className="w-1 h-1 rounded-full flex-shrink-0"

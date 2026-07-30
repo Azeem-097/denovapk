@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { inter, playfair, cormorant } from "@/lib/fonts";
 import { ToastContainer }  from "@/components/ui/Toast";
 import { TopProgressBar }  from "@/components/ui/TopProgressBar";
 import { SessionProvider } from "@/components/providers/SessionProvider";
@@ -47,7 +46,7 @@ export const viewport = { themeColor: "#1a1a1a", width: "device-width", initialS
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${cormorant.variable}`}>
+    <html lang="en">
       <head>
         <meta property="og:site_name"       content="Denova PK" />
         <meta property="og:type"            content="website" />

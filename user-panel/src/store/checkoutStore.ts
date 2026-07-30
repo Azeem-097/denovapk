@@ -10,10 +10,10 @@ export type PaymentMethod = "cod" | "card" | "jazzcash" | "easypaisa" | "bank";
 
 // Default shipping method (updated dynamically from admin settings)
 export const DEFAULT_SHIPPING_METHOD: ShippingMethod = {
-  id:    "standard",
-  name:  "Standard Delivery",
-  time:  "3-5 business days across Pakistan",
-  price: 250,
+  id:    "free",
+  name:  "Free Delivery",
+  time:  "Free delivery across Pakistan",
+  price: 0,
 };
 
 interface CheckoutState {

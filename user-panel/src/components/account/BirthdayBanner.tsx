@@ -53,9 +53,9 @@ export function BirthdayBanner() {
   if (dismissed) return null;
 
   return (
-    <div className="bg-gradient-to-r from-[#f5f0e8] via-[#f5f0e8] to-[#f5f0e8]/50 border-2 border-[#E10600]/30 relative overflow-hidden">
+    <div className="bg-gradient-to-r from-[#f5f0e8] via-[#f5f0e8] to-[#f5f0e8]/50 border-2 border-[#F97316]/30 relative overflow-hidden">
       <div className="absolute top-0 right-0 opacity-5">
-        <Cake size={160} className="text-[#E10600] -mt-4 -mr-4" />
+        <Cake size={160} className="text-[#F97316] -mt-4 -mr-4" />
       </div>
 
       <div className="relative p-5 sm:p-6">
@@ -69,7 +69,7 @@ export function BirthdayBanner() {
 
         {saved ? (
           <div className="text-center py-4">
-            <Gift size={32} className="text-[#E10600] mx-auto mb-2" />
+            <Gift size={32} className="text-[#F97316] mx-auto mb-2" />
             <p className="text-lg font-bold text-[#1a1a1a]">Birthday Saved! 🎉</p>
             <p className="text-sm text-[#6b7280] mt-1">
               We&apos;ll surprise you with a special discount on your birthday!
@@ -77,7 +77,7 @@ export function BirthdayBanner() {
           </div>
         ) : (
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 rounded-full bg-[#E10600] flex items-center justify-center flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[#F97316] flex items-center justify-center flex-shrink-0">
               <Gift size={20} className="text-white" />
             </div>
 
@@ -95,12 +95,12 @@ export function BirthdayBanner() {
                   value={birthday}
                   onChange={(e) => setBirthday(e.target.value)}
                   max={new Date().toISOString().split("T")[0]}
-                  className="flex-1 px-3 py-2.5 text-sm border border-[#E10600]/30 bg-white focus:border-[#E10600] focus:outline-none"
+                  className="flex-1 px-3 py-2.5 text-sm border border-[#F97316]/30 bg-white focus:border-[#F97316] focus:outline-none"
                 />
                 <button
                   onClick={handleSave}
                   disabled={!birthday || saving}
-                  className="bg-[#1a1a1a] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#E10600] transition-colors disabled:opacity-40"
+                  className="bg-[#1a1a1a] text-white px-5 py-2.5 text-sm font-semibold hover:bg-[#F97316] transition-colors disabled:opacity-40"
                 >
                   {saving ? "Saving..." : "Save Birthday"}
                 </button>

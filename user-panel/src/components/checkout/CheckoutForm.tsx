@@ -8,9 +8,9 @@ import {
   CreditCard, Truck, Building2, Smartphone, Wallet, ArrowLeft, AlertCircle,
 } from "lucide-react";
 import {
-  FloatingInput, FloatingTextarea, FloatingSelect, FloatingLockedField,
+  FloatingInput, FloatingTextarea, FloatingLockedField,
 } from "@/components/ui/FloatingInput";
-import { shippingSchema, type ShippingFormData, PAKISTAN_PROVINCES } from "@/lib/validations";
+import { shippingSchema, type ShippingFormData } from "@/lib/validations";
 import { useCheckoutStore, type PaymentMethod } from "@/store/checkoutStore";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
@@ -189,13 +189,13 @@ export function CheckoutForm() {
   }, [subtotal, freeDeliveryAll, threshold, baseCost, paymentMethod, codEnabled, codFee]);
 
   useEffect(() => {
-    const time = freeDeliveryAll
-      ? "Free delivery on every order across Pakistan"
-      : (shippingCost === 0 && subtotal > 0)
-        ? "Free shipping — 3-5 business days"
-        : "3-5 business days across Pakistan";
-    setShippingMethod({ id: "standard", name: "Standard Delivery", time, price: shippingCost });
-  }, [shippingCost, freeDeliveryAll, subtotal, setShippingMethod]);
+    setShippingMethod({
+      id: "free",
+      name: "Free Delivery",
+      time: "Free delivery across Pakistan",
+      price: shippingCost,
+    });
+  }, [shippingCost, setShippingMethod]);
 
   const trackCheckoutAbandonment = () => {
     const data = getValues();
@@ -229,7 +229,12 @@ export function CheckoutForm() {
     }
 
     setPlacing(true);
-    const payload = { ...data, saveInfo };
+    const payload = {
+      ...data,
+      province: data.province || "Pakistan",
+      postalCode: data.postalCode || "00000",
+      saveInfo,
+    };
     setShippingData(payload);
 
     trackMetaEvent("AddPaymentInfo", {
@@ -244,11 +249,9 @@ export function CheckoutForm() {
         body: JSON.stringify({
           shipping: payload,
           shippingMethod: {
-            id: "standard",
-            name: "Standard Delivery",
-            time: freeDeliveryAll
-              ? "Free delivery on every order across Pakistan"
-              : "3-5 business days across Pakistan",
+            id: "free",
+            name: "Free Delivery",
+            time: "Free delivery across Pakistan",
             price: shippingCost,
           },
           paymentMethod,
@@ -306,46 +309,6 @@ export function CheckoutForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
 
-      {/* ─── GUEST PROMOTIONAL BANNER ─────────────────────
-          Encourages non-logged-in visitors to create an account
-          to join loyalty program and get discounts. */}
-      {mounted && !isLoggedIn && (
-        <div className="relative overflow-hidden rounded-md border border-[#E10600]/30 bg-gradient-to-br from-[#f5f0e8] via-white to-[#faf7f2] p-4 sm:p-5">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#E10600]/15 border border-[#E10600]/30 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E10600" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 15l-2 5l9-9l-9-9l2 5l-7 4z" />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#E10600] mb-1">
-                Members-Only Rewards
-              </p>
-              <p className="text-sm text-[#1a1a1a] leading-snug">
-                Create your account to enroll in our <span className="font-semibold">Loyalty Program</span> and enjoy exclusive discounts on upcoming orders.
-              </p>
-              <div className="mt-3 flex items-center gap-3 flex-wrap">
-                <Link
-                  href={`/account/register?redirect=${encodeURIComponent("/checkout")}`}
-                  className="inline-flex items-center gap-1.5 bg-[#1a1a1a] text-white text-xs font-semibold tracking-wide uppercase px-4 py-2 rounded hover:bg-[#E10600] transition-colors duration-200"
-                >
-                  Create Account
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <Link
-                  href={`/account/login?redirect=${encodeURIComponent("/checkout")}`}
-                  className="text-xs text-[#6b7280] hover:text-[#1a1a1a] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#E10600] transition-colors"
-                >
-                  Already a member? Sign in
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* CONTACT */}
       <section>
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
@@ -354,7 +317,7 @@ export function CheckoutForm() {
           {mounted && !isLoggedIn && (
             <Link
               href={`/account/login?redirect=${encodeURIComponent("/checkout")}`}
-              className="text-xs text-[#6b7280] hover:text-[#E10600] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#E10600] transition-colors"
+              className="text-xs text-[#6b7280] hover:text-[#F97316] underline underline-offset-4 decoration-[#d1d5db] hover:decoration-[#F97316] transition-colors"
             >
               Sign in
             </Link>
@@ -387,17 +350,10 @@ export function CheckoutForm() {
 
           <FloatingInput label="Address" required {...register("address")} error={errors.address?.message} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <FloatingInput label="City" required
               {...register("city", { onBlur: trackCheckoutAbandonment })}
               error={errors.city?.message} />
-            <FloatingSelect label="Province" required
-              options={[...PAKISTAN_PROVINCES]}
-              {...register("province")}
-              error={errors.province?.message} />
-            <FloatingInput label="Postal code" required
-              {...register("postalCode")}
-              error={errors.postalCode?.message} />
           </div>
 
           <FloatingTextarea label="Order notes (optional)" rows={3}
@@ -422,34 +378,16 @@ export function CheckoutForm() {
         </div>
       </section>
 
-      {/* SHIPPING METHOD */}
       <section>
         <h2 className="text-xl font-semibold text-[#1a1a1a] mb-4">Shipping method</h2>
 
-        <div className="rounded-md border-2 border-[#1a1a1a] bg-[#fafaf9] p-4 flex items-center gap-4">
-          <div className="w-4 h-4 rounded-full border-2 border-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-[#1a1a1a]" />
+        <div className="rounded-xl border border-[#1a1a1a] bg-white px-4 py-4 flex items-center justify-between gap-4">
+          <p className="text-sm font-semibold text-[#1a1a1a]">Shipping Charges</p>
+          <div className="text-right leading-tight">
+            <p className="text-xs text-[#6b7280] line-through">Rs 299.00</p>
+            <p className="text-sm font-semibold text-[#1a1a1a] mt-1">FREE</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-[#1a1a1a]">Standard Delivery</p>
-            <p className="text-xs text-[#6b7280] mt-0.5">
-              {freeDeliveryAll
-                ? "Free delivery on every order across Pakistan"
-                : (shippingCost === 0
-                    ? "Free shipping — 3-5 business days"
-                    : "3-5 business days across Pakistan")}
-            </p>
-          </div>
-          <p className="text-sm font-semibold text-[#1a1a1a]">
-            {shippingCost === 0 ? "FREE" : formatPrice(shippingCost)}
-          </p>
         </div>
-
-        {!freeDeliveryAll && threshold > 0 && subtotal < threshold && shippingCost > 0 && (
-          <p className="mt-3 text-xs text-[#6b7280]">
-            Add {formatPrice(threshold - subtotal)} more to qualify for free shipping.
-          </p>
-        )}
       </section>
 
       {/* PAYMENT */}
@@ -526,8 +464,8 @@ export function CheckoutForm() {
           </div>
           <span className="text-xs text-[#6b7280] leading-relaxed">
             I agree to the{" "}
-            <Link href="/terms" className="text-[#E10600] underline underline-offset-2">Terms of Service</Link> and{" "}
-            <Link href="/privacy" className="text-[#E10600] underline underline-offset-2">Privacy Policy</Link>.
+            <Link href="/terms" className="text-[#F97316] underline underline-offset-2">Terms of Service</Link> and{" "}
+            <Link href="/privacy" className="text-[#F97316] underline underline-offset-2">Privacy Policy</Link>.
           </span>
         </label>
 

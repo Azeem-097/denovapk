@@ -129,7 +129,7 @@ export default function FAQPage() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               Help Center
             </span>
           </FadeIn>
@@ -160,7 +160,7 @@ export default function FAQPage() {
                   className={cn(
                     "w-full text-left px-4 py-2.5 text-sm font-medium transition-all duration-200 border-l-2",
                     activeCategory === cat.category
-                      ? "border-[#E10600] text-[#E10600] bg-[#f5f0e8]"
+                      ? "border-[#F97316] text-[#F97316] bg-[#f5f0e8]"
                       : "border-transparent text-[#6b7280] hover:text-[#1a1a1a] hover:bg-[#fafaf9]"
                   )}
                 >
@@ -171,7 +171,7 @@ export default function FAQPage() {
 
             {/* Still have questions */}
             <div className="mt-8 bg-[#1a1a1a] text-white p-5">
-              <p className="text-xs font-semibold tracking-[0.15em] uppercase text-[#E10600] mb-2">
+              <p className="text-xs font-semibold tracking-[0.15em] uppercase text-[#F97316] mb-2">
                 Still Need Help?
               </p>
               <p className="text-xs text-white/70 leading-relaxed mb-4">
@@ -179,7 +179,7 @@ export default function FAQPage() {
               </p>
               <Link
                 href="/contact"
-                className="block text-center bg-[#E10600] text-white text-xs font-semibold tracking-wide uppercase py-2.5 hover:bg-[#B80000] transition-colors"
+                className="block text-center bg-[#F97316] text-white text-xs font-semibold tracking-wide uppercase py-2.5 hover:bg-[#C2410C] transition-colors"
               >
                 Contact Us
               </Link>
@@ -224,7 +224,7 @@ function FAQItem({
     <div
       className={cn(
         "border bg-white transition-colors duration-200",
-        open ? "border-[#E10600]" : "border-[#e5e7eb]"
+        open ? "border-[#F97316]" : "border-[#e5e7eb]"
       )}
     >
       <button
@@ -238,7 +238,7 @@ function FAQItem({
           size={16}
           className={cn(
             "transition-transform duration-300 text-[#6b7280] flex-shrink-0",
-            open && "rotate-180 text-[#E10600]"
+            open && "rotate-180 text-[#F97316]"
           )}
         />
       </button>

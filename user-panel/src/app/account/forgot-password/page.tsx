@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
         <FadeIn>
           <Link
             href="/account/login"
-            className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#E10600] transition-colors mb-8"
+            className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#F97316] transition-colors mb-8"
           >
             <ArrowLeft size={13} />
             Back to login
@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
             <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-[#1a1a1a]">
               DENOVA
             </span>
-            <span className="text-[9px] font-medium tracking-[0.35em] text-[#E10600] uppercase">
+            <span className="text-[9px] font-medium tracking-[0.35em] text-[#F97316] uppercase">
               Pakistan
             </span>
           </Link>
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
           <>
             <FadeIn delay={100}>
               <div className="mb-8">
-                <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+                <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#F97316]">
                   Account Recovery
                 </span>
                 <TextReveal as="h1" delay={150}>
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors disabled:opacity-60"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors disabled:opacity-60"
                   >
                     {isSubmitting ? (
                       <>
@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
 
                 <p className="mt-6 text-center text-sm text-[#6b7280]">
                   Remember your password?{" "}
-                  <Link href="/account/login" className="text-[#E10600] font-semibold hover:underline">
+                  <Link href="/account/login" className="text-[#F97316] font-semibold hover:underline">
                     Sign in
                   </Link>
                 </p>
@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
           <FadeIn>
             <div className="bg-white border border-[#e5e7eb] p-8 text-center">
               <div className="w-16 h-16 bg-[#f5f0e8] rounded-full flex items-center justify-center mx-auto mb-5">
-                <CheckCircle size={32} className="text-[#E10600]" />
+                <CheckCircle size={32} className="text-[#F97316]" />
               </div>
               <h2 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#1a1a1a] mb-2">
                 Check Your Inbox
@@ -132,7 +132,7 @@ export default function ForgotPasswordPage() {
               </p>
               <div className="bg-[#fafaf9] border border-[#e5e7eb] p-4 text-left mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Mail size={14} className="text-[#E10600]" />
+                  <Mail size={14} className="text-[#F97316]" />
                   <p className="text-xs font-semibold text-[#1a1a1a]">What to do next:</p>
                 </div>
                 <ul className="space-y-1 text-xs text-[#6b7280]">
@@ -146,14 +146,14 @@ export default function ForgotPasswordPage() {
                 Did not receive the email? Check your spam folder or{" "}
                 <button
                   onClick={() => setSent(false)}
-                  className="text-[#E10600] hover:underline font-medium"
+                  className="text-[#F97316] hover:underline font-medium"
                 >
                   try again
                 </button>
               </p>
               <Link
                 href="/account/login"
-                className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#E10600] transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#F97316] transition-colors"
               >
                 Back to Login
               </Link>

@@ -55,13 +55,13 @@ export function Testimonials({ testimonials }: Props) {
 
       {/* Marquee ticker at top */}
       <div className="border-y border-white/10 py-4 mb-14 sm:mb-20 -mt-4">
-        <Marquee items={MARQUEE_ITEMS} duration={40} />
+        <Marquee items={MARQUEE_ITEMS} duration={40} itemColor="#fff" />
       </div>
 
       <div className="site-container">
         <div className="text-center mb-12 lg:mb-16">
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               What Our Customers Say
             </span>
           </FadeIn>
@@ -90,7 +90,7 @@ export function Testimonials({ testimonials }: Props) {
                     size={16}
                     className={cn(
                       "transition-all duration-300",
-                      i < t.rating ? "text-[#E10600] fill-[#E10600]" : "text-white/20"
+                      i < t.rating ? "text-[#F97316] fill-[#F97316]" : "text-white/20"
                     )}
                     style={{
                       animationDelay: `${i * 80}ms`,
@@ -111,7 +111,7 @@ export function Testimonials({ testimonials }: Props) {
           <div className="flex items-center justify-center gap-5 mt-8">
             <button
               onClick={prev}
-              className="w-10 h-10 flex items-center justify-center border border-white/20 text-white/60 hover:border-[#E10600] hover:text-[#E10600] hover:scale-110 active:scale-95 transition-all duration-300"
+              className="w-10 h-10 flex items-center justify-center border border-white/20 text-white/60 hover:border-[#F97316] hover:text-[#F97316] hover:scale-110 active:scale-95 transition-all duration-300"
               aria-label="Previous testimonial"
             >
               <ChevronLeft size={18} />
@@ -123,7 +123,7 @@ export function Testimonials({ testimonials }: Props) {
                   onClick={() => goTo(i, i > current ? "right" : "left")}
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-500",
-                    i === current ? "w-8 bg-[#E10600]" : "w-1.5 bg-white/30 hover:bg-white/50"
+                    i === current ? "w-8 bg-[#F97316]" : "w-1.5 bg-white/30 hover:bg-white/50"
                   )}
                   aria-label={`Go to testimonial ${i + 1}`}
                 />
@@ -131,7 +131,7 @@ export function Testimonials({ testimonials }: Props) {
             </div>
             <button
               onClick={next}
-              className="w-10 h-10 flex items-center justify-center border border-white/20 text-white/60 hover:border-[#E10600] hover:text-[#E10600] hover:scale-110 active:scale-95 transition-all duration-300"
+              className="w-10 h-10 flex items-center justify-center border border-white/20 text-white/60 hover:border-[#F97316] hover:text-[#F97316] hover:scale-110 active:scale-95 transition-all duration-300"
               aria-label="Next testimonial"
             >
               <ChevronRight size={18} />

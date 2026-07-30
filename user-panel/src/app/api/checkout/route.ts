@@ -278,7 +278,7 @@ export async function POST(req: Request) {
         street: shipping.address, apartment: "",
         city: shipping.city, province: shipping.province, postalCode: shipping.postalCode,
       },
-      shippingMethod: shippingMethod?.name ?? "Standard Delivery",
+      shippingMethod: shippingMethod?.name ?? "Free Delivery",
       customerNote: shipping.notes,
       discountCode: discountCode || undefined, discountId,
     });

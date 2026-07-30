@@ -176,7 +176,7 @@ export function WhatsAppWidget() {
                     {config.directSubtext || "Chat with our support team"}
                   </p>
                 </div>
-                <span className="text-[#E10600] opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[#F97316] opacity-0 group-hover:opacity-100 transition-opacity">
                   &rarr;
                 </span>
               </a>
@@ -208,7 +208,7 @@ export function WhatsAppWidget() {
                     {config.communitySubtext || "Join our WhatsApp community"}
                   </p>
                 </div>
-                <span className="text-[#E10600] opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[#F97316] opacity-0 group-hover:opacity-100 transition-opacity">
                   &rarr;
                 </span>
               </a>

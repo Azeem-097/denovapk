@@ -98,7 +98,7 @@ export default function ContactPage() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               Get in Touch
             </span>
           </FadeIn>
@@ -150,7 +150,7 @@ export default function ContactPage() {
                   {...register("message")} error={errors.message?.message} />
 
                 <button type="submit" disabled={isSubmitting || submitted}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors disabled:opacity-60">
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors disabled:opacity-60">
                   {isSubmitting ? (
                     <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending...</>
                   ) : submitted ? (
@@ -168,14 +168,14 @@ export default function ContactPage() {
 
             <SlideUp>
               <div className="bg-[#1a1a1a] text-white p-6 sm:p-8">
-                <h3 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#E10600] mb-5">
+                <h3 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#F97316] mb-5">
                   Contact Info
                 </h3>
                 <div className="space-y-4">
                   {CONTACT_INFO.map((item) => (
                     <div key={item.label} className="flex items-start gap-3">
                       <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                        <item.icon size={15} className="text-[#E10600]" />
+                        <item.icon size={15} className="text-[#F97316]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] uppercase tracking-wider text-white/50 mb-0.5">
@@ -187,7 +187,7 @@ export default function ContactPage() {
                             target={item.href.startsWith("http") ? "_blank" : undefined}
                             rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                             onClick={() => trackMetaEvent("Contact")}
-                            className="text-sm text-white hover:text-[#E10600] transition-colors break-words"
+                            className="text-sm text-white hover:text-[#F97316] transition-colors break-words"
                           >
                             {item.value}
                           </a>
@@ -204,7 +204,7 @@ export default function ContactPage() {
             <SlideUp stagger={100} index={1}>
               <div className="bg-white border border-[#e5e7eb] p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-5">
-                  <Clock size={16} className="text-[#E10600]" />
+                  <Clock size={16} className="text-[#F97316]" />
                   <h3 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#1a1a1a]">
                     Business Hours
                   </h3>

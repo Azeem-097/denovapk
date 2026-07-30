@@ -152,14 +152,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
         {/* Corner accents that reveal on hover — nudged inward to sit inside the rounded corner */}
         <div
           className={cn(
-            "absolute top-3 left-3 w-4 h-4 border-t border-l border-[#E10600] transition-all duration-500 pointer-events-none",
+            "absolute top-3 left-3 w-4 h-4 border-t border-l border-[#F97316] transition-all duration-500 pointer-events-none",
             // Hide the top-left accent when SAVE badge is showing to avoid visual clutter
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />
         <div
           className={cn(
-            "absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#E10600] transition-all duration-500 delay-100 pointer-events-none",
+            "absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#F97316] transition-all duration-500 delay-100 pointer-events-none",
             isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
           )}
         />
@@ -178,7 +178,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             size={14}
             className={cn(
               "transition-all duration-300",
-              mounted && isInWishlist ? "text-[#E10600] fill-[#E10600] scale-110" : "text-[#1a1a1a]"
+              mounted && isInWishlist ? "text-[#F97316] fill-[#F97316] scale-110" : "text-[#1a1a1a]"
             )}
           />
         </button>
@@ -201,12 +201,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
       </Link>
 
       <div className="px-0.5 space-y-1.5">
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#E10600]">
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#F97316]">
           {(product.brand && product.brand.trim()) || product.collection || "Denova"}
         </p>
 
         <Link href={`/products/${product.slug}`}>
-          <h3 className="text-xs sm:text-[13px] font-medium tracking-[0.08em] uppercase text-[#1a1a1a] hover:text-[#E10600] transition-colors duration-300 leading-snug line-clamp-1">
+          <h3 className="text-xs sm:text-[13px] font-medium tracking-[0.08em] uppercase text-[#1a1a1a] hover:text-[#F97316] transition-colors duration-300 leading-snug line-clamp-1">
             {product.name}
           </h3>
         </Link>

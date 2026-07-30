@@ -70,7 +70,7 @@ export function GallerySection() {
         <div className="text-center mb-10 lg:mb-14">
           {config.sectionLabel && (
             <FadeIn>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
                 {config.sectionLabel}
               </span>
             </FadeIn>
@@ -168,8 +168,8 @@ function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
         unoptimized={item.image.startsWith("/uploads")}
       />
       <div className="absolute inset-0 bg-[#1a1a1a]/0 group-hover:bg-[#1a1a1a]/20 transition-colors duration-500" />
-      <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[#E10600] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[#E10600] opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" />
+      <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[#F97316] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[#F97316] opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100" />
     </>
   );
 

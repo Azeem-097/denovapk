@@ -3,7 +3,7 @@ import { useDevicePerformance } from "@/components/animations/useDevicePerforman
 
 /**
  * BrandTicker — international brand collaborations.
- * Accent colour follows the Denova red brand accent.
+ * Accent colour follows the Denova orange brand accent.
  *
  * Sizing: intentionally compact (~30% smaller than original design)
  * for a refined, editorial marquee feel that does not dominate
@@ -24,7 +24,7 @@ const BRAND_COLLABORATIONS: BrandEntry[] = [
   { brand: "EXPORT ARTICLE", country: ""         },
 ];
 
-const ACCENT = "#FF1208";
+const ACCENT = "#F97316";
 
 export function BrandTicker() {
   const { shouldAnimate } = useDevicePerformance();

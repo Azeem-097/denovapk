@@ -43,7 +43,7 @@ return (
         <div className="w-full max-w-md mx-auto">
 
           <FadeIn>
-            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#E10600] transition-colors mb-8">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#F97316] transition-colors mb-8">
               <ArrowLeft size={13} />
               Back to home
             </Link>
@@ -54,7 +54,7 @@ return (
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-[#1a1a1a]">
                 DENOVA
               </span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#E10600] uppercase">
+              <span className="text-[9px] font-medium tracking-[0.35em] text-[#F97316] uppercase">
                 Pakistan
               </span>
             </Link>
@@ -62,7 +62,7 @@ return (
 
           <FadeIn delay={100}>
             <div className="mb-8">
-              <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+              <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#F97316]">
                 Welcome Back
               </span>
               <h1 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2">
@@ -99,19 +99,19 @@ return (
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <div onClick={() => setRemember(!remember)}
                     className={`w-4 h-4 border-2 flex items-center justify-center transition-all ${
-                      remember ? "border-[#E10600] bg-[#E10600]" : "border-[#e5e7eb] group-hover:border-[#E10600]"
+                      remember ? "border-[#F97316] bg-[#F97316]" : "border-[#e5e7eb] group-hover:border-[#F97316]"
                     }`}>
                     {remember && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
                   <span className="text-xs text-[#6b7280]">Remember me</span>
                 </label>
-                <Link href="/account/forgot-password" className="text-xs text-[#E10600] hover:underline">
+                <Link href="/account/forgot-password" className="text-xs text-[#F97316] hover:underline">
                   Forgot password?
                 </Link>
               </div>
 
               <button type="submit" disabled={isSubmitting}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors disabled:opacity-60 mt-2">
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors disabled:opacity-60 mt-2">
                 {isSubmitting ? (
                   <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Signing in...</>
                 ) : (
@@ -124,7 +124,7 @@ return (
           <FadeIn delay={300}>
             <p className="mt-8 text-center text-sm text-[#6b7280]">
               Don&apos;t have an account?{" "}
-              <Link href="/account/register" className="text-[#E10600] font-semibold hover:underline">
+              <Link href="/account/register" className="text-[#F97316] font-semibold hover:underline">
                 Create one
               </Link>
             </p>
@@ -143,7 +143,7 @@ return (
             &ldquo;Discover clothing that speaks to who you are, and who you aspire to be.&rdquo;
           </p>
           <div className="mt-6 flex items-center gap-3">
-            <div className="w-10 h-px bg-[#E10600]" />
+            <div className="w-10 h-px bg-[#F97316]" />
             <p className="text-xs tracking-[0.25em] uppercase text-white/70">Denova PK</p>
           </div>
         </div>

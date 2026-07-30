@@ -43,7 +43,7 @@ export function ScrollProgress() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-gradient-to-r from-[#E10600] via-[#d4b47a] to-[#E10600] shadow-[0_0_8px_rgba(225, 6, 0,0.6)]"
+        className="h-full bg-gradient-to-r from-[#F97316] via-[#d4b47a] to-[#F97316] shadow-[0_0_8px_rgba(249, 115, 22,0.6)]"
         style={{
           width: `${progress}%`,
           transition: "width 100ms ease-out",

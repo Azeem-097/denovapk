@@ -108,7 +108,7 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
 
         <div className="text-center mb-8 lg:mb-10">
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               Discover
             </span>
           </FadeIn>
@@ -168,7 +168,7 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
               {selectedWaists.length > 0 && (
                 <button
                   onClick={clearWaists}
-                  className="ml-2 text-[10px] text-[#E10600] hover:text-[#B80000] underline animate-fade-zoom-in"
+                  className="ml-2 text-[10px] text-[#F97316] hover:text-[#C2410C] underline animate-fade-zoom-in"
                 >
                   Clear
                 </button>
@@ -185,7 +185,7 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-zoom-in">
             <div className="w-14 h-14 bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-[#E10600]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="w-6 h-6 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
             </div>
@@ -195,7 +195,7 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
                 ? `waist size ${selectedWaists[0]}"`
                 : `waist sizes ${[...selectedWaists].sort((a, b) => a - b).join(", ")}"`}
             </p>
-            <button onClick={clearWaists} className="text-xs text-[#E10600] hover:text-[#B80000] underline mt-1">
+            <button onClick={clearWaists} className="text-xs text-[#F97316] hover:text-[#C2410C] underline mt-1">
               Show all sizes
             </button>
           </div>
@@ -206,11 +206,11 @@ export function NewArrivals({ products, newArrivals, bestSellers }: Props) {
             <div className="text-center mt-10 lg:mt-14">
               <Link
                 href={viewAllHref}
-                className="shimmer-btn group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-all duration-300 hover-lift"
+                className="shimmer-btn group inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-all duration-300 hover-lift"
               >
                 <span>View All Products</span>
                 {waistLabel && (
-                  <span className="text-[#E10600] group-hover:text-white transition-colors">
+                  <span className="text-[#F97316] group-hover:text-white transition-colors">
                     {waistLabel}
                   </span>
                 )}

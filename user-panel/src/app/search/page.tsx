@@ -62,7 +62,7 @@ function SearchContent() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               Search Results
             </span>
           </FadeIn>
@@ -84,17 +84,17 @@ function SearchContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
         {!query.trim() ? (
           <div className="text-center py-16">
-            <SearchIcon size={40} className="text-[#E10600] mx-auto mb-4" />
+            <SearchIcon size={40} className="text-[#F97316] mx-auto mb-4" />
             <p className="text-sm text-[#6b7280]">Enter a search term to find products.</p>
           </div>
         ) : loading ? (
           <div className="text-center py-16">
-            <SearchIcon size={40} className="text-[#E10600] mx-auto mb-4" />
+            <SearchIcon size={40} className="text-[#F97316] mx-auto mb-4" />
             <p className="text-sm text-[#6b7280]">Searching products...</p>
           </div>
         ) : results.length === 0 ? (
           <div className="text-center py-16 max-w-md mx-auto">
-            <SearchIcon size={40} className="text-[#E10600] mx-auto mb-4" />
+            <SearchIcon size={40} className="text-[#F97316] mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-[#1a1a1a] mb-2">
               No results found
             </h2>
@@ -103,7 +103,7 @@ function SearchContent() {
             </p>
             <Link
               href="/shop"
-              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#E10600] transition-colors"
+              className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#F97316] transition-colors"
             >
               Browse All Products
               <ArrowRight size={14} />
@@ -132,8 +132,8 @@ function SearchProductGrid({ products }: { products: SearchProduct[] }) {
               />
             )}
           </div>
-          <p className="text-xs uppercase tracking-wider text-[#E10600]">{p.collection}</p>
-          <h2 className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#E10600] transition-colors line-clamp-1">
+          <p className="text-xs uppercase tracking-wider text-[#F97316]">{p.collection}</p>
+          <h2 className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#F97316] transition-colors line-clamp-1">
             {p.name}
           </h2>
           <p className="text-sm font-bold text-[#1a1a1a] mt-1">{formatPrice(p.price)}</p>

@@ -168,7 +168,7 @@ export function OrderSummary() {
                 className={cn(
                   "rounded-md px-5 text-sm font-medium transition-colors disabled:opacity-40",
                   promoCode.trim()
-                    ? "bg-[#1a1a1a] text-white hover:bg-[#E10600]"
+                    ? "bg-[#1a1a1a] text-white hover:bg-[#F97316]"
                     : "bg-[#f4f2ee] text-[#6b7280]"
                 )}
               >
@@ -205,7 +205,12 @@ export function OrderSummary() {
               <HelpCircle size={13} className="text-[#9ca3af]" />
             </span>
           }
-          value={shipping === 0 ? "FREE" : formatPrice(shipping)}
+          value={
+            <span className="inline-flex items-center gap-2">
+              <span className="text-[#6b7280] line-through font-normal">Rs 299.00</span>
+              <span>FREE</span>
+            </span>
+          }
         />
 
         {tax > 0 && <Row label="Tax" value={formatPrice(tax)} />}
@@ -229,7 +234,7 @@ function Row({
   label, value, accent,
 }: {
   label: React.ReactNode;
-  value: string;
+  value: React.ReactNode;
   accent?: "brand" | "green";
 }) {
   return (
@@ -237,7 +242,7 @@ function Row({
       <span className="text-[#6b7280]">{label}</span>
       <span className={cn(
         "font-medium",
-        accent === "brand" ? "text-[#E10600]" :
+        accent === "brand" ? "text-[#F97316]" :
         accent === "green" ? "text-green-600" :
         "text-[#1a1a1a]"
       )}>

@@ -27,7 +27,7 @@ export function FeaturedCollections({ collections }: Props) {
       <div className="site-container">
         <div className="text-center mb-10 sm:mb-14 lg:mb-16">
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               Explore
             </span>
           </FadeIn>
@@ -58,7 +58,7 @@ export function FeaturedCollections({ collections }: Props) {
           <div className="text-center mt-10 sm:mt-14 lg:mt-16">
             <Link
               href="/shop"
-              className="group relative inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] hover:text-[#E10600] transition-colors duration-200 whitespace-nowrap pb-1"
+              className="group relative inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-[#1a1a1a] hover:text-[#F97316] transition-colors duration-200 whitespace-nowrap pb-1"
             >
               <span>View All Collections</span>
               <ArrowRight
@@ -66,7 +66,7 @@ export function FeaturedCollections({ collections }: Props) {
                 className="sm:w-4 sm:h-4 transition-transform duration-300 group-hover:translate-x-1.5 flex-shrink-0"
               />
               {/* Animated underline */}
-              <span className="absolute left-0 right-0 bottom-0 h-px bg-[#E10600] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-400" />
+              <span className="absolute left-0 right-0 bottom-0 h-px bg-[#F97316] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-400" />
             </Link>
           </div>
         </FadeIn>
@@ -114,7 +114,7 @@ function CollectionCard({ collection }: { collection: Collection }) {
           {/* Gold underline — draws from center on hover */}
           <div className="mt-3 flex justify-center">
             <span
-              className="block h-[2px] w-[60px] bg-[#E10600] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-700"
+              className="block h-[2px] w-[60px] bg-[#F97316] scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-700"
             />
           </div>
         </div>

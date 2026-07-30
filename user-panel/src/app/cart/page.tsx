@@ -94,14 +94,14 @@ export default function CartPage() {
                   </p>
                   <div className="mt-2 h-1 bg-[#e5e7eb] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#E10600] transition-all duration-500 rounded-full"
+                      className="h-full bg-[#F97316] transition-all duration-500 rounded-full"
                       style={{ width: `${(subtotal / config.threshold) * 100}%` }}
                     />
                   </div>
                 </div>
               ) : alreadyQualifies ? (
                 <div className="px-5 py-3 bg-[#f5f0e8] border-b border-[#e5e7eb]">
-                  <p className="text-xs text-[#E10600] font-semibold">
+                  <p className="text-xs text-[#F97316] font-semibold">
                     🎉 {config.freeDeliveryAll ? "FREE shipping on every order" : "You qualify for FREE shipping!"}
                   </p>
                 </div>
@@ -154,7 +154,7 @@ export default function CartPage() {
                   <input
                     type="text"
                     placeholder="Enter code"
-                    className="flex-1 px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none placeholder:text-[#6b7280]/60"
+                    className="flex-1 px-3 py-2.5 text-sm border border-[#e5e7eb] focus:border-[#F97316] focus:outline-none placeholder:text-[#6b7280]/60"
                   />
                   <button className="px-4 py-2.5 text-xs font-semibold tracking-wide uppercase border border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors">
                     Apply
@@ -175,7 +175,7 @@ export default function CartPage() {
                     currency: "PKR",
                     num_items: itemCount,
                   })}
-                  className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
+                  className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
                 >
                   Proceed to Checkout
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -185,7 +185,7 @@ export default function CartPage() {
               <div className="mt-6 pt-5 border-t border-[#e5e7eb] space-y-2.5">
                 {trustBadges.map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-2.5 text-xs text-[#6b7280]">
-                    <Icon size={14} className="text-[#E10600] flex-shrink-0" />
+                    <Icon size={14} className="text-[#F97316] flex-shrink-0" />
                     <span>{text}</span>
                   </div>
                 ))}
@@ -205,7 +205,7 @@ function SummaryRow({
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-[#6b7280]">{label}</span>
-      <span className={`font-medium ${muted ? "text-[#6b7280] text-xs" : highlight ? "text-[#E10600]" : "text-[#1a1a1a]"}`}>
+      <span className={`font-medium ${muted ? "text-[#6b7280] text-xs" : highlight ? "text-[#F97316]" : "text-[#1a1a1a]"}`}>
         {value}
       </span>
     </div>
@@ -223,11 +223,11 @@ function OrderPlacedPage({
     <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
       <div className="max-w-2xl mx-auto px-4 text-center">
         <div className="w-24 h-24 mx-auto bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-6 relative">
-          <CheckCircle size={42} className="text-[#E10600]" strokeWidth={1.5} />
-          <div className="absolute inset-0 rounded-full border-4 border-[#E10600]/15 animate-ping" />
+          <CheckCircle size={42} className="text-[#F97316]" strokeWidth={1.5} />
+          <div className="absolute inset-0 rounded-full border-4 border-[#F97316]/15 animate-ping" />
         </div>
 
-        <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+        <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
           Order Confirmed
         </span>
         <h1 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2 mb-4">
@@ -248,14 +248,14 @@ function OrderPlacedPage({
 
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
           <div className="bg-white border border-[#e5e7eb] p-4 flex items-start gap-3">
-            <MessageCircle size={18} className="text-[#E10600] mt-0.5 flex-shrink-0" />
+            <MessageCircle size={18} className="text-[#F97316] mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-[#1a1a1a]">WhatsApp confirmation</p>
               <p className="text-xs text-[#6b7280] mt-1 leading-relaxed">Our team will contact you shortly.</p>
             </div>
           </div>
           <div className="bg-white border border-[#e5e7eb] p-4 flex items-start gap-3">
-            <Truck size={18} className="text-[#E10600] mt-0.5 flex-shrink-0" />
+            <Truck size={18} className="text-[#F97316] mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-[#1a1a1a]">Delivery timeline</p>
               <p className="text-xs text-[#6b7280] mt-1 leading-relaxed">Expected delivery is within 3 to 4 days.</p>
@@ -267,7 +267,7 @@ function OrderPlacedPage({
           <Link
             href="/shop"
             onClick={onContinue}
-            className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
+            className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
           >
             Continue Shopping
             <ArrowRight size={16} />
@@ -289,7 +289,7 @@ function EmptyCartPage() {
     <div className="pt-32 pb-20 min-h-screen bg-[#fafaf9]">
       <div className="max-w-md mx-auto px-4 text-center">
         <div className="w-24 h-24 mx-auto bg-white border border-[#e5e7eb] rounded-full flex items-center justify-center mb-6">
-          <ShoppingBag size={36} className="text-[#E10600]" />
+          <ShoppingBag size={36} className="text-[#F97316]" />
         </div>
         <h1 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#1a1a1a] mb-3">
           Your cart is empty
@@ -297,7 +297,7 @@ function EmptyCartPage() {
         <p className="text-sm text-[#6b7280] mb-8 leading-relaxed">
           Looks like you have not added anything to your cart yet. Explore our collections and find your next favorite piece.
         </p>
-        <Link href="/shop" className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300">
+        <Link href="/shop" className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-8 py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300">
           Start Shopping
           <ArrowRight size={16} />
         </Link>

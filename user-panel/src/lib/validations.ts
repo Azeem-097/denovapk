@@ -6,8 +6,8 @@ export const shippingSchema = z.object({
   fullName:   z.string().min(2, "Full name is required"),
   address:    z.string().min(5, "Address is required"),
   city:       z.string().min(2, "City is required"),
-  province:   z.string().min(1, "Please select a province"),
-  postalCode: z.string().min(4, "Postal code is required"),
+  province:   z.string().optional(),
+  postalCode: z.string().optional(),
   notes:      z.string().optional(),
   saveInfo:   z.boolean().optional(),
 });

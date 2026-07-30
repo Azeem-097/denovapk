@@ -58,7 +58,7 @@ export default function RegisterPage() {
             &ldquo;Join a community that celebrates craftsmanship, quality, and timeless style.&rdquo;
           </p>
           <div className="mt-6 flex items-center gap-3">
-            <div className="w-10 h-px bg-[#E10600]" />
+            <div className="w-10 h-px bg-[#F97316]" />
             <p className="text-xs tracking-[0.25em] uppercase text-white/70">Denova PK</p>
           </div>
         </div>
@@ -67,7 +67,7 @@ export default function RegisterPage() {
       <div className="flex flex-col justify-center px-4 sm:px-6 lg:px-16 xl:px-24 py-16 lg:py-12 min-h-screen order-1 lg:order-2">
         <div className="w-full max-w-md mx-auto">
           <FadeIn>
-            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#E10600] transition-colors mb-8">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-[#6b7280] hover:text-[#F97316] transition-colors mb-8">
               <ArrowLeft size={13} /> Back to home
             </Link>
           </FadeIn>
@@ -75,13 +75,13 @@ export default function RegisterPage() {
           <FadeIn>
             <Link href="/" className="flex flex-col leading-none mb-8">
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-[#1a1a1a]">DENOVA</span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#E10600] uppercase">Pakistan</span>
+              <span className="text-[9px] font-medium tracking-[0.35em] text-[#F97316] uppercase">Pakistan</span>
             </Link>
           </FadeIn>
 
           <FadeIn delay={100}>
             <div className="mb-6">
-              <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#E10600]">New Here</span>
+              <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#F97316]">New Here</span>
               <h1 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-[#1a1a1a] mt-2">
                 Create your account
               </h1>
@@ -102,7 +102,7 @@ export default function RegisterPage() {
               <div>
                 <label className="block text-xs font-medium tracking-wide text-[#1a1a1a] mb-1.5">
                   <span className="inline-flex items-center gap-1.5">
-                    <Gift size={12} className="text-[#E10600]" />
+                    <Gift size={12} className="text-[#F97316]" />
                     Birthday
                     <span className="text-[#6b7280] font-normal normal-case tracking-normal ml-1">(optional)</span>
                   </span>
@@ -111,9 +111,9 @@ export default function RegisterPage() {
                   type="date"
                   {...register("birthday")}
                   max={new Date().toISOString().split("T")[0]}
-                  className="w-full px-3.5 py-3 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#E10600] focus:outline-none transition-colors"
+                  className="w-full px-3.5 py-3 text-sm text-[#1a1a1a] bg-white border border-[#e5e7eb] focus:border-[#F97316] focus:outline-none transition-colors"
                 />
-                <p className="mt-1 text-[10px] text-[#E10600]">
+                <p className="mt-1 text-[10px] text-[#F97316]">
                   🎁 Add your birthday to receive exclusive gifts and special discounts!
                 </p>
               </div>
@@ -134,7 +134,7 @@ export default function RegisterPage() {
               <label className="flex items-start gap-2.5 cursor-pointer group pt-1">
                 <div onClick={() => { setAgree(!agree); setValue("agree", !agree); }}
                   className={`mt-0.5 w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                    agree ? "border-[#E10600] bg-[#E10600]" : "border-[#e5e7eb] group-hover:border-[#E10600]"
+                    agree ? "border-[#F97316] bg-[#F97316]" : "border-[#e5e7eb] group-hover:border-[#F97316]"
                   }`}>
                   {agree && (
                     <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
@@ -143,13 +143,13 @@ export default function RegisterPage() {
                   )}
                 </div>
                 <span className="text-xs text-[#6b7280] leading-relaxed">
-                  I agree to the <Link href="/terms" className="text-[#E10600] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#E10600] hover:underline">Privacy Policy</Link>
+                  I agree to the <Link href="/terms" className="text-[#F97316] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#F97316] hover:underline">Privacy Policy</Link>
                 </span>
               </label>
               {errors.agree && <p className="text-[11px] text-red-500 font-medium">{errors.agree.message}</p>}
 
               <button type="submit" disabled={isSubmitting}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors disabled:opacity-60 mt-2">
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors disabled:opacity-60 mt-2">
                 {isSubmitting ? (
                   <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating account...</>
                 ) : (
@@ -162,7 +162,7 @@ export default function RegisterPage() {
           <FadeIn delay={300}>
             <p className="mt-6 text-center text-sm text-[#6b7280]">
               Already have an account?{" "}
-              <Link href="/account/login" className="text-[#E10600] font-semibold hover:underline">Sign in</Link>
+              <Link href="/account/login" className="text-[#F97316] font-semibold hover:underline">Sign in</Link>
             </p>
           </FadeIn>
         </div>

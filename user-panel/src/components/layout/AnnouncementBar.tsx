@@ -27,7 +27,7 @@ const FALLBACK_CONFIG: AnnouncementConfig = {
   dismissible:       true,
   bgColor:           "#0d0d0d",
   textColor:         "#ffffff",
-  accentColor:       "#E10600",
+  accentColor:       "#F97316",
   messages: [
     { id: "m1", text: "Free shipping on orders above PKR 5,000", link: "", isActive: true, sortOrder: 0 },
   ],
@@ -63,7 +63,7 @@ export function AnnouncementBar() {
 
   const bg      = config.bgColor      || "#0d0d0d";
   const fg      = config.textColor    || "#ffffff";
-  const accent  = config.accentColor  || "#E10600";
+  const accent  = config.accentColor  || "#F97316";
   const activeMessages = config.messages
     .filter((message) => message.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);

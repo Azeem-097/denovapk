@@ -46,7 +46,7 @@ export default function ReturnsPage() {
             />
           </FadeIn>
           <FadeIn>
-            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+            <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
               Easy Returns
             </span>
           </FadeIn>
@@ -56,8 +56,8 @@ export default function ReturnsPage() {
             </span>
           </TextReveal>
           <FadeIn delay={200}>
-            <div className="inline-flex items-center gap-2 mt-4 bg-[#f5f0e8] border border-[#E10600]/30 px-4 py-2">
-              <Clock size={14} className="text-[#E10600]" />
+            <div className="inline-flex items-center gap-2 mt-4 bg-[#f5f0e8] border border-[#F97316]/30 px-4 py-2">
+              <Clock size={14} className="text-[#F97316]" />
               <span className="text-sm text-[#1a1a1a] font-medium">7-Day Return Window</span>
             </div>
           </FadeIn>
@@ -120,7 +120,7 @@ export default function ReturnsPage() {
             {STEPS.map((step, i) => (
               <FadeIn key={step.num} delay={i * 60}>
                 <div className="flex items-start gap-4 bg-white border border-[#e5e7eb] p-5">
-                  <span className="font-[family-name:var(--font-cormorant)] text-3xl font-light text-[#E10600] leading-none flex-shrink-0">
+                  <span className="font-[family-name:var(--font-cormorant)] text-3xl font-light text-[#F97316] leading-none flex-shrink-0">
                     {step.num}
                   </span>
                   <div>
@@ -137,8 +137,8 @@ export default function ReturnsPage() {
         <FadeIn>
           <div className="bg-[#1a1a1a] text-white p-6 sm:p-8">
             <div className="flex items-center gap-2 mb-4">
-              <RotateCcw size={18} className="text-[#E10600]" />
-              <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#E10600]">
+              <RotateCcw size={18} className="text-[#F97316]" />
+              <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-[#F97316]">
                 Refund Methods
               </h2>
             </div>
@@ -174,7 +174,7 @@ export default function ReturnsPage() {
                 href="https://wa.me/923001234567"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#E10600] transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold hover:bg-[#F97316] transition-colors"
               >
                 WhatsApp Us
               </a>

@@ -132,7 +132,7 @@ export function CartDrawer() {
             </p>
             <div className="mt-2 h-1 bg-[#e5e7eb] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#E10600] transition-all duration-500 rounded-full"
+                className="h-full bg-[#F97316] transition-all duration-500 rounded-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -141,7 +141,7 @@ export function CartDrawer() {
 
         {alreadyQualifies && (
           <div className="px-5 py-3 bg-[#f5f0e8] border-b border-[#e5e7eb]">
-            <p className="text-xs text-[#E10600] font-semibold">
+            <p className="text-xs text-[#F97316] font-semibold">
               🎉 {freeDeliveryAll ? "FREE shipping on every order" : "You qualify for FREE shipping!"}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function CartDrawer() {
         <div className="flex-1 overflow-y-auto px-5">
           {!mounted ? (
             <div className="py-16 text-center">
-              <div className="w-6 h-6 border-2 border-[#E10600] border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="w-6 h-6 border-2 border-[#F97316] border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
           ) : displayItems.length === 0 ? (
             <EmptyCart onClose={closeCart} />
@@ -179,7 +179,7 @@ export function CartDrawer() {
                 <span className="text-[#6b7280]">Shipping</span>
                 <span className={cn(
                   "font-medium",
-                  shipping === 0 ? "text-[#E10600]" : "text-[#1a1a1a]"
+                  shipping === 0 ? "text-[#F97316]" : "text-[#1a1a1a]"
                 )}>
                   {shipping === 0 ? "FREE" : formatPrice(shipping)}
                 </span>
@@ -208,7 +208,7 @@ export function CartDrawer() {
                   });
                   closeCart();
                 }}
-                className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
+                className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
               >
                 Proceed to Checkout
                 <ArrowRight
@@ -239,7 +239,7 @@ function EmptyCart({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 bg-[#f5f0e8] rounded-full flex items-center justify-center mb-4">
-        <ShoppingBag size={28} className="text-[#E10600]" />
+        <ShoppingBag size={28} className="text-[#F97316]" />
       </div>
       <h3 className="text-base font-semibold text-[#1a1a1a] mb-1">
         Your cart is empty
@@ -250,7 +250,7 @@ function EmptyCart({ onClose }: { onClose: () => void }) {
       <Link
         href="/shop"
         onClick={onClose}
-        className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold tracking-wide hover:bg-[#E10600] transition-colors duration-300"
+        className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
       >
         Start Shopping
         <ArrowRight size={14} />

@@ -44,7 +44,12 @@ export const useWishlistStore = create<WishlistState>()(
     }),
     {
       name: "denova-wishlist",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persistedState) => ({
+        ...(persistedState as WishlistState),
+        items: [],
+      }),
     }
   )
 );

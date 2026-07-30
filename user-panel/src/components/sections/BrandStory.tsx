@@ -46,12 +46,12 @@ export function BrandStory() {
                   unoptimized
                 />
                 {/* Subtle overlay warm tint on hover */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#E10600]/0 to-transparent group-hover:from-[#E10600]/10 transition-all duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#F97316]/0 to-transparent group-hover:from-[#F97316]/10 transition-all duration-700" />
               </div>
 
               {/* Badge — scales in + soft float loop + CountUp */}
               <ScaleIn from={0.6} delay={400} duration={800}>
-                <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 w-32 sm:w-40 bg-[#E10600] p-4 sm:p-5 hidden sm:block animate-float-soft shadow-2xl">
+                <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 w-32 sm:w-40 bg-[#F97316] p-4 sm:p-5 hidden sm:block animate-float-soft shadow-2xl">
                   <p className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold text-white leading-none">
                     <CountUp end={10} duration={1600} />
                     <span>+</span>
@@ -68,7 +68,7 @@ export function BrandStory() {
           <SlideIn from="right" distance={60} duration={900} delay={150}>
             <div className="lg:pl-4 max-w-2xl">
               <FadeIn>
-                <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#E10600]">
+                <span className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-[#F97316]">
                   Our Story
                 </span>
               </FadeIn>
@@ -77,7 +77,7 @@ export function BrandStory() {
                 <span className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mt-3 block leading-tight">
                   Where Tradition
                   <br />
-                  <span className="text-[#E10600]">Meets Modern</span>
+                  <span className="text-[#F97316]">Meets Modern</span>
                 </span>
               </TextReveal>
 
@@ -94,11 +94,11 @@ export function BrandStory() {
                 {brandValues.map((value, i) => (
                   <SlideIn key={value.number} from="right" distance={30} delay={300 + i * 120} duration={600}>
                     <div className="flex items-start gap-4 group cursor-default">
-                      <span className="font-[family-name:var(--font-cormorant)] text-2xl font-light text-[#E10600] leading-none mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                      <span className="font-[family-name:var(--font-cormorant)] text-2xl font-light text-[#F97316] leading-none mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                         {value.number}
                       </span>
-                      <div className="border-l border-[#e5e7eb] pl-4 group-hover:border-[#E10600] group-hover:pl-5 transition-all duration-300">
-                        <h4 className="text-sm font-semibold text-[#1a1a1a] tracking-wide mb-0.5 group-hover:text-[#E10600] transition-colors duration-300">
+                      <div className="border-l border-[#e5e7eb] pl-4 group-hover:border-[#F97316] group-hover:pl-5 transition-all duration-300">
+                        <h4 className="text-sm font-semibold text-[#1a1a1a] tracking-wide mb-0.5 group-hover:text-[#F97316] transition-colors duration-300">
                           {value.title}
                         </h4>
                         <p className="text-xs text-[#6b7280] leading-relaxed">
@@ -114,7 +114,7 @@ export function BrandStory() {
                 <div className="mt-8 sm:mt-10">
                   <Link
                     href="/shop"
-                    className="group inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-[#1a1a1a] border-b border-[#1a1a1a] pb-0.5 hover:text-[#E10600] hover:border-[#E10600] transition-all duration-300"
+                    className="group inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-[#1a1a1a] border-b border-[#1a1a1a] pb-0.5 hover:text-[#F97316] hover:border-[#F97316] transition-all duration-300"
                   >
                     Explore the Collection
                     <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1.5" />

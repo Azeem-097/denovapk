@@ -263,7 +263,7 @@ async function seed() {
     ["payment_bank_enabled",      "true",                                                          "payments"],
 
     // ── Footer ──
-    ["footer_brand_description", "Premium clothing crafted for the modern Pakistani.",             "footer"],
+    ["footer_brand_description", "Original international branded jeans, carefully selected from premium export factory stock.",             "footer"],
     ["footer_copyright",         "Denova PK. All rights reserved.",                                "footer"],
     ["footer_payment_methods",   "JazzCash | EasyPaisa | COD | Bank Transfer",                     "footer"],
     ["footer_col1_title",        "Shop",                                                           "footer"],

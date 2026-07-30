@@ -141,9 +141,9 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
 
       {/* BIRTHDAY — subtle cream card, no gradient */}
       {data.activePromo === "birthday" && (
-        <div className="rounded-md bg-[#f5f0e8] border border-[#E10600]/30 p-3">
+        <div className="rounded-md bg-[#f5f0e8] border border-[#F97316]/30 p-3">
           <div className="flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#E10600] flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#F97316] flex items-center justify-center flex-shrink-0">
               <Cake size={15} className="text-white" strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
@@ -151,7 +151,7 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
                 🎉 Happy Birthday! {data.birthday.discountText} OFF applied
               </p>
               <p className="text-xs text-[#6b7280] mt-0.5">
-                Discount of <span className="font-semibold text-[#E10600]">{formatPrice(data.birthday.discount)}</span> applied automatically.
+                Discount of <span className="font-semibold text-[#F97316]">{formatPrice(data.birthday.discount)}</span> applied automatically.
               </p>
             </div>
           </div>
@@ -181,9 +181,9 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
       {data.loyalty.eligible && !data.loyalty.blocked && (
         <div className="rounded-md bg-[#fafaf9] border border-[#e5e7eb] p-3">
           <div className="flex items-center gap-2 mb-2.5">
-            <Award size={14} className="text-[#E10600]" />
+            <Award size={14} className="text-[#F97316]" />
             <p className="text-xs font-semibold text-[#1a1a1a]">Use loyalty points</p>
-            <span className="ml-auto text-xs font-medium text-[#E10600]">
+            <span className="ml-auto text-xs font-medium text-[#F97316]">
               {data.loyalty.points} pts
             </span>
           </div>
@@ -206,7 +206,7 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
                 value={loyaltyInput}
                 onChange={(e) => setLoyaltyInput(Number(e.target.value))}
                 step={10}
-                className="w-full accent-[#E10600] h-1"
+                className="w-full accent-[#F97316] h-1"
               />
               <div className="flex items-center gap-2">
                 <input
@@ -218,7 +218,7 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
                   className="w-20 rounded-md px-2 py-1.5 text-xs border border-[#d1d5db] focus:border-[#1a1a1a] focus:outline-none"
                 />
                 <span className="text-xs text-[#6b7280]">pts</span>
-                <span className="ml-auto text-xs font-semibold text-[#E10600]">
+                <span className="ml-auto text-xs font-semibold text-[#F97316]">
                   {formatPrice(loyaltyInput)} off
                 </span>
               </div>
@@ -239,7 +239,7 @@ export function PromotionBanner({ subtotal, onPromoApplied }: Props) {
         <div className="rounded-md bg-[#fafaf9] border border-[#e5e7eb] p-3 flex items-start gap-2">
           <Lock size={12} className="text-[#6b7280] flex-shrink-0 mt-0.5" />
           <p className="text-xs text-[#6b7280]">
-            You have <span className="font-semibold text-[#E10600]">{data.loyalty.points} loyalty points</span> but they cannot be used on this order because a {data.loyalty.blockedBy === "birthday" ? "birthday" : "first order"} discount is applied.
+            You have <span className="font-semibold text-[#F97316]">{data.loyalty.points} loyalty points</span> but they cannot be used on this order because a {data.loyalty.blockedBy === "birthday" ? "birthday" : "first order"} discount is applied.
           </p>
         </div>
       )}

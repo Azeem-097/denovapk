@@ -4,7 +4,7 @@ import { getSetting } from "@/lib/db/repositories/settings";
 export const dynamic   = "force-dynamic";
 export const revalidate = 0;
 
-const BRAND_ACCENT = "#E10600"; // Denova Oxblood — always used as accent
+const BRAND_ACCENT = "#F97316"; // Denova orange — always used as accent
 
 const DEFAULT_CONFIG = {
   enabled:           true,
