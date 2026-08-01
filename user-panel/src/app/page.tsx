@@ -80,7 +80,7 @@ export default async function HomePage() {
         <BrandStory />
         <GallerySection />
 
-        <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">
+        <div className="bg-[#f5f0e8]">
           <NewsletterSection />
         </div>
       </div>

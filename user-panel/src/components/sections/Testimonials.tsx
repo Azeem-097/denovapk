@@ -5,21 +5,18 @@ import { Marquee } from "@/components/animations/Marquee";
 
 const MARQUEE_ITEMS = [
   "Premium Denim",
-  "Handcrafted in Pakistan",
-  "Export Quality",
-  "Free Shipping all over Pakistan",
-  "Selvedge Craftsmanship",
+  "Now in Pakistan",
+  "Free Shipping Across Pakistan",
   "Cash on Delivery",
-  "7-Day Returns",
   "Since 2026",
 ];
 
 export function Testimonials() {
   return (
-    <section className="py-16 sm:py-20 lg:py-24 bg-[#1a1a1a] text-white overflow-hidden">
+    <section className="pt-8 pb-12 sm:pt-10 sm:pb-14 lg:pt-12 lg:pb-16 bg-[#1a1a1a] text-white overflow-hidden">
 
       {/* Marquee ticker at top */}
-      <div className="border-y border-white/10 py-4 mb-14 sm:mb-20 -mt-4">
+      <div className="border-y border-white/10 bg-[#171410] py-3 sm:py-3.5 mb-8 sm:mb-10">
         <Marquee items={MARQUEE_ITEMS} duration={40} itemColor="#fff" />
       </div>
 
@@ -32,7 +29,7 @@ export function Testimonials() {
           </FadeIn>
           <TextReveal as="h2" delay={100}>
             <span className="font-[family-name:var(--font-playfair)] text-2xl sm:text-4xl lg:text-5xl font-normal text-white mt-3 block leading-tight max-w-5xl mx-auto">
-              &ldquo;We believe premium international fashion should be accessible in Pakistan.&rdquo;
+              &ldquo;We believe premium International Branded Jeans should be accessible in Pakistan.&rdquo;
             </span>
           </TextReveal>
         </div>

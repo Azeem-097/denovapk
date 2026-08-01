@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FadeIn } from "@/components/animations/FadeIn";
 import { TextReveal } from "@/components/animations/TextReveal";
+import { Marquee } from "@/components/animations/Marquee";
 import { useDevicePerformance } from "@/components/animations/useDevicePerformance";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,11 @@ const FALLBACK: GalleryConfig = {
   items:              [],
 };
 
+const QUALITY_MARQUEE_ITEMS = Array.from(
+  { length: 6 },
+  () => "Premium Quality - Without Premium Prices"
+);
+
 function layoutClasses(layout: GalleryLayout): string {
   switch (layout) {
     case "portrait":
@@ -62,8 +68,12 @@ export function GallerySection() {
   if (!config || !config.enabled) return null;
   if (config.items.length === 0) return null;
 
+  const marqueeIndex = Math.min(5, config.items.length);
+  const topItems = config.items.slice(0, marqueeIndex);
+  const bottomItems = config.items.slice(marqueeIndex);
+
   return (
-    <section className="py-16 sm:py-20 lg:py-24 bg-white">
+    <section className="pt-8 pb-0 sm:pt-12 sm:pb-0 lg:pt-14 lg:pb-0 bg-white">
 
       {/* Header */}
       <div className="site-container">
@@ -101,10 +111,29 @@ export function GallerySection() {
         className="grid grid-cols-2 sm:grid-cols-4 gap-0 w-full gallery-grid"
         style={{ gridAutoFlow: "dense" }}
       >
-        {config.items.map((item, i) => (
+        {topItems.map((item, i) => (
           <GalleryCell key={item.id} item={item} delay={i * 80} />
         ))}
       </div>
+
+      <div className="gallery-quality-marquee border-y border-[#e5e7eb] bg-[#fafaf9] py-3 sm:py-3.5 -mb-px">
+        <Marquee
+          items={QUALITY_MARQUEE_ITEMS}
+          duration={40}
+          itemColor="#1a1a1a"
+        />
+      </div>
+
+      {bottomItems.length > 0 && (
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-0 w-full gallery-grid"
+          style={{ gridAutoFlow: "dense" }}
+        >
+          {bottomItems.map((item, i) => (
+            <GalleryCell key={item.id} item={item} delay={(marqueeIndex + i) * 80} />
+          ))}
+        </div>
+      )}
 
       <style jsx>{`
         .gallery-grid {
@@ -114,6 +143,11 @@ export function GallerySection() {
           .gallery-grid {
             grid-auto-rows: 25vw;
           }
+        }
+        .gallery-quality-marquee :global(.w-1.h-1) {
+          width: 3px;
+          height: 3px;
+          transform: translateY(-1px);
         }
       `}</style>
     </section>
@@ -131,11 +165,11 @@ interface GalleryCellProps {
  */
 function GalleryCell({ item, delay = 0 }: GalleryCellProps) {
   const ref = useRef<HTMLElement | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
   const { shouldAnimate } = useDevicePerformance();
+  const [isVisible, setIsVisible] = useState(!shouldAnimate);
 
   useEffect(() => {
-    if (!shouldAnimate) { setIsVisible(true); return; }
+    if (!shouldAnimate) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {

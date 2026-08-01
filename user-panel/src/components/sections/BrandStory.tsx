@@ -28,7 +28,7 @@ const brandValues = [
 
 export function BrandStory() {
   return (
-    <section className="py-16 sm:py-20 lg:py-24 bg-white overflow-hidden">
+    <section className="pt-16 pb-8 sm:pt-20 sm:pb-12 lg:pt-24 lg:pb-14 bg-white overflow-hidden">
       <div className="site-container">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center max-w-[1400px] mx-auto">
 
