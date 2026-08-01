@@ -22,6 +22,7 @@ export async function POST(req: Request) {
         name:  result.admin.name,
         email: result.admin.email,
         role:  result.admin.role,
+        passwordChangeRequired: result.admin.passwordChangeRequired === 1,
       },
     });
   } catch (err) {

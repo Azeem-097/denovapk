@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
 
     const result = await login(email, password);
     if (result.success) {
-      setTimeout(() => router.replace("/"), 100);
+      setTimeout(() => router.replace(result.passwordChangeRequired ? "/settings/profile" : "/"), 100);
     } else {
       setError(result.error || "Login failed");
       setLoading(false);

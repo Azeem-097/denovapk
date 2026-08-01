@@ -64,11 +64,22 @@ coverage/
 
 # Snapshot folder
 _project_snapshot/
+Project_Snapshot/
+_backups/
+
+# Local archives and backup copies
+*.rar
+*.zip
+*.bak
+*.bak-*
 
 # Temp files
 *.tmp
 *.temp
 .tmp/
+newstart
+folderextract
+pscode
 
 # OS
 .DS_Store

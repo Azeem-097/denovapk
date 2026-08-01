@@ -5,11 +5,11 @@ import { SaleCountdown }         from "@/components/sections/SaleCountdown";
 import { BrandTicker }           from "@/components/sections/BrandTicker";
 import { NewArrivals }           from "@/components/sections/NewArrivals";
 import { BrandStory }            from "@/components/sections/BrandStory";
-import { Testimonials }          from "@/components/sections/Testimonials";
+import { BrandStatement }        from "@/components/sections/Testimonials";
 import { GallerySection }        from "@/components/sections/GallerySection";
 import { NewsletterSection }     from "@/components/sections/NewsletterSection";
 import { getProducts }              from "@/lib/db/repositories/products";
-import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
+import { getSetting, getNumberSetting, getBoolSetting } from "@/lib/db/repositories/settings";
 import { adaptProduct } from "@/lib/adapters";
 
 type HeroBanner = {
@@ -24,16 +24,26 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [dbAllProducts, heroBannersRaw, heroRotation] = await Promise.all([
+  const [
+    dbAllProducts,
+    heroBannersRaw,
+    heroRotation,
+    homepageStatement,
+    homepageTickerRaw,
+    freeDeliveryAll,
+  ] = await Promise.all([
     getProducts({ status: "PUBLISHED", limit: 100, sortBy: "newest" }),
     getSetting("hero_banners"),
     getNumberSetting("hero_rotation_seconds", 8),
+    getSetting("homepage_brand_statement"),
+    getSetting("homepage_ticker_items"),
+    getBoolSetting("free_delivery_all", false),
   ]);
 
   const allProducts  = dbAllProducts.map(adaptProduct);
 
-  const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
-  const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
+  const newArrivalProducts = allProducts.filter((p) => p.isNew);
+  const bestSellerProducts = allProducts.filter((p) => p.isBestSeller);
 
   let heroBanners: HeroBanner[] = [];
   if (heroBannersRaw) {
@@ -50,6 +60,15 @@ export default async function HomePage() {
         .sort((a, b) => a.sortOrder - b.sortOrder);
     } catch { heroBanners = []; }
   }
+
+  let tickerItems = ["Premium Denim", "Now in Pakistan", "Cash on Delivery", "Since 2026"];
+  if (homepageTickerRaw) {
+    try {
+      const parsed = JSON.parse(homepageTickerRaw);
+      if (Array.isArray(parsed)) tickerItems = parsed.filter((item) => typeof item === "string" && item.trim());
+    } catch {}
+  }
+  if (freeDeliveryAll) tickerItems.splice(2, 0, "Free Shipping Across Pakistan");
 
   return (
     <>
@@ -73,10 +92,13 @@ export default async function HomePage() {
         <BrandTicker />
         <NewArrivals
           products={allProducts}
-          newArrivals={premiumProducts}
-          bestSellers={superPremiumProducts}
+          newArrivals={newArrivalProducts}
+          bestSellers={bestSellerProducts}
         />
-        <Testimonials />
+        <BrandStatement
+          statement={homepageStatement || "We believe premium international branded jeans should be accessible in Pakistan."}
+          tickerItems={tickerItems}
+        />
         <BrandStory />
         <GallerySection />
 

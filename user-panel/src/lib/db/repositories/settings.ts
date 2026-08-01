@@ -33,9 +33,10 @@ export async function getStringSetting(key: string, defaultValue = ""): Promise<
 
 // ─── Get all settings by category ────────────────────────
 export async function getSettingsByCategory(category: string): Promise<Record<string, string>> {
+  const categories = category === "brand" ? ["brand", "restaurant"] : [category];
   const result = await db.execute({
-    sql:  "SELECT key, value FROM settings WHERE category = ?",
-    args: [category],
+    sql:  `SELECT key, value FROM settings WHERE category IN (${categories.map(() => "?").join(",")})`,
+    args: categories,
   });
 
   const map: Record<string, string> = {};
@@ -51,7 +52,7 @@ export async function getAllSettings(): Promise<Record<string, Record<string, st
 
   const grouped: Record<string, Record<string, string>> = {};
   for (const row of result.rows) {
-    const cat = row.category as string;
+    const cat = (row.category as string) === "restaurant" ? "brand" : row.category as string;
     if (!grouped[cat]) grouped[cat] = {};
     grouped[cat][row.key as string] = row.value as string;
   }
@@ -67,8 +68,8 @@ export async function setSetting(key: string, value: string, category = "general
 
   if (existing.rows.length > 0) {
     await db.execute({
-      sql:  "UPDATE settings SET value = ?, updatedAt = ? WHERE key = ?",
-      args: [value, now(), key],
+      sql:  "UPDATE settings SET value = ?, category = ?, updatedAt = ? WHERE key = ?",
+      args: [value, category, now(), key],
     });
   } else {
     await db.execute({

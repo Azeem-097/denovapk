@@ -1,4 +1,4 @@
-import { getStringSetting } from "@/lib/db/repositories/settings";
+import { getBoolSetting, getStringSetting } from "@/lib/db/repositories/settings";
 
 /**
  * Site-wide dynamic info sourced from admin settings.
@@ -18,19 +18,29 @@ export interface SiteInfo {
   brandCity:          string;
   brandYear:          string;
   legalLastUpdated:   string;
+  businessHours:      Array<{ day: string; time: string }>;
+  storeLocationEnabled: boolean;
+  storeLatitude:      string;
+  storeLongitude:     string;
+  mapEmbedUrl:        string;
 }
 
 const DEFAULTS: SiteInfo = {
-  email:            "hello@denovapk.com",
-  phone:            "+92 300 123 4567",
-  whatsapp:         "+923001234567",
-  address:          "Gulberg III, Lahore, Pakistan",
+  email:            "",
+  phone:            "",
+  whatsapp:         "",
+  address:          "",
   brandName:        "Denova PK",
   brandTagline:     "Crafted for the Modern You",
   brandDescription: "Premium Denim Clothing - Pakistan's finest selvedge jeans",
   brandCity:        "Lahore",
   brandYear:        "2026",
   legalLastUpdated: "July 2026",
+  businessHours:    [],
+  storeLocationEnabled: false,
+  storeLatitude:    "",
+  storeLongitude:   "",
+  mapEmbedUrl:      "",
 };
 
 /**
@@ -50,6 +60,11 @@ export async function getSiteInfo(): Promise<SiteInfo> {
       brandCity,
       brandYear,
       legalLastUpdated,
+      businessHoursRaw,
+      storeLocationEnabled,
+      storeLatitude,
+      storeLongitude,
+      mapEmbedUrl,
     ] = await Promise.all([
       getStringSetting("contact_email",          DEFAULTS.email),
       getStringSetting("contact_phone_primary",  DEFAULTS.phone),
@@ -61,7 +76,23 @@ export async function getSiteInfo(): Promise<SiteInfo> {
       getStringSetting("brand_city",             DEFAULTS.brandCity),
       getStringSetting("brand_year",             DEFAULTS.brandYear),
       getStringSetting("legal_last_updated",     DEFAULTS.legalLastUpdated),
+      getStringSetting("business_hours",         "[]"),
+      getBoolSetting("store_location_enabled",   false),
+      getStringSetting("store_latitude",         ""),
+      getStringSetting("store_longitude",        ""),
+      getStringSetting("map_embed_url",          ""),
     ]);
+    let businessHours: SiteInfo["businessHours"] = [];
+    try {
+      const parsed = JSON.parse(businessHoursRaw);
+      if (Array.isArray(parsed)) {
+        businessHours = parsed.filter((h) =>
+          typeof h?.day === "string" && typeof h?.time === "string" && h.day.trim() && h.time.trim()
+        );
+      }
+    } catch {
+      businessHours = [];
+    }
 
     return {
       email:            email          || DEFAULTS.email,
@@ -74,10 +105,15 @@ export async function getSiteInfo(): Promise<SiteInfo> {
       brandCity:        brandCity      || DEFAULTS.brandCity,
       brandYear:        brandYear      || DEFAULTS.brandYear,
       legalLastUpdated: legalLastUpdated || DEFAULTS.legalLastUpdated,
+      businessHours,
+      storeLocationEnabled,
+      storeLatitude: storeLatitude || "",
+      storeLongitude: storeLongitude || "",
+      mapEmbedUrl: mapEmbedUrl || "",
     };
   } catch (err) {
-    console.error("Failed to load site info, using defaults:", err);
-    return DEFAULTS;
+    console.error("Failed to load site info:", err);
+    throw err;
   }
 }
 

@@ -66,7 +66,7 @@ function validateTursoConfig() {
   } else if (url.includes("XXX") || url.includes("your-database")) {
     errors.push("TURSO_DATABASE_URL still contains placeholder text");
   } else if (!url.startsWith("libsql://") && !url.startsWith("https://")) {
-    errors.push(`TURSO_DATABASE_URL has invalid protocol. Got: ${url.slice(0, 20)}...`);
+    errors.push("TURSO_DATABASE_URL has invalid protocol");
   }
 
   if (!authToken) {
@@ -121,8 +121,7 @@ function validateTursoConfig() {
 
   // Success
   if (process.env.NODE_ENV !== "production") {
-    const shortHost = url!.replace(/^(libsql|https):\/\//, "").split(".")[0];
-    console.log(GREEN + "[Turso] ✓ Connected to " + shortHost + RESET);
+    console.log(GREEN + "[Turso] ✓ Database configuration loaded" + RESET);
   }
 }
 

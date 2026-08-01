@@ -19,17 +19,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Site info API error:", err);
-    return NextResponse.json({
-      email:            "hello@denovapk.com",
-      phone:            "+92 300 123 4567",
-      whatsapp:         "+923001234567",
-      address:          "Gulberg III, Lahore, Pakistan",
-      brandName:        "Denova PK",
-      brandTagline:     "Crafted for the Modern You",
-      brandDescription: "Premium Denim Clothing - Pakistan's finest selvedge jeans",
-      brandCity:        "Lahore",
-      brandYear:        "2026",
-      legalLastUpdated: "July 2026",
-    });
+    return NextResponse.json({ error: "Site information is unavailable." }, { status: 503 });
   }
 }

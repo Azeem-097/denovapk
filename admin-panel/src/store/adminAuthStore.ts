@@ -7,6 +7,7 @@ export interface AdminUser {
   email: string;
   role:  string;
   avatar?: string | null;
+  passwordChangeRequired?: boolean;
 }
 
 interface AdminAuthState {
@@ -15,7 +16,7 @@ interface AdminAuthState {
   isLoading:   boolean;
 
   loadSession: () => Promise<void>;
-  login:       (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login:       (email: string, password: string) => Promise<{ success: boolean; error?: string; passwordChangeRequired?: boolean }>;
   logout:      () => Promise<void>;
 }
 
@@ -48,7 +49,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       const data = await res.json();
       if (!res.ok) return { success: false, error: data.error || "Login failed" };
       set({ admin: data.admin, isLoggedIn: true });
-      return { success: true };
+      return { success: true, passwordChangeRequired: data.admin?.passwordChangeRequired === true };
     } catch {
       return { success: false, error: "Network error" };
     }
@@ -59,9 +60,3 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
     set({ admin: null, isLoggedIn: false });
   },
 }));
-
-// For backwards compatibility with existing code
-export const DEMO_ADMIN_CREDENTIALS = {
-  email:    "admin@denovapk.com",
-  password: "admin1234",
-};

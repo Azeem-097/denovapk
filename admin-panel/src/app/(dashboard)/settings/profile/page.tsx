@@ -66,8 +66,14 @@ export default function ProfileSettingsPage() {
       toast.error("Enter your current password", "Missing Information");
       return;
     }
-    if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters", "Weak Password");
+    const strong =
+      newPassword.length >= 12 &&
+      /[a-z]/.test(newPassword) &&
+      /[A-Z]/.test(newPassword) &&
+      /[0-9]/.test(newPassword) &&
+      /[^A-Za-z0-9]/.test(newPassword);
+    if (!strong) {
+      toast.error("Use at least 12 characters with upper, lower, number, and symbol.", "Weak Password");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -92,6 +98,7 @@ export default function ProfileSettingsPage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      await loadSession();
     } catch {
       toast.error("Network error. Please try again.", "Update Failed");
     }
@@ -169,7 +176,7 @@ export default function ProfileSettingsPage() {
           />
         </FormField>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="New Password" required hint="Minimum 8 characters">
+          <FormField label="New Password" required hint="Minimum 12 characters with upper, lower, number, and symbol">
             <input
               type="password"
               value={newPassword}

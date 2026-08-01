@@ -72,31 +72,47 @@ function percentChange(current: number, previous: number): number {
 
 // ─── Revenue chart data (last 12 months) ─────────────────
 export interface RevenueDataPoint {
-  date:    string;
-  revenue: number;
-  orders:  number;
+  date:       string;
+  yearMonth:  string;
+  revenue:    number;
+  refunds:    number;
+  netRevenue: number;
+  orders:     number;
 }
 
 export async function getRevenueChartData(): Promise<RevenueDataPoint[]> {
-  const now = Math.floor(Date.now() / 1000);
   const points: RevenueDataPoint[] = [];
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   for (let i = 11; i >= 0; i--) {
-    const monthEnd   = now - (i * 30 * 24 * 60 * 60);
-    const monthStart = monthEnd - (30 * 24 * 60 * 60);
+    const start = new Date(monthStart.getFullYear(), monthStart.getMonth() - i, 1);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    const startTs = Math.floor(start.getTime() / 1000);
+    const endTs = Math.floor(end.getTime() / 1000);
 
     const result = await db.execute({
-      sql:  "SELECT COALESCE(SUM(total), 0) as r, COUNT(*) as c FROM orders WHERE createdAt >= ? AND createdAt < ? AND paymentStatus = 'PAID'",
-      args: [monthStart, monthEnd],
+      sql:  `
+        SELECT
+          COALESCE(SUM(CASE WHEN paymentStatus = 'PAID' AND status != 'CANCELLED' THEN total ELSE 0 END), 0) as paidRevenue,
+          COALESCE(SUM(CASE WHEN paymentStatus IN ('REFUNDED', 'PARTIALLY_REFUNDED') OR status = 'REFUNDED' THEN total ELSE 0 END), 0) as refunds,
+          COUNT(CASE WHEN paymentStatus = 'PAID' AND status != 'CANCELLED' THEN 1 END) as c
+        FROM orders
+        WHERE createdAt >= ? AND createdAt < ?
+      `,
+      args: [startTs, endTs],
     });
 
-    const date = new Date(monthEnd * 1000);
-    const monthName = date.toLocaleDateString("en-US", { month: "short" });
+    const paidRevenue = Number(result.rows[0].paidRevenue);
+    const refunds = Number(result.rows[0].refunds);
 
     points.push({
-      date:    monthName,
-      revenue: Number(result.rows[0].r),
-      orders:  Number(result.rows[0].c),
+      date:       start.toLocaleDateString("en-US", { month: "short" }),
+      yearMonth:  `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+      revenue:    paidRevenue,
+      refunds,
+      netRevenue: paidRevenue - refunds,
+      orders:     Number(result.rows[0].c),
     });
   }
 
@@ -116,13 +132,19 @@ export interface TopProduct {
 export async function getTopProducts(limit = 5): Promise<TopProduct[]> {
   const result = await db.execute({
     sql: `
-      SELECT p.id, p.name, p.soldCount as sold, p.price,
-        (p.soldCount * p.price) as revenue,
+      SELECT p.id, p.name,
+        COALESCE(SUM(oi.quantity), 0) as sold,
+        COALESCE(SUM(oi.subtotal), 0) as revenue,
         (SELECT COALESCE(SUM(stock), 0) FROM product_variants WHERE productId = p.id) as stock,
         (SELECT url FROM product_images WHERE productId = p.id AND isPrimary = 1 LIMIT 1) as image
       FROM products p
+      INNER JOIN order_items oi ON oi.productId = p.id
+      INNER JOIN orders o ON o.id = oi.orderId
       WHERE p.status = 'PUBLISHED'
-      ORDER BY p.soldCount DESC
+        AND o.paymentStatus = 'PAID'
+        AND o.status NOT IN ('CANCELLED', 'REFUNDED')
+      GROUP BY p.id, p.name
+      ORDER BY revenue DESC
       LIMIT ?
     `,
     args: [limit],

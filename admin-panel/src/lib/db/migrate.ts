@@ -79,6 +79,26 @@ async function migrate() {
     }
   }
 
+  console.log("\nApplying compatibility migrations...");
+  const compatibilityStatements = [
+    "ALTER TABLE admins ADD COLUMN passwordChangeRequired INTEGER NOT NULL DEFAULT 0",
+    "UPDATE settings SET category = 'brand' WHERE category = 'restaurant'",
+    "UPDATE settings SET value = REPLACE(value, '/sitemap\"', '/sitemap.xml\"') WHERE key = 'footer_bottom_links'",
+  ];
+  for (const stmt of compatibilityStatements) {
+    try {
+      await db.execute(stmt);
+      console.log("  OK");
+    } catch (err) {
+      const message = (err as Error).message;
+      if (/duplicate column|already exists/i.test(message)) {
+        console.log("  SKIP existing change");
+      } else {
+        console.log(`  FAIL: ${message}`);
+      }
+    }
+  }
+
   console.log("\n===============================================");
   console.log(`Tables:  ${tableSuccess} created, ${tableFail} failed`);
   console.log(`Indexes: ${idxSuccess} created, ${idxFail} failed`);
@@ -94,7 +114,7 @@ async function migrate() {
   console.log(`\nTotal: ${tables.rows.length} tables\n`);
 
   if (tableFail === 0 && idxFail === 0) {
-    console.log("Migration successful! Run: npm run db:seed");
+    console.log("Migration successful! Run: npm run db:bootstrap");
   } else {
     console.log("Some statements failed. Check errors above.");
   }

@@ -43,8 +43,8 @@ const FALLBACK: FooterData = {
     payment:     "JazzCash | EasyPaisa | COD | Bank Transfer",
   },
   contact: {
-    phone: "+92 300 123 4567", email: "hello@denovapk.com",
-    whatsapp: "+923001234567", address: "Lahore, Pakistan",
+    phone: "", email: "",
+    whatsapp: "", address: "",
   },
   social: {
     instagram: "https://instagram.com/denovapk",
@@ -75,7 +75,7 @@ const FALLBACK: FooterData = {
   bottomLinks: [
     { label: "Privacy", href: "/privacy" },
     { label: "Terms",   href: "/terms" },
-    { label: "Sitemap", href: "/sitemap" },
+    { label: "Sitemap", href: "/sitemap.xml" },
   ],
 };
 
@@ -102,10 +102,10 @@ function mergeWithFallback(api: FooterData): FooterData {
       payment:     api.brand.payment     || FALLBACK.brand.payment,
     },
     contact: {
-      phone:    api.contact.phone    || FALLBACK.contact.phone,
-      email:    api.contact.email    || FALLBACK.contact.email,
-      whatsapp: api.contact.whatsapp || FALLBACK.contact.whatsapp,
-      address:  api.contact.address  || FALLBACK.contact.address,
+      phone:    api.contact.phone    || "",
+      email:    api.contact.email    || "",
+      whatsapp: api.contact.whatsapp || "",
+      address:  api.contact.address  || "",
     },
     social: {
       instagram: api.social.instagram || FALLBACK.social.instagram,

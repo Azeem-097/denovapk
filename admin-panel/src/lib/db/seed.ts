@@ -1,6 +1,6 @@
 /**
- * Seed script - Populates database with demo data + default settings
- * Run with: npm run db:seed
+ * Destructive demo seed script - Populates database with disposable demo data.
+ * Run with: npm run db:seed-demo -- --force
  */
 
 import "dotenv/config";
@@ -15,6 +15,7 @@ const now   = () => Math.floor(Date.now() / 1000);
 //  SAFETY GUARD — prevents accidental data wipe
 // ═══════════════════════════════════════════════════════════════════
 const FORCE_FLAG = process.argv.includes("--force");
+const ALLOW_REMOTE_DEMO_SEED = process.env.ALLOW_REMOTE_DEMO_SEED === "true";
 
 if (!FORCE_FLAG) {
   console.error("\n╔══════════════════════════════════════════════════════════════╗");
@@ -27,7 +28,7 @@ if (!FORCE_FLAG) {
   console.error("║                                                              ║");
   console.error("║   To proceed, re-run with the --force flag:                  ║");
   console.error("║                                                              ║");
-  console.error("║     npm run db:seed -- --force                               ║");
+  console.error("║     npm run db:seed-demo -- --force                          ║");
   console.error("║                                                              ║");
   console.error("╚══════════════════════════════════════════════════════════════╝\n");
   process.exit(1);
@@ -41,6 +42,12 @@ async function seed() {
 
   if (!url) {
     console.error("Missing TURSO_DATABASE_URL in .env");
+    process.exit(1);
+  }
+  if (/^libsql:\/\//i.test(url) && !ALLOW_REMOTE_DEMO_SEED) {
+    console.error("Refusing to run destructive demo seed against a remote Turso database.");
+    console.error("Use npm run db:bootstrap for production setup.");
+    console.error("For a disposable remote demo DB only, set ALLOW_REMOTE_DEMO_SEED=true.");
     process.exit(1);
   }
 
@@ -67,36 +74,36 @@ async function seed() {
   }
   console.log("Cleaned.\n");
 
-  console.log("Creating admin...");
+  console.log("Creating demo admin...");
   const adminId       = genId();
-  const adminPassword = await bcrypt.hash("admin1234", 10);
+  const adminPassword = await bcrypt.hash(`demo-${genId()}-${genId()}`, 10);
   await db.execute({
-    sql: `INSERT INTO admins (id, name, email, password, role, isActive, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [adminId, "Jamal Ahmad", "admin@denovapk.com", adminPassword, "SUPER_ADMIN", 1, now(), now()],
+    sql: `INSERT INTO admins (id, name, email, password, role, isActive, passwordChangeRequired, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [adminId, "Demo Admin", `demo-admin-${genId()}@example.invalid`, adminPassword, "SUPER_ADMIN", 1, 1, now(), now()],
   });
-  console.log("Admin: admin@denovapk.com / admin1234\n");
+  console.log("Demo admin created with a random password hash. Use db:bootstrap for a real admin.\n");
 
   console.log("Creating test user with birthday...");
   const userId       = genId();
-  const userPassword = await bcrypt.hash("demo1234", 10);
+  const userPassword = await bcrypt.hash(`demo-${genId()}-${genId()}`, 10);
   const today        = new Date();
   const testBirthday = `${today.getFullYear() - 25}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   await db.execute({
     sql: `INSERT INTO users (id, name, email, password, phone, isActive, birthday, loyaltyPoints, createdAt, updatedAt)
           VALUES (?, ?, ?, ?, ?, 1, ?, 500, ?, ?)`,
-    args: [userId, "Ayesha Malik", "ayesha@example.com", userPassword,
-           "+92 300 1234567", testBirthday, now(), now()],
+    args: [userId, "Demo Customer", `demo-customer-${genId()}@example.invalid`, userPassword,
+           "", testBirthday, now(), now()],
   });
   const addrId = genId();
   await db.execute({
     sql: `INSERT INTO addresses (id, userId, label, fullName, phone, street, city, province, postalCode, isDefault, createdAt, updatedAt)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [addrId, userId, "Home", "Ayesha Malik", "+92 300 1234567",
-           "House 42, Street 7, DHA Phase 5", "Lahore", "Punjab", "54000", 1, now(), now()],
+    args: [addrId, userId, "Demo", "Demo Customer", "",
+           "Demo address", "Demo City", "Demo Province", "00000", 1, now(), now()],
   });
-  console.log(`User: ayesha@example.com / demo1234 (birthday: ${testBirthday}, 500 pts)\n`);
+  console.log(`Demo user created with a random password hash (birthday: ${testBirthday}, 500 pts)\n`);
 
   console.log("Creating collections...");
   const collections = [
@@ -130,14 +137,11 @@ async function seed() {
 
   for (const p of products) {
     const pid   = genId();
-    const rating = 4.5 + Math.random() * 0.5;
-    const reviews = Math.floor(Math.random() * 100) + 20;
-
     await db.execute({
       sql: `INSERT INTO products (id, name, slug, sku, description, price, comparePrice, collectionId, status, isNew, isFeatured, isBestSeller, tags, rating, reviewCount, soldCount, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [pid, p.name, p.slug, p.sku, p.desc, p.price, p.compare, collections[p.coll].id, "PUBLISHED",
-             p.isNew, p.isFeatured, p.isBestSeller, p.tags, rating, reviews, p.sold, now(), now()],
+             p.isNew, p.isFeatured, p.isBestSeller, p.tags, 0, 0, p.sold, now(), now()],
     });
 
     await db.execute({
@@ -207,20 +211,27 @@ async function seed() {
   const footerBottomLinks = JSON.stringify([
     { label: "Privacy", href: "/privacy" },
     { label: "Terms",   href: "/terms" },
-    { label: "Sitemap", href: "/sitemap" },
+    { label: "Sitemap", href: "/sitemap.xml" },
   ]);
 
   const defaultSettings: Array<[string, string, string]> = [
-    ["brand_name",              "Denova PK",                                                      "restaurant"],
-    ["brand_tagline",           "Crafted for the Modern You",                                     "restaurant"],
-    ["brand_description",       "Premium Denim Clothing - Pakistan's finest selvedge jeans",      "restaurant"],
-    ["brand_city",              "Lahore",                                                          "restaurant"],
-    ["brand_address",           "DHA Phase 5, Lahore, Pakistan",                                  "restaurant"],
-    ["brand_year",              "2026",                                                           "restaurant"],
-    ["contact_phone_primary",   "+923001234567",                                                  "contact"],
-    ["contact_phone_secondary", "+924231234567",                                                  "contact"],
-    ["contact_email",           "hello@denovapk.com",                                             "contact"],
-    ["contact_whatsapp",        "+923001234567",                                                  "contact"],
+    ["brand_name",              "Denova PK",                                                      "brand"],
+    ["brand_tagline",           "Crafted for the Modern You",                                     "brand"],
+    ["brand_description",       "Premium Denim Clothing - Pakistan's finest selvedge jeans",      "brand"],
+    ["brand_city",              "",                                                               "brand"],
+    ["brand_address",           "",                                                               "brand"],
+    ["brand_year",              "2026",                                                           "brand"],
+    ["business_hours",          "[]",                                                             "brand"],
+    ["contact_phone_primary",   "",                                                               "contact"],
+    ["contact_phone_secondary", "",                                                               "contact"],
+    ["contact_email",           "",                                                               "contact"],
+    ["contact_whatsapp",        "",                                                               "contact"],
+    ["store_location_enabled",  "false",                                                          "contact"],
+    ["store_latitude",          "",                                                               "contact"],
+    ["store_longitude",         "",                                                               "contact"],
+    ["map_embed_url",           "",                                                               "contact"],
+    ["homepage_brand_statement", "We believe premium international branded jeans should be accessible in Pakistan.", "homepage"],
+    ["homepage_ticker_items",    JSON.stringify(["Premium Denim", "Now in Pakistan", "Cash on Delivery", "Since 2026"]), "homepage"],
     ["abandoned_cart_enabled",   "true",                                                           "abandoned_cart"],
     ["abandoned_cart_timeout_minutes", "15",                                                       "abandoned_cart"],
     ["abandoned_cart_wa_message",
@@ -288,8 +299,7 @@ async function seed() {
   console.log("═══════════════════════════════════════════════════════");
   console.log("Seed complete!");
   console.log("═══════════════════════════════════════════════════════");
-  console.log("Admin:  admin@denovapk.com / admin1234  (Jamal Ahmad)");
-  console.log("User:   ayesha@example.com / demo1234");
+  console.log("Demo accounts use random password hashes and are not printed.");
   console.log(`        Birthday: ${testBirthday}`);
   console.log("        Loyalty Points: 500");
   console.log("═══════════════════════════════════════════════════════\n");

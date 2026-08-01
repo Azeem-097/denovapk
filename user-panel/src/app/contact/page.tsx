@@ -12,24 +12,30 @@ import { contactSchema, type ContactFormData } from "@/lib/validations";
 import { useToastStore } from "@/store/toastStore";
 import { trackMetaEvent } from "@/lib/metaPixel";
 
-const HOURS = [
-  { day: "Monday – Friday", time: "10:00 AM — 8:00 PM" },
-  { day: "Saturday",        time: "11:00 AM — 6:00 PM" },
-  { day: "Sunday",          time: "Closed" },
-];
+type BusinessHour = { day: string; time: string };
 
 interface SiteInfo {
-  email:    string;
-  phone:    string;
+  email: string;
+  phone: string;
   whatsapp: string;
-  address:  string;
+  address: string;
+  businessHours: BusinessHour[];
+  storeLocationEnabled: boolean;
+  storeLatitude: string;
+  storeLongitude: string;
+  mapEmbedUrl: string;
 }
 
-const DEFAULT_INFO: SiteInfo = {
-  email:    "hello@denovapk.com",
-  phone:    "+92 300 123 4567",
-  whatsapp: "+923001234567",
-  address:  "Gulberg III, Lahore, Pakistan",
+const EMPTY_INFO: SiteInfo = {
+  email: "",
+  phone: "",
+  whatsapp: "",
+  address: "",
+  businessHours: [],
+  storeLocationEnabled: false,
+  storeLatitude: "",
+  storeLongitude: "",
+  mapEmbedUrl: "",
 };
 
 function normalizePhone(phone: string): string {
@@ -38,25 +44,36 @@ function normalizePhone(phone: string): string {
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
-  const [info, setInfo] = useState<SiteInfo>(DEFAULT_INFO);
+  const [info, setInfo] = useState<SiteInfo>(EMPTY_INFO);
   const showToast = useToastStore((s) => s.addToast);
 
   // Fetch site info once on mount
   useEffect(() => {
     fetch("/api/site-info")
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => {
+        if (!r.ok) throw new Error("Site information is unavailable.");
+        return r.json();
+      })
       .then((d) => {
         if (d) {
           setInfo({
-            email:    d.email    || DEFAULT_INFO.email,
-            phone:    d.phone    || DEFAULT_INFO.phone,
-            whatsapp: d.whatsapp || DEFAULT_INFO.whatsapp,
-            address:  d.address  || DEFAULT_INFO.address,
+            email: d.email || "",
+            phone: d.phone || "",
+            whatsapp: d.whatsapp || "",
+            address: d.address || "",
+            businessHours: Array.isArray(d.businessHours) ? d.businessHours : [],
+            storeLocationEnabled: d.storeLocationEnabled === true,
+            storeLatitude: d.storeLatitude || "",
+            storeLongitude: d.storeLongitude || "",
+            mapEmbedUrl: d.mapEmbedUrl || "",
           });
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch((err) => {
+        console.error("Contact page failed to load site info:", err);
+        showToast({ type: "error", message: "Contact details are temporarily unavailable." });
+      });
+  }, [showToast]);
 
   const {
     register,
@@ -68,22 +85,41 @@ export default function ContactPage() {
   });
 
   const onSubmit = async (data: ContactFormData) => {
-    void data;
-    trackMetaEvent("Lead");
-    await new Promise((r) => setTimeout(r, 1200));
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const payload = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      showToast({
+        type: "error",
+        message: payload?.error ?? "We could not send your message. Please try again.",
+      });
+      return;
+    }
+
     setSubmitted(true);
     reset();
+    trackMetaEvent("Lead");
     showToast({ type: "success", message: "Message sent successfully!" });
     setTimeout(() => setSubmitted(false), 5000);
   };
 
   const waNumber = normalizePhone(info.whatsapp);
+  const hasMap = info.storeLocationEnabled && (info.mapEmbedUrl || (info.storeLatitude && info.storeLongitude));
+  const mapUrl = info.mapEmbedUrl || (
+    info.storeLatitude && info.storeLongitude
+      ? `https://www.openstreetmap.org/export/embed.html?mlat=${encodeURIComponent(info.storeLatitude)}&mlon=${encodeURIComponent(info.storeLongitude)}&zoom=15&layer=mapnik`
+      : ""
+  );
 
   const CONTACT_INFO = [
-    { icon: Phone,         label: "Phone",    value: info.phone,    href: `tel:${normalizePhone(info.phone)}` },
-    { icon: Mail,          label: "Email",    value: info.email,    href: `mailto:${info.email}` },
-    { icon: MessageCircle, label: "WhatsApp", value: info.phone,    href: `https://wa.me/${waNumber}` },
-    { icon: MapPin,        label: "Address",  value: info.address,  href: null },
+    { icon: Phone,         label: "Phone",    value: info.phone || "Unavailable",       href: info.phone ? `tel:${normalizePhone(info.phone)}` : null },
+    { icon: Mail,          label: "Email",    value: info.email || "Unavailable",       href: info.email ? `mailto:${info.email}` : null },
+    { icon: MessageCircle, label: "WhatsApp", value: info.whatsapp || "Unavailable",    href: waNumber ? `https://wa.me/${waNumber}` : null },
+    { icon: MapPin,        label: "Address",  value: info.address || "Unavailable",     href: null },
   ];
 
   return (
@@ -131,6 +167,14 @@ export default function ContactPage() {
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  className="hidden"
+                  aria-hidden="true"
+                  {...register("company")}
+                />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Full Name" required placeholder="John Doe"
                     {...register("name")} error={errors.name?.message} />
@@ -210,21 +254,24 @@ export default function ContactPage() {
                   </h3>
                 </div>
                 <div className="space-y-2.5">
-                  {HOURS.map((h) => (
+                  {info.businessHours.length > 0 ? info.businessHours.map((h) => (
                     <div key={h.day} className="flex items-center justify-between text-sm">
                       <span className="text-[#6b7280]">{h.day}</span>
                       <span className="text-[#1a1a1a] font-medium">{h.time}</span>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-[#6b7280]">Business hours are currently unavailable.</p>
+                  )}
                 </div>
               </div>
             </SlideUp>
 
+            {hasMap && (
             <SlideUp stagger={100} index={2}>
               <div className="bg-white border border-[#e5e7eb] overflow-hidden">
                 <div className="relative aspect-[4/3] bg-[#fafaf9]">
                   <iframe
-                    src="https://www.openstreetmap.org/export/embed.html?bbox=74.34%2C31.51%2C74.36%2C31.53&layer=mapnik"
+                    src={mapUrl}
                     className="absolute inset-0 w-full h-full border-0"
                     loading="lazy"
                     title={`${info.address} location`}
@@ -240,6 +287,7 @@ export default function ContactPage() {
                 </div>
               </div>
             </SlideUp>
+            )}
           </div>
         </div>
       </div>

@@ -77,6 +77,7 @@ export async function getCurrentAdmin() {
     email:     admin.email,
     role:      admin.role,
     avatar:    admin.avatar,
+    passwordChangeRequired: admin.passwordChangeRequired === 1,
     lastLogin: admin.lastLogin,
   };
 }

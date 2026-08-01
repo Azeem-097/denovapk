@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS admins (
   role       TEXT NOT NULL DEFAULT 'STAFF',
   avatar     TEXT,
   isActive   INTEGER NOT NULL DEFAULT 1,
+  passwordChangeRequired INTEGER NOT NULL DEFAULT 0,
   lastLogin  INTEGER,
   createdAt  INTEGER NOT NULL DEFAULT (unixepoch()),
   updatedAt  INTEGER NOT NULL DEFAULT (unixepoch())
@@ -377,6 +378,8 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 CREATE INDEX IF NOT EXISTS idx_settings_key      ON settings(key);
 CREATE INDEX IF NOT EXISTS idx_settings_category ON settings(category);
+
+UPDATE settings SET category = 'brand' WHERE category = 'restaurant';
 
 -- ============================================================
 -- SHIPPING

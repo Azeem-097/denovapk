@@ -66,11 +66,25 @@ A full-featured Shopify-level e-commerce platform for a Pakistani premium clothi
 
 5. Fill in your credentials in both .env files.
 
-### 4. Initialize database
+### 4. Initialize database safely
 
     cd admin-panel
     npm run db:init
-    npm run db:seed
+
+Create the first admin with environment variables, then run the safe bootstrap:
+
+    BOOTSTRAP_ADMIN_NAME="Your Name"
+    BOOTSTRAP_ADMIN_EMAIL="you@example.com"
+    BOOTSTRAP_ADMIN_PASSWORD="Use-a-strong-unique-password-123!"
+    npm run db:bootstrap
+
+`db:bootstrap` only inserts missing default settings and creates the first admin if no admin exists. It never deletes products, orders, users, or settings.
+
+For disposable local demo data only, use:
+
+    npm run db:seed-demo -- --force
+
+The demo seed is destructive and refuses remote Turso database URLs unless `ALLOW_REMOTE_DEMO_SEED=true` is set for a throwaway demo database.
 
 ### 5. Run both apps
 
@@ -83,11 +97,6 @@ Terminal 2 - Admin Panel (port 3001):
 
     cd admin-panel
     npm run dev -- -p 3001
-
-## Demo Credentials
-
-- Admin: admin@denovapk.com / admin1234
-- User: ayesha@example.com / demo1234
 
 ## Project Structure
 
@@ -114,7 +123,9 @@ Terminal 2 - Admin Panel (port 3001):
 From admin-panel/ folder:
 
 - npm run db:init - Create all tables
-- npm run db:seed - Populate with demo data
+- npm run db:bootstrap - Safe production setup; inserts missing defaults and first admin only
+- npm run db:seed-demo -- --force - Destructive disposable demo data seed
+- npm run db:reconcile-reviews - Recalculate product ratings from approved reviews
 - npm run db:reset - Drop all tables
 
 ## License

@@ -30,6 +30,7 @@ export interface DbAdmin {
   role:       "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "STAFF";
   avatar:     string | null;
   isActive:   number;
+  passwordChangeRequired: number;
   lastLogin:  number | null;
   createdAt:  number;
   updatedAt:  number;

@@ -45,8 +45,14 @@ export async function PATCH(req: Request) {
     // ─── Password change requires currentPassword ────────
     let newPasswordHash: string | undefined;
     if (newPassword) {
-      if (newPassword.length < 8) {
-        return NextResponse.json({ error: "New password must be at least 8 characters" }, { status: 400 });
+      const strong =
+        newPassword.length >= 12 &&
+        /[a-z]/.test(newPassword) &&
+        /[A-Z]/.test(newPassword) &&
+        /[0-9]/.test(newPassword) &&
+        /[^A-Za-z0-9]/.test(newPassword);
+      if (!strong) {
+        return NextResponse.json({ error: "Use at least 12 characters with upper, lower, number, and symbol." }, { status: 400 });
       }
       if (!currentPassword) {
         return NextResponse.json({ error: "Current password required to set a new one" }, { status: 400 });
@@ -71,7 +77,11 @@ export async function PATCH(req: Request) {
 
     if (name  !== undefined) { sets.push("name = ?");  args.push(name.trim()); }
     if (email !== undefined) { sets.push("email = ?"); args.push(email.toLowerCase()); }
-    if (newPasswordHash)     { sets.push("password = ?"); args.push(newPasswordHash); }
+    if (newPasswordHash) {
+      sets.push("password = ?");
+      args.push(newPasswordHash);
+      sets.push("passwordChangeRequired = 0");
+    }
 
     if (sets.length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });

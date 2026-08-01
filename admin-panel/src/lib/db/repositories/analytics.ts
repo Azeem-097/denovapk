@@ -242,6 +242,7 @@ export async function getSalesByCollection(range: DateRange): Promise<Collection
       LEFT  JOIN collections c ON c.id = p.collectionId
       WHERE o.createdAt >= ? AND o.createdAt < ?
         AND o.paymentStatus = 'PAID'
+        AND o.status NOT IN ('CANCELLED', 'REFUNDED')
       GROUP BY collectionId, collectionName
       ORDER BY revenue DESC
       LIMIT 10
@@ -281,6 +282,7 @@ export async function getTopProductsInRange(range: DateRange, limit = 10): Promi
       INNER JOIN orders o ON o.id = oi.orderId
       WHERE o.createdAt >= ? AND o.createdAt < ?
         AND o.paymentStatus = 'PAID'
+        AND o.status NOT IN ('CANCELLED', 'REFUNDED')
       GROUP BY oi.productId, oi.name
       ORDER BY revenue DESC
       LIMIT ?

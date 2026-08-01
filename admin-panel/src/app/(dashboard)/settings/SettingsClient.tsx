@@ -11,18 +11,20 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { useToastStore } from "@/store/toastStore";
 
 interface Props {
   initialSettings: Record<string, Record<string, string>>;
 }
 
 type TabId =
-  | "restaurant" | "contact" | "abandoned_cart" | "birthday"
-  | "loyalty" | "pricing" | "shipping" | "payments" | "social"
+  | "brand" | "contact" | "abandoned_cart" | "birthday"
+  | "loyalty" | "pricing" | "shipping" | "payments" | "social" | "homepage"
   | "first_order" | "footer" | "whatsapp" | "tracking";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
-  { id: "restaurant",     label: "Brand Information",   icon: Store       },
+  { id: "brand",          label: "Brand Information",   icon: Store       },
+  { id: "homepage",       label: "Homepage Content",    icon: Globe       },
   { id: "contact",        label: "Contact Information", icon: Phone       },
   { id: "whatsapp",       label: "WhatsApp Widget",     icon: MessageCircle },
   { id: "shipping",       label: "Shipping & Delivery", icon: Truck       },
@@ -38,10 +40,11 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof Store }> = [
 ];
 
 export function SettingsClient({ initialSettings }: Props) {
-  const [activeTab, setActiveTab] = useState<TabId>("restaurant");
+  const [activeTab, setActiveTab] = useState<TabId>("brand");
   const [settings, setSettings] = useState(initialSettings);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const showToast = useToastStore((s) => s.addToast);
 
   const updateSetting = (category: TabId, key: string, value: string) => {
     setSettings((prev) => ({
@@ -51,8 +54,20 @@ export function SettingsClient({ initialSettings }: Props) {
   };
 
   const saveCurrentTab = async () => {
+    if (saving) return;
     setSaving(true);
+    setSaved(false);
     const tabSettings = settings[activeTab] ?? {};
+    const handleResponse = async (res: Response) => {
+      if (res.ok) {
+        setSaved(true);
+        showToast({ type: "success", message: "Settings saved." });
+        setTimeout(() => setSaved(false), 2500);
+        return;
+      }
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.error ?? "Failed to save settings.");
+    };
 
     if (activeTab === "whatsapp") {
       const config = {
@@ -74,8 +89,10 @@ export function SettingsClient({ initialSettings }: Props) {
             settings: [{ key: "whatsapp_widget", value: JSON.stringify(config), category: "whatsapp" }]
           }),
         });
-        if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
-      } catch {}
+        await handleResponse(res);
+      } catch (err) {
+        showToast({ type: "error", message: err instanceof Error ? err.message : "Failed to save settings." });
+      }
       setSaving(false);
       return;
     }
@@ -90,8 +107,10 @@ export function SettingsClient({ initialSettings }: Props) {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ settings: payload }),
       });
-      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
-    } catch {}
+      await handleResponse(res);
+    } catch (err) {
+      showToast({ type: "error", message: err instanceof Error ? err.message : "Failed to save settings." });
+    }
     setSaving(false);
   };
 
@@ -143,7 +162,8 @@ export function SettingsClient({ initialSettings }: Props) {
 
         <div className="space-y-5">
           <div className="bg-white border border-[#e5e7eb] p-6">
-            {activeTab === "restaurant"     && <RestaurantTab     settings={settings.restaurant     ?? {}} onChange={(k, v) => updateSetting("restaurant", k, v)} />}
+            {activeTab === "brand"          && <BrandTab          settings={settings.brand          ?? {}} onChange={(k, v) => updateSetting("brand", k, v)} />}
+            {activeTab === "homepage"       && <HomepageTab       settings={settings.homepage      ?? {}} onChange={(k, v) => updateSetting("homepage", k, v)} />}
             {activeTab === "contact"        && <ContactTab        settings={settings.contact        ?? {}} onChange={(k, v) => updateSetting("contact", k, v)} />}
             {activeTab === "whatsapp"       && <WhatsAppTab       settings={whatsappSettings              } onChange={(k, v) => updateSetting("whatsapp", k, v)} />}
             {activeTab === "shipping"       && <ShippingTab       settings={settings.shipping       ?? {}} onChange={(k, v) => updateSetting("shipping", k, v)} />}
@@ -198,7 +218,7 @@ function Field({
   );
 }
 
-function RestaurantTab({ settings, onChange }: TabProps) {
+function BrandTab({ settings, onChange }: TabProps) {
   return (
     <div>
       <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
@@ -213,6 +233,14 @@ function RestaurantTab({ settings, onChange }: TabProps) {
         <Field label="Full Address" id="brand_address" value={settings.brand_address ?? ""} onChange={(v) => onChange("brand_address", v)} rows={2}
           hint="Shown on Contact page and legal pages (Privacy, Terms)" />
         <Field label="Established Year" id="brand_year" value={settings.brand_year ?? ""} onChange={(v) => onChange("brand_year", v)} />
+        <Field
+          label="Business Hours JSON"
+          id="business_hours"
+          value={settings.business_hours ?? "[]"}
+          onChange={(v) => onChange("business_hours", v)}
+          rows={5}
+          hint={'Structured JSON. Example: [{"day":"Monday-Friday","time":"10 AM-8 PM"}]'}
+        />
 
         <div className="pt-4 border-t border-[#e5e7eb]">
           <h3 className="text-xs font-bold uppercase tracking-wide text-[#E10600] mb-3">Legal Pages</h3>
@@ -244,6 +272,56 @@ function ContactTab({ settings, onChange }: TabProps) {
         <Field label="Secondary Phone" id="contact_phone_secondary" value={settings.contact_phone_secondary ?? ""} onChange={(v) => onChange("contact_phone_secondary", v)} type="tel" />
         <Field label="Email" id="contact_email" value={settings.contact_email ?? ""} onChange={(v) => onChange("contact_email", v)} type="email" />
         <Field label="WhatsApp Number" id="contact_whatsapp" value={settings.contact_whatsapp ?? ""} onChange={(v) => onChange("contact_whatsapp", v)} type="tel" hint="Include country code, no spaces. e.g. +923001234567" />
+        <div className="pt-4 border-t border-[#e5e7eb]">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-[#E10600] mb-3">Store Location</h3>
+          <label className="flex items-center gap-3 p-4 border border-[#e5e7eb] bg-[#fafaf9] cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={settings.store_location_enabled === "true"}
+              onChange={(e) => onChange("store_location_enabled", e.target.checked ? "true" : "false")}
+              className="w-4 h-4 accent-[#E10600]"
+            />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-[#1a1a1a]">Show store map on contact page</p>
+              <p className="text-xs text-[#6b7280] mt-0.5">Only enable after verifying the map URL or coordinates.</p>
+            </div>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Latitude" id="store_latitude" value={settings.store_latitude ?? ""} onChange={(v) => onChange("store_latitude", v)} inputMode="decimal" />
+            <Field label="Longitude" id="store_longitude" value={settings.store_longitude ?? ""} onChange={(v) => onChange("store_longitude", v)} inputMode="decimal" />
+          </div>
+          <div className="mt-4">
+            <Field label="Map Embed URL" id="map_embed_url" value={settings.map_embed_url ?? ""} onChange={(v) => onChange("map_embed_url", v)} type="url" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomepageTab({ settings, onChange }: TabProps) {
+  return (
+    <div>
+      <h2 className="text-base font-bold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <Globe size={16} className="text-[#E10600]" />
+        Homepage Content
+      </h2>
+      <div className="space-y-4">
+        <Field
+          label="Brand Statement"
+          id="homepage_brand_statement"
+          value={settings.homepage_brand_statement ?? ""}
+          onChange={(v) => onChange("homepage_brand_statement", v)}
+          rows={3}
+        />
+        <Field
+          label="Ticker Items JSON"
+          id="homepage_ticker_items"
+          value={settings.homepage_ticker_items ?? "[]"}
+          onChange={(v) => onChange("homepage_ticker_items", v)}
+          rows={5}
+          hint={'Structured JSON array. Example: ["Premium Denim","Now in Pakistan","Cash on Delivery"]'}
+        />
       </div>
     </div>
   );
