@@ -24,7 +24,10 @@ export async function GET(req: Request) {
       limit,
     });
 
-    const results = products.map(adaptProduct).map((p) => ({
+    const results = products
+      .map(adaptProduct)
+      .sort((a, b) => Number(a.isSoldOut) - Number(b.isSoldOut))
+      .map((p) => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
@@ -36,6 +39,7 @@ export async function GET(req: Request) {
       collection: p.collection,
       tags: p.tags,
       isBestSeller: p.isBestSeller,
+      isSoldOut: p.isSoldOut,
       createdAt: p.createdAt,
     }));
 

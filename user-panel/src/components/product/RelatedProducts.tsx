@@ -39,6 +39,7 @@ export function RelatedProducts({
 
   const related = products
     .filter((p) => p.id !== currentProductId)
+    .sort((a, b) => Number(a.isSoldOut) - Number(b.isSoldOut))
     .slice(0, 4);
 
   const hasRelated = related.length > 0;
@@ -46,7 +47,9 @@ export function RelatedProducts({
 
   if (!hasRelated && !hasRecent) return null;
 
-  const active   = tab === "recent" ? recent.slice(0, 4) : related;
+  const active   = tab === "recent"
+    ? recent.slice().sort((a, b) => Number(a.isSoldOut) - Number(b.isSoldOut)).slice(0, 4)
+    : related;
 
   return (
     <section className="py-14 sm:py-16 border-t border-[#e5e7eb]">

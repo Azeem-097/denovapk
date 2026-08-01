@@ -92,17 +92,19 @@ export function ShopPageClient({ products }: Props) {
     });
   }, [waistParam]);
 
+  const availableProducts = useMemo(() => products.filter((p) => !p.isSoldOut), [products]);
+
   const availableSizes = useMemo(() => {
     const set = new Set<string>();
-    products.forEach((p) => {
+    availableProducts.forEach((p) => {
       getProductWaists(p).forEach((waist) => set.add(waist));
     });
     return Array.from(set).sort((a, b) => Number(a) - Number(b));
-  }, [products]);
+  }, [availableProducts]);
 
   const availableColors = useMemo(() => {
     const map = new Map<string, string>();
-    products.forEach((p) => {
+    availableProducts.forEach((p) => {
       p.variants.forEach((v) => {
         if (v.color && !map.has(v.color)) map.set(v.color, v.colorHex || "#000000");
       });
@@ -110,16 +112,16 @@ export function ShopPageClient({ products }: Props) {
     return Array.from(map.entries())
       .map(([name, hex]): ColorOption => ({ name, hex }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [products]);
+  }, [availableProducts]);
 
   const availableBrands = useMemo(() => {
     const set = new Set<string>();
-    products.forEach((p) => {
+    availableProducts.forEach((p) => {
       const brand = p.brand?.trim();
       if (brand && brand.length > 0) set.add(brand);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [products]);
+  }, [availableProducts]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setIsLoading(true);
@@ -167,17 +169,26 @@ export function ShopPageClient({ products }: Props) {
     if (filterParam === "bestsellers") result = result.filter((p) => p.isBestSeller);
     if (filterParam === "sale")        result = result.filter((p) => !!p.compareAtPrice);
 
-    switch (filters.sortBy) {
-      case "price-asc":   result.sort((a, b) => a.price - b.price); break;
-      case "price-desc":  result.sort((a, b) => b.price - a.price); break;
-      case "bestselling": result.sort((a, b) => b.reviewCount - a.reviewCount); break;
-      case "rating":      result.sort((a, b) => b.rating - a.rating); break;
-      case "newest":      result.sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ); break;
-      default:            break;
-    }
-    return result;
+    const sortGroup = (group: Product[]) => group
+      .map((product, index) => ({ product, index }))
+      .sort((a, b) => {
+        let diff = 0;
+        switch (filters.sortBy) {
+          case "price-asc":   diff = a.product.price - b.product.price; break;
+          case "price-desc":  diff = b.product.price - a.product.price; break;
+          case "bestselling": diff = b.product.reviewCount - a.product.reviewCount; break;
+          case "rating":      diff = b.product.rating - a.product.rating; break;
+          case "newest":      diff = new Date(b.product.createdAt).getTime() - new Date(a.product.createdAt).getTime(); break;
+          default:            diff = 0; break;
+        }
+        return diff || a.index - b.index;
+      })
+      .map(({ product }) => product);
+
+    return [
+      ...sortGroup(result.filter((p) => !p.isSoldOut)),
+      ...sortGroup(result.filter((p) => p.isSoldOut)),
+    ];
   }, [filters, filterParam, products]);
 
   const priceFilterActive =
@@ -193,7 +204,7 @@ export function ShopPageClient({ products }: Props) {
   const pageTitle = filterParam === "new"         ? "Premium" :
                     filterParam === "bestsellers" ? "Best Sellers" :
                     filterParam === "sale"        ? "Sale" :
-                    "International Branded Jeans";
+                    "Original International Brands";
 
   useEffect(() => {
     trackMetaCustomEvent("ViewCategory", { category: pageTitle });

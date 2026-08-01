@@ -84,7 +84,7 @@ export const useCartStore = create<CartState>()(
               set({ items: mapServerCart(cart) });
             } else {
               const data = await res.json().catch(() => null);
-              if (data?.error) showStockToast(data.stock);
+              if (data?.error) showCartError(data.error, data.stock);
               await get().syncFromServer();
             }
           } catch {}
@@ -133,7 +133,7 @@ export const useCartStore = create<CartState>()(
               set({ items: mapServerCart(cart) });
             } else {
               const data = await res.json().catch(() => null);
-              if (data?.error) showStockToast(data.stock);
+              if (data?.error) showCartError(data.error, data.stock);
             }
           } catch {}
         }
@@ -179,6 +179,10 @@ export const useCartStore = create<CartState>()(
           if (res.ok) {
             const { cart } = await res.json();
             set({ items: mapServerCart(cart) });
+          } else {
+            const data = await res.json().catch(() => null);
+            if (data?.error) showCartError(data.error);
+            await get().syncFromServer();
           }
         } catch {}
         set({ isSyncing: false });
@@ -205,7 +209,7 @@ export const useCartStore = create<CartState>()(
 
 function mapServerCart(cart: { items: Array<{
   id: string; productId: string; variantId: string; quantity: number;
-  product: { name: string; slug: string; images: Array<{ url: string }> };
+  product: { name: string; slug: string; isSoldOut?: number; images: Array<{ url: string }> };
   variant: { size: string; color: string; colorHex: string; price: number; stock?: number };
 }>}): CartItem[] {
   return cart.items.map((item) => ({
@@ -220,6 +224,7 @@ function mapServerCart(cart: { items: Array<{
     price:     item.variant.price / 100,
     quantity:  item.quantity,
     stock:     item.variant.stock,
+    isSoldOut: Number(item.product.isSoldOut ?? 0) === 1,
     slug:      item.product.slug,
   }));
 }
@@ -239,4 +244,12 @@ function showStockToast(stock?: number) {
     ? `Only ${stock} items are available in stock.`
     : "This item is out of stock.";
   useToastStore.getState().addToast({ type: "error", message });
+}
+
+function showCartError(error: string, stock?: number) {
+  if (error) {
+    useToastStore.getState().addToast({ type: "error", message: error });
+    return;
+  }
+  showStockToast(stock);
 }

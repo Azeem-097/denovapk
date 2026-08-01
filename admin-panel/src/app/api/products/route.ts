@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       name, description, sku, price, comparePrice, collectionId,
-      status, isNew, isFeatured, isBestSeller, tags, variants,
+      status, isNew, isFeatured, isBestSeller, isSoldOut, tags, variants,
       waist, length, bottom, bgColor, brand,
       measurements,
     } = body;
@@ -86,6 +86,7 @@ export async function POST(req: Request) {
       isNew:        !!isNew,
       isFeatured:   !!isFeatured,
       isBestSeller: !!isBestSeller,
+      isSoldOut:    !!isSoldOut,
       tags:         Array.isArray(tags) ? tags : (typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()) : []),
       imageUrl:     imageUrls[0] || undefined,
       imageUrls:    imageUrls,

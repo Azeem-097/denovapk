@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { updateCartItemQty, removeFromCart, getCartWithItems, CartStockError } from "@/lib/db/repositories/cart";
+import { updateCartItemQty, removeFromCart, getCartWithItems, CartStockError, CartSoldOutError } from "@/lib/db/repositories/cart";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -16,6 +16,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   } catch (err) {
     if (err instanceof CartStockError) {
       return NextResponse.json({ error: err.message, stock: err.stock }, { status: 400 });
+    }
+    if (err instanceof CartSoldOutError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
     console.error(err);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

@@ -50,6 +50,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.isNew        !== undefined) updates.isNew        = body.isNew;
     if (body.isFeatured   !== undefined) updates.isFeatured   = body.isFeatured;
     if (body.isBestSeller !== undefined) updates.isBestSeller = body.isBestSeller;
+    if (body.isSoldOut    !== undefined) updates.isSoldOut    = body.isSoldOut;
     if (body.tags         !== undefined) updates.tags         = Array.isArray(body.tags) ? body.tags : body.tags.split(",");
     const normalizedMeasurements = normalizeMeasurements(body.measurements, { waist: body.waist, length: body.length, bottom: body.bottom });
     const firstMeasurement = normalizedMeasurements[0] ?? null;

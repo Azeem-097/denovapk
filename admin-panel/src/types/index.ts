@@ -31,6 +31,8 @@ export interface AdminProduct {
   brand?:       string | null;   // Optional brand name
   isNew:        boolean;
   isFeatured:   boolean;
+  isBestSeller?: boolean;
+  isSoldOut:    boolean;
   sortOrder?:   number;
   createdAt:    string;
   updatedAt:    string;

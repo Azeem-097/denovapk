@@ -114,6 +114,7 @@ export function EditProductClient({ product, collections }: Props) {
     isNew:        product.isNew === 1,
     isFeatured:   product.isFeatured === 1,
     isBestSeller: product.isBestSeller === 1,
+    isSoldOut:    product.isSoldOut === 1,
     tags:         product.tags ?? "",
     bgColor:      product.bgColor ?? null,
     brand:        product.brand ?? "",
@@ -210,6 +211,7 @@ export function EditProductClient({ product, collections }: Props) {
           isNew:        form.isNew,
           isFeatured:   form.isFeatured,
           isBestSeller: form.isBestSeller,
+          isSoldOut:    form.isSoldOut,
           tags:         typeof form.tags === "string" ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : form.tags,
           waist:        Number(normalizedMeasurements[0].waist),
           length:       normalizedMeasurements[0].length !== "" ? Number(normalizedMeasurements[0].length) : null,
@@ -634,6 +636,7 @@ export function EditProductClient({ product, collections }: Props) {
                 { key: "isNew",        label: "Mark as Premium" },
                 { key: "isFeatured",   label: "Feature on Homepage" },
                 { key: "isBestSeller", label: "Best Seller" },
+                { key: "isSoldOut",    label: "Sold Out" },
               ].map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox"
@@ -643,6 +646,9 @@ export function EditProductClient({ product, collections }: Props) {
                   <span className="text-sm text-[#1a1a1a]">{label}</span>
                 </label>
               ))}
+              <p className="text-[11px] text-[#6b7280]">
+                Product remains visible in the shop but customers cannot purchase it.
+              </p>
             </div>
           </Section>
 

@@ -75,11 +75,18 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
           )}
         </div>
 
+        {item.isSoldOut && (
+          <p className="text-xs font-semibold text-red-600 mb-2">
+            Sold out - remove this item to continue checkout.
+          </p>
+        )}
+
         <div className="mt-auto flex items-end justify-between gap-2">
 
           <div className="inline-flex items-center border border-[#e5e7eb]">
             <button
               onClick={() => updateQty(item.id, item.quantity - 1)}
+              disabled={item.isSoldOut}
               className="w-8 h-8 flex items-center justify-center text-[#6b7280] hover:bg-[#fafaf9] hover:text-[#1a1a1a] transition-colors"
               aria-label="Decrease quantity"
             >
@@ -90,6 +97,7 @@ export function CartItem({ item, onLinkClick, compact = false }: CartItemProps) 
             </span>
             <button
               onClick={() => updateQty(item.id, item.quantity + 1)}
+              disabled={item.isSoldOut}
               className="w-8 h-8 flex items-center justify-center text-[#6b7280] hover:bg-[#fafaf9] hover:text-[#1a1a1a] transition-colors"
               aria-label="Increase quantity"
             >

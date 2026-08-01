@@ -340,6 +340,14 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("Checkout error:", err);
+    if (err instanceof Error && (
+      err.message.includes("sold out") ||
+      err.message.includes("out of stock") ||
+      err.message.includes("available in stock") ||
+      err.message.includes("unavailable")
+    )) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
   }
 }
@@ -360,15 +368,27 @@ async function validateCheckoutStock(items: Array<{ variantId?: string; quantity
 
   const placeholders = variantIds.map(() => "?").join(",");
   const result = await db.execute({
-    sql:  `SELECT id, stock FROM product_variants WHERE id IN (${placeholders})`,
+    sql:  `SELECT v.id, v.stock, p.isSoldOut
+           FROM product_variants v
+           JOIN products p ON p.id = v.productId
+           WHERE v.id IN (${placeholders})`,
     args: variantIds,
   });
 
   const stockByVariant = new Map(
     result.rows.map((row) => [String(row.id), Math.max(0, Math.floor(Number(row.stock) || 0))])
   );
+  const soldOutVariants = new Set(
+    result.rows.filter((row) => Number(row.isSoldOut ?? 0) === 1).map((row) => String(row.id))
+  );
 
   for (const [variantId, quantity] of requestedByVariant) {
+    if (soldOutVariants.has(variantId)) {
+      return {
+        error: "This product is sold out and can no longer be purchased.",
+        variantId,
+      };
+    }
     const stock = stockByVariant.get(variantId) ?? 0;
     if (quantity > stock) {
       return {

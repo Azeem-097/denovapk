@@ -220,7 +220,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const addToCart = useCartStore((s) => s.addItem);
   const showToast = useToastStore((s) => s.addToast);
 
-  const isOutOfStock    = !selectedVariant || selectedVariant.stock === 0;
+  const isOutOfStock    = product.isSoldOut || !selectedVariant || selectedVariant.stock === 0;
   const maxQty          = selectedVariant?.stock ?? 1;
   const hasDiscount     = !!product.compareAtPrice && product.compareAtPrice > product.price;
   const discountPercent = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
@@ -262,6 +262,14 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const doAddToCart = async () => {
     if (!selectedVariant) {
       showToast({ type: "error", message: "Please select a size" });
+      return false;
+    }
+    if (product.isSoldOut) {
+      showToast({ type: "error", message: "This product is sold out and can no longer be purchased." });
+      return false;
+    }
+    if (selectedVariant.stock <= 0) {
+      showToast({ type: "error", message: "This item is out of stock." });
       return false;
     }
     await addToCart({
@@ -469,6 +477,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   <button
                     onClick={handleAddToCart}
                     disabled={isOutOfStock}
+                    aria-disabled={isOutOfStock}
                     className={cn(
                       "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
                       isOutOfStock
@@ -483,6 +492,8 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                         <CheckCircle size={17} strokeWidth={2.25} />
                         <span>Added to Cart</span>
                       </>
+                    ) : product.isSoldOut ? (
+                      <span>Sold Out</span>
                     ) : isOutOfStock ? (
                       <span>Out of Stock</span>
                     ) : (
@@ -496,6 +507,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   <button
                     onClick={handleBuyNow}
                     disabled={isOutOfStock}
+                    aria-disabled={isOutOfStock}
                     className={cn(
                       "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
                       isOutOfStock
@@ -503,7 +515,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                         : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
                     )}
                   >
-                    Buy It Now
+                    {product.isSoldOut ? "Sold Out" : "Buy It Now"}
                   </button>
                 </div>
 

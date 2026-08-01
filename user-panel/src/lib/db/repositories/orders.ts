@@ -113,6 +113,8 @@ export interface CreateOrderInput {
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<OrderWithItems> {
+  await validateOrderItemsAvailable(input.items);
+
   const orderId    = generateId();
   // Generate unique order number (retry up to 10 times on collision)
   let orderNum = generateOrderNumber();
@@ -187,6 +189,38 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderWithIte
   }
 
   return (await getOrderById(orderId))!;
+}
+
+async function validateOrderItemsAvailable(inputItems: CreateOrderInput["items"]): Promise<void> {
+  const requestedByVariant = new Map<string, number>();
+  for (const item of inputItems) {
+    requestedByVariant.set(item.variantId, (requestedByVariant.get(item.variantId) ?? 0) + item.quantity);
+  }
+
+  if (requestedByVariant.size === 0) throw new Error("Your cart is empty.");
+
+  const variantIds = [...requestedByVariant.keys()];
+  const placeholders = variantIds.map(() => "?").join(",");
+  const result = await db.execute({
+    sql:  `SELECT v.id, v.stock, p.isSoldOut
+           FROM product_variants v
+           JOIN products p ON p.id = v.productId
+           WHERE v.id IN (${placeholders})`,
+    args: variantIds,
+  });
+
+  const rowsByVariant = new Map(result.rows.map((row) => [String(row.id), row]));
+  for (const [variantId, quantity] of requestedByVariant) {
+    const row = rowsByVariant.get(variantId);
+    if (!row) throw new Error("One or more items in your cart are unavailable.");
+    if (Number(row.isSoldOut ?? 0) === 1) {
+      throw new Error("This product is sold out and can no longer be purchased.");
+    }
+    const stock = Math.max(0, Math.floor(Number(row.stock) || 0));
+    if (quantity > stock) {
+      throw new Error(stock > 0 ? `Only ${stock} items are available in stock.` : "One or more items in your cart are out of stock.");
+    }
+  }
 }
 
 // ─── Update order status ─────────────────────────────────

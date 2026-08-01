@@ -10,7 +10,7 @@ import { GallerySection }        from "@/components/sections/GallerySection";
 import { NewsletterSection }     from "@/components/sections/NewsletterSection";
 import { getProducts }              from "@/lib/db/repositories/products";
 import { getSetting, getNumberSetting } from "@/lib/db/repositories/settings";
-import { adaptProduct, getMockTestimonials } from "@/lib/adapters";
+import { adaptProduct } from "@/lib/adapters";
 
 type HeroBanner = {
   isActive: true;
@@ -34,8 +34,6 @@ export default async function HomePage() {
 
   const premiumProducts      = allProducts.filter((p) => p.collection === "Premium");
   const superPremiumProducts = allProducts.filter((p) => p.collection === "Super Premium");
-
-  const testimonials = getMockTestimonials();
 
   let heroBanners: HeroBanner[] = [];
   if (heroBannersRaw) {
@@ -78,8 +76,8 @@ export default async function HomePage() {
           newArrivals={premiumProducts}
           bestSellers={superPremiumProducts}
         />
+        <Testimonials />
         <BrandStory />
-        <Testimonials testimonials={testimonials} />
         <GallerySection />
 
         <div className="mt-12 sm:mt-16 lg:mt-20 bg-[#f5f0e8]">

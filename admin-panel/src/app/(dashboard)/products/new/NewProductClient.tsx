@@ -36,6 +36,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
     isNew:        false,
     isFeatured:   false,
     isBestSeller: false,
+    isSoldOut:    false,
     tags:         "",
     imageUrl:     "",
     images:       [] as string[],
@@ -381,6 +382,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
                 { key: "isNew",        label: "Mark as Premium" },
                 { key: "isFeatured",   label: "Feature on Homepage" },
                 { key: "isBestSeller", label: "Best Seller" },
+                { key: "isSoldOut",    label: "Sold Out" },
               ].map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox"
@@ -390,6 +392,9 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
                   <span className="text-sm text-[#1a1a1a]">{label}</span>
                 </label>
               ))}
+              <p className="text-[11px] text-[#6b7280]">
+                Product remains visible in the shop but customers cannot purchase it.
+              </p>
             </div>
           </Section>
         </div>

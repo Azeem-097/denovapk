@@ -10,5 +10,6 @@ export interface SearchProduct {
   collection: string;
   tags: string[];
   isBestSeller: boolean;
+  isSoldOut: boolean;
   createdAt: string;
 }

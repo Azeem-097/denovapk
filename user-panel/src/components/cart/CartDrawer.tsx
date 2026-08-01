@@ -66,6 +66,7 @@ export function CartDrawer() {
   const progressPercent = threshold > 0 ? Math.min(100, (subtotal / threshold) * 100) : 0;
 
   const displayItems = mounted ? items : [];
+  const hasSoldOutItem = displayItems.some((item) => item.isSoldOut);
 
   // Body scroll lock
   useEffect(() => {
@@ -198,24 +199,40 @@ export function CartDrawer() {
             </div>
 
             <div className="flex flex-col gap-2 pt-1">
-              <Link
-                href="/checkout"
-                onClick={() => {
-                  trackMetaEvent("InitiateCheckout", {
-                    value: total,
-                    currency: "PKR",
-                    num_items: itemCount,
-                  });
-                  closeCart();
-                }}
-                className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
-              >
-                Proceed to Checkout
-                <ArrowRight
-                  size={16}
-                  className="transition-transform duration-200 group-hover:translate-x-1"
-                />
-              </Link>
+              {hasSoldOutItem && (
+                <p className="text-xs text-red-600 leading-relaxed">
+                  This product is sold out and can no longer be purchased. Remove it to continue checkout.
+                </p>
+              )}
+              {hasSoldOutItem ? (
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="inline-flex items-center justify-center gap-2 bg-[#e5e7eb] text-[#6b7280] py-3.5 text-sm font-semibold tracking-wide cursor-not-allowed"
+                >
+                  Checkout Unavailable
+                </button>
+              ) : (
+                <Link
+                  href="/checkout"
+                  onClick={() => {
+                    trackMetaEvent("InitiateCheckout", {
+                      value: total,
+                      currency: "PKR",
+                      num_items: itemCount,
+                    });
+                    closeCart();
+                  }}
+                  className="group inline-flex items-center justify-center gap-2 bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
+                >
+                  Proceed to Checkout
+                  <ArrowRight
+                    size={16}
+                    className="transition-transform duration-200 group-hover:translate-x-1"
+                  />
+                </Link>
+              )}
               <Link
                 href="/cart"
                 onClick={closeCart}

@@ -22,6 +22,35 @@ export class CartStockError extends Error {
   }
 }
 
+export class CartSoldOutError extends Error {
+  constructor() {
+    super("This product is sold out and can no longer be purchased.");
+    this.name = "CartSoldOutError";
+  }
+}
+
+let soldOutColumnReady: Promise<void> | null = null;
+
+async function ensureSoldOutColumn(): Promise<void> {
+  if (!soldOutColumnReady) {
+    soldOutColumnReady = (async () => {
+      const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
+      const exists = result.rows.some((row) => (row.name as string) === "isSoldOut");
+      if (!exists) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN isSoldOut INTEGER NOT NULL DEFAULT 0;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: isSoldOut")) throw error;
+        }
+      }
+    })().catch((error) => {
+      soldOutColumnReady = null;
+      throw error;
+    });
+  }
+  return soldOutColumnReady;
+}
+
 // ─── Get or create cart for user ─────────────────────────
 export async function getOrCreateCart(userId: string): Promise<DbCart> {
   const existing = await db.execute({
@@ -45,6 +74,7 @@ export async function getOrCreateCart(userId: string): Promise<DbCart> {
 
 // ─── Get cart with all items + product details ───────────
 export async function getCartWithItems(userId: string): Promise<UserCart> {
+  await ensureSoldOutColumn();
   const cart = await getOrCreateCart(userId);
 
   const itemsResult = await db.execute({
@@ -94,10 +124,13 @@ export async function addToCart(
   variantId: string,
   quantity:  number
 ): Promise<void> {
+  await ensureSoldOutColumn();
   const cart = await getOrCreateCart(userId);
   const t = now();
   const requestedQty = Math.max(1, Math.floor(Number(quantity) || 1));
-  const stock = await getVariantStock(variantId);
+  const availability = await getVariantAvailability(variantId, productId);
+  if (availability.isSoldOut) throw new CartSoldOutError();
+  const stock = availability.stock;
 
   const existing = await db.execute({
     sql:  "SELECT * FROM cart_items WHERE cartId = ? AND variantId = ? LIMIT 1",
@@ -122,6 +155,7 @@ export async function addToCart(
 }
 
 export async function updateCartItemQty(userId: string, itemId: string, quantity: number): Promise<void> {
+  await ensureSoldOutColumn();
   const cart = await getOrCreateCart(userId);
 
   if (quantity <= 0) {
@@ -139,7 +173,9 @@ export async function updateCartItemQty(userId: string, itemId: string, quantity
   if (current.rows.length === 0) return;
 
   const item = current.rows[0] as unknown as DbCartItem;
-  const stock = await getVariantStock(item.variantId);
+  const availability = await getVariantAvailability(item.variantId, item.productId);
+  if (availability.isSoldOut) throw new CartSoldOutError();
+  const stock = availability.stock;
   const requestedQty = Math.max(1, Math.floor(Number(quantity) || 1));
   if (requestedQty > stock) throw new CartStockError(stock);
 
@@ -180,12 +216,21 @@ export async function mergeGuestCart(
   }
 }
 
-async function getVariantStock(variantId: string): Promise<number> {
+async function getVariantAvailability(
+  variantId: string,
+  productId?: string
+): Promise<{ stock: number; isSoldOut: boolean }> {
   const result = await db.execute({
-    sql:  "SELECT stock FROM product_variants WHERE id = ? LIMIT 1",
-    args: [variantId],
+    sql:  `SELECT v.stock, p.isSoldOut
+           FROM product_variants v
+           JOIN products p ON p.id = v.productId
+           WHERE v.id = ? ${productId ? "AND p.id = ?" : ""} LIMIT 1`,
+    args: productId ? [variantId, productId] : [variantId],
   });
 
   if (result.rows.length === 0) throw new CartStockError(0);
-  return Math.max(0, Math.floor(Number(result.rows[0].stock) || 0));
+  return {
+    stock: Math.max(0, Math.floor(Number(result.rows[0].stock) || 0)),
+    isSoldOut: Number(result.rows[0].isSoldOut ?? 0) === 1,
+  };
 }

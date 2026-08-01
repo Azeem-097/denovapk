@@ -131,6 +131,11 @@ function SearchProductGrid({ products }: { products: SearchProduct[] }) {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             )}
+            {p.isSoldOut && (
+              <div className="absolute left-3 top-3 bg-[#1a1a1a]/95 text-white px-3 py-1.5 text-[10px] font-bold tracking-[0.18em] uppercase shadow-lg">
+                Sold Out
+              </div>
+            )}
           </div>
           <p className="text-xs uppercase tracking-wider text-[#F97316]">{p.collection}</p>
           <h2 className="text-sm font-medium text-[#1a1a1a] group-hover:text-[#F97316] transition-colors line-clamp-1">

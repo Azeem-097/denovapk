@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS products (
   isNew             INTEGER NOT NULL DEFAULT 0,
   isFeatured        INTEGER NOT NULL DEFAULT 0,
   isBestSeller      INTEGER NOT NULL DEFAULT 0,
+  isSoldOut         INTEGER NOT NULL DEFAULT 0,
   metaTitle         TEXT,
   metaDescription   TEXT,
   tags              TEXT NOT NULL DEFAULT '',

@@ -86,6 +86,7 @@ export interface DbProduct {
   isNew:            number;
   isFeatured:       number;
   isBestSeller:     number;
+  isSoldOut:        number;
   metaTitle:        string | null;
   metaDescription:  string | null;
   tags:             string;

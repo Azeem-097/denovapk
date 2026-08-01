@@ -13,18 +13,44 @@ export interface ProductWithRelations extends DbProduct {
 type ProductColumnInfo = {
   hasMeasurementsJson: boolean;
   hasSortOrder: boolean;
+  hasIsSoldOut: boolean;
 };
 
-function getProductCols(): string {
-  const columnInfo: ProductColumnInfo = {
-    hasMeasurementsJson: true,
-    hasSortOrder: true,
-  };
+let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
+
+async function getProductColumnInfo(): Promise<ProductColumnInfo> {
+  if (!productColumnInfoPromise) {
+    productColumnInfoPromise = (async () => {
+      const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
+      const hasIsSoldOut = result.rows.some((row) => (row.name as string) === "isSoldOut");
+
+      if (!hasIsSoldOut) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN isSoldOut INTEGER NOT NULL DEFAULT 0;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: isSoldOut")) {
+            throw error;
+          }
+        }
+      }
+
+      return { hasMeasurementsJson: true, hasSortOrder: true, hasIsSoldOut: true };
+    })().catch((error) => {
+      productColumnInfoPromise = null;
+      throw error;
+    });
+  }
+
+  return productColumnInfoPromise;
+}
+
+async function getProductCols(): Promise<string> {
+  const columnInfo = await getProductColumnInfo();
 
   return `
   p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
-  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
+  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller, ${columnInfo.hasIsSoldOut ? "p.isSoldOut" : "0 as isSoldOut"},
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
   p.waist, p."length" as lengthInches, p.bottom${columnInfo.hasMeasurementsJson ? ", p.measurementsJson" : ""}, p.bgColor, p.brand,
   ${columnInfo.hasSortOrder ? "p.sortOrder" : "0 as sortOrder"}, p.createdAt, p.updatedAt
@@ -79,7 +105,7 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   const limit  = opts.limit  ? `LIMIT ${opts.limit}`   : "";
   const offset = opts.offset ? `OFFSET ${opts.offset}` : "";
 
-  const productCols = getProductCols();
+  const productCols = await getProductCols();
   const result = await db.execute({
     sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p LEFT JOIN collections c ON c.id = p.collectionId
@@ -113,7 +139,7 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductWithRelations | null> {
-  const productCols = getProductCols();
+  const productCols = await getProductCols();
   const result = await db.execute({
     sql: `SELECT ${productCols}, c.id as col_id, c.name as col_name, c.slug as col_slug
           FROM products p LEFT JOIN collections c ON c.id = p.collectionId
@@ -139,7 +165,7 @@ export async function getProductBySlug(slug: string): Promise<ProductWithRelatio
 }
 
 export async function getProductById(id: string): Promise<ProductWithRelations | null> {
-  const productCols = getProductCols();
+  const productCols = await getProductCols();
   const result = await db.execute({
     sql: `SELECT ${productCols} FROM products p WHERE p.id = ? LIMIT 1`,
     args: [id],
@@ -182,7 +208,7 @@ export async function getProductCount(opts: GetProductsOptions = {}): Promise<nu
 export async function getRelatedProducts(
   productId: string, collectionId: string, limit = 4
 ): Promise<ProductWithRelations[]> {
-  const productCols = getProductCols();
+  const productCols = await getProductCols();
   const result = await db.execute({
     sql:  `SELECT ${productCols} FROM products p WHERE p.collectionId = ? AND p.id != ? AND p.status = 'PUBLISHED' ORDER BY RANDOM() LIMIT ?`,
     args: [collectionId, productId, limit],

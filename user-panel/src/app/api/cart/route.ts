@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getCartWithItems, addToCart, clearCart, mergeGuestCart, CartStockError } from "@/lib/db/repositories/cart";
+import { getCartWithItems, addToCart, clearCart, mergeGuestCart, CartStockError, CartSoldOutError } from "@/lib/db/repositories/cart";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -34,6 +34,9 @@ export async function POST(req: Request) {
   } catch (err) {
     if (err instanceof CartStockError) {
       return NextResponse.json({ error: err.message, stock: err.stock }, { status: 400 });
+    }
+    if (err instanceof CartSoldOutError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
     console.error(err);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

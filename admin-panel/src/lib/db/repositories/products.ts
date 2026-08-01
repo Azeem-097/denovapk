@@ -13,6 +13,7 @@ export interface ProductWithRelations extends DbProduct {
 type ProductColumnInfo = {
   hasMeasurementsJson: boolean;
   hasSortOrder: boolean;
+  hasIsSoldOut: boolean;
 };
 
 let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
@@ -23,6 +24,7 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
       const result = await db.execute({ sql: "PRAGMA table_info(products);", args: [] });
       const hasMeasurementsJson = result.rows.some((row) => (row.name as string) === "measurementsJson");
       const hasSortOrder = result.rows.some((row) => (row.name as string) === "sortOrder");
+      const hasIsSoldOut = result.rows.some((row) => (row.name as string) === "isSoldOut");
 
       if (!hasMeasurementsJson) {
         try {
@@ -44,7 +46,17 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
         }
       }
 
-      return { hasMeasurementsJson: true, hasSortOrder: true };
+      if (!hasIsSoldOut) {
+        try {
+          await db.execute({ sql: "ALTER TABLE products ADD COLUMN isSoldOut INTEGER NOT NULL DEFAULT 0;", args: [] });
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes("duplicate column name: isSoldOut")) {
+            throw error;
+          }
+        }
+      }
+
+      return { hasMeasurementsJson: true, hasSortOrder: true, hasIsSoldOut: true };
     })().catch((error) => {
       productColumnInfoPromise = null;
       throw error;
@@ -55,11 +67,11 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
 }
 
 async function getProductCols(): Promise<string> {
-  const { hasMeasurementsJson, hasSortOrder } = await getProductColumnInfo();
+  const { hasMeasurementsJson, hasSortOrder, hasIsSoldOut } = await getProductColumnInfo();
   return `
   p.id, p.name, p.slug, p.sku, p.description, p.shortDescription,
   p.price, p.comparePrice, p.costPerItem, p.taxRate, p.status,
-  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller,
+  p.collectionId, p.isNew, p.isFeatured, p.isBestSeller, ${hasIsSoldOut ? "p.isSoldOut" : "0 as isSoldOut"},
   p.metaTitle, p.metaDescription, p.tags, p.rating, p.reviewCount, p.soldCount,
   p.waist, p."length" as lengthInches, p.bottom${hasMeasurementsJson ? ", p.measurementsJson" : ""}, p.bgColor, p.brand,
   ${hasSortOrder ? "p.sortOrder" : "0 as sortOrder"}, p.createdAt, p.updatedAt
@@ -266,6 +278,7 @@ export interface CreateProductInput {
   isNew?:           boolean;
   isFeatured?:      boolean;
   isBestSeller?:    boolean;
+  isSoldOut?:       boolean;
   tags?:            string[];
     metaTitle?:       string;
     metaDescription?: string;
@@ -297,6 +310,7 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
   const productColumns = [
     "id", "name", "slug", "sku", "description", "price", "comparePrice", "costPerItem",
     "collectionId", "status", "isNew", "isFeatured", "isBestSeller", "tags",
+    "isSoldOut",
     "metaTitle", "metaDescription", "waist", '"length"', "bottom",
     ...(hasMeasurementsJson ? ["measurementsJson"] : []),
     "bgColor", "brand", "sortOrder", "createdAt", "updatedAt",
@@ -308,6 +322,7 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
     input.collectionId ?? null, input.status ?? "DRAFT",
     input.isNew ? 1 : 0, input.isFeatured ? 1 : 0, input.isBestSeller ? 1 : 0,
     (input.tags ?? []).join(","),
+    input.isSoldOut ? 1 : 0,
     input.metaTitle ?? null, input.metaDescription ?? null,
     input.waist ?? null, input.length ?? null, input.bottom ?? null,
     ...(hasMeasurementsJson ? [input.measurementsJson ?? null] : []),
@@ -367,6 +382,7 @@ export async function updateProduct(
     isNew:           updates.isNew        === undefined ? undefined : (updates.isNew        ? 1 : 0),
     isFeatured:      updates.isFeatured   === undefined ? undefined : (updates.isFeatured   ? 1 : 0),
     isBestSeller:    updates.isBestSeller === undefined ? undefined : (updates.isBestSeller ? 1 : 0),
+    isSoldOut:       updates.isSoldOut    === undefined ? undefined : (updates.isSoldOut    ? 1 : 0),
     tags:            updates.tags ? updates.tags.join(",") : undefined,
     metaTitle:       updates.metaTitle,
     metaDescription: updates.metaDescription,
@@ -525,6 +541,7 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
   const productColumns = [
     "id", "name", "slug", "sku", "description", "price", "comparePrice", "costPerItem",
     "collectionId", "status", "isNew", "isFeatured", "isBestSeller", "tags",
+    "isSoldOut",
     "metaTitle", "metaDescription", "waist", '"length"', "bottom",
     ...(hasMeasurementsJson ? ["measurementsJson"] : []),
     "bgColor", "brand", "sortOrder", "createdAt", "updatedAt",
@@ -536,6 +553,7 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
     source.collectionId, "DRAFT",
     source.isNew, source.isFeatured, source.isBestSeller,
     source.tags,
+    source.isSoldOut,
     source.metaTitle, source.metaDescription,
     source.waist, source.length, source.bottom,
     ...(hasMeasurementsJson ? [source.measurementsJson] : []),

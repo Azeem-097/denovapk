@@ -38,6 +38,7 @@ export interface Product {
   isNew: boolean;
   isFeatured: boolean;
   isBestSeller: boolean;
+  isSoldOut: boolean;
   rating: number;
   reviewCount: number;
   waist:  number | null;
@@ -75,6 +76,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   stock?: number;
+  isSoldOut?: boolean;
   slug: string;
   bgColor?: string | null;   // optional — captured at add-to-cart time
 }

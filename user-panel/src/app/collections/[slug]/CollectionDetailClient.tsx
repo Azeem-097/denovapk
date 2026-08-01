@@ -37,15 +37,25 @@ export function CollectionDetailClient({ collection, products }: Props) {
   }, [collection.name]);
 
   const sorted = useMemo(() => {
-    const list = [...products];
-    switch (sortBy) {
-      case "newest":     list.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
-      case "price-asc":  list.sort((a,b) => a.price - b.price); break;
-      case "price-desc": list.sort((a,b) => b.price - a.price); break;
-      case "rating":     list.sort((a,b) => b.rating - a.rating); break;
-      default:           list.sort((a,b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-    }
-    return list;
+    const sortGroup = (group: Product[]) => group
+      .map((product, index) => ({ product, index }))
+      .sort((a,b) => {
+        let diff = 0;
+        switch (sortBy) {
+          case "newest":     diff = new Date(b.product.createdAt).getTime() - new Date(a.product.createdAt).getTime(); break;
+          case "price-asc":  diff = a.product.price - b.product.price; break;
+          case "price-desc": diff = b.product.price - a.product.price; break;
+          case "rating":     diff = b.product.rating - a.product.rating; break;
+          default:           diff = (b.product.isFeatured ? 1 : 0) - (a.product.isFeatured ? 1 : 0);
+        }
+        return diff || a.index - b.index;
+      })
+      .map(({ product }) => product);
+
+    return [
+      ...sortGroup(products.filter((p) => !p.isSoldOut)),
+      ...sortGroup(products.filter((p) => p.isSoldOut)),
+    ];
   }, [products, sortBy]);
 
   return (

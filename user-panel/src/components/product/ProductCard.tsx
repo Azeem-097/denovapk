@@ -51,6 +51,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (product.isSoldOut) {
+      showToast({ type: "error", message: "This product is sold out and can no longer be purchased." });
+      return;
+    }
     const defaultVariant = product.variants.find((variant) => variant.stock > 0) ?? product.variants[0];
     if (!defaultVariant) return;
     if (defaultVariant.stock <= 0) {
@@ -149,6 +153,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
         </ProductBgWrapper>
 
+        {product.isSoldOut && (
+          <div className="absolute left-3 top-3 z-10 bg-[#1a1a1a]/95 text-white px-3 py-1.5 text-[10px] font-bold tracking-[0.18em] uppercase shadow-lg">
+            Sold Out
+          </div>
+        )}
+
         {/* Corner accents that reveal on hover — nudged inward to sit inside the rounded corner */}
         <div
           className={cn(
@@ -192,9 +202,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
         >
           <button
             onClick={handleQuickAdd}
-            className="shimmer-btn w-full bg-white/98 backdrop-blur-sm text-[#1a1a1a] text-[11px] font-semibold tracking-[0.15em] uppercase py-3 hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center justify-between px-4 border-t border-[#e5e7eb]/50"
+            disabled={product.isSoldOut}
+            aria-disabled={product.isSoldOut}
+            className={cn(
+              "shimmer-btn w-full backdrop-blur-sm text-[11px] font-semibold tracking-[0.15em] uppercase py-3 transition-colors flex items-center justify-between px-4 border-t border-[#e5e7eb]/50",
+              product.isSoldOut
+                ? "bg-[#e5e7eb]/98 text-[#6b7280] cursor-not-allowed"
+                : "bg-white/98 text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white"
+            )}
           >
-            <span>Add to Basket</span>
+            <span>{product.isSoldOut ? "Sold Out" : "Add to Basket"}</span>
             <ShoppingBag size={13} strokeWidth={1.75} className="transition-transform duration-300 group-hover:rotate-12" />
           </button>
         </div>

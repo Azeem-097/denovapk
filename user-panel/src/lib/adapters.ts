@@ -55,6 +55,7 @@ export function adaptProduct(p: ProductWithRelations): Product {
     isNew:          p.isNew === 1,
     isFeatured:     p.isFeatured === 1,
     isBestSeller:   p.isBestSeller === 1,
+    isSoldOut:      p.isSoldOut === 1,
     rating:         p.rating,
     reviewCount:    p.reviewCount,
     waist:          p.waist  ?? null,

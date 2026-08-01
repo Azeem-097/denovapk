@@ -29,6 +29,7 @@ export default function CartPage() {
   const subtotal  = getSubtotal();
   const shipping  = getShipping();
   const total     = getTotal();
+  const hasSoldOutItem = items.some((item) => item.isSoldOut);
 
   // Threshold-related calculations
   const showProgressBar =
@@ -168,18 +169,34 @@ export default function CartPage() {
                   <span className="text-2xl font-bold text-[#1a1a1a]">{formatPrice(total)}</span>
                 </div>
 
-                <Link
-                  href="/checkout"
-                  onClick={() => trackMetaEvent("InitiateCheckout", {
-                    value: total,
-                    currency: "PKR",
-                    num_items: itemCount,
-                  })}
-                  className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
-                >
-                  Proceed to Checkout
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </Link>
+                {hasSoldOutItem && (
+                  <p className="mb-3 text-xs text-red-600 leading-relaxed">
+                    This product is sold out and can no longer be purchased. Remove it to continue checkout.
+                  </p>
+                )}
+                {hasSoldOutItem ? (
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="inline-flex items-center justify-center gap-2 w-full bg-[#e5e7eb] text-[#6b7280] py-3.5 text-sm font-semibold tracking-wide cursor-not-allowed"
+                  >
+                    Checkout Unavailable
+                  </button>
+                ) : (
+                  <Link
+                    href="/checkout"
+                    onClick={() => trackMetaEvent("InitiateCheckout", {
+                      value: total,
+                      currency: "PKR",
+                      num_items: itemCount,
+                    })}
+                    className="group inline-flex items-center justify-center gap-2 w-full bg-[#1a1a1a] text-white py-3.5 text-sm font-semibold tracking-wide hover:bg-[#F97316] transition-colors duration-300"
+                  >
+                    Proceed to Checkout
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </Link>
+                )}
               </div>
 
               <div className="mt-6 pt-5 border-t border-[#e5e7eb] space-y-2.5">
