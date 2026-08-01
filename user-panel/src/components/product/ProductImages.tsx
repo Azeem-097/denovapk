@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { Package, Heart } from "lucide-react";
@@ -34,7 +34,6 @@ const PLACEHOLDER: ProductImageType = {
 // ═══════════════════════════════════════════════════════════
 const ZOOM_LEVEL_TARGET   = 2.5;   // desired magnification
 const PANEL_MARGIN        = 24;    // horizontal margin
-const PANEL_BOTTOM        = 0;     // px from viewport bottom
 
 // Lens size will be derived, but with these guards:
 const LENS_MIN            = 80;    // px  — smallest permitted lens edge
@@ -240,15 +239,23 @@ export function ProductImages({
   bgColor,
   discountPercent,
 }: ProductImagesProps) {
-  const safeImages = images && images.length > 0 ? images : [PLACEHOLDER];
-
-  const sortedImages = [...safeImages].sort(
-    (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
-  );
+  const sortedImages = useMemo(() => {
+    const safeImages = images && images.length > 0 ? images : [PLACEHOLDER];
+    return [...safeImages].sort(
+      (a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)
+    );
+  }, [images]);
 
   const scrollerRef  = useRef<HTMLDivElement | null>(null);
   const galleryRef   = useRef<HTMLDivElement | null>(null);
+  const autoSlideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMobileGalleryRef = useRef(false);
+  const isInteractingRef = useRef(false);
+  const isAutoScrollingRef = useRef(false);
   const [mobileIndex, setMobileIndex] = useState(0);
+  const [isMobileGallery, setIsMobileGallery] = useState(false);
+  const [autoSlideRestartKey, setAutoSlideRestartKey] = useState(0);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx,  setLightboxIdx]  = useState(0);
@@ -277,6 +284,18 @@ export function ProductImages({
     return () => mq.removeEventListener?.("change", check);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 639px)");
+    const check = () => {
+      isMobileGalleryRef.current = mq.matches;
+      setIsMobileGallery(mq.matches);
+    };
+    check();
+    mq.addEventListener?.("change", check);
+    return () => mq.removeEventListener?.("change", check);
+  }, []);
+
   const openLightbox = useCallback((idx: number) => {
     setLightboxIdx(idx);
     setLightboxOpen(true);
@@ -286,12 +305,48 @@ export function ProductImages({
 
   const closeLightbox = useCallback(() => setLightboxOpen(false), []);
 
+  const clearAutoSlideTimer = useCallback(() => {
+    if (autoSlideTimerRef.current) {
+      clearTimeout(autoSlideTimerRef.current);
+      autoSlideTimerRef.current = null;
+    }
+  }, []);
+
+  const clearScrollResumeTimer = useCallback(() => {
+    if (scrollResumeTimerRef.current) {
+      clearTimeout(scrollResumeTimerRef.current);
+      scrollResumeTimerRef.current = null;
+    }
+  }, []);
+
+  const endMobileInteraction = useCallback(() => {
+    isInteractingRef.current = false;
+    setAutoSlideRestartKey((key) => key + 1);
+  }, []);
+
+  const beginMobileInteraction = useCallback(() => {
+    if (!isMobileGalleryRef.current) return;
+    isInteractingRef.current = true;
+    clearAutoSlideTimer();
+    clearScrollResumeTimer();
+  }, [clearAutoSlideTimer, clearScrollResumeTimer]);
+
   const handleScroll = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
     const idx = Math.round(el.scrollLeft / el.clientWidth);
     if (idx !== mobileIndex) setMobileIndex(idx);
-  }, [mobileIndex]);
+
+    if (!isMobileGalleryRef.current || isAutoScrollingRef.current) return;
+    beginMobileInteraction();
+    clearScrollResumeTimer();
+    scrollResumeTimerRef.current = setTimeout(endMobileInteraction, 250);
+  }, [
+    beginMobileInteraction,
+    clearScrollResumeTimer,
+    endMobileInteraction,
+    mobileIndex,
+  ]);
 
   const scrollToSlide = useCallback((idx: number) => {
     const el = scrollerRef.current;
@@ -299,8 +354,19 @@ export function ProductImages({
     el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
   }, []);
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const scrollToMobileSlide = useCallback((idx: number, auto = false) => {
+    if (auto) {
+      isAutoScrollingRef.current = true;
+      window.setTimeout(() => {
+        isAutoScrollingRef.current = false;
+      }, 600);
+    } else {
+      beginMobileInteraction();
+      endMobileInteraction();
+    }
+    scrollToSlide(idx);
+  }, [beginMobileInteraction, endMobileInteraction, scrollToSlide]);
+
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist   = useWishlistStore((s) => s.isInWishlist(productId));
   const showToast      = useToastStore((s) => s.addToast);
@@ -398,6 +464,48 @@ export function ProductImages({
     ? computeLayout(zoom.sourceRect, zoom.hostRect)
     : null;
 
+  useEffect(() => {
+    clearAutoSlideTimer();
+
+    if (!isMobileGallery) return;
+    if (sortedImages.length <= 1) return;
+    if (typeof document !== "undefined" && document.hidden) return;
+    if (isInteractingRef.current) return;
+
+    autoSlideTimerRef.current = setTimeout(() => {
+      if (!isMobileGalleryRef.current) return;
+      if (typeof document !== "undefined" && document.hidden) return;
+      if (isInteractingRef.current) return;
+      const next = (mobileIndex + 1) % sortedImages.length;
+      scrollToMobileSlide(next, true);
+    }, 3000);
+
+    return clearAutoSlideTimer;
+  }, [
+    clearAutoSlideTimer,
+    isMobileGallery,
+    mobileIndex,
+    autoSlideRestartKey,
+    scrollToMobileSlide,
+    sortedImages.length,
+  ]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      clearAutoSlideTimer();
+      if (!document.hidden) {
+        isInteractingRef.current = false;
+        setAutoSlideRestartKey((key) => key + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearAutoSlideTimer();
+      clearScrollResumeTimer();
+    };
+  }, [clearAutoSlideTimer, clearScrollResumeTimer]);
+
   return (
     <>
       {/* DESKTOP */}
@@ -479,18 +587,18 @@ export function ProductImages({
               {i === 0 && (
                 <button
                   onClick={handleWishlist}
-                  aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                  aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
                   className={cn(
                     "absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm transition-all duration-300",
                     "opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0",
-                    mounted && isInWishlist && "opacity-100 translate-x-0"
+                    isInWishlist && "opacity-100 translate-x-0"
                   )}
                 >
                   <Heart
                     size={16}
                     className={cn(
                       "transition-colors",
-                      mounted && isInWishlist ? "text-[#F97316] fill-[#F97316]" : "text-[#1a1a1a]"
+                      isInWishlist ? "text-[#F97316] fill-[#F97316]" : "text-[#1a1a1a]"
                     )}
                   />
                 </button>
@@ -505,14 +613,14 @@ export function ProductImages({
         <div className="relative">
           <button
             onClick={handleWishlist}
-            aria-label={mounted && isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
             className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-full shadow-sm"
           >
             <Heart
               size={16}
               className={cn(
                 "transition-colors",
-                mounted && isInWishlist ? "text-[#F97316] fill-[#F97316]" : "text-[#1a1a1a]"
+                isInWishlist ? "text-[#F97316] fill-[#F97316]" : "text-[#1a1a1a]"
               )}
             />
           </button>
@@ -524,17 +632,23 @@ export function ProductImages({
           <div
             ref={scrollerRef}
             onScroll={handleScroll}
-            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-pan-x"
+            onPointerDown={beginMobileInteraction}
+            onPointerUp={endMobileInteraction}
+            onPointerCancel={endMobileInteraction}
+            onPointerLeave={endMobileInteraction}
+            onTouchStart={beginMobileInteraction}
+            onTouchEnd={endMobileInteraction}
+            onTouchCancel={endMobileInteraction}
+            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide overscroll-x-contain touch-auto"
             style={{ scrollBehavior: "auto" }}
           >
             {sortedImages.map((img, i) => (
               <button
                 key={img.id + i}
                 type="button"
-                onClick={() => !isPlaceholder(img.url) && openLightbox(i)}
                 disabled={isPlaceholder(img.url)}
-                className="flex-shrink-0 w-full snap-start cursor-zoom-in disabled:cursor-default"
-                aria-label={`View image ${i + 1} in full screen`}
+                className="flex-shrink-0 w-full snap-start cursor-default disabled:cursor-default touch-auto"
+                aria-label={`Product image ${i + 1}`}
               >
                 <ProductBgWrapper
                   bgColor={bgColor}
@@ -580,7 +694,8 @@ export function ProductImages({
               return (
                 <button
                   key={i}
-                  onClick={() => scrollToSlide(i)}
+                  onClick={() => scrollToMobileSlide(i)}
+                  onPointerDown={beginMobileInteraction}
                   aria-label={`Go to image ${i + 1}`}
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-300",
@@ -603,7 +718,7 @@ export function ProductImages({
         onClose={closeLightbox}
       />
 
-      {mounted && layout && <ZoomPanel state={zoom} layout={layout} />}
+      {layout && <ZoomPanel state={zoom} layout={layout} />}
 
       <style jsx global>{`
         .scrollbar-hide {
