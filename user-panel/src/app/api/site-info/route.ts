@@ -14,7 +14,7 @@ export async function GET() {
     const info = await getSiteInfo();
     return NextResponse.json(info, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        "Cache-Control": "no-store",
       },
     });
   } catch (err) {
@@ -25,6 +25,9 @@ export async function GET() {
       whatsapp:         "+923001234567",
       address:          "Gulberg III, Lahore, Pakistan",
       brandName:        "Denova PK",
+      brandTagline:     "Crafted for the Modern You",
+      brandDescription: "Premium Denim Clothing - Pakistan's finest selvedge jeans",
+      brandCity:        "Lahore",
       brandYear:        "2026",
       legalLastUpdated: "July 2026",
     });

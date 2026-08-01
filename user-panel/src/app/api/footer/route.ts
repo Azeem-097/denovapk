@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { getSettingsByCategory, getSetting } from "@/lib/db/repositories/settings";
 
-export const revalidate = 60; // Cache for 60 seconds
+export const dynamic    = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {
-    const [footer, contact, social] = await Promise.all([
+    const [footer, contact, social, brandName, brandDescription, brandAddress] = await Promise.all([
       getSettingsByCategory("footer"),
       getSettingsByCategory("contact"),
       getSettingsByCategory("social"),
+      getSetting("brand_name"),
+      getSetting("brand_description"),
+      getSetting("brand_address"),
     ]);
 
     // Parse JSON link columns safely
@@ -17,12 +21,10 @@ export async function GET() {
       catch { return []; }
     };
 
-    const brandName = await getSetting("brand_name") ?? "Denova PK";
-
     return NextResponse.json({
       brand: {
-        name:        brandName,
-        description: footer.footer_brand_description ?? "",
+        name:        brandName ?? "Denova PK",
+        description: brandDescription || footer.footer_brand_description || "",
         copyright:   footer.footer_copyright ?? "Denova PK. All rights reserved.",
         payment:     footer.footer_payment_methods ?? "JazzCash | EasyPaisa | COD | Bank Transfer",
       },
@@ -30,7 +32,7 @@ export async function GET() {
         phone:    contact.contact_phone_primary ?? "",
         email:    contact.contact_email ?? "",
         whatsapp: contact.contact_whatsapp ?? "",
-        address:  await getSetting("brand_address") ?? "",
+        address:  brandAddress ?? "",
       },
       social: {
         instagram: social.social_instagram ?? "",
@@ -56,6 +58,10 @@ export async function GET() {
         },
       ],
       bottomLinks: parseLinks(footer.footer_bottom_links ?? "[]"),
+    }, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
     });
   } catch (err) {
     console.error("Footer API error:", err);

@@ -119,9 +119,22 @@ function mergeWithFallback(api: FooterData): FooterData {
   };
 }
 
+function getLogoParts(name: string): { primary: string; secondary: string } {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length <= 1) {
+    return { primary: name || FALLBACK.brand.name, secondary: "" };
+  }
+
+  return {
+    primary:   parts[0],
+    secondary: parts.slice(1).join(" "),
+  };
+}
+
 export function Footer() {
   const [data, setData] = useState<FooterData>(FALLBACK);
   const year = new Date().getFullYear();
+  const logo = getLogoParts(data.brand.name);
 
   useEffect(() => {
     fetch("/api/footer")
@@ -185,11 +198,13 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="inline-flex flex-col leading-none mb-5">
               <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold tracking-[0.08em] text-white">
-                DENOVA
+                {logo.primary}
               </span>
-              <span className="text-[9px] font-medium tracking-[0.35em] text-[#F97316] uppercase -mt-0.5">
-                Pakistan
-              </span>
+              {logo.secondary && (
+                <span className="text-[9px] font-medium tracking-[0.35em] text-[#F97316] uppercase -mt-0.5">
+                  {logo.secondary}
+                </span>
+              )}
             </Link>
 
             <p className="text-sm text-white/60 leading-relaxed max-w-xs mb-6">

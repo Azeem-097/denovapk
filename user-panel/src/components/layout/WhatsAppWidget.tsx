@@ -15,6 +15,10 @@ interface WhatsAppConfig {
   communitySubtext: string;
 }
 
+interface SiteInfo {
+  brandName: string;
+}
+
 const FALLBACK: WhatsAppConfig = {
   enabled:          false,
   phone:            "",
@@ -24,6 +28,10 @@ const FALLBACK: WhatsAppConfig = {
   communityLabel:   "Join Community",
   directSubtext:    "Chat with our support team",
   communitySubtext: "Join our WhatsApp community",
+};
+
+const SITE_FALLBACK: SiteInfo = {
+  brandName: "Denova PK",
 };
 
 const WA_GREEN      = "#25D366";
@@ -77,6 +85,7 @@ export function normalizeWhatsAppPhone(raw: string): string {
 
 export function WhatsAppWidget() {
   const [config, setConfig]   = useState<WhatsAppConfig | null>(null);
+  const [siteInfo, setSiteInfo] = useState<SiteInfo>(SITE_FALLBACK);
   const [open,   setOpen]     = useState(false);
   const panelRef              = useRef<HTMLDivElement>(null);
 
@@ -85,6 +94,17 @@ export function WhatsAppWidget() {
       .then((r) => r.ok ? r.json() : null)
       .then((data) => setConfig(data?.config ?? FALLBACK))
       .catch(() => setConfig(FALLBACK));
+
+    fetch("/api/site-info")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        setSiteInfo({
+          brandName: typeof data?.brandName === "string" && data.brandName.trim()
+            ? data.brandName
+            : SITE_FALLBACK.brandName,
+        });
+      })
+      .catch(() => setSiteInfo(SITE_FALLBACK));
   }, []);
 
   useEffect(() => {
@@ -135,7 +155,7 @@ export function WhatsAppWidget() {
               <WhatsAppIcon size={20} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white leading-tight">Denova PK</p>
+              <p className="text-sm font-bold text-white leading-tight">{siteInfo.brandName}</p>
               <p className="text-[11px] text-white/80 leading-tight mt-0.5">
                 Typically replies within an hour
               </p>

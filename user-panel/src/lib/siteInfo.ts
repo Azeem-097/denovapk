@@ -13,6 +13,9 @@ export interface SiteInfo {
   whatsapp:           string;
   address:            string;
   brandName:          string;
+  brandTagline:       string;
+  brandDescription:   string;
+  brandCity:          string;
   brandYear:          string;
   legalLastUpdated:   string;
 }
@@ -23,6 +26,9 @@ const DEFAULTS: SiteInfo = {
   whatsapp:         "+923001234567",
   address:          "Gulberg III, Lahore, Pakistan",
   brandName:        "Denova PK",
+  brandTagline:     "Crafted for the Modern You",
+  brandDescription: "Premium Denim Clothing - Pakistan's finest selvedge jeans",
+  brandCity:        "Lahore",
   brandYear:        "2026",
   legalLastUpdated: "July 2026",
 };
@@ -33,12 +39,26 @@ const DEFAULTS: SiteInfo = {
  */
 export async function getSiteInfo(): Promise<SiteInfo> {
   try {
-    const [email, phone, whatsapp, address, brandName, brandYear, legalLastUpdated] = await Promise.all([
+    const [
+      email,
+      phone,
+      whatsapp,
+      address,
+      brandName,
+      brandTagline,
+      brandDescription,
+      brandCity,
+      brandYear,
+      legalLastUpdated,
+    ] = await Promise.all([
       getStringSetting("contact_email",          DEFAULTS.email),
       getStringSetting("contact_phone_primary",  DEFAULTS.phone),
       getStringSetting("contact_whatsapp",       DEFAULTS.whatsapp),
       getStringSetting("brand_address",          DEFAULTS.address),
       getStringSetting("brand_name",             DEFAULTS.brandName),
+      getStringSetting("brand_tagline",          DEFAULTS.brandTagline),
+      getStringSetting("brand_description",      DEFAULTS.brandDescription),
+      getStringSetting("brand_city",             DEFAULTS.brandCity),
       getStringSetting("brand_year",             DEFAULTS.brandYear),
       getStringSetting("legal_last_updated",     DEFAULTS.legalLastUpdated),
     ]);
@@ -49,6 +69,9 @@ export async function getSiteInfo(): Promise<SiteInfo> {
       whatsapp:         whatsapp       || DEFAULTS.whatsapp,
       address:          address        || DEFAULTS.address,
       brandName:        brandName      || DEFAULTS.brandName,
+      brandTagline:     brandTagline   || DEFAULTS.brandTagline,
+      brandDescription: brandDescription || DEFAULTS.brandDescription,
+      brandCity:        brandCity      || DEFAULTS.brandCity,
       brandYear:        brandYear      || DEFAULTS.brandYear,
       legalLastUpdated: legalLastUpdated || DEFAULTS.legalLastUpdated,
     };
