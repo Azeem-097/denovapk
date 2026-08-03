@@ -119,8 +119,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           bgColor={product.bgColor}
           className={cn(
             "aspect-[4/5] rounded-xl sm:rounded-2xl",
-            !product.bgColor && "bg-[#f4f2ee]",
-            product.isSoldOut && "opacity-55"
+            !product.bgColor && "bg-[#f4f2ee]"
           )}
         >
           {/* Primary image — subtle zoom on hover */}
@@ -131,8 +130,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             className={cn(
               "object-cover transition-all duration-[900ms] ease-out",
               hasSecondary && isHovered ? "opacity-0 scale-105" : "opacity-100 scale-100",
-              !hasSecondary && isHovered && "scale-105",
-              product.isSoldOut && "grayscale-[25%]"
+              !hasSecondary && isHovered && "scale-105"
             )}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading="lazy"
@@ -147,8 +145,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               fill
               className={cn(
                 "object-cover transition-all duration-[900ms] ease-out",
-                isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100",
-                product.isSoldOut && "grayscale-[25%]"
+                isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
               )}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               loading="lazy"
@@ -220,7 +217,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </div>
       </Link>
 
-      <div className={cn("px-0.5 space-y-1.5", product.isSoldOut && "opacity-75")}>
+      <div className="px-0.5 space-y-1.5">
         <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#F97316]">
           {(product.brand && product.brand.trim()) || product.collection || "Denova"}
         </p>

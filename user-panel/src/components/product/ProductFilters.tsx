@@ -224,7 +224,7 @@ export function ProductFilters({
           </Accordion>
         )}
 
-        {catalogMax > catalogMin && (
+        {catalogMax >= catalogMin && (
           <Accordion title="Price Range">
             <div className="px-1 pb-1">
               <div className="flex items-center justify-between mb-3">

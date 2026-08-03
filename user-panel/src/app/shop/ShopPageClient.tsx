@@ -350,7 +350,7 @@ export function ShopPageClient({ products }: Props) {
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileFilters(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-sm shadow-2xl">
+          <div className="fixed inset-y-0 left-0 z-50 w-[85vw] max-w-sm h-screen bg-white shadow-2xl overflow-y-auto">
             <ProductFilters
               filters={filters}
               onChange={handleFilterChange}
