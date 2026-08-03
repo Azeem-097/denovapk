@@ -220,7 +220,8 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const addToCart = useCartStore((s) => s.addItem);
   const showToast = useToastStore((s) => s.addToast);
 
-  const isOutOfStock    = product.isSoldOut || !selectedVariant || selectedVariant.stock === 0;
+  const selectedVariantOutOfStock = !selectedVariant || selectedVariant.stock === 0;
+  const isOutOfStock    = product.isSoldOut || selectedVariantOutOfStock;
   const maxQty          = selectedVariant?.stock ?? 1;
   const hasDiscount     = !!product.compareAtPrice && product.compareAtPrice > product.price;
   const discountPercent = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
@@ -464,7 +465,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                         <Plus size={14} strokeWidth={2} />
                       </button>
                     </div>
-                    {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
+                    {!product.isSoldOut && selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock < 5 && (
                       <span className="text-xs text-[#e32c52] font-bold whitespace-nowrap">
                         Only {selectedVariant.stock} left
                       </span>
@@ -494,7 +495,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       </>
                     ) : product.isSoldOut ? (
                       <span>Sold Out</span>
-                    ) : isOutOfStock ? (
+                    ) : selectedVariantOutOfStock ? (
                       <span>Out of Stock</span>
                     ) : (
                       <>
@@ -504,19 +505,14 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     )}
                   </button>
 
-                  <button
-                    onClick={handleBuyNow}
-                    disabled={isOutOfStock}
-                    aria-disabled={isOutOfStock}
-                    className={cn(
-                      "w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg",
-                      isOutOfStock
-                        ? "bg-[#e5e7eb] text-[#6b7280] cursor-not-allowed"
-                        : "bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
-                    )}
-                  >
-                    {product.isSoldOut ? "Sold Out" : "Buy It Now"}
-                  </button>
+                  {!isOutOfStock && (
+                    <button
+                      onClick={handleBuyNow}
+                      className="w-full h-12 flex items-center justify-center gap-2 text-[13px] font-bold tracking-[0.15em] uppercase transition-all duration-200 rounded-lg bg-[#1a1a1a] text-white hover:bg-[#333333] active:scale-[0.99]"
+                    >
+                      Buy It Now
+                    </button>
+                  )}
                 </div>
 
                 {/* 13. LIVE VIEWERS */}
