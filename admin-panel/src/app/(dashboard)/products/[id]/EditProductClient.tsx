@@ -23,48 +23,14 @@ interface Props {
 
 interface VariantForm {
   id?:      string;
+  waist:    string;
+  length:   string;
+  bottom:   string;
   color:    string;
   colorHex: string;
   sku:      string;
   stock:    number;
   price:    number;
-}
-
-interface MeasurementForm {
-  waist: string;
-  length: string;
-  bottom: string;
-}
-
-function parseMeasurementsJson(
-  json: string | null,
-  fallback: { waist: number | null; length: number | null; bottom: number | null }
-): MeasurementForm[] {
-  if (json) {
-    try {
-      const parsed = JSON.parse(json) as Array<{ waist?: unknown; length?: unknown; bottom?: unknown }>;
-      const rows = parsed
-        .map((row) => ({
-          waist: String(row.waist ?? "").trim(),
-          length: String(row.length ?? "").trim(),
-          bottom: String(row.bottom ?? "").trim(),
-        }))
-        .filter((row) => row.waist.length > 0);
-      if (rows.length > 0) return rows;
-    } catch {
-      // Fall back to the legacy numeric columns below.
-    }
-  }
-
-  if (fallback.waist != null) {
-    return [{
-      waist: String(fallback.waist),
-      length: fallback.length != null ? String(fallback.length) : "",
-      bottom: fallback.bottom != null ? String(fallback.bottom) : "",
-    }];
-  }
-
-  return [{ waist: "", length: "", bottom: "" }];
 }
 
 type ModalId = null | "stock" | "collection" | "discount" | "status";
@@ -82,24 +48,18 @@ export function EditProductClient({ product, collections }: Props) {
   );
 
   const initialVariants: VariantForm[] = useMemo(
-    () => product.variants.map((v) => ({
+    () => product.variants.map((v, index) => ({
       id:       v.id,
+      waist:    v.size || (index === 0 && product.waist != null ? String(product.waist) : ""),
+      length:   v.length != null ? String(v.length) : (index === 0 && product.length != null ? String(product.length) : ""),
+      bottom:   v.bottom != null ? String(v.bottom) : (index === 0 && product.bottom != null ? String(product.bottom) : ""),
       color:    v.color,
       colorHex: v.colorHex,
       sku:      v.sku,
       stock:    v.stock,
       price:    paisaToRupees(v.price),
     })),
-    [product.variants]
-  );
-
-  const initialMeasurements = useMemo(
-    () => parseMeasurementsJson(product.measurementsJson ?? null, {
-      waist: product.waist,
-      length: product.length,
-      bottom: product.bottom,
-    }),
-    [product.measurementsJson, product.waist, product.length, product.bottom]
+    [product.variants, product.waist, product.length, product.bottom]
   );
 
   const [form, setForm] = useState({
@@ -120,8 +80,6 @@ export function EditProductClient({ product, collections }: Props) {
     brand:        product.brand ?? "",
   });
 
-  const [measurements, setMeasurements] = useState<MeasurementForm[]>(initialMeasurements);
-
   const [images,   setImages]   = useState<string[]>(initialImages);
   const [variants, setVariants] = useState<VariantForm[]>(initialVariants);
   const [saving,   setSaving]   = useState(false);
@@ -134,6 +92,9 @@ export function EditProductClient({ product, collections }: Props) {
 
   const addVariant = () => {
     setVariants([...variants, {
+      waist:    "",
+      length:   "",
+      bottom:   "",
       color:    "New Color",
       colorHex: "#1e3a5f",
       sku:      `${form.sku || "SKU"}-NEW`,
@@ -144,18 +105,6 @@ export function EditProductClient({ product, collections }: Props) {
 
   const updateVariant = (i: number, field: keyof VariantForm, value: string | number) => {
     setVariants((vs) => vs.map((v, idx) => idx === i ? { ...v, [field]: value } : v));
-  };
-
-  const addMeasurement = () => {
-    setMeasurements((rows) => [...rows, { waist: "", length: "", bottom: "" }]);
-  };
-
-  const updateMeasurement = (index: number, field: keyof MeasurementForm, value: string) => {
-    setMeasurements((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row)));
-  };
-
-  const removeMeasurement = (index: number) => {
-    setMeasurements((rows) => (rows.length > 1 ? rows.filter((_, rowIndex) => rowIndex !== index) : rows));
   };
 
   const removeVariant = async (i: number) => {
@@ -177,20 +126,32 @@ export function EditProductClient({ product, collections }: Props) {
       toast.error("Please fill all required fields", "Missing Information");
       return;
     }
-    const normalizedMeasurements = measurements
+    const normalizedVariants = variants
       .map((row) => ({
         waist: row.waist.trim(),
         length: row.length.trim(),
         bottom: row.bottom.trim(),
+        color: row.color.trim(),
+        colorHex: row.colorHex.trim() || "#000000",
+        sku: row.sku.trim(),
+        stock: Number(row.stock),
+        price: Number(row.price),
+        id: row.id,
       }))
-      .filter((row) => row.waist.length > 0);
+      .filter((row) => row.waist.length > 0 && row.color.length > 0 && row.sku.length > 0);
 
-    if (normalizedMeasurements.length === 0) {
-      toast.error("Add at least one waist size for denim products", "Missing Waist");
+    if (normalizedVariants.length === 0) {
+      toast.error("Add at least one complete inventory row", "Missing Inventory");
       return;
     }
-    if (variants.length === 0) {
-      toast.error("Add at least one color variant", "No Variants");
+    const duplicate = normalizedVariants.find((row, index) =>
+      normalizedVariants.findIndex((other) =>
+        other.waist.toLowerCase() === row.waist.toLowerCase() &&
+        other.color.toLowerCase() === row.color.toLowerCase()
+      ) !== index
+    );
+    if (duplicate) {
+      toast.error(`Waist ${duplicate.waist} / ${duplicate.color} already exists`, "Duplicate Variant");
       return;
     }
 
@@ -213,15 +174,18 @@ export function EditProductClient({ product, collections }: Props) {
           isBestSeller: form.isBestSeller,
           isSoldOut:    form.isSoldOut,
           tags:         typeof form.tags === "string" ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : form.tags,
-          waist:        Number(normalizedMeasurements[0].waist),
-          length:       normalizedMeasurements[0].length !== "" ? Number(normalizedMeasurements[0].length) : null,
-          bottom:       normalizedMeasurements[0].bottom !== "" ? Number(normalizedMeasurements[0].bottom) : null,
-          measurements: normalizedMeasurements,
+          waist:        Number(normalizedVariants[0].waist),
+          length:       normalizedVariants[0].length !== "" ? Number(normalizedVariants[0].length) : null,
+          bottom:       normalizedVariants[0].bottom !== "" ? Number(normalizedVariants[0].bottom) : null,
+          measurements: normalizedVariants.map(({ waist, length, bottom }) => ({ waist, length, bottom })),
           bgColor:      form.bgColor,
           brand:        (form.brand as string)?.trim() || null,
           images,
-          variants:     variants.map((v) => ({
+          variants:     normalizedVariants.map((v) => ({
             id:       v.id,
+            size:     v.waist,
+            length:   v.length,
+            bottom:   v.bottom,
             color:    v.color,
             colorHex: v.colorHex,
             sku:      v.sku,
@@ -457,79 +421,16 @@ export function EditProductClient({ product, collections }: Props) {
             </div>
           </Section>
 
-          <Section title="Measurements (inches)">
+          <Section title={`Inventory (${variants.reduce((sum, v) => sum + Math.max(0, Number(v.stock) || 0), 0)} in stock)`}>
             <p className="text-xs text-[#6b7280] -mt-2">
-              Add every waist size you want to sell. Waist is selectable on the product page; length and bottom are extra details.
-            </p>
-            <div className="space-y-3">
-              {measurements.map((row, index) => (
-                <div key={index} className="rounded-xl border border-[#e5e7eb] bg-[#fafaf9] p-3">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="text-xs font-semibold tracking-wide uppercase text-[#1a1a1a]">Size {index + 1}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeMeasurement(index)}
-                      disabled={measurements.length === 1}
-                      className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <FormField label="Waist" required hint="e.g. 32">
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={row.waist}
-                        onChange={(e) => updateMeasurement(index, "waist", e.target.value)}
-                        className="input"
-                      />
-                    </FormField>
-                    <FormField label="Length" hint="e.g. 32">
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={row.length}
-                        onChange={(e) => updateMeasurement(index, "length", e.target.value)}
-                        className="input"
-                      />
-                    </FormField>
-                    <FormField label="Bottom" hint="Leg opening, e.g. 14">
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={row.bottom}
-                        onChange={(e) => updateMeasurement(index, "bottom", e.target.value)}
-                        className="input"
-                      />
-                    </FormField>
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addMeasurement}
-                className="w-full border border-dashed border-[#cbd5e1] bg-white text-[#E10600] font-medium py-3 flex items-center justify-center gap-2 hover:bg-[#fafaf9] transition-colors"
-              >
-                <Plus size={14} />
-                Add Size
-              </button>
-            </div>
-          </Section>
-
-          <Section title={`Color Variants (${variants.length})`}>
-            <p className="text-xs text-[#6b7280] -mt-2">
-              Add each wash/color this product comes in. Each has its own stock and SKU.
+              Each row is one sellable waist and colour combination. Product stock is calculated from these rows.
             </p>
             <div className="space-y-3">
               {variants.map((v, i) => (
                 <div key={v.id ?? `new-${i}`} className="bg-[#fafaf9] p-3 border border-[#e5e7eb] space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-[#1a1a1a]">Variant {i + 1}</span>
+                      <span className="text-xs font-semibold text-[#1a1a1a]">Inventory Row {i + 1}</span>
                       {v.id && (
                         <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 font-semibold uppercase tracking-wider">
                           Saved
@@ -546,7 +447,25 @@ export function EditProductClient({ product, collections }: Props) {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <FieldRow label="Waist">
+                      <input type="number" step="0.5" min="0" value={v.waist}
+                        onChange={(e) => updateVariant(i, "waist", e.target.value)}
+                        className="input text-xs" />
+                    </FieldRow>
+
+                    <FieldRow label="Length">
+                      <input type="number" step="0.5" min="0" value={v.length}
+                        onChange={(e) => updateVariant(i, "length", e.target.value)}
+                        className="input text-xs" />
+                    </FieldRow>
+
+                    <FieldRow label="Bottom">
+                      <input type="number" step="0.5" min="0" value={v.bottom}
+                        onChange={(e) => updateVariant(i, "bottom", e.target.value)}
+                        className="input text-xs" />
+                    </FieldRow>
+
                     <FieldRow label="Color Name">
                       <input type="text" value={v.color}
                         onChange={(e) => updateVariant(i, "color", e.target.value)}
@@ -576,7 +495,7 @@ export function EditProductClient({ product, collections }: Props) {
                         className="input text-xs" />
                     </FieldRow>
 
-                    <FieldRow label="Price (PKR)" className="sm:col-span-2">
+                    <FieldRow label="Price (PKR)">
                       <input type="number" value={v.price}
                         onChange={(e) => updateVariant(i, "price", Number(e.target.value))}
                         className="input text-xs" />
@@ -586,7 +505,7 @@ export function EditProductClient({ product, collections }: Props) {
               ))}
               <button onClick={addVariant}
                 className="w-full py-2.5 text-xs font-medium text-[#E10600] hover:text-[#B80000] border border-dashed border-[#e5e7eb] hover:border-[#E10600] transition-colors flex items-center justify-center gap-1">
-                <Plus size={14} />Add Color Variant
+                <Plus size={14} />Add Inventory Row
               </button>
             </div>
           </Section>

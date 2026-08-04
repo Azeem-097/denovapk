@@ -4,6 +4,36 @@ import { getProducts, createProduct } from "@/lib/db/repositories/products";
 import { rupeesToPaisa } from "@/lib/priceUtils";
 import { slugify } from "@/lib/utils";
 
+function normalizeInventoryVariants(input: unknown) {
+  const rows = Array.isArray(input)
+    ? input.map((row) => {
+        const v = row as {
+          id?: unknown; size?: unknown; waist?: unknown; length?: unknown; bottom?: unknown;
+          color?: unknown; colorHex?: unknown; sku?: unknown; stock?: unknown; price?: unknown;
+        };
+        return {
+          size: String(v.size ?? v.waist ?? "").trim(),
+          length: v.length === undefined || v.length === null || String(v.length).trim() === "" ? null : Number(v.length),
+          bottom: v.bottom === undefined || v.bottom === null || String(v.bottom).trim() === "" ? null : Number(v.bottom),
+          color: String(v.color ?? "").trim(),
+          colorHex: String(v.colorHex ?? "#000000").trim() || "#000000",
+          sku: String(v.sku ?? "").trim().toUpperCase(),
+          stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
+          price: Number(v.price),
+        };
+      }).filter((row) => row.size && row.color && row.sku && Number.isFinite(row.price))
+    : [];
+
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const key = `${row.size.toLowerCase()}|${row.color.toLowerCase()}`;
+    if (seen.has(key)) throw new Error("Duplicate waist and colour combinations are not allowed.");
+    seen.add(key);
+  }
+
+  return rows;
+}
+
 function normalizeMeasurements(input: unknown, fallback?: { waist?: unknown; length?: unknown; bottom?: unknown }) {
   const rows = Array.isArray(input)
     ? input
@@ -61,7 +91,15 @@ export async function POST(req: Request) {
       imageUrls.push(body.imageUrl);
     }
 
-    const normalizedMeasurements = normalizeMeasurements(measurements, { waist, length, bottom });
+    const normalizedVariants = normalizeInventoryVariants(variants);
+    if (normalizedVariants.length === 0) {
+      return NextResponse.json({ error: "Add at least one inventory row." }, { status: 400 });
+    }
+
+    const normalizedMeasurements = normalizeMeasurements(
+      measurements,
+      { waist: normalizedVariants[0]?.size ?? waist, length: normalizedVariants[0]?.length ?? length, bottom: normalizedVariants[0]?.bottom ?? bottom }
+    );
     const firstMeasurement = normalizedMeasurements[0] ?? null;
     const waistNumber = firstMeasurement && firstMeasurement.waist !== ""
       ? Number(firstMeasurement.waist)
@@ -100,14 +138,14 @@ export async function POST(req: Request) {
       measurementsJson: JSON.stringify(normalizedMeasurements),
       bgColor:      bgColorNormalized,
       brand:        typeof brand === "string" && brand.trim().length > 0 ? brand.trim() : null,
-      variants:     variants?.map((v: {
-        color: string; colorHex?: string; sku: string; stock: number; price: number;
-      }) => ({
-        size:     sizeLabel,
+      variants:     normalizedVariants.map((v) => ({
+        size:     v.size || sizeLabel,
+        length:   v.length,
+        bottom:   v.bottom,
         color:    v.color,
-        colorHex: v.colorHex ?? "#000000",
+        colorHex: v.colorHex,
         sku:      v.sku,
-        stock:    Number(v.stock),
+        stock:    v.stock,
         price:    rupeesToPaisa(v.price),
       })),
     });
@@ -115,6 +153,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, productId }, { status: 201 });
   } catch (err) {
     console.error("Create product error:", err);
-    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to create product" }, { status: 500 });
   }
 }

@@ -118,6 +118,8 @@ export interface DbProductVariant {
   id:              string;
   productId:       string;
   size:            string;
+  length:          number | null;
+  bottom:          number | null;
   color:           string;
   colorHex:        string;
   sku:             string;

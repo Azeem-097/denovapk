@@ -80,15 +80,16 @@ export async function POST(req: Request) {
     const fullUser = user ? await getUserById(user.id) : null;
     const shippingFullName = String(shipping.fullName || `${shipping.firstName ?? ""} ${shipping.lastName ?? ""}`).trim();
 
-    const orderItems = items.map((item: {
+    const orderItems = await hydrateOrderItems(items.map((item: {
       productId: string; variantId: string; name: string; image: string;
       size: string; color: string; price: number; quantity: number;
     }) => ({
-      productId: item.productId, variantId: item.variantId,
-      name: item.name, image: item.image,
-      size: item.size, color: item.color, sku: "",
-      price: rupeesToPaisa(item.price), quantity: item.quantity,
-    }));
+      productId: item.productId,
+      variantId: item.variantId,
+      name: item.name,
+      image: item.image,
+      quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+    })));
 
     const subtotal = orderItems.reduce(
       (sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity,
@@ -402,4 +403,41 @@ async function validateCheckoutStock(items: Array<{ variantId?: string; quantity
   }
 
   return null;
+}
+
+async function hydrateOrderItems(items: Array<{
+  productId: string;
+  variantId: string;
+  name: string;
+  image: string;
+  quantity: number;
+}>) {
+  const variantIds = [...new Set(items.map((item) => item.variantId))];
+  const placeholders = variantIds.map(() => "?").join(",");
+  const result = await db.execute({
+    sql: `SELECT v.id, v.productId, v.size, v.color, v.sku, v.price, p.name
+          FROM product_variants v
+          JOIN products p ON p.id = v.productId
+          WHERE v.id IN (${placeholders})`,
+    args: variantIds,
+  });
+  const variantsById = new Map(result.rows.map((row) => [String(row.id), row]));
+
+  return items.map((item) => {
+    const variant = variantsById.get(item.variantId);
+    if (!variant || String(variant.productId) !== item.productId) {
+      throw new Error("One or more items in your cart are unavailable.");
+    }
+    return {
+      productId: item.productId,
+      variantId: item.variantId,
+      name: String(variant.name || item.name),
+      image: item.image,
+      size: String(variant.size),
+      color: String(variant.color),
+      sku: String(variant.sku),
+      price: Number(variant.price),
+      quantity: item.quantity,
+    };
+  });
 }

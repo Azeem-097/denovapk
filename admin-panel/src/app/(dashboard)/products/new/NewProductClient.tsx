@@ -10,13 +10,10 @@ import { BackgroundColorPicker } from "@/components/ui/BackgroundColorPicker";
 import { useToastStore } from "@/store/toastStore";
 
 interface Variant {
-  color: string; colorHex: string; sku: string; stock: number; price: number;
-}
-
-interface MeasurementForm {
   waist: string;
   length: string;
   bottom: string;
+  color: string; colorHex: string; sku: string; stock: number; price: number;
 }
 
 export function NewProductClient({ collections }: { collections: Array<{ id: string; name: string }> }) {
@@ -42,10 +39,9 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
     images:       [] as string[],
     bgColor:      null as string | null,
   });
-  const [measurements, setMeasurements] = useState<MeasurementForm[]>([
-    { waist: "32", length: "32", bottom: "14" },
+  const [variants, setVariants] = useState<Variant[]>([
+    { waist: "32", length: "32", bottom: "14", color: "Dark Blue", colorHex: "#1e3a5f", sku: "", stock: 1, price: 0 },
   ]);
-  const [variants, setVariants] = useState<Variant[]>([]);
   const [saving,   setSaving]   = useState(false);
 
   const updateField = (field: string, value: string | boolean | null) => {
@@ -59,7 +55,8 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
   const addVariant = () => {
     setVariants([...variants, {
       color: "Dark Blue", colorHex: "#1e3a5f",
-      sku: `${form.sku || "SKU"}-DB`, stock: 10,
+      waist: "", length: "", bottom: "",
+      sku: `${form.sku || "SKU"}-${variants.length + 1}`, stock: 1,
       price: Number(form.price) || 0,
     }]);
   };
@@ -70,37 +67,36 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
 
   const removeVariant = (i: number) => setVariants((vs) => vs.filter((_, idx) => idx !== i));
 
-  const addMeasurement = () => {
-    setMeasurements((rows) => [...rows, { waist: "", length: "", bottom: "" }]);
-  };
-
-  const updateMeasurement = (index: number, field: keyof MeasurementForm, value: string) => {
-    setMeasurements((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row)));
-  };
-
-  const removeMeasurement = (index: number) => {
-    setMeasurements((rows) => (rows.length > 1 ? rows.filter((_, rowIndex) => rowIndex !== index) : rows));
-  };
-
   const handleSave = async () => {
     if (!form.name || !form.description || !form.sku || !form.price) {
       toast.error("Please fill all required fields", "Missing Information");
       return;
     }
-    const normalizedMeasurements = measurements
+    const normalizedVariants = variants
       .map((row) => ({
         waist: row.waist.trim(),
         length: row.length.trim(),
         bottom: row.bottom.trim(),
+        color: row.color.trim(),
+        colorHex: row.colorHex.trim() || "#000000",
+        sku: row.sku.trim(),
+        stock: Number(row.stock),
+        price: Number(row.price || form.price),
       }))
-      .filter((row) => row.waist.length > 0);
+      .filter((row) => row.waist.length > 0 && row.color.length > 0 && row.sku.length > 0);
 
-    if (normalizedMeasurements.length === 0) {
-      toast.error("Add at least one waist size for denim products", "Missing Waist");
+    if (normalizedVariants.length === 0) {
+      toast.error("Add at least one complete inventory row", "Missing Inventory");
       return;
     }
-    if (variants.length === 0) {
-      toast.error("Add at least one color variant", "No Variants");
+    const duplicate = normalizedVariants.find((row, index) =>
+      normalizedVariants.findIndex((other) =>
+        other.waist.toLowerCase() === row.waist.toLowerCase() &&
+        other.color.toLowerCase() === row.color.toLowerCase()
+      ) !== index
+    );
+    if (duplicate) {
+      toast.error(`Waist ${duplicate.waist} / ${duplicate.color} already exists`, "Duplicate Variant");
       return;
     }
     setSaving(true);
@@ -112,14 +108,14 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
           ...form,
           price:        Number(form.price),
           comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
-          waist:        Number(normalizedMeasurements[0].waist),
-          length:       normalizedMeasurements[0].length !== "" ? Number(normalizedMeasurements[0].length) : null,
-          bottom:       normalizedMeasurements[0].bottom !== "" ? Number(normalizedMeasurements[0].bottom) : null,
-          measurements: normalizedMeasurements,
+          waist:        Number(normalizedVariants[0].waist),
+          length:       normalizedVariants[0].length !== "" ? Number(normalizedVariants[0].length) : null,
+          bottom:       normalizedVariants[0].bottom !== "" ? Number(normalizedVariants[0].bottom) : null,
+          measurements: normalizedVariants.map(({ waist, length, bottom }) => ({ waist, length, bottom })),
           bgColor:      form.bgColor,
           brand:        form.brand.trim() || null,
           tags:         form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-          variants,
+          variants:     normalizedVariants,
         }),
       });
       const data = await res.json();
@@ -223,87 +219,36 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
             </div>
           </Section>
 
-          <Section title="Measurements (inches)">
+          <Section title={`Inventory (${variants.reduce((sum, v) => sum + Math.max(0, Number(v.stock) || 0), 0)} in stock)`}>
             <p className="text-xs text-[#6b7280] -mt-2">
-              Add every waist size you want to sell. Waist is selectable on the product page; length and bottom are extra details.
-            </p>
-            <div className="space-y-3">
-              {measurements.map((row, index) => (
-                <div key={index} className="rounded-xl border border-[#e5e7eb] bg-[#fafaf9] p-3">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="text-xs font-semibold tracking-wide uppercase text-[#1a1a1a]">Size {index + 1}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeMeasurement(index)}
-                      disabled={measurements.length === 1}
-                      className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <FormField label="Waist" required hint="e.g. 32">
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={row.waist}
-                        onChange={(e) => updateMeasurement(index, "waist", e.target.value)}
-                        placeholder="32"
-                        className="input"
-                      />
-                    </FormField>
-                    <FormField label="Length" hint="e.g. 32">
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={row.length}
-                        onChange={(e) => updateMeasurement(index, "length", e.target.value)}
-                        placeholder="32"
-                        className="input"
-                      />
-                    </FormField>
-                    <FormField label="Bottom" hint="Leg opening, e.g. 14">
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={row.bottom}
-                        onChange={(e) => updateMeasurement(index, "bottom", e.target.value)}
-                        placeholder="14"
-                        className="input"
-                      />
-                    </FormField>
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addMeasurement}
-                className="w-full border border-dashed border-[#cbd5e1] bg-white text-[#E10600] font-medium py-3 flex items-center justify-center gap-2 hover:bg-[#fafaf9] transition-colors"
-              >
-                <Plus size={14} />
-                Add Size
-              </button>
-            </div>
-          </Section>
-
-          <Section title={`Color Variants (${variants.length})`}>
-            <p className="text-xs text-[#6b7280] -mt-2">
-              Add each wash/color this product comes in. Each has its own stock and SKU.
+              Each row is one sellable waist and colour combination. Product stock is calculated from these rows.
             </p>
             <div className="space-y-3">
               {variants.map((v, i) => (
                 <div key={i} className="bg-[#fafaf9] p-3 border border-[#e5e7eb] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#1a1a1a]">Variant {i + 1}</span>
+                    <span className="text-xs font-semibold text-[#1a1a1a]">Inventory Row {i + 1}</span>
                     <button onClick={() => removeVariant(i)} className="text-red-500 hover:text-red-700">
                       <X size={14} />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <FieldRow label="Waist">
+                      <input type="number" step="0.5" min="0" value={v.waist}
+                        onChange={(e) => updateVariant(i, "waist", e.target.value)}
+                        placeholder="32" className="input text-xs" />
+                    </FieldRow>
+                    <FieldRow label="Length">
+                      <input type="number" step="0.5" min="0" value={v.length}
+                        onChange={(e) => updateVariant(i, "length", e.target.value)}
+                        placeholder="32" className="input text-xs" />
+                    </FieldRow>
+                    <FieldRow label="Bottom">
+                      <input type="number" step="0.5" min="0" value={v.bottom}
+                        onChange={(e) => updateVariant(i, "bottom", e.target.value)}
+                        placeholder="14" className="input text-xs" />
+                    </FieldRow>
                     <FieldRow label="Color Name">
                       <input type="text" value={v.color}
                         onChange={(e) => updateVariant(i, "color", e.target.value)}
@@ -333,7 +278,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
                         placeholder="10" className="input text-xs" />
                     </FieldRow>
 
-                    <FieldRow label="Price (PKR)" className="sm:col-span-2">
+                    <FieldRow label="Price (PKR)">
                       <input type="number" value={v.price}
                         onChange={(e) => updateVariant(i, "price", Number(e.target.value))}
                         placeholder="3500" className="input text-xs" />
@@ -343,7 +288,7 @@ export function NewProductClient({ collections }: { collections: Array<{ id: str
               ))}
               <button onClick={addVariant}
                 className="w-full py-2.5 text-xs font-medium text-[#E10600] hover:text-[#B80000] border border-dashed border-[#e5e7eb] hover:border-[#E10600] transition-colors flex items-center justify-center gap-1">
-                <Plus size={14} />Add Color Variant
+                <Plus size={14} />Add Inventory Row
               </button>
             </div>
           </Section>

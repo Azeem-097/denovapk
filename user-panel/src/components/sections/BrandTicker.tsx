@@ -21,7 +21,7 @@ const BRAND_COLLABORATIONS: BrandEntry[] = [
   { brand: "JACK & JONES",   country: "DENMARK"  },
   { brand: "CROOP",          country: "POLAND"   },
   { brand: "MANGUNN",        country: "GERMANY"  },
-  { brand: "EXPORT ARTICLE", country: ""         },
+  { brand: "PRIMARK",        country: "UK"         },
 ];
 
 const ACCENT = "#F97316";

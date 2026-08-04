@@ -132,60 +132,66 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderWithIte
   }
   const t          = now();
 
-  // Insert order
-  await db.execute({
-    sql: `INSERT INTO orders (
-      id, orderNumber, userId, guestEmail, guestName, guestPhone,
-      subtotal, discount, shipping, tax, total,
-      status, paymentStatus, paymentMethod,
-      discountCode, discountId, addressId, shippingAddress,
-      shippingMethod, customerNote, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [
-      orderId, orderNum, input.userId ?? null,
-      input.guestEmail ?? null, input.guestName ?? null, input.guestPhone ?? null,
-      input.subtotal, input.discount ?? 0, input.shipping, input.tax ?? 0, input.total,
-      "PENDING", input.paymentMethod === "COD" ? "PENDING" : "PENDING", input.paymentMethod,
-      input.discountCode ?? null, input.discountId ?? null,
-      input.addressId ?? null,
-      input.shippingAddress ? JSON.stringify(input.shippingAddress) : null,
-      input.shippingMethod, input.customerNote ?? null,
-      t, t,
-    ],
-  });
-
-  // Insert items
-  for (const item of input.items) {
+  await db.execute("BEGIN IMMEDIATE");
+  try {
     await db.execute({
-      sql: `INSERT INTO order_items (
-        id, orderId, productId, variantId, name, image, size, color, sku, price, quantity, subtotal
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO orders (
+        id, orderNumber, userId, guestEmail, guestName, guestPhone,
+        subtotal, discount, shipping, tax, total,
+        status, paymentStatus, paymentMethod,
+        discountCode, discountId, addressId, shippingAddress,
+        shippingMethod, customerNote, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
-        generateId(), orderId, item.productId, item.variantId,
-        item.name, item.image, item.size, item.color, item.sku,
-        item.price, item.quantity, item.price * item.quantity,
+        orderId, orderNum, input.userId ?? null,
+        input.guestEmail ?? null, input.guestName ?? null, input.guestPhone ?? null,
+        input.subtotal, input.discount ?? 0, input.shipping, input.tax ?? 0, input.total,
+        "PENDING", input.paymentMethod === "COD" ? "PENDING" : "PENDING", input.paymentMethod,
+        input.discountCode ?? null, input.discountId ?? null,
+        input.addressId ?? null,
+        input.shippingAddress ? JSON.stringify(input.shippingAddress) : null,
+        input.shippingMethod, input.customerNote ?? null,
+        t, t,
       ],
     });
 
-    // Decrement stock
-    await db.execute({
-      sql:  "UPDATE product_variants SET stock = MAX(0, stock - ?) WHERE id = ?",
-      args: [item.quantity, item.variantId],
-    });
+    for (const item of input.items) {
+      const stockUpdate = await db.execute({
+        sql:  "UPDATE product_variants SET stock = stock - ?, updatedAt = ? WHERE id = ? AND stock >= ?",
+        args: [item.quantity, t, item.variantId, item.quantity],
+      });
+      if (stockUpdate.rowsAffected !== 1) {
+        throw new Error("One or more items in your cart are out of stock.");
+      }
 
-    // Increment sold count
-    await db.execute({
-      sql:  "UPDATE products SET soldCount = soldCount + ? WHERE id = ?",
-      args: [item.quantity, item.productId],
-    });
-  }
+      await db.execute({
+        sql: `INSERT INTO order_items (
+          id, orderId, productId, variantId, name, image, size, color, sku, price, quantity, subtotal
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          generateId(), orderId, item.productId, item.variantId,
+          item.name, item.image, item.size, item.color, item.sku,
+          item.price, item.quantity, item.price * item.quantity,
+        ],
+      });
 
-  // Increment discount usage
-  if (input.discountId) {
-    await db.execute({
-      sql:  "UPDATE discounts SET usedCount = usedCount + 1 WHERE id = ?",
-      args: [input.discountId],
-    });
+      await db.execute({
+        sql:  "UPDATE products SET soldCount = soldCount + ? WHERE id = ?",
+        args: [item.quantity, item.productId],
+      });
+    }
+
+    if (input.discountId) {
+      await db.execute({
+        sql:  "UPDATE discounts SET usedCount = usedCount + 1 WHERE id = ?",
+        args: [input.discountId],
+      });
+    }
+
+    await db.execute("COMMIT");
+  } catch (error) {
+    await db.execute("ROLLBACK");
+    throw error;
   }
 
   return (await getOrderById(orderId))!;

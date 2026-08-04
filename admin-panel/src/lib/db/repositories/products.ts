@@ -16,7 +16,13 @@ type ProductColumnInfo = {
   hasIsSoldOut: boolean;
 };
 
+type VariantColumnInfo = {
+  hasLength: boolean;
+  hasBottom: boolean;
+};
+
 let productColumnInfoPromise: Promise<ProductColumnInfo> | null = null;
+let variantColumnInfoPromise: Promise<VariantColumnInfo> | null = null;
 
 async function getProductColumnInfo(): Promise<ProductColumnInfo> {
   if (!productColumnInfoPromise) {
@@ -64,6 +70,28 @@ async function getProductColumnInfo(): Promise<ProductColumnInfo> {
   }
 
   return productColumnInfoPromise;
+}
+
+async function getVariantColumnInfo(): Promise<VariantColumnInfo> {
+  if (!variantColumnInfoPromise) {
+    variantColumnInfoPromise = (async () => {
+      const result = await db.execute({ sql: "PRAGMA table_info(product_variants);", args: [] });
+      return {
+        hasLength: result.rows.some((row) => (row.name as string) === "length"),
+        hasBottom: result.rows.some((row) => (row.name as string) === "bottom"),
+      };
+    })().catch((error) => {
+      variantColumnInfoPromise = null;
+      throw error;
+    });
+  }
+
+  return variantColumnInfoPromise;
+}
+
+async function getVariantCols(): Promise<string> {
+  const { hasLength, hasBottom } = await getVariantColumnInfo();
+  return `id, productId, size, ${hasLength ? '"length"' : "NULL"} as length, ${hasBottom ? "bottom" : "NULL"} as bottom, color, colorHex, sku, stock, price, compareAtPrice, weight, createdAt, updatedAt`;
 }
 
 async function getProductCols(): Promise<string> {
@@ -154,9 +182,10 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   const productIds   = rawProducts.map((p) => p.id);
   const placeholders = productIds.map(() => "?").join(",");
 
+  const variantCols = await getVariantCols();
   const [imgResult, varResult] = await Promise.all([
     db.execute({ sql: `SELECT * FROM product_images   WHERE productId IN (${placeholders}) ORDER BY isPrimary DESC, sortOrder ASC`, args: productIds }),
-    db.execute({ sql: `SELECT * FROM product_variants WHERE productId IN (${placeholders})`, args: productIds }),
+    db.execute({ sql: `SELECT ${variantCols} FROM product_variants WHERE productId IN (${placeholders})`, args: productIds }),
   ]);
 
   const images   = imgResult.rows as unknown as DbProductImage[];
@@ -184,9 +213,10 @@ export async function getProductBySlug(slug: string): Promise<ProductWithRelatio
     lengthInches?: number | null;
     col_id: string | null; col_name: string | null; col_slug: string | null;
   });
+  const variantCols = await getVariantCols();
   const [imgResult, varResult] = await Promise.all([
     db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
-    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+    db.execute({ sql: `SELECT ${variantCols} FROM product_variants WHERE productId = ?`, args: [p.id] }),
   ]);
   return {
     ...p,
@@ -210,9 +240,10 @@ export async function getProductById(id: string): Promise<ProductWithRelations |
     lengthInches?: number | null;
     col_id: string | null; col_name: string | null; col_slug: string | null;
   });
+  const variantCols = await getVariantCols();
   const [imgResult, varResult] = await Promise.all([
     db.execute({ sql: "SELECT * FROM product_images   WHERE productId = ? ORDER BY isPrimary DESC, sortOrder ASC", args: [p.id] }),
-    db.execute({ sql: "SELECT * FROM product_variants WHERE productId = ?", args: [p.id] }),
+    db.execute({ sql: `SELECT ${variantCols} FROM product_variants WHERE productId = ?`, args: [p.id] }),
   ]);
   return {
     ...p,
@@ -293,6 +324,8 @@ export interface CreateProductInput {
   sortOrder?:       number;
   variants?: Array<{
     size:     string;
+    length?:  number | null;
+    bottom?:  number | null;
     color:    string;
     colorHex: string;
     sku:      string;
@@ -349,11 +382,24 @@ export async function createProduct(input: CreateProductInput): Promise<string> 
   }
 
   if (input.variants && input.variants.length > 0) {
+    const { hasLength, hasBottom } = await getVariantColumnInfo();
     for (const v of input.variants) {
+      const columns = [
+        "id", "productId", "size",
+        ...(hasLength ? ['"length"'] : []),
+        ...(hasBottom ? ["bottom"] : []),
+        "color", "colorHex", "sku", "stock", "price", "createdAt", "updatedAt",
+      ];
+      const values = [
+        generateId(), id, v.size,
+        ...(hasLength ? [v.length ?? null] : []),
+        ...(hasBottom ? [v.bottom ?? null] : []),
+        v.color, v.colorHex, v.sku, v.stock, v.price, t, t,
+      ];
       await db.execute({
-        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [generateId(), id, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+        sql: `INSERT INTO product_variants (${columns.join(", ")})
+              VALUES (${columns.map(() => "?").join(", ")})`,
+        args: values,
       });
     }
   }
@@ -468,6 +514,8 @@ export async function replaceProductImages(
 export interface VariantSyncInput {
   id?:       string;
   size:      string;
+  length?:   number | null;
+  bottom?:   number | null;
   color:     string;
   colorHex:  string;
   sku:       string;
@@ -480,6 +528,7 @@ export async function syncProductVariants(
   variants:  VariantSyncInput[]
 ): Promise<void> {
   const t = nowTs();
+  const { hasLength, hasBottom } = await getVariantColumnInfo();
 
   const existingResult = await db.execute({
     sql:  "SELECT id FROM product_variants WHERE productId = ?",
@@ -500,15 +549,32 @@ export async function syncProductVariants(
     if (v.id && existingIds.includes(v.id)) {
       await db.execute({
         sql: `UPDATE product_variants
-              SET size = ?, color = ?, colorHex = ?, sku = ?, stock = ?, price = ?, updatedAt = ?
+              SET size = ?${hasLength ? ', "length" = ?' : ""}${hasBottom ? ", bottom = ?" : ""}, color = ?, colorHex = ?, sku = ?, stock = ?, price = ?, updatedAt = ?
               WHERE id = ?`,
-        args: [v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, v.id],
+        args: [
+          v.size,
+          ...(hasLength ? [v.length ?? null] : []),
+          ...(hasBottom ? [v.bottom ?? null] : []),
+          v.color, v.colorHex, v.sku, v.stock, v.price, t, v.id,
+        ],
       });
     } else {
+      const columns = [
+        "id", "productId", "size",
+        ...(hasLength ? ['"length"'] : []),
+        ...(hasBottom ? ["bottom"] : []),
+        "color", "colorHex", "sku", "stock", "price", "createdAt", "updatedAt",
+      ];
+      const values = [
+        generateId(), productId, v.size,
+        ...(hasLength ? [v.length ?? null] : []),
+        ...(hasBottom ? [v.bottom ?? null] : []),
+        v.color, v.colorHex, v.sku, v.stock, v.price, t, t,
+      ];
       await db.execute({
-        sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [generateId(), productId, v.size, v.color, v.colorHex, v.sku, v.stock, v.price, t, t],
+        sql: `INSERT INTO product_variants (${columns.join(", ")})
+              VALUES (${columns.map(() => "?").join(", ")})`,
+        args: values,
       });
     }
   }
@@ -576,14 +642,25 @@ export async function duplicateProduct(sourceId: string): Promise<string> {
   }
 
   for (const v of source.variants) {
+    const { hasLength, hasBottom } = await getVariantColumnInfo();
+    const columns = [
+      "id", "productId", "size",
+      ...(hasLength ? ['"length"'] : []),
+      ...(hasBottom ? ["bottom"] : []),
+      "color", "colorHex", "sku", "stock", "price", "createdAt", "updatedAt",
+    ];
+    const values = [
+      generateId(), newId, v.size,
+      ...(hasLength ? [v.length ?? null] : []),
+      ...(hasBottom ? [v.bottom ?? null] : []),
+      v.color, v.colorHex,
+      `${v.sku}-C${newId.slice(1, 4).toUpperCase()}`,
+      v.stock, v.price, t, t,
+    ];
     await db.execute({
-      sql: `INSERT INTO product_variants (id, productId, size, color, colorHex, sku, stock, price, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [
-        generateId(), newId, v.size, v.color, v.colorHex,
-        `${v.sku}-C${newId.slice(1, 4).toUpperCase()}`,
-        v.stock, v.price, t, t,
-      ],
+      sql: `INSERT INTO product_variants (${columns.join(", ")})
+            VALUES (${columns.map(() => "?").join(", ")})`,
+      args: values,
     });
   }
 

@@ -86,6 +86,8 @@ function adaptVariant(v: DbProductVariant): ProductVariant {
   return {
     id:             v.id,
     size:           v.size,
+    length:         v.length ?? null,
+    bottom:         v.bottom ?? null,
     color:          v.color,
     colorHex:       v.colorHex,
     stock:          v.stock,

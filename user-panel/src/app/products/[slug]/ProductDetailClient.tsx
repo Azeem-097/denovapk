@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ShoppingBag, CheckCircle, ChevronDown, Plus, Minus, Truck,
+  ShoppingBag, CheckCircle, ChevronDown, Plus, Minus,
 } from "lucide-react";
 import { ProductImages } from "@/components/product/ProductImages";
 import { ColorSelector } from "@/components/product/ColorSelector";
@@ -158,6 +158,14 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   );
 
   const measurementRows = useMemo(() => {
+    const variantRows = product.variants
+      .map((variant) => ({
+        waist: Number(variant.size),
+        length: variant.length ?? null,
+        bottom: variant.bottom ?? null,
+      }))
+      .filter((row) => !Number.isNaN(row.waist));
+    if (variantRows.length > 0) return variantRows;
     if (product.measurements && product.measurements.length > 0) return product.measurements;
 
     const fallbackRows = [] as NonNullable<typeof product.measurements>;
@@ -165,20 +173,20 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       fallbackRows.push({ waist: product.waist, length: product.length ?? null, bottom: product.bottom ?? null });
     }
     return fallbackRows;
-  }, [product.measurements, product.waist, product.length, product.bottom]);
+  }, [product]);
 
   const waistSizes = useMemo(() => {
     const seen = new Set<string>();
     const sizes: string[] = [];
-    measurementRows.forEach((row) => {
-      const value = String(row.waist);
+    product.variants.forEach((variant) => {
+      const value = variant.size;
       if (!seen.has(value)) {
         seen.add(value);
         sizes.push(value);
       }
     });
     return sizes;
-  }, [measurementRows]);
+  }, [product.variants]);
 
   const firstInStockColor = useMemo(() => {
     const inStock = product.variants.find((v) => v.stock > 0);
@@ -187,29 +195,43 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const [selectedColor, setSelectedColor] = useState(firstInStockColor);
 
-  const selectedVariant = useMemo(
-    () => product.variants.find((v) => v.color === selectedColor) ?? product.variants[0],
-    [product.variants, selectedColor]
-  );
-
   const sizesForColor = useMemo(() => {
-    return waistSizes;
-  }, [waistSizes]);
+    const seen = new Set<string>();
+    return product.variants
+      .filter((v) => v.color === selectedColor)
+      .map((v) => v.size)
+      .filter((size) => {
+        if (seen.has(size)) return false;
+        seen.add(size);
+        return true;
+      });
+  }, [product.variants, selectedColor]);
 
   const outOfStockSizes = useMemo(() => {
-    return selectedVariant && selectedVariant.stock === 0 ? sizesForColor : [];
-  }, [selectedVariant, sizesForColor]);
+    return sizesForColor.filter((size) => {
+      const variant = product.variants.find((v) => v.color === selectedColor && v.size === size);
+      return !variant || variant.stock <= 0;
+    });
+  }, [product.variants, selectedColor, sizesForColor]);
 
   const firstInStockSize = useMemo(() => {
-    return sizesForColor[0] ?? "";
-  }, [sizesForColor]);
+    return product.variants.find((v) => v.color === selectedColor && v.stock > 0)?.size ?? sizesForColor[0] ?? "";
+  }, [product.variants, selectedColor, sizesForColor]);
 
   const [selectedSize, setSelectedSize] = useState(firstInStockSize);
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    setSelectedSize(waistSizes[0] ?? "");
+    const firstAvailableSize = product.variants.find((v) => v.color === color && v.stock > 0)?.size
+      ?? product.variants.find((v) => v.color === color)?.size
+      ?? "";
+    setSelectedSize(firstAvailableSize);
   };
+
+  const selectedVariant = useMemo(
+    () => product.variants.find((v) => v.color === selectedColor && v.size === selectedSize),
+    [product.variants, selectedColor, selectedSize]
+  );
 
   const [quantity, setQuantity]           = useState(1);
   const [addedToCart, setAddedToCart]     = useState(false);
@@ -220,11 +242,13 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const addToCart = useCartStore((s) => s.addItem);
   const showToast = useToastStore((s) => s.addToast);
 
-  const selectedVariantOutOfStock = !selectedVariant || selectedVariant.stock === 0;
-  const isOutOfStock    = product.isSoldOut || selectedVariantOutOfStock;
+  const allVariantsSoldOut = product.variants.length === 0 || product.variants.every((variant) => variant.stock <= 0);
+  const selectedVariantOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
+  const isOutOfStock    = product.isSoldOut || allVariantsSoldOut || selectedVariantOutOfStock;
   const maxQty          = selectedVariant?.stock ?? 1;
-  const hasDiscount     = !!product.compareAtPrice && product.compareAtPrice > product.price;
-  const discountPercent = hasDiscount ? getDiscountPercent(product.compareAtPrice!, product.price) : 0;
+  const selectedPrice   = selectedVariant?.price ?? product.price;
+  const hasDiscount     = !!product.compareAtPrice && product.compareAtPrice > selectedPrice;
+  const discountPercent = hasDiscount ? getDiscountPercent(product.compareAtPrice!, selectedPrice) : 0;
 
   useEffect(() => {
     if (quantity > maxQty) setQuantity(Math.max(1, maxQty));
@@ -235,7 +259,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     : (product.collection || "Denova");
 
   const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
-  const displaySku = product.sku || selectedVariant?.sku || "";
+  const displaySku = selectedVariant?.sku || product.sku || "";
   const viewContentSku = product.sku || product.variants[0]?.sku || product.id;
 
   useEffect(() => {
@@ -243,10 +267,10 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       content_ids: [viewContentSku],
       content_name: product.name,
       content_type: "product",
-      value: product.price,
+      value: selectedPrice,
       currency: "PKR",
     });
-  }, [product.id, product.name, product.price, viewContentSku]);
+  }, [product.id, product.name, selectedPrice, viewContentSku]);
 
   const measurements = [
     { label: "Waist", values: waistSizes },
@@ -281,7 +305,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       size:      selectedSize || selectedVariant.size,
       color:     selectedColor,
       colorHex:  selectedVariant.colorHex,
-      price:     product.price,
+      price:     selectedPrice,
       quantity,
       stock:     selectedVariant.stock,
       slug:      product.slug,
@@ -292,7 +316,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       content_ids: [selectedVariant.sku || product.sku || product.id],
       content_name: product.name,
       content_type: "product",
-      value: product.price * quantity,
+      value: selectedPrice * quantity,
       currency: "PKR",
       num_items: quantity,
     });
@@ -311,7 +335,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     const ok = await doAddToCart();
     if (!ok) return;
     trackMetaEvent("InitiateCheckout", {
-      value: product.price * quantity,
+      value: selectedPrice * quantity,
       currency: "PKR",
       num_items: quantity,
     });
@@ -396,7 +420,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 {/* 6. PRICE — current + strikethrough + small black "Save X%" chip */}
                 <div className="flex items-center gap-2.5 flex-wrap mb-6">
                   <span className="text-xl sm:text-2xl font-semibold text-[#1a1a1a] leading-none">
-                    {formatPKR(product.price)}
+                    {formatPKR(selectedPrice)}
                   </span>
                   {hasDiscount && (
                     <>

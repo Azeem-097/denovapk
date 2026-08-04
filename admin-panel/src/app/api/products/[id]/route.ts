@@ -7,6 +7,37 @@ import {
 } from "@/lib/db/repositories/products";
 import { rupeesToPaisa } from "@/lib/priceUtils";
 
+function normalizeInventoryVariants(input: unknown) {
+  const rows = Array.isArray(input)
+    ? input.map((row) => {
+        const v = row as {
+          id?: unknown; size?: unknown; waist?: unknown; length?: unknown; bottom?: unknown;
+          color?: unknown; colorHex?: unknown; sku?: unknown; stock?: unknown; price?: unknown;
+        };
+        return {
+          id: typeof v.id === "string" ? v.id : undefined,
+          size: String(v.size ?? v.waist ?? "").trim(),
+          length: v.length === undefined || v.length === null || String(v.length).trim() === "" ? null : Number(v.length),
+          bottom: v.bottom === undefined || v.bottom === null || String(v.bottom).trim() === "" ? null : Number(v.bottom),
+          color: String(v.color ?? "").trim(),
+          colorHex: String(v.colorHex ?? "#000000").trim() || "#000000",
+          sku: String(v.sku ?? "").trim().toUpperCase(),
+          stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
+          price: Number(v.price),
+        };
+      }).filter((row) => row.size && row.color && row.sku && Number.isFinite(row.price))
+    : [];
+
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const key = `${row.size.toLowerCase()}|${row.color.toLowerCase()}`;
+    if (seen.has(key)) throw new Error("Duplicate waist and colour combinations are not allowed.");
+    seen.add(key);
+  }
+
+  return rows;
+}
+
 function normalizeMeasurements(input: unknown, fallback?: { waist?: unknown; length?: unknown; bottom?: unknown }) {
   const rows = Array.isArray(input)
     ? input
@@ -52,7 +83,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.isBestSeller !== undefined) updates.isBestSeller = body.isBestSeller;
     if (body.isSoldOut    !== undefined) updates.isSoldOut    = body.isSoldOut;
     if (body.tags         !== undefined) updates.tags         = Array.isArray(body.tags) ? body.tags : body.tags.split(",");
-    const normalizedMeasurements = normalizeMeasurements(body.measurements, { waist: body.waist, length: body.length, bottom: body.bottom });
+    const normalizedVariants = Array.isArray(body.variants) ? normalizeInventoryVariants(body.variants) : [];
+    const normalizedMeasurements = normalizeMeasurements(
+      body.measurements,
+      {
+        waist: normalizedVariants[0]?.size ?? body.waist,
+        length: normalizedVariants[0]?.length ?? body.length,
+        bottom: normalizedVariants[0]?.bottom ?? body.bottom,
+      }
+    );
     const firstMeasurement = normalizedMeasurements[0] ?? null;
     if (body.measurements !== undefined || body.waist !== undefined || body.length !== undefined || body.bottom !== undefined) {
       updates.measurementsJson = JSON.stringify(normalizedMeasurements);
@@ -84,18 +123,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     if (Array.isArray(body.variants)) {
-      const waistNumber = firstMeasurement ? Number(firstMeasurement.waist) : (body.waist !== undefined && body.waist !== "" && body.waist !== null ? Number(body.waist) : null);
-      const sizeLabel = waistNumber !== null ? String(waistNumber) : "ONE-SIZE";
+      if (normalizedVariants.length === 0) {
+        return NextResponse.json({ error: "Add at least one inventory row." }, { status: 400 });
+      }
 
-      const variantsForSync = body.variants.map((v: {
-        id?: string; color: string; colorHex?: string; sku: string; stock: number; price: number; size?: string;
-      }) => ({
+      const variantsForSync = normalizedVariants.map((v) => ({
         id:       v.id,
-        size:     v.size ?? sizeLabel,
+        size:     v.size,
+        length:   v.length,
+        bottom:   v.bottom,
         color:    v.color,
-        colorHex: v.colorHex ?? "#000000",
+        colorHex: v.colorHex,
         sku:      v.sku,
-        stock:    Number(v.stock),
+        stock:    v.stock,
         price:    rupeesToPaisa(v.price),
       }));
 

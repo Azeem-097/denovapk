@@ -9,6 +9,8 @@ export interface ProductImage {
 export interface ProductVariant {
   id: string;
   size: string;
+  length?: number | null;
+  bottom?: number | null;
   color: string;
   colorHex: string;
   stock: number;

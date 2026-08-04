@@ -139,6 +139,8 @@ CREATE TABLE IF NOT EXISTS product_variants (
   id              TEXT PRIMARY KEY,
   productId       TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   size            TEXT NOT NULL,
+  length          REAL,
+  bottom          REAL,
   color           TEXT NOT NULL,
   colorHex        TEXT NOT NULL,
   sku             TEXT UNIQUE NOT NULL,

@@ -82,6 +82,8 @@ async function migrate() {
   console.log("\nApplying compatibility migrations...");
   const compatibilityStatements = [
     "ALTER TABLE admins ADD COLUMN passwordChangeRequired INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE product_variants ADD COLUMN length REAL",
+    "ALTER TABLE product_variants ADD COLUMN bottom REAL",
     "UPDATE settings SET category = 'brand' WHERE category = 'restaurant'",
     "UPDATE settings SET value = REPLACE(value, '/sitemap\"', '/sitemap.xml\"') WHERE key = 'footer_bottom_links'",
   ];
