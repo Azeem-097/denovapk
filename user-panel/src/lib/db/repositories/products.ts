@@ -69,7 +69,7 @@ async function getVariantColumnInfo(): Promise<VariantColumnInfo> {
 
 async function getVariantCols(): Promise<string> {
   const { hasLength, hasBottom } = await getVariantColumnInfo();
-  return `id, productId, size, ${hasLength ? '"length"' : "NULL"} as length, ${hasBottom ? "bottom" : "NULL"} as bottom, color, colorHex, sku, stock, price, compareAtPrice, weight, createdAt, updatedAt`;
+  return `id, productId, size, ${hasLength ? '"length"' : "NULL"} as lengthInches, ${hasBottom ? "bottom" : "NULL"} as bottom, color, colorHex, sku, stock, price, compareAtPrice, weight, createdAt, updatedAt`;
 }
 
 async function getProductCols(): Promise<string> {
@@ -89,6 +89,10 @@ async function getProductCols(): Promise<string> {
 function remapLength<T extends { lengthInches?: number | null }>(row: T): T & { length: number | null } {
   const { lengthInches, ...rest } = row as { lengthInches?: number | null } & Record<string, unknown>;
   return { ...rest, length: lengthInches ?? null } as T & { length: number | null };
+}
+
+function remapVariantLength(row: { lengthInches?: number | null } & Record<string, unknown>): DbProductVariant {
+  return remapLength(row) as unknown as DbProductVariant;
 }
 
 export interface GetProductsOptions {
@@ -157,7 +161,7 @@ export async function getProducts(opts: GetProductsOptions = {}): Promise<Produc
   ]);
 
   const images   = imgResult.rows as unknown as DbProductImage[];
-  const variants = varResult.rows as unknown as DbProductVariant[];
+  const variants = (varResult.rows as unknown as ({ lengthInches?: number | null } & Record<string, unknown>)[]).map(remapVariantLength);
 
   return rawProducts.map((p) => ({
     ...p,
@@ -189,7 +193,7 @@ export async function getProductBySlug(slug: string): Promise<ProductWithRelatio
   return {
     ...p,
     images:     imgResult.rows as unknown as DbProductImage[],
-    variants:   varResult.rows as unknown as DbProductVariant[],
+    variants:   (varResult.rows as unknown as ({ lengthInches?: number | null } & Record<string, unknown>)[]).map(remapVariantLength),
     collection: p.col_id ? { id: p.col_id, name: p.col_name!, slug: p.col_slug! } : null,
   };
 }
@@ -211,7 +215,7 @@ export async function getProductById(id: string): Promise<ProductWithRelations |
   return {
     ...p,
     images:   imgResult.rows as unknown as DbProductImage[],
-    variants: varResult.rows as unknown as DbProductVariant[],
+    variants: (varResult.rows as unknown as ({ lengthInches?: number | null } & Record<string, unknown>)[]).map(remapVariantLength),
   };
 }
 
@@ -262,7 +266,7 @@ export async function getRelatedProducts(
   ]);
 
   const images   = imgResult.rows as unknown as DbProductImage[];
-  const variants = varResult.rows as unknown as DbProductVariant[];
+  const variants = (varResult.rows as unknown as ({ lengthInches?: number | null } & Record<string, unknown>)[]).map(remapVariantLength);
 
   return products.map((p) => ({
     ...p,
