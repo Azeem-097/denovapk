@@ -158,6 +158,19 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   );
 
   const measurementRows = useMemo(() => {
+    const rowsByWaist = new Map<number, { waist: number; length: number | null; bottom: number | null }>();
+
+    const mergeRow = (row: { waist: number; length: number | null; bottom: number | null }) => {
+      if (Number.isNaN(row.waist)) return;
+
+      const existing = rowsByWaist.get(row.waist);
+      rowsByWaist.set(row.waist, {
+        waist: row.waist,
+        length: existing?.length ?? row.length ?? null,
+        bottom: existing?.bottom ?? row.bottom ?? null,
+      });
+    };
+
     const variantRows = product.variants
       .map((variant) => ({
         waist: Number(variant.size),
@@ -165,14 +178,17 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
         bottom: variant.bottom ?? null,
       }))
       .filter((row) => !Number.isNaN(row.waist));
-    if (variantRows.length > 0) return variantRows;
-    if (product.measurements && product.measurements.length > 0) return product.measurements;
+
+    variantRows.forEach(mergeRow);
+    product.measurements?.forEach(mergeRow);
 
     const fallbackRows = [] as NonNullable<typeof product.measurements>;
     if (product.waist != null) {
       fallbackRows.push({ waist: product.waist, length: product.length ?? null, bottom: product.bottom ?? null });
     }
-    return fallbackRows;
+    fallbackRows.forEach(mergeRow);
+
+    return Array.from(rowsByWaist.values());
   }, [product]);
 
   const waistSizes = useMemo(() => {
