@@ -277,7 +277,7 @@ export function ShopPageClient({ products }: Props) {
             </div>
 
             {availableSizes.length > 0 && (
-              <div className="mb-6 pb-4 border-b border-[#e5e7eb]">
+              <div className="sticky top-16 lg:top-[88px] z-30 -mx-4 sm:mx-0 mb-6 border-b border-[#e5e7eb] bg-[#fafaf9]/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-[#fafaf9]/85">
                 <div className="text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase text-[#1a1a1a]">
                   Filter by Waist
                 </div>
